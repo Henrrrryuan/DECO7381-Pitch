@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=1280, height=720, initial-scale=1.0" name="viewport"/>
-<title>Technical Skills Required - 核心技术栈</title>
+<title>Technical Skills Required - Team capability matching</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -30,6 +29,32 @@
             position: relative;
         }
 
+        /* 返回按钮 */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            right: 60px;
+            z-index: 10;
+        }
+
+        .back-button a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        .back-button a:hover {
+            background: #0056b3;
+        }
+
         /* 顶部标题区 */
         .header {
             border-bottom: 2px solid #000000;
@@ -49,7 +74,7 @@
             font-size: 16px;
             font-weight: 400;
             color: #666666;
-            margin-top: 5px;
+            margin: 5px 0 0 0;
         }
 
         /* 表格容器 */
@@ -61,6 +86,7 @@
             justify-content: center;
         }
 
+        /* 技术行 */
         .tech-row {
             display: flex;
             align-items: stretch;
@@ -68,16 +94,16 @@
             border-left: 6px solid #e0e0e0;
             padding: 0;
             transition: all 0.3s ease;
-            height: 100px;
+            min-height: 100px;
         }
 
         .tech-row:hover {
-            border-left-color: #0078D4;
+            border-left-color: #007bff;
             transform: translateX(5px);
             background-color: #f0f7ff;
         }
 
-        /* 左侧：能力分类 */
+        /* 能力列 */
         .col-capability {
             flex: 0 0 32%;
             display: flex;
@@ -88,14 +114,14 @@
 
         .cap-icon {
             font-size: 26px;
-            color: #333;
+            color: #000000;
             margin-right: 20px;
             width: 40px;
             text-align: center;
         }
-        
+
         .tech-row:hover .cap-icon {
-            color: #0078D4;
+            color: #007bff;
         }
 
         .cap-text {
@@ -105,7 +131,7 @@
             line-height: 1.2;
         }
 
-        /* 右侧：技术栈与功能 */
+        /* 技术栈列 */
         .col-tech {
             flex: 1;
             display: flex;
@@ -117,21 +143,21 @@
 
         .tech-stack {
             font-size: 16px;
-            color: #333;
+            color: #000000;
             margin-bottom: 6px;
-            font-family: 'Consolas', 'Monaco', monospace; /* 代码风格字体 */
+            font-family: 'Consolas', 'Monaco', monospace;
             font-weight: 600;
         }
 
         .support-func {
             font-size: 14px;
-            color: #666;
+            color: #666666;
             display: flex;
             align-items: center;
         }
 
         .func-badge {
-            background-color: #0078D4;
+            background-color: #007bff;
             color: #fff;
             padding: 2px 8px;
             border-radius: 4px;
@@ -141,26 +167,16 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
-        
+
         .func-text {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* 页脚 */
-        .footer {
-            margin-top: 25px;
-            border-top: 1px solid #e0e0e0;
-            padding-top: 15px;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        }
-
         .footer-text {
             font-size: 14px;
-            color: #0078D4;
+            color: #007bff;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -169,97 +185,117 @@
         .footer-icon {
             margin-right: 8px;
         }
-        
-        /* 装饰元素 */
+
         .arrow-indicator {
             position: absolute;
             right: 20px;
             color: #e0e0e0;
             font-size: 20px;
         }
-        
-        .tech-row:hover .arrow-indicator {
-            color: #0078D4;
-        }
 
+        .tech-row:hover .arrow-indicator {
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
 <div class="slide-container">
+<!-- 返回按钮 -->
+<div class="back-button">
+    <a href="111.html">
+        <i class="fas fa-arrow-left"></i>
+        返回主页面
+    </a>
+</div>
 <!-- 头部 -->
 <header class="header">
-<h1 class="main-title">Technical Skills Required・核心技术栈</h1>
-<p class="sub-title">Full Process Coverage・能力与功能一一匹配</p>
+<h1 class="main-title">Technical Skills Required・Team capability matching</h1>
+<p class="sub-title">Team capability mapping for project delivery</p>
 </header>
 <!-- 核心内容表格 -->
 <div class="table-container">
-<!-- 行 1: Web Data Processing -->
+<!-- Team member 1 -->
 <div class="tech-row">
 <div class="col-capability">
-<div class="cap-icon"><i class="fas fa-network-wired"></i></div>
-<p class="cap-text">Web Data Processing</p>
+<div class="cap-icon"><i class="fas fa-universal-access"></i></div>
+<p class="cap-text">Human-Computer Interaction (HCI)</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">Python (Scrapy / BeautifulSoup4) + HTML / CSS / JS Parsing</p>
+<p class="tech-stack">WCAG/ISO standard interpretation, inclusive design, user evaluation</p>
 <div class="support-func">
-<span class="func-badge">Function</span>
-<span class="func-text">Feature Extraction (Textual / Structural / Interactive)</span>
+<span class="func-badge">Role</span>
+<span class="func-text">Standard mapping, evaluation component, UI/UX design</span>
 </div>
 <i class="fas fa-chevron-right arrow-indicator"></i>
 </div>
 </div>
-<!-- 行 2: NLP & Algorithm -->
+<!-- Team member 2 -->
 <div class="tech-row">
 <div class="col-capability">
-<div class="cap-icon"><i class="fas fa-brain"></i></div>
-<p class="cap-text">NLP &amp; Algorithm Development</p>
+<div class="cap-icon"><i class="fas fa-code"></i></div>
+<p class="cap-text">Computer Science (CS)</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">Python (NLTK / Spacy) + Custom Scoring Algorithms</p>
+<p class="tech-stack">Algorithm development, web parsing, backend engineering</p>
 <div class="support-func">
-<span class="func-badge">Function</span>
-<span class="func-text">Cognitive Load Metrics + Risk Rating Calculation</span>
+<span class="func-badge">Role</span>
+<span class="func-text">Data collection, cognitive analysis algorithm, core parsing logic</span>
 </div>
 <i class="fas fa-chevron-right arrow-indicator"></i>
 </div>
 </div>
-<!-- 行 3: Frontend & Visualization -->
+<!-- Team member 3 -->
 <div class="tech-row">
 <div class="col-capability">
-<div class="cap-icon"><i class="fas fa-chart-line"></i></div>
-<p class="cap-text">Frontend &amp; Visualization</p>
+<div class="cap-icon"><i class="fas fa-chart-pie"></i></div>
+<p class="cap-text">Data Science</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">React.js + ECharts + Interactive Dashboard</p>
+<p class="tech-stack">Quantitative analysis, data visualization, statistical testing</p>
 <div class="support-func">
-<span class="func-badge">Function</span>
-<span class="func-text">Low-clutter Interface Design + Real-time Feedback</span>
+<span class="func-badge">Role</span>
+<span class="func-text">Metric scoring, evaluation data analysis, dashboard visualization</span>
 </div>
 <i class="fas fa-chevron-right arrow-indicator"></i>
 </div>
 </div>
-<!-- 行 4: Standard & Evaluation -->
+<!-- Team member 4 -->
 <div class="tech-row">
 <div class="col-capability">
-<div class="cap-icon"><i class="fas fa-clipboard-check"></i></div>
-<p class="cap-text">Standard &amp; Evaluation Design</p>
+<div class="cap-icon"><i class="fas fa-pen-nib"></i></div>
+<p class="cap-text">Digital Media Design</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">WCAG 2.1 / ISO 9241-11 Interpretation + User Testing</p>
+<p class="tech-stack">UI design, visual hierarchy optimization, accessibility compliance</p>
 <div class="support-func">
-<span class="func-badge">Function</span>
-<span class="func-text">Standard Mapping + NASA-TLX Measurement</span>
+<span class="func-badge">Role</span>
+<span class="func-text">Product interface design, risk rating visualization, cognitive load visualization</span>
+</div>
+<i class="fas fa-chevron-right arrow-indicator"></i>
+</div>
+</div>
+<!-- Team member 5 -->
+<div class="tech-row">
+<div class="col-capability">
+<div class="cap-icon"><i class="fas fa-user-gear"></i></div>
+<p class="cap-text">Software Engineering</p>
+</div>
+<div class="col-tech">
+<p class="tech-stack">Frontend development, interactive system design, testing</p>
+<div class="support-func">
+<span class="func-badge">Role</span>
+<span class="func-text">Dashboard development, recommendation engine, validation tool</span>
 </div>
 <i class="fas fa-chevron-right arrow-indicator"></i>
 </div>
 </div>
 </div>
 <!-- 页脚 -->
-<footer class="footer">
+<footer class="footer" style="margin-top: 25px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; padding-top: 15px; display: flex; justify-content: center;">
 <p class="footer-text">
 <i class="fas fa-check-circle footer-icon"></i>
-            No capability gaps, tech stack fully serves functional delivery.
-        </p>
+    Team capabilities fully aligned with project requirements.
+</p>
 </footer>
 </div>
 </body>
