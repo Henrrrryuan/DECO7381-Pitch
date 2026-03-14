@@ -930,6 +930,7 @@ letter-spacing: 0.5px;
 
 .eval-flip-card {
     perspective: 1200px;
+    height: 230px; /* 固定高度，确保正反两面文字都在卡片内 */
 }
 
 .eval-flip-inner {
@@ -944,6 +945,7 @@ letter-spacing: 0.5px;
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
+    overflow: hidden;
 }
 
 .eval-front {
