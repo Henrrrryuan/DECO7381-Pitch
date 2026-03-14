@@ -56,89 +56,306 @@
 
         <!-- Core Functions -->
         <section id="core-web">
-<div class="slide-container">
-<!-- 头部 -->
-<header class="header">
-<h1 class="main-title">Core Functional Modules・多维度认知无障碍分析</h1>
-<p class="sub-title">Aligned with WCAG &amp; ISO 9241-11 | Zero User Data Required</p>
-</header>
-<!-- 核心内容 - 四列布局 -->
-<div class="content-grid">
-<!-- 维度 1: Language Complexity -->
-<article class="column-card">
-<div class="icon-wrapper">
-<i class="fas fa-file-alt"></i>
-</div>
-<h2 class="column-title">Language Complexity Analysis</h2>
-<ul class="content-list">
-<li class="content-item">Text readability scoring (Flesch-Kincaid)</li>
-<li class="content-item">Technical jargon density detection</li>
-<li class="content-item">Sentence length &amp; structure analysis</li>
-<li class="content-item">Plain language recommendations</li>
-</ul>
-<div class="standard-tag">
-<p class="standard-label">Standard Alignment</p>
-<p class="standard-value">WCAG Cognitive Guideline 1.4.8</p>
-</div>
-</article>
-<!-- 维度 2: Layout & Visual Hierarchy -->
-<article class="column-card">
-<div class="icon-wrapper">
-<i class="fas fa-layer-group"></i>
-</div>
-<h2 class="column-title">Layout &amp; Visual Hierarchy Assessment</h2>
-<ul class="content-list">
-<li class="content-item">Quantitative layout density analysis</li>
-<li class="content-item">Element spacing compliance check</li>
-<li class="content-item">Heading hierarchy consistency</li>
-<li class="content-item">Visual clutter identification</li>
-</ul>
-<div class="standard-tag">
-<p class="standard-label">Standard Alignment</p>
-<p class="standard-value">ISO 9241-11 (Effectiveness)</p>
-</div>
-</article>
-<!-- 维度 3: Animation & Media -->
-<article class="column-card">
-<div class="icon-wrapper">
-<i class="far fa-play-circle"></i>
-</div>
-<h2 class="column-title">Animation &amp; Media Evaluation</h2>
-<ul class="content-list">
-<li class="content-item">Auto-play media detection</li>
-<li class="content-item">High-frequency flash risk assessment</li>
-<li class="content-item">Unclosable animation check</li>
-<li class="content-item">Distraction reduction suggestions</li>
-</ul>
-<div class="standard-tag">
-<p class="standard-label">Standard Alignment</p>
-<p class="standard-value">WCAG 2.2.2 &amp; Neurodivergent Needs</p>
-</div>
-</article>
-<!-- 维度 4: Interaction Complexity -->
-<article class="column-card">
-<div class="icon-wrapper">
-<i class="fas fa-bolt"></i>
-</div>
-<h2 class="column-title">Interaction Complexity Validation</h2>
-<ul class="content-list">
-<li class="content-item">Redundant operation step assessment</li>
-<li class="content-item">Unclear feedback mechanism detection</li>
-<li class="content-item">Navigation path consistency check</li>
-<li class="content-item">Zero user data DOM/event parsing</li>
-</ul>
-<div class="standard-tag">
-<p class="standard-label">Standard Alignment</p>
-<p class="standard-value">ISO 9241-11 (Efficiency)</p>
-</div>
-</article>
-</div>
-<!-- 页脚 -->
-<footer class="footer">
-<p>All analysis dimensions are based on project brief requirements, covering core cognitive load factors.</p>
-<p class="footer-highlight">Analysis Dimension Overview</p>
-</footer>
-</div>
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">Core Functional Modules・多维度认知无障碍分析</h1>
+                    <p class="sub-title">What we analyse across the page to detect cognitive load risks</p>
+                </header>
+
+                <div class="content-grid">
+                    <!-- Module 1: Language Complexity -->
+                    <article class="column-card">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h2 class="column-title">Language Complexity</h2>
+                        <p class="feature-summary">
+                            Checks whether key content is readable, concrete, and cognitively light enough for target users.
+                        </p>
+                        <ul class="content-list">
+                            <li class="content-item">Score paragraphs by reading level, sentence length, and structure complexity.</li>
+                            <li class="content-item">Highlight jargon, idioms, and dense technical clusters that may overload working memory.</li>
+                            <li class="content-item">Prioritise instructions, forms, and error messages with stricter readability thresholds.</li>
+                        </ul>
+                        <div class="standard-tag">
+                            <p class="standard-label">Standard / User Need Alignment</p>
+                            <p class="standard-value">
+                                WCAG 3.1.5 Reading Level · ISO 9241‑11 (Effectiveness for comprehension) · Supports users with dyslexia &amp; ADHD
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Module 2: Layout & Visual Hierarchy -->
+                    <article class="column-card">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h2 class="column-title">Layout &amp; Visual Hierarchy</h2>
+                        <p class="feature-summary">
+                            Quantifies how layout, spacing, and hierarchy support quick scanning and orientation.
+                        </p>
+                        <ul class="content-list">
+                            <li class="content-item">Measure layout density and whitespace ratio for different page regions.</li>
+                            <li class="content-item">Check heading hierarchy, grouping, and alignment for consistent visual entry points.</li>
+                            <li class="content-item">Detect cluttered zones where competing elements fragment attention.</li>
+                        </ul>
+                        <div class="standard-tag">
+                            <p class="standard-label">Standard / User Need Alignment</p>
+                            <p class="standard-value">
+                                WCAG 1.3.1 Info and Relationships · ISO 9241‑11 (Efficiency &amp; safety) · Supports users with executive function challenges
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Module 3: Animation & Media -->
+                    <article class="column-card">
+                        <div class="icon-wrapper">
+                            <i class="far fa-play-circle"></i>
+                        </div>
+                        <h2 class="column-title">Animation &amp; Media</h2>
+                        <p class="feature-summary">
+                            Assesses motion and media patterns that may distract or overwhelm neurodivergent users.
+                        </p>
+                        <ul class="content-list">
+                            <li class="content-item">Detect auto‑play video/audio and looping animated elements.</li>
+                            <li class="content-item">Flag high‑frequency flashing and rapid motion that may trigger discomfort.</li>
+                            <li class="content-item">Identify non‑dismissible or constantly moving banners and overlays.</li>
+                        </ul>
+                        <div class="standard-tag">
+                            <p class="standard-label">Standard / User Need Alignment</p>
+                            <p class="standard-value">
+                                WCAG 2.2.2 Pause, Stop, Hide · WCAG 2.3.1 Seizures and Physical Reactions · Supports sensory‑sensitive users
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Module 4: Interaction Complexity -->
+                    <article class="column-card">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h2 class="column-title">Interaction Complexity</h2>
+                        <p class="feature-summary">
+                            Evaluates how many steps, decisions, and state changes are required to complete tasks.
+                        </p>
+                        <ul class="content-list">
+                            <li class="content-item">Count interaction steps and required fields for key conversion / task flows.</li>
+                            <li class="content-item">Detect unclear feedback such as hidden errors or missing confirmations.</li>
+                            <li class="content-item">Analyse navigation patterns for detours, dead ends, and inconsistent routes.</li>
+                        </ul>
+                        <div class="standard-tag">
+                            <p class="standard-label">Standard / User Need Alignment</p>
+                            <p class="standard-value">
+                                WCAG 3.2 Predictable · ISO 9241‑11 (Efficiency &amp; satisfaction) · Supports users with limited working memory &amp; cognitive fatigue
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+                <footer class="footer">
+                    <p>These four dimensions cover core cognitive load factors defined in the project brief.</p>
+                    <p class="footer-highlight">分析维度：从文本 → 布局 → 动画 → 交互流程</p>
+                </footer>
+            </div>
+        </section>
+
+        <!-- Core Functions Output & Evaluation -->
+        <section id="core-web-output">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">Core Functional Modules・Output, Insight &amp; Evaluation</h1>
+                    <p class="sub-title">From detection to explanation, recommendation, and validation</p>
+                </header>
+
+                <div class="pipeline-strip">
+                    <div class="pipeline-step is-active">Detect</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">Explain</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">Recommend</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">Validate</div>
+                </div>
+
+                <!-- 上半部分：Interactive Analysis Dashboard -->
+                <div class="dashboard-section">
+                    <!-- Risk Overview -->
+                    <div class="dashboard-card risk-overview">
+                        <div class="dashboard-header">
+                            <h2>Interactive Analysis Dashboard</h2>
+                            <div class="view-toggle" aria-label="Before and after comparison">
+                                <button class="view-toggle-btn is-active" data-view="before">Before</button>
+                                <button class="view-toggle-btn" data-view="after">After</button>
+                            </div>
+                        </div>
+                        <p class="dashboard-caption">Visualise risk levels per dimension and how they change after applying recommendations.</p>
+
+                        <div class="risk-row" data-dimension="language">
+                            <div class="risk-label">Language Complexity</div>
+                            <div class="risk-bar">
+                                <div class="risk-fill" data-before-width="78" data-after-width="32"></div>
+                            </div>
+                            <span class="risk-badge" data-before-label="High" data-after-label="Low">High</span>
+                        </div>
+
+                        <div class="risk-row" data-dimension="layout">
+                            <div class="risk-label">Layout &amp; Visual Hierarchy</div>
+                            <div class="risk-bar">
+                                <div class="risk-fill" data-before-width="65" data-after-width="30"></div>
+                            </div>
+                            <span class="risk-badge" data-before-label="Medium" data-after-label="Low">Medium</span>
+                        </div>
+
+                        <div class="risk-row" data-dimension="animation">
+                            <div class="risk-label">Animation &amp; Media</div>
+                            <div class="risk-bar">
+                                <div class="risk-fill" data-before-width="55" data-after-width="25"></div>
+                            </div>
+                            <span class="risk-badge" data-before-label="Medium" data-after-label="Low">Medium</span>
+                        </div>
+
+                        <div class="risk-row" data-dimension="interaction">
+                            <div class="risk-label">Interaction Complexity</div>
+                            <div class="risk-bar">
+                                <div class="risk-fill" data-before-width="72" data-after-width="40"></div>
+                            </div>
+                            <span class="risk-badge" data-before-label="High" data-after-label="Medium">High</span>
+                        </div>
+
+                        <p class="dashboard-note">
+                            Risk scores are computed from the four analysis modules and mapped to qualitative levels for presentation in the dashboard.
+                        </p>
+                    </div>
+
+                    <!-- Insight Panel -->
+                    <div class="dashboard-card insight-panel">
+                        <div class="dashboard-header">
+                            <h2>Insight &amp; Recommendation Panel</h2>
+                        </div>
+                        <div class="insight-tabs" role="tablist">
+                            <button class="insight-tab is-active" data-insight-target="language">Language</button>
+                            <button class="insight-tab" data-insight-target="layout">Layout</button>
+                            <button class="insight-tab" data-insight-target="animation">Animation</button>
+                            <button class="insight-tab" data-insight-target="interaction">Interaction</button>
+                        </div>
+
+                        <div class="insight-body is-active" data-insight="language">
+                            <p class="insight-title">Language Complexity・Detected Issues</p>
+                            <p class="insight-text">
+                                Long, nested sentences and dense jargon were detected in key instructional blocks, increasing working memory demands.
+                            </p>
+                            <p class="insight-standard">
+                                <strong>Standard mapping:</strong> WCAG 3.1.5 Reading Level · ISO 9241‑11 (Effectiveness for comprehension)
+                            </p>
+                            <ul class="insight-list">
+                                <li>Rewrite high‑impact sections (forms, error messages) to a lower reading level.</li>
+                                <li>Replace cluster of domain jargon with plain language examples.</li>
+                                <li>Add summaries at the top of complex pages for quick scanning.</li>
+                            </ul>
+                            <button class="primary-btn">Add Language Insight to Report</button>
+                        </div>
+
+                        <div class="insight-body" data-insight="layout">
+                            <p class="insight-title">Layout &amp; Visual Hierarchy・Detected Issues</p>
+                            <p class="insight-text">
+                                High layout density and inconsistent heading hierarchy in the hero area slow down orientation for first‑time visitors.
+                            </p>
+                            <p class="insight-standard">
+                                <strong>Standard mapping:</strong> WCAG 1.3.1 Info and Relationships · ISO 9241‑11 (Efficiency &amp; safety)
+                            </p>
+                            <ul class="insight-list">
+                                <li>Increase spacing around primary call‑to‑action and key headings.</li>
+                                <li>Normalise heading levels (H1/H2/H3) to reflect logical structure.</li>
+                                <li>Group related controls into visually separated blocks.</li>
+                            </ul>
+                            <button class="primary-btn">Add Layout Insight to Report</button>
+                        </div>
+
+                        <div class="insight-body" data-insight="animation">
+                            <p class="insight-title">Animation &amp; Media・Detected Issues</p>
+                            <p class="insight-text">
+                                Auto‑playing hero videos and multiple simultaneous motion elements compete for attention and may distract neurodivergent users.
+                            </p>
+                            <p class="insight-standard">
+                                <strong>Standard mapping:</strong> WCAG 2.2.2 Pause, Stop, Hide · WCAG 2.3.1 Seizures and Physical Reactions
+                            </p>
+                            <ul class="insight-list">
+                                <li>Disable auto‑play by default, or provide a visible pause control.</li>
+                                <li>Limit concurrent motion to a single focal element per view.</li>
+                                <li>Offer a “reduced motion” preference that simplifies transitions.</li>
+                            </ul>
+                            <button class="primary-btn">Add Animation Insight to Report</button>
+                        </div>
+
+                        <div class="insight-body" data-insight="interaction">
+                            <p class="insight-title">Interaction Complexity・Detected Issues</p>
+                            <p class="insight-text">
+                                Key tasks require many steps and offer limited feedback, making recovery from errors harder for users with cognitive fatigue.
+                            </p>
+                            <p class="insight-standard">
+                                <strong>Standard mapping:</strong> WCAG 3.2 Predictable · ISO 9241‑11 (Efficiency &amp; satisfaction)
+                            </p>
+                            <ul class="insight-list">
+                                <li>Reduce redundant fields and optional steps in main task flows.</li>
+                                <li>Provide inline error messages with clear next actions.</li>
+                                <li>Ensure navigation remains consistent across equivalent pages.</li>
+                            </ul>
+                            <button class="primary-btn">Add Interaction Insight to Report</button>
+                        </div>
+
+                        <div class="insight-footer">
+                            <button class="secondary-btn">Export Concept Report (PDF Mock)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 下半部分：Built-in Evaluation Module -->
+                <div class="evaluation-section">
+                    <div class="evaluation-card">
+                        <h3>Controlled Comparison</h3>
+                        <p>Run A/B sessions comparing baseline pages and assistant‑supported pages on the same tasks.</p>
+                        <ul>
+                            <li>Randomly assign participants to Baseline vs Assistant condition.</li>
+                            <li>Record time‑on‑task, completion, and error rates.</li>
+                            <li>Compare performance deltas per cognitive dimension.</li>
+                        </ul>
+                    </div>
+
+                    <div class="evaluation-card">
+                        <h3>NASA‑TLX &amp; Subjective Load</h3>
+                        <p>Collect perceived cognitive workload using NASA‑TLX after each task block.</p>
+                        <ul>
+                            <li>Capture mental demand, effort, frustration, and temporal demand.</li>
+                            <li>Compare NASA‑TLX scores between Baseline and Assistant conditions.</li>
+                            <li>Link score improvements to specific assistant interventions.</li>
+                        </ul>
+                    </div>
+
+                    <div class="evaluation-card">
+                        <h3>Task Completion Metrics</h3>
+                        <p>Quantify how the assistant impacts task success and efficiency.</p>
+                        <ul>
+                            <li>Completion rate, time on task, and error rate per scenario.</li>
+                            <li>Status tags (Improved / Stable / Needs work) per dimension.</li>
+                            <li>Drill‑down to individual tasks in the evaluation dashboard.</li>
+                        </ul>
+                    </div>
+
+                    <div class="evaluation-card evaluation-report">
+                        <h3>Evaluation Report</h3>
+                        <p>
+                            Generate a structured evaluation report that combines before/after risk scores, NASA‑TLX results,
+                            and task metrics.
+                        </p>
+                        <ul>
+                            <li>Summary of detected issues and applied recommendations.</li>
+                            <li>Before/after comparison for each cognitive dimension.</li>
+                            <li>Exportable report for supervisors or client stakeholders.</li>
+                        </ul>
+                        <button class="primary-btn">View Evaluation Report Mock</button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Technical Skills - Core Technology Stack -->
