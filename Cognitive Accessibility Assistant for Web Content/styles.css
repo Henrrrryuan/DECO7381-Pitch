@@ -878,10 +878,22 @@ letter-spacing: 0.5px;
 .evaluation-card ul {
     margin: 0 0 0 16px;
     padding: 0;
+    list-style: none;
 }
 
 .evaluation-card li {
     margin-bottom: 4px;
+    position: relative;
+    padding-left: 12px;
+}
+
+.evaluation-card li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: 700;
 }
 
 .evaluation-card.evaluation-report {
