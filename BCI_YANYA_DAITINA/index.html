@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,10 +7,33 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
-  <h1>BCI-Powered Adaptive Environment</h1>
+    <aside class="sidebar-left">
+        <div class="course-header">
+            <h1>SIX MIUNS ONE</h1>
+            <p> 
+                <strong>Ruilong Huang</strong><br>
+                <strong>Yanya Liu</strong><br>
+                Daitian Lu<br>
+                Yali Wang<br>
+                Zezhi Yuan
+            </p>
+        </div>
 
-  <div class="card">
+        <nav>
+            <h2>BCI-Powered Adaptive Environment</h2>
+            <ul>
+                <li><a href="#problem-bci" class="active">Problem & Ethics</a></li>
+                <li><a href="#design-bci">Human-Centered Design</a></li>
+                <li><a href="#plan-bci">Design Transformation Plan</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+<main class="content-main">
+<div class="container">
+  <h1 id="problem-bci">BCI-Powered Adaptive Environment</h1>
+
+  <div class="card" id="design-bci">
     <h2>Problem & Ethics</h2>
     <p class="lead">Existing products have demonstrated that wearable EEG and real-time feedback are feasible. The next step is to move from monitoring toward adaptive environments that respond to brain states in real time.</p>
 
@@ -169,7 +192,7 @@
     </div>
   </div>
 
-    <div class="card">
+    <div class="card" id="plan-bci">
     <h2>Design Transformation Plan</h2>
     <p><strong>BCI Agent Concept:</strong> Build an adaptive BCI agent that links to connected devices and turns detected mental states into automated actions.</p>
 
@@ -288,6 +311,7 @@
 </div>
 
 <script src="script.js"></script>
+</main>
 </body>
 </html>
 
