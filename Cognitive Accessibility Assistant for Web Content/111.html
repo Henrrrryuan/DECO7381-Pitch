@@ -27,14 +27,10 @@
         <nav>
             <h2>Cognitive Accessibility Assistant for Web Content</h2>
             <ul>
-                <li><a href="#problem-web" class="active">Problem & Ethics</a></li>
                 <li>
-                    <span class="nav-section">Core Functions</span>
-                    <ul class="sub-nav">
-                        <li><a href="#core-web">1. Cognitive Accessibility Analysis</a></li>
-                        <li><a href="#core-web-output">2. Insight, Recommendation &amp; Validation</a></li>
-                    </ul>
+                    <a href="#research-web" class="active">Problem Research</a>
                 </li>
+                <li><a href="#core-web">Core Functions</a></li>
                 <li>
                     <span class="nav-section">Technical Skills</span>
                     <ul class="sub-nav">
@@ -43,6 +39,7 @@
                     </ul>
                 </li>
                 <li><a href="#flow-web">System Flow</a></li>
+                <li><a href="#ethics-web">Ethical Considerations</a></li>
             </ul>
         </nav>
     </aside>
@@ -50,15 +47,74 @@
     <!-- 中间内容区 -->
     <main class="content-main">
         <!-- Problem & Ethics (Web Content) -->
-        <section id="problem-web">
+
+        <section id="research-web">
             <div class="slide-container">
                 <header class="header">
-                    <h1 class="main-title">Problem Space & Ethical Considerations</h1>
-                    <p class="sub-title">Cognitive Accessibility Assistant for Web Content</p>
+                    <h1 class="main-title">Research on Existing Accessibility Tools</h1>
+                    <p class="sub-title">Existing tools identify technical accessibility issues, but cognitive accessibility remains less supported.</p>
                 </header>
-                <p>Web accessibility often focuses on sensory or motor impairments, while <strong>cognitive accessibility</strong> for neurodivergent users remains under-addressed. This project aims to identify cognitive load sources and provide clear, actionable recommendations.</p>
+
+                <div class="card-grid compact-grid">
+                    <article class="card">
+                        <a href="https://wave.webaim.org" target="_blank" rel="noopener" class="card-link">
+                            <h3>WAVE</h3>
+                            <p>Accessibility evaluation tool that detects WCAG issues such as colour contrast and missing alt text.</p>
+                            <p class="small-text"><strong>Reference:</strong> wave.webaim.org</p>
+                        </a>
+                    </article>
+                    <article class="card">
+                        <a href="https://www.deque.com/axe" target="_blank" rel="noopener" class="card-link">
+                            <h3>axe DevTools</h3>
+                            <p>Developer-focused accessibility testing tool that performs automated accessibility audits.</p>
+                            <p class="small-text"><strong>Reference:</strong> deque.com/axe</p>
+                        </a>
+                    </article>
+                    <article class="card">
+                        <a href="https://accessibilityinsights.io" target="_blank" rel="noopener" class="card-link">
+                            <h3>Accessibility Insights</h3>
+                            <p>Microsoft accessibility testing tool that helps developers identify WCAG compliance issues.</p>
+                            <p class="small-text"><strong>Reference:</strong> accessibilityinsights.io</p>
+                        </a>
+                    </article>
+                </div>
+
+                <div class="table-container research-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Strengths</th>
+                                <th>Limitations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>WAVE</td>
+                                <td>Detects WCAG issues (contrast, alt text)</td>
+                                <td>No analysis of cognitive complexity</td>
+                            </tr>
+                            <tr>
+                                <td>axe DevTools</td>
+                                <td>Automated accessibility testing</td>
+                                <td>Focuses mainly on technical compliance</td>
+                            </tr>
+                            <tr>
+                                <td>Accessibility Insights</td>
+                                <td>Accessibility testing with WCAG guidance</td>
+                                <td>Limited evaluation of cognitive load</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="insight-box">
+                    <h3>Key Insight</h3>
+                    <p>Existing tools effectively detect technical accessibility issues, but they provide <strong class="insight-emphasis">limited support for analysing cognitive accessibility and usability complexity</strong>.</p>
+                </div>
             </div>
         </section>
+
 
         <!-- Core Functions -->
         <section id="core-web">
@@ -629,7 +685,40 @@
 </div>
 </div>
 </div>
-<!-- 页脚 1-->
+<!-- 关闭 flow-slide-container 与 flow section -->
+</div>
+</section>
+
+<!-- Ethics（与其他 section 同级） -->
+<section id="ethics-web">
+    <div class="slide-container">
+        <header class="header">
+            <h1 class="main-title">Ethical Considerations</h1>
+            <p class="sub-title">Design recommendations should support inclusive decision-making rather than replace human judgement.</p>
+        </header>
+
+        <div class="card-grid ethics-grid">
+            <article class="card">
+                <h3>Responsible Interpretation</h3>
+                <p>The system identifies potential cognitive complexity, but the results should support designers rather than replace human judgement.</p>
+            </article>
+            <article class="card">
+                <h3>Avoiding Over-Simplification</h3>
+                <p>Reducing cognitive load should not remove important information. Designers must balance simplicity and functionality.</p>
+            </article>
+            <article class="card">
+                <h3>Inclusive Design</h3>
+                <p>Cognitive accessibility needs vary across users. The system should support inclusive design rather than assuming one universal solution.</p>
+            </article>
+            <article class="card">
+                <h3>Transparency</h3>
+                <p>The tool should clearly explain why elements increase cognitive load and how recommendations are generated.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<!-- 页脚 -->
 <footer class="footer">
 <div class="footer-note">
 <span class="footer-tag">Note</span>
@@ -640,7 +729,6 @@
 </div>
 </footer>
 </div>
-        </section>
     </main>
 
     <script src="script.js"></script>
