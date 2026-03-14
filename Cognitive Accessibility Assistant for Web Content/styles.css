@@ -306,6 +306,18 @@ letter-spacing: 0.5px;
     .content-main h3 {
         font-size: 24px;
     }
+
+    #core-web .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-section {
+        flex-direction: column;
+    }
+
+    .evaluation-section {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 @media (max-width: 768px) {
     .card-grid {
@@ -313,6 +325,10 @@ letter-spacing: 0.5px;
     }
     .flow-step {
         min-width: 100%; /* 小屏幕流程步骤单列显示 */
+    }
+
+    .evaluation-section {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -524,6 +540,85 @@ letter-spacing: 0.5px;
     gap: 20px;
 }
 
+/* Core Functional Modules (analysis page) - clean stripe card layout */
+#core-web .content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+#core-web .column-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 16px 18px 14px;
+    position: relative;
+    overflow: hidden;
+    border-left: 4px solid #4f46e5;
+}
+
+#core-web .column-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(79,70,229,0.25), transparent);
+    pointer-events: none;
+}
+
+#core-web .icon-wrapper {
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #4f46e5;
+    margin-bottom: 8px;
+}
+
+#core-web .column-title {
+    z-index: 1;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: #111827;
+    min-height: auto;
+}
+
+#core-web .feature-summary {
+    z-index: 1;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 10px;
+}
+
+#core-web .content-list {
+    z-index: 1;
+}
+
+#core-web .content-item {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+
+#core-web .standard-tag {
+    z-index: 1;
+    margin-top: 10px;
+}
+
+#core-web .standard-label {
+    font-size: 10px;
+}
+
+#core-web .standard-value {
+    font-size: 11px;
+}
+
 .column-card {
     flex: 1;
     display: flex;
@@ -604,6 +699,13 @@ letter-spacing: 0.5px;
     font-weight: 700;
 }
 
+.feature-summary {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
 .footer {
     margin-top: 25px;
     font-size: 14px;
@@ -625,6 +727,330 @@ letter-spacing: 0.5px;
     font-weight: 400;
     color: var(--text-secondary);
     margin-top: 5px;
+}
+
+/* Output, Insight & Evaluation dashboard */
+
+.pipeline-step {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: #4b5563;
+}
+
+.pipeline-step.is-active {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
+.pipeline-arrow {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.dashboard-section {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.dashboard-card {
+    flex: 1;
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 18px 18px 16px;
+    border: 1px solid var(--border);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.dashboard-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.dashboard-caption {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 12px;
+}
+
+.view-toggle {
+    display: inline-flex;
+    border-radius: 999px;
+    background: #e5e7eb;
+    padding: 2px;
+}
+
+.view-toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #4b5563;
+}
+
+.view-toggle-btn.is-active {
+    background: #111827;
+    color: #ffffff;
+}
+
+.risk-row {
+    display: grid;
+    grid-template-columns: 1.5fr 3fr auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.risk-label {
+    font-size: 13px;
+}
+
+.risk-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.risk-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 70%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #f97316, #ef4444);
+    transition: width 0.4s ease;
+}
+
+.risk-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.dashboard-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+.insight-tabs {
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.insight-tab {
+    border: 1px solid var(--border);
+    background: #ffffff;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #4b5563;
+}
+
+.insight-tab.is-active {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+}
+
+.insight-body {
+    display: none;
+    font-size: 13px;
+}
+
+.insight-body.is-active {
+    display: block;
+}
+
+.insight-title {
+    font-weight: 700;
+    margin: 2px 0 6px;
+}
+
+.insight-text {
+    margin: 0 0 6px;
+    color: var(--text-secondary);
+}
+
+.insight-standard {
+    margin: 0 0 6px;
+    font-size: 12px;
+}
+
+.insight-list {
+    margin: 0 0 10px 18px;
+    padding: 0;
+    list-style: none;  
+}
+
+.insight-list li {
+    margin-bottom: 4px;
+}
+
+.insight-footer {
+    border-top: 1px dashed var(--border);
+    margin-top: 8px;
+    padding-top: 8px;
+    text-align: right;
+}
+
+.primary-btn,
+.secondary-btn {
+    border-radius: 999px;
+    border: none;
+    font-size: 12px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.primary-btn {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
+.secondary-btn {
+    background: #ffffff;
+    color: #4b5563;
+    border: 1px solid var(--border);
+}
+
+.evaluation-section {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.eval-flip-card {
+    perspective: 1200px;
+    height: 230px; /* 固定高度，确保正反两面文字都在卡片内 */
+}
+
+.eval-flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+}
+
+.eval-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+}
+
+.eval-front {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 14px 14px 12px;
+}
+
+.eval-back {
+    transform: rotateY(180deg);
+}
+
+.eval-flip-card:hover .eval-flip-inner {
+    transform: rotateY(180deg);
+}
+
+.eval-icon-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #4f46e5;
+    margin-bottom: 6px;
+}
+
+.eval-front-title {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.eval-front-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.evaluation-card {
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 14px 14px 12px;
+    font-size: 13px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.evaluation-card h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+}
+
+.evaluation-card p {
+    margin: 0 0 6px;
+    color: var(--text-secondary);
+}
+
+.evaluation-card ul {
+    margin: 0 0 0 16px;
+    padding: 0;
+    list-style: none;
+}
+
+.evaluation-card li {
+    margin-bottom: 4px;
+    position: relative;
+    padding-left: 12px;
+}
+
+.evaluation-card li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.evaluation-card.evaluation-report {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.evaluation-card.evaluation-report .primary-btn {
+    margin-top: 8px;
 }
 
 /* 特定图标样式微调 */
@@ -755,6 +1181,109 @@ letter-spacing: 0.5px;
 
 .tech-row:hover .arrow-indicator {
     color: var(--primary);
+}
+
+/* Team Capability Table (#skills-web-team) */
+#skills-web-team .team-table-wrap {
+    overflow-x: auto;
+    margin: 32px 0 40px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    background: #fff;
+}
+
+#skills-web-team .team-capability-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+}
+
+#skills-web-team .team-capability-table thead {
+    background: var(--sidebar-bg);
+}
+
+#skills-web-team .team-capability-table th {
+    padding: 14px 20px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border);
+}
+
+#skills-web-team .team-capability-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+}
+
+#skills-web-team .team-capability-table tbody tr:hover {
+    background: var(--accent);
+}
+
+#skills-web-team .team-capability-table .col-member {
+    white-space: nowrap;
+}
+
+#skills-web-team .team-capability-table .member-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-right: 12px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--primary);
+    font-size: 16px;
+    vertical-align: middle;
+}
+
+#skills-web-team .team-capability-table .member-name {
+    font-weight: 700;
+    color: var(--text);
+}
+
+#skills-web-team .team-capability-table .col-spec {
+    font-weight: 600;
+    color: var(--primary);
+    min-width: 140px;
+}
+
+#skills-web-team .team-capability-table .col-stack {
+    min-width: 220px;
+    max-width: 320px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+#skills-web-team .team-capability-table .col-role {
+    min-width: 200px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    word-break: break-word;
+}
+
+@media (max-width: 900px) {
+    #skills-web-team .team-table-wrap {
+        margin-left: -8px;
+        margin-right: -8px;
+        border-radius: 8px;
+    }
+    #skills-web-team .team-capability-table th,
+    #skills-web-team .team-capability-table td {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+    #skills-web-team .team-capability-table .col-stack {
+        max-width: none;
+    }
 }
 
 /* System_Flow1.html styles */
