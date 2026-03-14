@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=1280, height=720, initial-scale=1.0" name="viewport"/>
+<title>System Flow・端到端整体流程</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1280px;
+            height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* 顶部标题区 */
+        .header {
+            border-bottom: 2px solid #000000;
+            padding-bottom: 15px;
+            margin-bottom: 40px; /* Slightly reduced */
+            flex-shrink: 0;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .sub-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: #666666;
+            margin-top: 5px;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* 流程图容器 */
+        .flow-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            position: relative;
+            padding-top: 10px;
+        }
+
+        /* 连接线背景 */
+        .flow-line-bg {
+            position: absolute;
+            top: 40px;
+            left: 50px;
+            right: 50px;
+            height: 2px;
+            background-color: #e0e0e0;
+            z-index: 0;
+        }
+
+        /* 单个步骤节点 */
+        .flow-step {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 190px; /* Slightly wider for English text */
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .flow-step:hover {
+            transform: translateY(-5px);
+        }
+
+        /* 步骤图标圆圈 */
+        .step-icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 3px solid #0078D4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .step-icon {
+            font-size: 32px;
+            color: #0078D4;
+        }
+        
+        /* 步骤序号徽章 */
+        .step-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #000000;
+            color: #ffffff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 步骤标题 */
+        .step-title {
+            font-size: 16px; /* Adjusted for English length */
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 10px;
+            line-height: 1.2;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        /* 核心动作说明框 */
+        .action-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-left: 3px solid #0078D4;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 90px; /* Ensure consistency */
+        }
+
+        .action-text {
+            font-size: 13px;
+            color: #444444;
+            line-height: 1.4;
+            text-align: left;
+        }
+        
+        .action-label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* 箭头指示器 */
+        .flow-arrow {
+            position: absolute;
+            top: 30px;
+            font-size: 20px;
+            color: #0078D4;
+            z-index: 2;
+        }
+
+        /* 箭头定位 */
+        .arrow-1 { left: 18%; }
+        .arrow-2 { left: 40%; }
+        .arrow-3 { left: 62%; }
+        .arrow-4 { left: 84%; }
+
+        /* 页脚 */
+        .footer {
+            margin-top: auto;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-note {
+            font-size: 14px;
+            color: #666666;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-tag {
+            background-color: #eef2f6;
+            color: #0078D4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="slide-container">
+<!-- 头部 -->
+<header class="header">
+<h1 class="main-title">System Flow・端到端整体流程</h1>
+<p class="sub-title">End-to-End Process: URL/HTML Input <span style="color:#0078D4">→</span> Cognitive Analysis <span style="color:#0078D4">→</span> Evaluation &amp; Iteration</p>
+</header>
+<!-- 流程图主体 -->
+<div class="flow-container">
+<!-- 背景连线 -->
+<div class="flow-line-bg"></div>
+<!-- 步骤 1 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">1</span>
+<i class="fas fa-file-import step-icon"></i>
+</div>
+<div class="step-title"><p>Web Content<br/>Input</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Online URL import<br/>Local HTML file upload<br/>Support batch processing</p>
+</div>
+</div>
+<!-- 箭头 1 -->
+<i class="fas fa-chevron-right flow-arrow arrow-1"></i>
+<!-- 步骤 2 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">2</span>
+<i class="fas fa-layer-group step-icon"></i>
+</div>
+<div class="step-title"><p>Feature<br/>Extraction</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Extract textual / structural<br/>Interactive / media features<br/>Create structured dataset</p>
+</div>
+</div>
+<!-- 箭头 2 -->
+<i class="fas fa-chevron-right flow-arrow arrow-2"></i>
+<!-- 步骤 3 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">3</span>
+<i class="fas fa-brain step-icon"></i>
+</div>
+<div class="step-title"><p>Cognitive Analysis<br/>&amp; Mapping</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Apply NLP algorithms<br/>Cognitive load metrics<br/>Map to WCAG/ISO standards</p>
+</div>
+</div>
+<!-- 箭头 3 -->
+<i class="fas fa-chevron-right flow-arrow arrow-3"></i>
+<!-- 步骤 4 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">4</span>
+<i class="fas fa-chart-pie step-icon"></i>
+</div>
+<div class="step-title"><p>Interactive<br/>Result Output</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Responsive dashboard<br/>Actionable recommendations<br/>Export PDF/Excel reports</p>
+</div>
+</div>
+<!-- 箭头 4 -->
+<i class="fas fa-chevron-right flow-arrow arrow-4"></i>
+<!-- 步骤 5 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">5</span>
+<i class="fas fa-sync-alt step-icon"></i>
+</div>
+<div class="step-title"><p>Evaluation<br/>&amp; Iteration</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Pre/post-optimization<br/>Comparison &amp; Validation<br/>Verify improvement effects</p>
+</div>
+</div>
+</div>
+<!-- 页脚 -->
+<footer class="footer">
+<div class="footer-note">
+<span class="footer-tag">Note</span>
+            Aligned with Industry Project Management Standards | Supports Local &amp; Online Dual Modes
+        </div>
+<div style="font-size: 24px; color: #e0e0e0;">
+<i class="fas fa-project-diagram"></i>
+</div>
+</footer>
+</div>
+</body>
+</html>

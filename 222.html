@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognitive Accessibility Assistant | Team Pitch</title>
+    <style>
+        /* 全局样式 - 认知无障碍优先 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.6;
+        }
+        :root {
+            --text: #212121;
+            --accent: #0078D4;
+            --light: #f5f5f5;
+            --gray: #616161;
+            --white: #ffffff;
+            --border: #e0e0e0;
+        }
+        body {
+            color: var(--text);
+            background: var(--white);
+            padding-top: 80px;
+            scroll-behavior: smooth;
+        }
+        /* 顶部固定导航 - 锚点跳转 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-bottom: 2px solid var(--accent);
+            padding: 0 20px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .navbar a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .navbar a:hover, .navbar a.active {
+            background: var(--accent);
+            color: var(--white);
+        }
+        /* 模块容器 */
+        .section {
+            min-height: calc(100vh - 80px);
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            scroll-margin-top: 80px;
+        }
+        /* 标题样式 */
+        .section h1 {
+            font-size: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--accent);
+        }
+        .section h2 {
+            font-size: 28px;
+            margin: 32px 0 16px;
+            color: var(--accent);
+            border-left: 8px solid var(--accent);
+            padding-left: 16px;
+        }
+        .section h3 {
+            font-size: 22px;
+            margin: 24px 0 12px;
+        }
+        /* 文本与列表 */
+        .section p {
+            font-size: 18px;
+            margin-bottom: 16px;
+            max-width: 1000px;
+        }
+        .section ul {
+            font-size: 18px;
+            margin: 16px 0 16px 40px;
+            max-width: 1000px;
+        }
+        .section li {
+            margin-bottom: 8px;
+        }
+        .small-text {
+            font-size: 16px;
+            color: var(--gray);
+        }
+        .highlight {
+            color: var(--accent);
+            font-weight: bold;
+        }
+        /* 卡片布局 - 核心功能/技术栈 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin: 40px 0;
+        }
+        .card {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 8px rgba(0,120,212,0.1);
+        }
+        .card h3 {
+            text-align: center;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+        .card .card-content {
+            display: none;
+            margin-top: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+        .card.active .card-content {
+            display: block;
+        }
+        /* 流程布局 - 系统流程 */
+        .flow-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+        }
+        .flow-step {
+            width: 200px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .flow-step:hover, .flow-step.key {
+            border-color: var(--accent);
+            background: var(--light);
+        }
+        .flow-step h4 {
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .flow-step .step-content {
+            display: none;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--gray);
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+        .flow-step.active .step-content {
+            display: block;
+        }
+        /* 表格样式 - 技术能力匹配 */
+        .table-container {
+            overflow-x: auto;
+            margin: 40px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: var(--light);
+            color: var(--accent);
+            font-weight: bold;
+        }
+        tr:hover {
+            background: var(--light);
+        }
+        /* 封面样式 */
+        #cover {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        #cover h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        #cover p {
+            font-size: 20px;
+            max-width: 800px;
+        }
+        #cover .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 40px;
+        }
+        #cover .keywords span {
+            padding: 8px 16px;
+            background: var(--light);
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            color: var(--accent);
+        }
+        /* Q&A样式 */
+        #qa {
+            text-align: center;
+        }
+        #qa h2 {
+            border: none;
+            text-align: center;
+            padding: 0;
+        }
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .navbar {
+                gap: 8px;
+                height: 70px;
+            }
+            .navbar a {
+                padding: 6px 8px;
+                font-size: 14px;
+            }
+            .section h1 {
+                font-size: 32px;
+            }
+            .section h2 {
+                font-size: 24px;
+            }
+            #cover h1 {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部锚点导航 -->
+    <nav class="navbar">
+        <a href="#cover">Cover</a>
+        <a href="#problem">Problem & Ethics</a>
+        <a href="#core">Core Functions</a>
+        <a href="#skills">Technical Skills</a>
+        <a href="#flow">System Flow</a>
+        <a href="#qa">Q&A</a>
+    </nav>
+
+    <!-- 1. 封面页 -->
+    <section class="section" id="cover">
+        <h1>Cognitive Accessibility Assistant</h1>
+        <h2>for Web Content</h2>
+        <p class="small-text">DECO3801/7381 | Team Pitch | Semester 1, 2026</p>
+        <div class="keywords">
+            <span>Cognitive Accessibility</span>
+            <span>WCAG</span>
+            <span>ISO 9241-11</span>
+            <span>UX Evaluation</span>
+            <span>Inclusive Design</span>
+            <span>Web Analysis</span>
+        </div>
+    </section>
+
+    <!-- 2. 问题与伦理 - 组员模块（预留内容位置） -->
+    <section class="section" id="problem">
+        <h1>Problem Space & Ethical Considerations</h1>
+        <!-- 请组员补充以下内容 -->
+        <h2>Problem Space</h2>
+        <p>Web accessibility focuses on visual/auditory/motor impairments, while <span class="highlight">cognitive accessibility</span> for neurodivergent users is severely under-addressed.</p>
+        <ul>
+            <li>Dense language, cluttered layouts, distracting animations increase cognitive load</li>
+            <li>Existing tools only check technical compliance (alt text, color contrast) – no cognitive analysis</li>
+            <li>WCAG/ISO 9241-11 provide principles but lack practical, actionable tools</li>
+        </ul>
+
+        <h2>Ethical Considerations</h2>
+        <p>Core ethical safeguards integrated into the project design from the outset:</p>
+        <ul>
+            <li>Data privacy: No user data collection, only static web content analysis</li>
+            <li>Equity: Prioritise neurodivergent user needs in all design decisions</li>
+            <li>Transparency: Clear explanation of cognitive load issues and optimization recommendations</li>
+            <li>Accessibility: The tool itself follows cognitive accessibility design principles</li>
+        </ul>
+    </section>
+
+    <!-- 3. 核心功能 - 你负责模块（点击卡片展开详情） -->
+    <section class="section" id="core">
+        <h1>Core Functional Modules</h1>
+        <p class="small-text">Aligned with WCAG Cognitive Accessibility Guidelines & ISO 9241-11 (Effectiveness/Efficiency)</p>
+        <div class="card-grid">
+            <!-- 语言复杂度 -->
+            <div class="card">
+                <h3>📝 Language Complexity</h3>
+                <div class="card-content">
+                    <ul>
+                        <li>Text readability scoring (Flesch-Kincaid)</li>
+                        <li>Jargon/technical term density detection</li>
+                        <li>Sentence length and structure analysis</li>
+                        <li>Aligned with WCAG Cognitive Guidelines</li>
+                        <li><span class="highlight">Zero user data required</span></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- 布局与视觉层级 -->
+            <div class="card">
+                <h3>🧩 Layout & Visual Hierarchy</h3>
+                <div class="card-content">
+                    <ul>
+                        <li>Layout density and element spacing analysis</li>
+                        <li>Heading hierarchy disorder detection</li>
+                        <li>Navigation consistency check</li>
+                        <li>Aligned with ISO 9241-11 (Effectiveness)</li>
+                        <li><span class="highlight">Zero user data required</span></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- 动效与媒体 -->
+            <div class="card">
+                <h3>▶️ Animation & Media</h3>
+                <div class="card-content">
+                    <ul>
+                        <li>Auto-play media and flash detection</li>
+                        <li>Unclosable animation identification</li>
+                        <li>Distracting interactive element analysis</li>
+                        <li>Aligned with Neurodivergent User Needs</li>
+                        <li><span class="highlight">Zero user data required</span></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- 交互复杂度 - 重点标注零数据依赖 -->
+            <div class="card">
+                <h3>⚡ Interaction Complexity</h3>
+                <div class="card-content">
+                    <ul>
+                        <li>Redundant operation step detection</li>
+                        <li>Unclear feedback validation (hover/click/submit)</li>
+                        <li>Confusing navigation path analysis</li>
+                        <li>Interaction logic rationality check</li>
+                        <li>Aligned with ISO 9241-11 (Efficiency)</li>
+                        <li><span class="highlight">Zero user data required</span> (code-only analysis)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <h2>✅ Key Output & Closed-Loop Design</h2>
+        <ul>
+            <li><strong>Interactive Dashboard</strong>: Visual risk rating (R/Y/G) + issue root cause explanation</li>
+            <li><strong>Standard Mapping</strong>: Explicit link to WCAG/ISO 9241-11 guidelines (with numbers)</li>
+            <li><strong>Actionable Recommendations</strong>: Specific optimization solutions (Excel/PDF export)</li>
+            <li><strong>Built-in Validation</strong>: Pre/post-optimization comparison + cognitive load measurement</li>
+        </ul>
+        <p class="highlight" style="margin-top:20px;">Full Closed-Loop: Detect → Explain → Recommend → Validate</p>
+    </section>
+
+    <!-- 4. 技术能力要求 - 你负责模块（技术栈+团队匹配） -->
+    <section class="section" id="skills">
+        <h1>Technical Skills Required</h1>
+        <p class="small-text">Full Process Coverage | 1:1 Skill-Function Alignment | No Skill Gaps</p>
+
+        <h2>Core Tech Stack</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>🌐 Web Data Processing</h3>
+                <div class="card-content">
+                    <p>Python (Scrapy/BeautifulSoup)</p>
+                    <p>HTML/CSS/JS Parsing</p>
+                    <p>Web Feature Extraction</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>🔤 NLP & Algorithm</h3>
+                <div class="card-content">
+                    <p>Python (NLTK/Spacy)</p>
+                    <p>Custom Quantitative Algorithm</p>
+                    <p>Language Complexity Scoring</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>💻 Frontend & Visualization</h3>
+                <div class="card-content">
+                    <p>React/Vue + ECharts/Matplotlib</p>
+                    <p>High Usability UI Design</p>
+                    <p>Interactive Dashboard Development</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>📏 Standard & Evaluation</h3>
+                <div class="card-content">
+                    <p>WCAG/ISO 9241-11 Interpretation</p>
+                    <p>Cognitive Load Measurement (NASA-TLX)</p>
+                    <p>User Testing & Data Analysis</p>
+                </div>
+            </div>
+        </div>
+
+        <h2>Team Skill Matching & Interdisciplinary Advantages</h2>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Major Background</th>
+                    <th>Core Competencies</th>
+                    <th>Responsible Modules</th>
+                </tr>
+                <tr>
+                    <td>Human-Computer Interaction (HCI)</td>
+                    <td>Standard interpretation, inclusive design, user evaluation</td>
+                    <td>Standard mapping, validation, UI design</td>
+                </tr>
+                <tr>
+                    <td>Computer Science (CS)</td>
+                    <td>Algorithm development, web parsing, backend dev</td>
+                    <td>Data collection, cognitive analysis algorithm</td>
+                </tr>
+                <tr>
+                    <td>Data Science</td>
+                    <td>Quantitative analysis, data visualization, statistics</td>
+                    <td>Metric scoring, evaluation data analysis</td>
+                </tr>
+                <tr>
+                    <td>Digital Media Design</td>
+                    <td>UI design, visual hierarchy optimization</td>
+                    <td>Dashboard visualization, product interface design</td>
+                </tr>
+            </table>
+        </div>
+
+        <ul style="margin-top:20px;">
+            <li>✅ Covers <strong>Data Collection → Algorithm Analysis → Frontend Display → Effect Evaluation</strong></li>
+            <li>✅ Clear division of labor, no overlaps/gaps</li>
+            <li>✅ Design + Tech + Data combination (fits inclusive design + technical development)</li>
+        </ul>
+    </section>
+
+    <!-- 5. 系统流程 - 你负责模块（线性流程+点击展开详情） -->
+    <section class="section" id="flow">
+        <h1>System Flow</h1>
+        <p class="small-text">End-to-End Process | URL/HTML Input → Cognitive Analysis → Evaluation & Iteration</p>
+
+        <div class="flow-container">
+            <!-- 步骤1 -->
+            <div class="flow-step">
+                <h4>📤 Step 1</h4>
+                <p>Web Content Input</p>
+                <div class="step-content">
+                    <p>Online URL import / Local HTML file upload</p>
+                    <p>Tech: Python Request Library</p>
+                    <p>Team: Tech Development</p>
+                </div>
+            </div>
+            <!-- 步骤2 -->
+            <div class="flow-step">
+                <h4>📥 Step 2</h4>
+                <p>Feature Extraction</p>
+                <div class="step-content">
+                    <p>Extract text/layout/animation/interaction features</p>
+                    <p>Tech: Scrapy/BeautifulSoup</p>
+                    <p>Team: Tech Development</p>
+                </div>
+            </div>
+            <!-- 步骤3 - 关键步骤 -->
+            <div class="flow-step key">
+                <h4>📊 Step 3</h4>
+                <p>Cognitive Analysis & Mapping</p>
+                <div class="step-content">
+                    <p>NLP analysis + quantitative scoring + WCAG/ISO mapping</p>
+                    <p>Tech: NLTK/Spacy + Custom Algorithm</p>
+                    <p>Team: Algorithm + HCI Design</p>
+                </div>
+            </div>
+            <!-- 步骤4 - 关键步骤 -->
+            <div class="flow-step key">
+                <h4>📈 Step 4</h4>
+                <p>Interactive Result Output</p>
+                <div class="step-content">
+                    <p>Dashboard display + recommendation export</p>
+                    <p>Tech: React/Vue + ECharts</p>
+                    <p>Team: Frontend + HCI Design</p>
+                </div>
+            </div>
+            <!-- 步骤5 -->
+            <div class="flow-step">
+                <h4>✅ Step 5</h4>
+                <p>Evaluation & Iteration</p>
+                <div class="step-content">
+                    <p>Comparative testing + cognitive load measurement</p>
+                    <p>Tech: Pandas/SPSS + NASA-TLX Scale</p>
+                    <p>Team: Whole Team Collaboration</p>
+                </div>
+            </div>
+        </div>
+
+        <h2>📋 Process Design Key Features</h2>
+        <ul>
+            <li><strong>Exception Handling</strong>: Invalid URL/broken HTML detection for all steps (improves robustness)</li>
+            <li><strong>Dual Mode Support</strong>: Local/online input (adapt to developers/designers)</li>
+            <li><strong>Clear Responsibility</strong>: Explicit tech + team allocation (aligns with industry PM standards)</li>
+            <li><strong>Closed-Loop Process</strong>: Fully covers all Project Brief core requirements</li>
+        </ul>
+    </section>
+
+    <!-- 6. Q&A页面 -->
+    <section class="section" id="qa">
+        <h1>Thank You for Your Attention!</h1>
+        <h2>Questions & Discussion</h2>
+        <p style="margin-top:40px; font-size:20px;">Team [Your Team Number] | DECO3801/7381 S1 2026</p>
+    </section>
+
+    <!-- 原生JS交互 - 点击展开/折叠、导航激活 -->
+    <script>
+        // 卡片点击展开/折叠
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('active');
+            });
+        });
+
+        // 流程步骤点击展开/折叠
+        const flowSteps = document.querySelectorAll('.flow-step');
+        flowSteps.forEach(step => {
+            step.addEventListener('click', () => {
+                step.classList.toggle('active');
+            });
+        });
+
+        // 导航栏滚动激活
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.navbar a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 100)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // 初始激活封面导航
+        navLinks[0].classList.add('active');
+    </script>
+</body>
+</html>

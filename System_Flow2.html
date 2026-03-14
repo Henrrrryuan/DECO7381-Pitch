@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=1280, height=720, initial-scale=1.0" name="viewport"/>
+<title>System Flow・流程细节 &amp; 责任分工</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1280px;
+            height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            border-bottom: 2px solid #000000;
+            padding-bottom: 15px;
+            margin-bottom: 20px; /* Reduced slightly to fit 5 rows */
+            flex-shrink: 0;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Layout */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Reduced gap */
+        }
+
+        /* Table Section */
+        .table-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px; /* Slightly smaller font for density */
+        }
+
+        .table-header {
+            display: flex;
+            background-color: #0078D4;
+            color: white;
+            padding: 10px 20px;
+            font-weight: 700;
+            border-radius: 4px 4px 0 0;
+        }
+
+        /* Adjusted Column Widths */
+        .th-col-1 { width: 30%; }
+        .th-col-2 { width: 45%; }
+        .th-col-3 { width: 25%; }
+
+        .table-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px; /* Reduced padding for 5 rows */
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            transition: background-color 0.2s;
+            min-height: 50px;
+        }
+
+        .table-row:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .table-row:hover {
+            background-color: #f0f7ff;
+            border-left: 4px solid #0078D4;
+            padding-left: 16px; /* Adjust for border */
+        }
+
+        .row-icon {
+            color: #0078D4;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .cell-title {
+            font-weight: 700;
+            color: #000;
+            display: flex;
+            align-items: center;
+        }
+
+        .cell-content {
+            color: #444;
+            line-height: 1.4;
+            padding-right: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #eef2f6;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin: 2px 6px 2px 0;
+            border: 1px solid #dde1e6;
+        }
+
+        .team-badge {
+            background-color: #e6f2ff;
+            color: #0078D4;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* Bottom Highlights Section */
+        .highlights-section {
+            height: 140px;
+            background-color: #f0f7ff;
+            border: 1px solid #cce3ff;
+            border-radius: 8px;
+            padding: 15px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0078D4;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .highlights-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .highlight-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .highlight-header {
+            display: flex;
+            align-items: center;
+            color: #0078D4;
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .check-icon {
+            margin-right: 8px;
+        }
+
+        .highlight-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #444;
+            margin: 0;
+            padding-left: 24px; /* Align with text start */
+        }
+
+    </style>
+</head>
+<body>
+<div class="slide-container">
+<!-- Header -->
+<header class="header">
+<h1 class="main-title">System Flow・流程细节 &amp; 责任分工</h1>
+</header>
+<!-- Main Content -->
+<div class="content-wrapper">
+<!-- Process Table -->
+<div class="table-section">
+<div class="table-header">
+<div class="th-col-1">流程步骤</div>
+<div class="th-col-2">核心技术</div>
+<div class="th-col-3">负责团队</div>
+</div>
+<!-- Step 1 -->
+<div class="table-row">
+<div class="th-col-1 cell-title">
+<i class="fas fa-file-import row-icon"></i> Step 1：网页内容输入
+                    </div>
+<div class="th-col-2 cell-content">
+<span class="tag">Python Requests</span>
+<span class="tag">HTML Parsing</span>
+<span class="tag">File I/O</span>
+</div>
+<div class="th-col-3 cell-content">
+<span class="team-badge">技术开发组</span>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="table-row">
+<div class="th-col-1 cell-title">
+<i class="fas fa-filter row-icon"></i> Step 2：多维度特征提取
+                    </div>
+<div class="th-col-2 cell-content">
+<span class="tag">Scrapy / BeautifulSoup</span>
+<span class="tag">自定义脚本</span>
+</div>
+<div class="th-col-3 cell-content">
+<span class="team-badge">技术开发组</span>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="table-row">
+<div class="th-col-1 cell-title">
+<i class="fas fa-brain row-icon"></i> Step 3：认知分析 &amp; 标准映射
+                    </div>
+<div class="th-col-2 cell-content">
+<span class="tag">NLP (NLTK/Spacy)</span>
+<span class="tag">评分算法</span>
+<span class="tag">WCAG 映射</span>
+</div>
+<div class="th-col-3 cell-content">
+<span class="team-badge">算法组</span> + <span class="team-badge">HCI 设计组</span>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="table-row">
+<div class="th-col-1 cell-title">
+<i class="fas fa-chart-line row-icon"></i> Step 4：交互式结果输出
+                    </div>
+<div class="th-col-2 cell-content">
+<span class="tag">React / Vue</span>
+<span class="tag">ECharts 可视化</span>
+<span class="tag">PDF 导出</span>
+</div>
+<div class="th-col-3 cell-content">
+<span class="team-badge">前端组</span> + <span class="team-badge">HCI 设计组</span>
+</div>
+</div>
+<!-- Step 5 -->
+<div class="table-row">
+<div class="th-col-1 cell-title">
+<i class="fas fa-clipboard-check row-icon"></i> Step 5：有效性评估 &amp; 迭代
+                    </div>
+<div class="th-col-2 cell-content">
+<span class="tag">Pandas / SPSS</span>
+<span class="tag">NASA-TLX 量表</span>
+</div>
+<div class="th-col-3 cell-content">
+<span class="team-badge">全团队协作</span>
+</div>
+</div>
+</div>
+<!-- Design Highlights Section -->
+<div class="highlights-section">
+<div class="section-title">
+<i class="fas fa-tasks" style="margin-right: 10px;"></i> 流程设计说明
+                </div>
+<div class="highlights-grid">
+<div class="highlight-item">
+<div class="highlight-header">
+<i class="fas fa-exclamation-triangle check-icon"></i> 异常处理机制
+                        </div>
+<p class="highlight-text">
+                            针对无效 URL 或破损 HTML 预设兜底方案，极大提升工具鲁棒性。
+                        </p>
+</div>
+<div class="highlight-item">
+<div class="highlight-header">
+<i class="fas fa-user-tag check-icon"></i> 角色与技术绑定
+                        </div>
+<p class="highlight-text">
+                            明确每个步骤的技术实现与负责角色，提升协作效率，贴合项目管理标准。
+                        </p>
+</div>
+<div class="highlight-item">
+<div class="highlight-header">
+<i class="fas fa-sync-alt check-icon"></i> 全闭环设计
+                        </div>
+<p class="highlight-text">
+                            从输入到验证形成完整闭环，完全覆盖 Brief 中对检测、分析与评估的要求。
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

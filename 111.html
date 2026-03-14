@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        :root {
+            --primary: #6366f1; /* 现代靛蓝，更现代的紫色调 */
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --text: #1f2937; /* 更深的文本色 */
+            --text-secondary: #6b7280;
+            --text-light: #9ca3af;
+            --border: #e5e7eb;
+            --bg: #ffffff;
+            --bg-secondary: #f9fafb;
+            --sidebar-bg: #f8fafc;
+            --hover-bg: #f1f5f9;
+            --accent: #f0f9ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        body {
+            color: var(--text);
+            background: var(--bg);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 顶部栏（复刻课程页顶部黑条） */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: #000000;
+            z-index: 1000;
+        }
+
+        /* 左侧导航栏 - 保持固定宽度，优化间距 */
+        .sidebar-left {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            padding: 60px 20px 20px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05); /* 增加轻微阴影，区分导航与内容区 */
+        }
+        .sidebar-left .course-header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+        .sidebar-left .course-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .sidebar-left .course-header p {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        .sidebar-left nav h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin: 30px 0 15px;
+            letter-spacing: 0.5px;
+        }
+        .sidebar-left nav ul {
+            list-style: none;
+        }
+        .sidebar-left nav ul li a {
+            display: block;
+            padding: 10px 15px;
+            font-size: 15px;
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            transition: all 0.2s ease;
+        }
+        .sidebar-left nav ul li a:hover,
+        .sidebar-left nav ul li a.active {
+            background: var(--hover-bg);
+            color: var(--primary);
+            font-weight: 500;
+            border-left: 3px solid var(--primary);
+            padding-left: 12px; /* 左移抵消边框宽度，保持文字对齐 */
+        }
+
+        .sidebar-left nav ul li .nav-section {
+            display: block;
+            padding: 10px 15px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-left nav ul li .sub-nav {
+            list-style: none;
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+
+        .sidebar-left nav ul li .sub-nav li a {
+            padding: 8px 15px;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .sidebar-left nav ul li .sub-nav li a:hover,
+        .sidebar-left nav ul li .sub-nav li a.active {
+            background: var(--hover-bg);
+            color: var(--primary);
+            font-weight: 500;
+            border-left: 3px solid var(--primary);
+            padding-left: 12px;
+        }
+
+        /* 中间内容区 - 自适应全屏，等比放大元素 */
+        .content-main {
+            flex: 1;
+            margin-left: 280px; /* 与左侧导航栏宽度一致 */
+            padding: 80px 60px 60px; /* 增加上下内边距，优化全屏显示效果 */
+            max-width: 100%; /* 取消最大宽度限制，自适应全屏 */
+            width: calc(100% - 280px); /* 确保内容区宽度 = 屏幕宽度 - 左侧导航宽度 */
+        }
+        .content-main h1 {
+            font-size: 42px; /* 放大标题字号 */
+            font-weight: 500;
+            margin-bottom: 40px;
+            color: var(--text);
+            line-height: 1.3;
+        }
+        .content-main h2 {
+            font-size: 32px; /* 放大二级标题 */
+            font-weight: 500;
+            margin: 50px 0 25px;
+            color: var(--text);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border); /* 增加下划线，优化视觉层级 */
+        }
+        .content-main h3 {
+            font-size: 26px; /* 放大三级标题 */
+            font-weight: 500;
+            margin: 35px 0 20px;
+            color: var(--text);
+            color: var(--primary); /* 三级标题用主题色，突出重点 */
+        }
+        .content-main p {
+            font-size: 18px; /* 放大正文字号 */
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: var(--text);
+            max-width: 1200px; /* 限制正文最大宽度，避免超宽屏幕文字过长影响阅读 */
+        }
+        .content-main ul {
+            margin: 20px 0 20px 30px;
+            font-size: 18px; /* 放大列表字号 */
+            line-height: 1.8;
+            max-width: 1200px;
+        }
+        .content-main ul li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 15px;
+        }
+        .content-main ul li::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        .content-main .small-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+        .content-main .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        /* 卡片布局（核心功能/技术栈）- 等比放大 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 放大卡片最小宽度 */
+            gap: 30px; /* 增加卡片间距 */
+            margin: 40px 0 50px; /* 增加上下间距 */
+            max-width: 1400px;
+        }
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 28px; /* 增加卡片内边距 */
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* 增加轻微阴影，提升质感 */
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px); /* hover时轻微上浮，增加交互感 */
+            border-color: var(--primary-light);
+        }
+        .card h3 {
+            font-size: 22px; /* 放大卡片标题 */
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        /* 表格布局（团队匹配）- 等比放大 */
+        .table-container {
+            overflow-x: auto;
+            margin: 40px 0 50px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            max-width: 1400px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 18px 24px; /* 增加表格内边距 */
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 16px; /* 放大表格文字 */
+        }
+        th {
+            background: var(--sidebar-bg);
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 17px; /* 表头文字略大 */
+        }
+        tr:hover {
+            background: var(--hover-bg);
+        }
+        /* 流程布局 - 等比放大 */
+        .flow-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px; /* 增加流程步骤间距 */
+            margin: 40px 0 50px;
+            justify-content: flex-start;
+            max-width: 1400px;
+        }
+        .flow-step {
+            flex: 1;
+            min-width: 220px; /* 放大流程步骤最小宽度 */
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px; /* 增加步骤内边距 */
+            text-align: center;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+        }
+        .flow-step:hover {
+            border-color: var(--primary-light);
+            background: var(--sidebar-bg);
+        }
+        .flow-step h4 {
+            font-size: 20px; /* 放大步骤标题 */
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+        .flow-step p {
+            font-size: 16px; /* 放大步骤文字 */
+            margin-bottom: 0;
+            color: var(--text);
+        }
+        .role-title{
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        }
+
+        /* 响应式适配（小屏幕自动隐藏侧边栏） */
+        @media (max-width: 992px) {
+            .sidebar-left {
+                display: none;
+            }
+            .content-main {
+                margin-left: 0;
+                width: 100%;
+                padding: 70px 30px 40px;
+            }
+            .content-main h1 {
+                font-size: 36px;
+            }
+            .content-main h2 {
+                font-size: 28px;
+            }
+            .content-main h3 {
+                font-size: 24px;
+            }
+        }
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr; /* 小屏幕卡片单列显示 */
+            }
+            .flow-step {
+                min-width: 100%; /* 小屏幕流程步骤单列显示 */
+            }
+        }
+
+        /* 444.html styles */
+        .slide-container {
+            width: 100%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            border-bottom: 2px solid #000000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Layout */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        /* Table Section */
+        .table-section {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table-header {
+            display: flex;
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 20px;
+            font-weight: 700;
+            border-radius: 4px 4px 0 0;
+            font-size: 15px;
+        }
+
+        .th-col-1 { width: 30%; }
+        .th-col-2 { width: 45%; }
+        .th-col-3 { width: 25%; }
+
+        .table-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            transition: background-color 0.2s;
+            height: 44px;
+        }
+
+        .table-row:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .table-row:hover {
+            background-color: var(--accent);
+            border-left: 4px solid var(--primary);
+            padding-left: 16px;
+        }
+
+        .row-icon {
+            color: var(--primary);
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .cell-title {
+            font-weight: 700;
+            color: #000;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .cell-content {
+            color: #444;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #eef2f6;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 1px 4px 1px 0;
+            border: 1px solid #dde1e6;
+        }
+
+        .team-badge {
+            background-color: var(--accent);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        /* Features Section */
+        .features-section {
+            flex: 1;
+            background-color: #f0f7ff;
+            border: 1px solid #cce3ff;
+            border-radius: 8px;
+            padding: 15px 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            flex: 1;
+        }
+        
+        /* Specific layout for 5 items: 3 top, 2 bottom */
+        .feature-item {
+            background: rgba(255,255,255,0.6);
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid rgba(0,120,212,0.1);
+        }
+        
+        .feature-item.wide {
+            grid-column: span 1; /* Default grid behavior */
+        }
+        
+        /* Make the last row centered if using flex, but using grid here for strict alignment */
+        .features-grid-bottom {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .feature-header {
+            display: flex;
+            align-items: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .check-icon {
+            margin-right: 6px;
+            font-size: 14px;
+        }
+
+        .feature-text {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #444;
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        /* core_function1.html styles */
+        .content-grid {
+            display: flex;
+            justify-content: space-between;
+            flex: 1;
+            gap: 20px;
+        }
+
+        .column-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f8f8;
+            border-top: 4px solid #000000;
+            padding: 25px 20px;
+            height: 100%;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .column-card:hover {
+            border-top-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .icon-wrapper {
+            font-size: 28px;
+            color: #000000;
+            margin-bottom: 15px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #000000;
+            line-height: 1.3;
+            min-height: 48px;
+        }
+
+        .content-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .content-item {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .content-item::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .standard-tag {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .standard-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .standard-value {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 25px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .sub-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* 特定图标样式微调 */
+        .fa-bolt { color: var(--text); }
+        .column-card:hover .fa-bolt { color: var(--primary); }
+        
+        .fa-shapes { color: var(--text); }
+        .column-card:hover .fa-shapes { color: var(--primary); }
+        
+        .fa-language { color: var(--text); }
+        .column-card:hover .fa-language { color: var(--primary); }
+        
+        .fa-play-circle { color: var(--text); }
+        .column-card:hover .fa-play-circle { color: var(--primary); }
+
+        /* Technical_Skills1.html styles */
+        .table-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .tech-row {
+            display: flex;
+            align-items: stretch;
+            background-color: #f9f9f9;
+            border-left: 6px solid #e0e0e0;
+            padding: 0;
+            transition: all 0.3s ease;
+            min-height: 100px;
+        }
+
+        .tech-row:hover {
+            border-left-color: var(--primary);
+            transform: translateX(5px);
+            background-color: var(--accent);
+        }
+
+        .col-capability {
+            flex: 0 0 32%;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .cap-icon {
+            font-size: 26px;
+            color: var(--text);
+            margin-right: 20px;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .tech-row:hover .cap-icon {
+            color: var(--primary);
+        }
+
+        .cap-text {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .col-tech {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 25px;
+            position: relative;
+        }
+
+        .tech-stack {
+            font-size: 16px;
+            color: var(--text);
+            margin-bottom: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: 600;
+        }
+
+        .support-func {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .func-badge {
+            background-color: var(--primary);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-right: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        
+        .func-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .footer-text {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-icon {
+            margin-right: 8px;
+        }
+        
+        .arrow-indicator {
+            position: absolute;
+            right: 20px;
+            color: #e0e0e0;
+            font-size: 20px;
+        }
+        
+        .tech-row:hover .arrow-indicator {
+            color: var(--primary);
+        }
+
+        /* System_Flow1.html styles */
+        .flow-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            position: relative;
+            padding-top: 10px;
+        }
+
+        .flow-line-bg {
+            position: absolute;
+            top: 40px;
+            left: 50px;
+            right: 50px;
+            height: 2px;
+            background-color: #e0e0e0;
+            z-index: 0;
+        }
+
+        .flow-step {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 190px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .flow-step:hover {
+            transform: translateY(-5px);
+        }
+
+        .step-icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .step-icon {
+            font-size: 32px;
+            color: var(--primary);
+        }
+        
+        .step-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #000000;
+            color: #ffffff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+            line-height: 1.2;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .action-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-left: 3px solid var(--primary);
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 90px;
+        }
+
+        .action-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.4;
+            text-align: left;
+        }
+        
+        .action-label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .flow-arrow {
+            position: absolute;
+            top: 30px;
+            font-size: 20px;
+            color: var(--primary);
+            z-index: 2;
+        }
+
+        .arrow-1 { left: 18%; }
+        .arrow-2 { left: 40%; }
+        .arrow-3 { left: 62%; }
+        .arrow-4 { left: 84%; }
+
+        .footer-note {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-tag {
+            background-color: #eef2f6;
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部黑条 -->
+    <div class="top-bar"></div>
+
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar-left">
+        <div class="course-header">
+            <h1>SIX MIUNS ONE</h1>
+            <p> 
+                <strong>Presented By:</strong><br>
+                Ruilong Huang<br>
+                Yanya Liu<br>
+                <strong>Slides By:</strong><br>
+                Daitian Lu<br>
+                Yali Wang<br>
+                Zezhi Yuan
+            </p>
+        </div>
+
+        <nav>
+            <h2>Cognitive Accessibility Assistant for Web Content</h2>
+            <ul>
+                <li><a href="#problem-web" class="active">Problem & Ethics</a></li>
+                <li><a href="#core-web">Core Functions</a></li>
+                <li>
+                    <span class="nav-section">Technical Skills</span>
+                    <ul class="sub-nav">
+                        <li><a href="#skills-web">1. Core Technology Stack</a></li>
+                        <li><a href="#skills-web-team">2. Team capability matching</a></li>
+                    </ul>
+                </li>
+                <li><a href="#flow-web">System Flow</a></li>
+                <li><a href="#qa-web">Q&A</a></li>
+            </ul>
+            <h2>BCI-Powered Adaptive Environment</h2>
+            <ul>
+                <li><a href="#problem-bci">Problem & Ethics</a></li>
+                <li><a href="#core-bci">Core Functions</a></li>
+                <li><a href="#skills-bci">Technical Skills</a></li>
+                <li><a href="#flow-bci">System Flow</a></li>
+                <li><a href="#qa-bci">Q&A</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- 中间内容区 -->
+    <main class="content-main">
+        <!-- Problem & Ethics (Web Content) -->
+        <section id="problem-web">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">Problem Space & Ethical Considerations</h1>
+                    <p class="sub-title">Cognitive Accessibility Assistant for Web Content</p>
+                </header>
+                <p>Web accessibility often focuses on sensory or motor impairments, while <strong>cognitive accessibility</strong> for neurodivergent users remains under-addressed. This project aims to identify cognitive load sources and provide clear, actionable recommendations.</p>
+            </div>
+        </section>
+
+        <!-- Core Functions -->
+        <section id="core-web">
+<div class="slide-container">
+<!-- 头部 -->
+<header class="header">
+<h1 class="main-title">Core Functional Modules・多维度认知无障碍分析</h1>
+<p class="sub-title">Aligned with WCAG &amp; ISO 9241-11 | Zero User Data Required</p>
+</header>
+<!-- 核心内容 - 四列布局 -->
+<div class="content-grid">
+<!-- 维度 1: Language Complexity -->
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-file-alt"></i>
+</div>
+<h2 class="column-title">Language Complexity Analysis</h2>
+<ul class="content-list">
+<li class="content-item">Text readability scoring (Flesch-Kincaid)</li>
+<li class="content-item">Technical jargon density detection</li>
+<li class="content-item">Sentence length &amp; structure analysis</li>
+<li class="content-item">Plain language recommendations</li>
+</ul>
+<div class="standard-tag">
+<p class="standard-label">Standard Alignment</p>
+<p class="standard-value">WCAG Cognitive Guideline 1.4.8</p>
+</div>
+</article>
+<!-- 维度 2: Layout & Visual Hierarchy -->
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-layer-group"></i>
+</div>
+<h2 class="column-title">Layout &amp; Visual Hierarchy Assessment</h2>
+<ul class="content-list">
+<li class="content-item">Quantitative layout density analysis</li>
+<li class="content-item">Element spacing compliance check</li>
+<li class="content-item">Heading hierarchy consistency</li>
+<li class="content-item">Visual clutter identification</li>
+</ul>
+<div class="standard-tag">
+<p class="standard-label">Standard Alignment</p>
+<p class="standard-value">ISO 9241-11 (Effectiveness)</p>
+</div>
+</article>
+<!-- 维度 3: Animation & Media -->
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="far fa-play-circle"></i>
+</div>
+<h2 class="column-title">Animation &amp; Media Evaluation</h2>
+<ul class="content-list">
+<li class="content-item">Auto-play media detection</li>
+<li class="content-item">High-frequency flash risk assessment</li>
+<li class="content-item">Unclosable animation check</li>
+<li class="content-item">Distraction reduction suggestions</li>
+</ul>
+<div class="standard-tag">
+<p class="standard-label">Standard Alignment</p>
+<p class="standard-value">WCAG 2.2.2 &amp; Neurodivergent Needs</p>
+</div>
+</article>
+<!-- 维度 4: Interaction Complexity -->
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-bolt"></i>
+</div>
+<h2 class="column-title">Interaction Complexity Validation</h2>
+<ul class="content-list">
+<li class="content-item">Redundant operation step assessment</li>
+<li class="content-item">Unclear feedback mechanism detection</li>
+<li class="content-item">Navigation path consistency check</li>
+<li class="content-item">Zero user data DOM/event parsing</li>
+</ul>
+<div class="standard-tag">
+<p class="standard-label">Standard Alignment</p>
+<p class="standard-value">ISO 9241-11 (Efficiency)</p>
+</div>
+</article>
+</div>
+<!-- 页脚 -->
+<footer class="footer">
+<p>All analysis dimensions are based on project brief requirements, covering core cognitive load factors.</p>
+<p class="footer-highlight">Analysis Dimension Overview</p>
+</footer>
+</div>
+        </section>
+
+
+        <!-- Technical Skills -->
+        <section id="skills-web">
+<div class="slide-container">
+<!-- 头部 -->
+<header class="header">
+<h1 class="main-title">Technical Skills Required・核心技术栈</h1>
+<p class="sub-title">Full Process Coverage・能力与功能一一匹配</p>
+</header>
+<!-- 核心内容表格 -->
+<div class="table-container">
+<!-- 行 1: Web Data Processing -->
+<div class="tech-row">
+<div class="col-capability">
+<div class="cap-icon"><i class="fas fa-network-wired"></i></div>
+<p class="cap-text">Web Data Processing</p>
+</div>
+<div class="col-tech">
+<p class="tech-stack">Python (Scrapy / BeautifulSoup4) + HTML / CSS / JS Parsing</p>
+<div class="support-func">
+<span class="func-badge">Function</span>
+<span class="func-text">Feature Extraction (Textual / Structural / Interactive)</span>
+</div>
+<i class="fas fa-chevron-right arrow-indicator"></i>
+</div>
+</div>
+<!-- 行 2: NLP & Algorithm -->
+<div class="tech-row">
+<div class="col-capability">
+<div class="cap-icon"><i class="fas fa-brain"></i></div>
+<p class="cap-text">NLP &amp; Algorithm Development</p>
+</div>
+<div class="col-tech">
+<p class="tech-stack">Python (NLTK / Spacy) + Custom Scoring Algorithms</p>
+<div class="support-func">
+<span class="func-badge">Function</span>
+<span class="func-text">Cognitive Load Metrics + Risk Rating Calculation</span>
+</div>
+<i class="fas fa-chevron-right arrow-indicator"></i>
+</div>
+</div>
+<!-- 行 3: Frontend & Visualization -->
+<div class="tech-row">
+<div class="col-capability">
+<div class="cap-icon"><i class="fas fa-chart-line"></i></div>
+<p class="cap-text">Frontend &amp; Visualization</p>
+</div>
+<div class="col-tech">
+<p class="tech-stack">React.js + ECharts + Interactive Dashboard</p>
+<div class="support-func">
+<span class="func-badge">Function</span>
+<span class="func-text">Low-clutter Interface Design + Real-time Feedback</span>
+</div>
+<i class="fas fa-chevron-right arrow-indicator"></i>
+</div>
+</div>
+<!-- 行 4: Standard & Evaluation -->
+<div class="tech-row">
+<div class="col-capability">
+<div class="cap-icon"><i class="fas fa-clipboard-check"></i></div>
+<p class="cap-text">Standard &amp; Evaluation Design</p>
+</div>
+<div class="col-tech">
+<p class="tech-stack">WCAG 2.1 / ISO 9241-11 Interpretation + User Testing</p>
+<div class="support-func">
+<span class="func-badge">Function</span>
+<span class="func-text">Standard Mapping + NASA-TLX Measurement</span>
+</div>
+<i class="fas fa-chevron-right arrow-indicator"></i>
+</div>
+</div>
+</div>
+<!-- 页脚 -->
+<footer class="footer">
+<p class="footer-text">
+<i class="fas fa-check-circle footer-icon"></i>
+            No capability gaps, tech stack fully serves functional delivery.
+        </p>
+</footer>
+</div>
+        </section>
+
+        <!-- Team Capability Matching -->
+        <section id="skills-web-team">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">Technical Skills Required・Team capability matching</h1>
+                    <p class="sub-title">Team capability mapping for project delivery</p>
+                </header>
+                <div class="table-container">
+                    <!-- Team member 1 -->
+                    <div class="tech-row">
+                        <div class="col-capability">
+                            <div class="cap-icon"><i class="fas fa-universal-access"></i></div>
+                            <p class="cap-text">Human-Computer Interaction (HCI)</p>
+                        </div>
+                        <div class="col-tech">
+                            <p class="tech-stack">WCAG/ISO standard interpretation, inclusive design, user evaluation</p>
+                            <div class="support-func">
+                                <span class="func-badge">Role</span>
+                                <span class="func-text">Standard mapping, evaluation component, UI/UX design</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Team member 2 -->
+                    <div class="tech-row">
+                        <div class="col-capability">
+                            <div class="cap-icon"><i class="fas fa-code"></i></div>
+                            <p class="cap-text">Computer Science (CS)</p>
+                        </div>
+                        <div class="col-tech">
+                            <p class="tech-stack">Algorithm development, web parsing, backend engineering</p>
+                            <div class="support-func">
+                                <span class="func-badge">Role</span>
+                                <span class="func-text">Data collection, cognitive analysis algorithm, core parsing logic</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Team member 3 -->
+                    <div class="tech-row">
+                        <div class="col-capability">
+                            <div class="cap-icon"><i class="fas fa-chart-pie"></i></div>
+                            <p class="cap-text">Data Science</p>
+                        </div>
+                        <div class="col-tech">
+                            <p class="tech-stack">Quantitative analysis, data visualization, statistical testing</p>
+                            <div class="support-func">
+                                <span class="func-badge">Role</span>
+                                <span class="func-text">Metric scoring, evaluation data analysis, dashboard visualization</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Team member 4 -->
+                    <div class="tech-row">
+                        <div class="col-capability">
+                            <div class="cap-icon"><i class="fas fa-pen-nib"></i></div>
+                            <p class="cap-text">Digital Media Design</p>
+                        </div>
+                        <div class="col-tech">
+                            <p class="tech-stack">UI design, visual hierarchy optimization, accessibility compliance</p>
+                            <div class="support-func">
+                                <span class="func-badge">Role</span>
+                                <span class="func-text">Product interface design, risk rating visualization, cognitive load visualization</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Team member 5 -->
+                    <div class="tech-row">
+                        <div class="col-capability">
+                            <div class="cap-icon"><i class="fas fa-user-gear"></i></div>
+                            <p class="cap-text">Software Engineering</p>
+                        </div>
+                        <div class="col-tech">
+                            <p class="tech-stack">Frontend development, interactive system design, testing</p>
+                            <div class="support-func">
+                                <span class="func-badge">Role</span>
+                                <span class="func-text">Dashboard development, recommendation engine, validation tool</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- System Flow -->
+        <section id="flow-web">
+<div class="slide-container">
+<!-- 头部 -->
+<header class="header">
+<h1 class="main-title">System Flow・端到端整体流程</h1>
+<p class="sub-title">End-to-End Process: URL/HTML Input <span style="color: var(--primary)">→</span> Cognitive Analysis <span style="color: var(--primary)">→</span> Evaluation &amp; Iteration</p>
+</header>
+<!-- 流程图主体 -->
+<div class="flow-container">
+<!-- 背景连线 -->
+<div class="flow-line-bg"></div>
+<!-- 步骤 1 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">1</span>
+<i class="fas fa-file-import step-icon"></i>
+</div>
+<div class="step-title"><p>Web Content<br/>Input</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Online URL import<br/>Local HTML file upload<br/>Support batch processing</p>
+</div>
+</div>
+<!-- 箭头 1 -->
+<i class="fas fa-chevron-right flow-arrow arrow-1"></i>
+<!-- 步骤 2 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">2</span>
+<i class="fas fa-layer-group step-icon"></i>
+</div>
+<div class="step-title"><p>Feature<br/>Extraction</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Extract textual / structural<br/>Interactive / media features<br/>Create structured dataset</p>
+</div>
+</div>
+<!-- 箭头 2 -->
+<i class="fas fa-chevron-right flow-arrow arrow-2"></i>
+<!-- 步骤 3 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">3</span>
+<i class="fas fa-brain step-icon"></i>
+</div>
+<div class="step-title"><p>Cognitive Analysis<br/>&amp; Mapping</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Apply NLP algorithms<br/>Cognitive load metrics<br/>Map to WCAG/ISO standards</p>
+</div>
+</div>
+<!-- 箭头 3 -->
+<i class="fas fa-chevron-right flow-arrow arrow-3"></i>
+<!-- 步骤 4 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">4</span>
+<i class="fas fa-chart-pie step-icon"></i>
+</div>
+<div class="step-title"><p>Interactive<br/>Result Output</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Responsive dashboard<br/>Actionable recommendations<br/>Export PDF/Excel reports</p>
+</div>
+</div>
+<!-- 箭头 4 -->
+<i class="fas fa-chevron-right flow-arrow arrow-4"></i>
+<!-- 步骤 5 -->
+<div class="flow-step">
+<div class="step-icon-circle">
+<span class="step-badge">5</span>
+<i class="fas fa-sync-alt step-icon"></i>
+</div>
+<div class="step-title"><p>Evaluation<br/>&amp; Iteration</p></div>
+<div class="action-box">
+<span class="action-label">Core Actions</span>
+<p class="action-text">Pre/post-optimization<br/>Comparison &amp; Validation<br/>Verify improvement effects</p>
+</div>
+</div>
+</div>
+<!-- 页脚 -->
+<footer class="footer">
+<div class="footer-note">
+<span class="footer-tag">Note</span>
+            Aligned with Industry Project Management Standards | Supports Local &amp; Online Dual Modes
+        </div>
+<div style="font-size: 24px; color: #e0e0e0;">
+<i class="fas fa-project-diagram"></i>
+</div>
+</footer>
+</div>
+        </section>
+
+        <!-- Q&A (Web) -->
+        <section id="qa-web">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">Thank You for Your Attention!</h1>
+                    <p class="sub-title">Cognitive Accessibility Assistant for Web Content</p>
+                </header>
+                <p>Our Cognitive Accessibility Assistant addresses a critical gap in web accessibility tools by prioritizing cognitive accessibility for neurodivergent users. The project demonstrates strong alignment with course learning objectives, industry standards, and team capabilities.</p>
+                <p style="text-align: center; margin-top: 40px; font-size: 18px; color: var(--text-secondary);">Questions & Discussion</p>
+            </div>
+        </section>
+
+        <!-- Problem & Ethics (BCI) -->
+        <section id="problem-bci">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">BCI-Powered Adaptive Environment</h1>
+                    <p class="sub-title">Problem & Ethics</p>
+                </header>
+                <p>BCI adaptive environments aim to enhance user experience by responding to cognitive state. This section will outline ethical considerations and the problem space for integrating brain-computer interfaces into accessible systems.</p>
+            </div>
+        </section>
+
+        <!-- Core Functions (BCI) -->
+        <section id="core-bci">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">BCI Core Functional Modules</h1>
+                    <p class="sub-title">Adaptive environment features driven by neurofeedback</p>
+                </header>
+                <p>Placeholder for BCI core function descriptions (e.g., real-time state monitoring, adaptive UI adjustments, neurofeedback loops).</p>
+            </div>
+        </section>
+
+        <!-- Technical Skills (BCI) -->
+        <section id="skills-bci">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">BCI Technical Skills</h1>
+                    <p class="sub-title">BCI-specific stack & capabilities</p>
+                </header>
+                <p>Placeholder for BCI technical skills, such as signal processing, machine learning for EEG, and real-time adaptive UI design.</p>
+            </div>
+        </section>
+
+        <!-- System Flow (BCI) -->
+        <section id="flow-bci">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">BCI System Flow</h1>
+                    <p class="sub-title">End-to-End BCI Adaptive Workflow</p>
+                </header>
+                <p>Placeholder for BCI system flow diagram/description, showing how user brain state drives adaptive interfaces and feedback loops.</p>
+            </div>
+        </section>
+
+        <!-- Q&A (BCI) -->
+        <section id="qa-bci">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">BCI Project Q&A</h1>
+                    <p class="sub-title">Questions & Discussion</p>
+                </header>
+                <p>Placeholder for BCI project questions and discussion points.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 导航激活与平滑滚动脚本 -->
+    <script>
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // 导航栏滚动激活
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.sidebar-left nav ul li a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= (sectionTop - 150)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
