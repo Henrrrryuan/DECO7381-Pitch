@@ -756,11 +756,41 @@ letter-spacing: 0.5px;
 }
 
 /* System_Flow1.html styles */
+@keyframes flow-line-pulse {
+    0% { background-position: 0% 50%; opacity: 0.4; }
+    50% { background-position: 100% 50%; opacity: 1; }
+    100% { background-position: 0% 50%; opacity: 0.4; }
+}
+
+@keyframes step-fade-up {
+    0% { opacity: 0; transform: translateY(16px); }
+    60% { opacity: 1; transform: translateY(-2px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes step-icon-glow {
+    0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(99,102,241,0); }
+    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+}
+
+@keyframes icon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@keyframes arrow-bounce {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(6px); }
+}
+
 .flow-container {
     flex: 1;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 24px;
     position: relative;
     padding-top: 10px;
 }
@@ -771,7 +801,9 @@ letter-spacing: 0.5px;
     left: 50px;
     right: 50px;
     height: 2px;
-    background-color: #e0e0e0;
+    background: linear-gradient(90deg, rgba(148,163,184,0.3), var(--primary), rgba(148,163,184,0.3));
+    background-size: 200% 100%;
+    animation: flow-line-pulse 4s ease-in-out infinite;
     z-index: 0;
 }
 
@@ -783,12 +815,20 @@ letter-spacing: 0.5px;
     align-items: center;
     width: 190px;
     text-align: center;
-    transition: transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: step-fade-up 0.8s ease-out forwards;
 }
 
 .flow-step:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
 }
+
+.flow-step.step-1 { animation-delay: 0.05s; }
+.flow-step.step-2 { animation-delay: 0.2s; }
+.flow-step.step-3 { animation-delay: 0.35s; }
+.flow-step.step-4 { animation-delay: 0.5s; }
+.flow-step.step-5 { animation-delay: 0.65s; }
 
 .step-icon-circle {
     width: 80px;
@@ -802,6 +842,11 @@ letter-spacing: 0.5px;
     margin-bottom: 15px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     position: relative;
+    animation: icon-float 3s ease-in-out infinite;
+}
+
+.flow-step:hover .step-icon-circle {
+    animation: step-icon-glow 1.4s ease-out infinite;
 }
 
 .step-icon {
@@ -871,6 +916,7 @@ letter-spacing: 0.5px;
     font-size: 20px;
     color: var(--primary);
     z-index: 2;
+    animation: arrow-bounce 1.8s ease-in-out infinite;
 }
 
 .arrow-1 { left: 18%; }
