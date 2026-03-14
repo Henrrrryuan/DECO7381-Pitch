@@ -86,6 +86,46 @@ ul{margin:6px 0 0 18px;}
 .scale-note strong{display:block;font-size:16px;color:#1f334b;margin-bottom:6px;}
 .scale-note ul{margin:6px 0 0 18px;}
 
+/* Fullscreen Q&A / Thank you section */
+.qa-fullscreen{
+  min-height:calc(100vh - 900px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.qa-inner{
+  max-width:860px;
+  margin:0 auto;
+}
+.thankyou-title{
+  font-size:64px;
+  margin:0 0 12px;
+  letter-spacing:0.06em;
+}
+.qa-heading{
+  font-size:32px;
+  margin:0 0 18px;
+}
+#qa-bci .lead{
+  font-size:20px;
+  margin-bottom:20px;
+}
+#qa-bci ul{
+  margin-top:10px;
+  text-align:left;
+  font-size:20px;
+}
+#qa-bci li+li{
+  margin-top:10px;
+}
+.qa-placeholder-list{
+  text-align:center;
+}
+.qa-placeholder-list li{
+  color:transparent;
+}
+
 /* Sidebar (copied from web project, slightly tuned) */
 .sidebar-left{width:260px;background:#eef2ff;border-right:1px solid #d0d9f0;padding:32px 18px 20px;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;box-sizing:border-box;}
 .sidebar-left .course-header{background:#4f46e5;color:#fff;padding:14px 16px;border-radius:8px;margin-bottom:26px;}
