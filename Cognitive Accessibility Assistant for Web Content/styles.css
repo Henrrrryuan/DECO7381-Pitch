@@ -191,6 +191,10 @@ body {
     margin: 40px 0 50px; /* 增加上下间距 */
     max-width: 1400px;
 }
+
+.card-grid.ethics-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
 .card {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -208,6 +212,16 @@ body {
     margin-top: 0;
     margin-bottom: 15px;
     color: var(--primary);
+}
+.card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    height: 100%;
+}
+.card-link:focus,
+.card-link:hover {
+    outline: none;
 }
 /* 表格布局（团队匹配）- 等比放大 */
 .table-container {
@@ -310,7 +324,8 @@ letter-spacing: 0.5px;
     }
 }
 @media (max-width: 768px) {
-    .card-grid {
+    .card-grid,
+    .card-grid.ethics-grid {
         grid-template-columns: 1fr; /* 小屏幕卡片单列显示 */
     }
     .flow-step {
@@ -658,7 +673,7 @@ letter-spacing: 0.5px;
     color: var(--text);
     margin-bottom: 10px;
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 .content-item::before {
@@ -930,6 +945,7 @@ letter-spacing: 0.5px;
 
 .eval-flip-card {
     perspective: 1200px;
+    height: 230px; /* 固定高度，确保正反两面文字都在卡片内 */
 }
 
 .eval-flip-inner {
@@ -944,6 +960,7 @@ letter-spacing: 0.5px;
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
+    overflow: hidden;
 }
 
 .eval-front {
@@ -1306,7 +1323,7 @@ letter-spacing: 0.5px;
 .flow-container {
     flex: 1;
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     justify-content: space-between;
     flex-wrap: nowrap;
     gap: 24px;
@@ -1333,6 +1350,7 @@ letter-spacing: 0.5px;
     flex-direction: column;
     align-items: center;
     width: 190px;
+    min-width: 0;
     text-align: center;
     opacity: 0;
     transform: translateY(16px);
@@ -1411,6 +1429,9 @@ letter-spacing: 0.5px;
     width: 100%;
     box-sizing: border-box;
     min-height: 90px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .action-text {
@@ -1442,6 +1463,195 @@ letter-spacing: 0.5px;
 .arrow-2 { left: 40%; }
 .arrow-3 { left: 62%; }
 .arrow-4 { left: 84%; }
+
+/* ========== System Workflow (SIPOC-style, reference diagram) ========== */
+.sipoc-wrap {
+    margin-top: 2rem;
+    padding: 2rem 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Rail: thin dark horizontal line + 5 colored nodes on the line */
+.sipoc-rail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 0.5%;
+}
+
+.sipoc-rail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2px;
+    background: #64748b;
+    z-index: 0;
+}
+
+.sipoc-node {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    background: #64748b;
+}
+
+.sipoc-n1.sipoc-node { background: #ea580c; }
+.sipoc-n2.sipoc-node { background: #dc2626; }
+.sipoc-n3.sipoc-node { background: #0f766e; }
+.sipoc-n4.sipoc-node { background: #15803d; }
+.sipoc-n5.sipoc-node { background: #57534e; }
+
+/* Step titles row (below line, bold, section color) */
+.sipoc-titles {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 0.5%;
+    margin-top: 12px;
+    margin-bottom: 4px;
+}
+
+.sipoc-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    padding: 0 6px;
+}
+
+.sipoc-title.sipoc-n1 { color: #ea580c; }
+.sipoc-title.sipoc-n2 { color: #dc2626; }
+.sipoc-title.sipoc-n3 { color: #0f766e; }
+.sipoc-title.sipoc-n4 { color: #15803d; }
+.sipoc-title.sipoc-n5 { color: #57534e; }
+
+/* 5 equal columns */
+.sipoc-cols {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.sipoc-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Dashed vertical line from node down to icon */
+.sipoc-dash {
+    width: 0;
+    height: 28px;
+    border-left: 2px dashed #94a3b8;
+    margin: 0 auto;
+}
+
+.sipoc-n1 .sipoc-dash { border-left-color: #ea580c; }
+.sipoc-n2 .sipoc-dash { border-left-color: #dc2626; }
+.sipoc-n3 .sipoc-dash { border-left-color: #0f766e; }
+.sipoc-n4 .sipoc-dash { border-left-color: #15803d; }
+.sipoc-n5 .sipoc-dash { border-left-color: #57534e; }
+
+/* Icon: white circle, colored border (outline style) */
+.sipoc-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.sipoc-n1 .sipoc-icon { border-color: #ea580c; color: #ea580c; }
+.sipoc-n2 .sipoc-icon { border-color: #dc2626; color: #dc2626; }
+.sipoc-n3 .sipoc-icon { border-color: #0f766e; color: #0f766e; }
+.sipoc-n4 .sipoc-icon { border-color: #15803d; color: #15803d; }
+.sipoc-n5 .sipoc-icon { border-color: #57534e; color: #57534e; }
+
+.sipoc-icon i {
+    font-size: 22px;
+}
+
+/* Solid colored content block (SIPOC style) */
+.sipoc-block {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px 12px;
+    border-radius: 8px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sipoc-n1 .sipoc-block { background: #ea580c; }
+.sipoc-n2 .sipoc-block { background: #dc2626; }
+.sipoc-n3 .sipoc-block { background: #0f766e; }
+.sipoc-n4 .sipoc-block { background: #15803d; }
+.sipoc-n5 .sipoc-block { background: #57534e; }
+
+.sipoc-block ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #fff;
+    text-align: left;
+    width: 100%;
+}
+
+.sipoc-block li {
+    position: relative;
+    padding-left: 14px;
+    margin-bottom: 6px;
+}
+
+.sipoc-block li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+@media (max-width: 992px) {
+    .sipoc-cols {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .sipoc-col {
+        flex: 1 1 calc(33.333% - 0.5rem);
+    }
+}
+
+@media (max-width: 600px) {
+    .sipoc-wrap {
+        padding: 1.25rem 1rem;
+    }
+    .sipoc-col {
+        flex: 1 1 100%;
+    }
+    .sipoc-rail::before { height: 1px; }
+    .sipoc-node { width: 10px; height: 10px; }
+    .sipoc-icon { width: 48px; height: 48px; }
+    .sipoc-icon i { font-size: 18px; }
+}
 
 .footer-note {
     font-size: 14px;

@@ -27,7 +27,9 @@
         <nav>
             <h2>Cognitive Accessibility Assistant for Web Content</h2>
             <ul>
-                <li><a href="#problem-web" class="active">Problem & Ethics</a></li>
+                <li>
+                    <a href="#research-web" class="active">Problem Research</a>
+                </li>
                 <li>
                     <span class="nav-section">Core Functions</span>
                     <ul class="sub-nav">
@@ -42,7 +44,8 @@
                         <li><a href="#skills-web-team">2. Team capability matching</a></li>
                     </ul>
                 </li>
-                <li><a href="#flow-web">System Flow</a></li>
+                <li><a href="#flow-web">System Workflow</a></li>
+                <li><a href="#ethics-web">Ethical Considerations</a></li>
             </ul>
         </nav>
     </aside>
@@ -50,113 +53,172 @@
     <!-- 中间内容区 -->
     <main class="content-main">
         <!-- Problem & Ethics (Web Content) -->
-        <section id="problem-web">
+
+        <section id="research-web">
             <div class="slide-container">
                 <header class="header">
-                    <h1 class="main-title">Problem Space & Ethical Considerations</h1>
-                    <p class="sub-title">Cognitive Accessibility Assistant for Web Content</p>
+                    <h1 class="main-title">Research on Existing Accessibility Tools</h1>
+                    <p class="sub-title">Existing tools identify technical accessibility issues, but cognitive accessibility remains less supported.</p>
                 </header>
-                <p>Web accessibility often focuses on sensory or motor impairments, while <strong>cognitive accessibility</strong> for neurodivergent users remains under-addressed. This project aims to identify cognitive load sources and provide clear, actionable recommendations.</p>
+
+                <div class="card-grid compact-grid">
+                    <article class="card">
+                        <a href="https://wave.webaim.org" target="_blank" rel="noopener" class="card-link">
+                            <h3>WAVE</h3>
+                            <p>Accessibility evaluation tool that detects WCAG issues such as colour contrast and missing alt text.</p>
+                            <p class="small-text"><strong>Reference:</strong> wave.webaim.org</p>
+                        </a>
+                    </article>
+                    <article class="card">
+                        <a href="https://www.deque.com/axe" target="_blank" rel="noopener" class="card-link">
+                            <h3>axe DevTools</h3>
+                            <p>Developer-focused accessibility testing tool that performs automated accessibility audits.</p>
+                            <p class="small-text"><strong>Reference:</strong> deque.com/axe</p>
+                        </a>
+                    </article>
+                    <article class="card">
+                        <a href="https://accessibilityinsights.io" target="_blank" rel="noopener" class="card-link">
+                            <h3>Accessibility Insights</h3>
+                            <p>Microsoft accessibility testing tool that helps developers identify WCAG compliance issues.</p>
+                            <p class="small-text"><strong>Reference:</strong> accessibilityinsights.io</p>
+                        </a>
+                    </article>
+                </div>
+
+                <div class="table-container research-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Strengths</th>
+                                <th>Limitations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>WAVE</td>
+                                <td>Detects WCAG issues (contrast, alt text)</td>
+                                <td>No analysis of cognitive complexity</td>
+                            </tr>
+                            <tr>
+                                <td>axe DevTools</td>
+                                <td>Automated accessibility testing</td>
+                                <td>Focuses mainly on technical compliance</td>
+                            </tr>
+                            <tr>
+                                <td>Accessibility Insights</td>
+                                <td>Accessibility testing with WCAG guidance</td>
+                                <td>Limited evaluation of cognitive load</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="insight-box">
+                    <h3>Key Insight</h3>
+                    <p>Existing tools effectively detect technical accessibility issues, but they provide <strong class="insight-emphasis">limited support for analysing cognitive accessibility and usability complexity</strong>.</p>
+                </div>
             </div>
         </section>
 
+
         <!-- Core Functions -->
         <section id="core-web">
-            <div class="slide-container">
-                <header class="header">
+<div class="slide-container">
+<header class="header">
                     <h1 class="main-title">Core Functions · Cognitive Accessibility Analysis</h1>
                     <p class="sub-title">What we analyse across the page to detect cognitive load risks</p>
-                </header>
+</header>
 
-                <div class="content-grid">
+<div class="content-grid">
                     <!-- Module 1: Language Complexity -->
-                    <article class="column-card">
-                        <div class="icon-wrapper">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-file-alt"></i>
+</div>
                         <h2 class="column-title">Language Complexity</h2>
                         <p class="feature-summary">
                             Checks whether key content is readable, concrete, and cognitively light enough for target users.
                         </p>
-                        <ul class="content-list">
+<ul class="content-list">
                             <li class="content-item">Score paragraphs by reading level, sentence length, and structure complexity.</li>
                             <li class="content-item">Highlight jargon, idioms, and dense technical clusters that may overload working memory.</li>
                             <li class="content-item">Prioritise instructions, forms, and error messages with stricter readability thresholds.</li>
-                        </ul>
-                        <div class="standard-tag">
+</ul>
+<div class="standard-tag">
                             <p class="standard-label">Standard / User Need Alignment</p>
                             <p class="standard-value">
                                 WCAG 3.1.5 Reading Level · ISO 9241‑11 (Effectiveness for comprehension) · Supports users with dyslexia &amp; ADHD
                             </p>
-                        </div>
-                    </article>
+</div>
+</article>
 
                     <!-- Module 2: Layout & Visual Hierarchy -->
-                    <article class="column-card">
-                        <div class="icon-wrapper">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-layer-group"></i>
+</div>
                         <h2 class="column-title">Layout &amp; Visual Hierarchy</h2>
                         <p class="feature-summary">
                             Quantifies how layout, spacing, and hierarchy support quick scanning and orientation.
                         </p>
-                        <ul class="content-list">
+<ul class="content-list">
                             <li class="content-item">Measure layout density and whitespace ratio for different page regions.</li>
                             <li class="content-item">Check heading hierarchy, grouping, and alignment for consistent visual entry points.</li>
                             <li class="content-item">Detect cluttered zones where competing elements fragment attention.</li>
-                        </ul>
-                        <div class="standard-tag">
+</ul>
+<div class="standard-tag">
                             <p class="standard-label">Standard / User Need Alignment</p>
                             <p class="standard-value">
                                 WCAG 1.3.1 Info and Relationships · ISO 9241‑11 (Efficiency &amp; safety) · Supports users with executive function challenges
                             </p>
-                        </div>
-                    </article>
+</div>
+</article>
 
                     <!-- Module 3: Animation & Media -->
-                    <article class="column-card">
-                        <div class="icon-wrapper">
-                            <i class="far fa-play-circle"></i>
-                        </div>
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="far fa-play-circle"></i>
+</div>
                         <h2 class="column-title">Animation &amp; Media</h2>
                         <p class="feature-summary">
                             Assesses motion and media patterns that may distract or overwhelm neurodivergent users.
                         </p>
-                        <ul class="content-list">
+<ul class="content-list">
                             <li class="content-item">Detect auto‑play video/audio and looping animated elements.</li>
                             <li class="content-item">Flag high‑frequency flashing and rapid motion that may trigger discomfort.</li>
                             <li class="content-item">Identify non‑dismissible or constantly moving banners and overlays.</li>
-                        </ul>
-                        <div class="standard-tag">
+</ul>
+<div class="standard-tag">
                             <p class="standard-label">Standard / User Need Alignment</p>
                             <p class="standard-value">
                                 WCAG 2.2.2 Pause, Stop, Hide · WCAG 2.3.1 Seizures and Physical Reactions · Supports sensory‑sensitive users
                             </p>
-                        </div>
-                    </article>
+</div>
+</article>
 
                     <!-- Module 4: Interaction Complexity -->
-                    <article class="column-card">
-                        <div class="icon-wrapper">
-                            <i class="fas fa-bolt"></i>
-                        </div>
+<article class="column-card">
+<div class="icon-wrapper">
+<i class="fas fa-bolt"></i>
+</div>
                         <h2 class="column-title">Interaction Complexity</h2>
                         <p class="feature-summary">
                             Evaluates how many steps, decisions, and state changes are required to complete tasks.
                         </p>
-                        <ul class="content-list">
+<ul class="content-list">
                             <li class="content-item">Count interaction steps and required fields for key conversion / task flows.</li>
                             <li class="content-item">Detect unclear feedback such as hidden errors or missing confirmations.</li>
                             <li class="content-item">Analyse navigation patterns for detours, dead ends, and inconsistent routes.</li>
-                        </ul>
-                        <div class="standard-tag">
+</ul>
+<div class="standard-tag">
                             <p class="standard-label">Standard / User Need Alignment</p>
                             <p class="standard-value">
                                 WCAG 3.2 Predictable · ISO 9241‑11 (Efficiency &amp; satisfaction) · Supports users with limited working memory &amp; cognitive fatigue
                             </p>
-                        </div>
-                    </article>
-                </div>
+</div>
+</article>
+</div>
 
             </div>
         </section>
@@ -259,7 +321,6 @@
                                 <li>Normalise heading levels (H1/H2/H3) to reflect logical structure.</li>
                                 <li>Group related controls into visually separated blocks.</li>
                             </ul>
-                            <button class="primary-btn">Add Layout Insight to Report</button>
                         </div>
 
                         <div class="insight-body" data-insight="animation">
@@ -275,7 +336,6 @@
                                 <li>Limit concurrent motion to a single focal element per view.</li>
                                 <li>Offer a “reduced motion” preference that simplifies transitions.</li>
                             </ul>
-                            <button class="primary-btn">Add Animation Insight to Report</button>
                         </div>
 
                         <div class="insight-body" data-insight="interaction">
@@ -291,7 +351,6 @@
                                 <li>Provide inline error messages with clear next actions.</li>
                                 <li>Ensure navigation remains consistent across equivalent pages.</li>
                             </ul>
-                            <button class="primary-btn">Add Interaction Insight to Report</button>
                         </div>
 
                     </div>
@@ -299,46 +358,88 @@
 
                 <!-- 下半部分：Built-in Evaluation Module -->
                 <div class="evaluation-section">
-                    <div class="evaluation-card">
-                        <h3>Controlled Comparison</h3>
-                        <p>Run A/B tests on baseline vs assistant‑supported pages.</p>
-                        <ul>
-                            <li>Randomly assign participants to two conditions.</li>
-                            <li>Measure time‑on‑task, completion, and error rates.</li>
-                        </ul>
+                    <!-- Card 1: Controlled Comparison -->
+                    <div class="eval-flip-card">
+                        <div class="eval-flip-inner">
+                            <div class="eval-face eval-front">
+                                <div class="evaluation-card">
+                                    <h3>Controlled Comparison</h3>
+                                    <p>Run A/B tests on baseline vs assistant‑supported pages.</p>
+                                </div>
+                            </div>
+                            <div class="eval-face eval-back">
+                                <div class="evaluation-card">
+                                    <ul>
+                                        <li>Randomly assign participants to two conditions.</li>
+                                        <li>Measure time‑on‑task, completion, and error rates.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="evaluation-card">
-                        <h3>NASA‑TLX &amp; Subjective Load</h3>
-                        <p>Use NASA‑TLX after each task block to capture perceived workload.</p>
-                        <ul>
-                            <li>Record mental demand, effort, frustration, and temporal demand.</li>
-                            <li>Compare scores between Baseline and Assistant conditions.</li>
-                        </ul>
+                    <!-- Card 2: NASA‑TLX & Subjective Load -->
+                    <div class="eval-flip-card">
+                        <div class="eval-flip-inner">
+                            <div class="eval-face eval-front">
+                                <div class="evaluation-card">
+                                    <h3>NASA‑TLX &amp; Subjective Load</h3>
+                                    <p>Use NASA‑TLX after each task block to capture perceived workload.</p>
+                                </div>
+                            </div>
+                            <div class="eval-face eval-back">
+                                <div class="evaluation-card">
+                                    <ul>
+                                        <li>Record mental demand, effort, frustration, and temporal demand.</li>
+                                        <li>Compare scores between Baseline and Assistant conditions.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="evaluation-card">
-                        <h3>Task Completion Metrics</h3>
-                        <p>Track how the assistant changes task success and efficiency.</p>
-                        <ul>
-                            <li>Completion rate, time on task, and error rate per scenario.</li>
-                            <li>Status tags (Improved / Stable / Needs work) per dimension.</li>
-                        </ul>
+                    <!-- Card 3: Task Completion Metrics -->
+                    <div class="eval-flip-card">
+                        <div class="eval-flip-inner">
+                            <div class="eval-face eval-front">
+                                <div class="evaluation-card">
+                                    <h3>Task Completion Metrics</h3>
+                                    <p>Track how the assistant changes task success and efficiency.</p>
+                                </div>
+                            </div>
+                            <div class="eval-face eval-back">
+                                <div class="evaluation-card">
+                                    <ul>
+                                        <li>Completion rate, time on task, and error rate per scenario.</li>
+                                        <li>Status tags (Improved / Stable / Needs work) per dimension.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="evaluation-card evaluation-report">
-                        <h3>Evaluation Report</h3>
-                        <p>
-                            Generate a concise evaluation report combining all metrics.
-                        </p>
-                        <ul>
-                            <li>Summary of detected issues and applied recommendations.</li>
-                            <li>Before/after comparison for each cognitive dimension.</li>
-                            <li>Exportable report for supervisors or client stakeholders.</li>
-                        </ul>
+                    <!-- Card 4: Evaluation Report -->
+                    <div class="eval-flip-card">
+                        <div class="eval-flip-inner">
+                            <div class="eval-face eval-front">
+                                <div class="evaluation-card evaluation-report">
+                                    <h3>Evaluation Report</h3>
+                                    <p>Generate a concise evaluation report combining all metrics.</p>
+                                </div>
+                            </div>
+                            <div class="eval-face eval-back">
+                                <div class="evaluation-card evaluation-report">
+                                    <ul>
+                                        <li>Summary of detected issues and applied recommendations.</li>
+                                        <li>Before/after comparison for each cognitive dimension.</li>
+                                        <li>Exportable report for supervisors or client stakeholders.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+</div>
         </section>
 
         <!-- Technical Skills - Core Technology Stack -->
@@ -346,8 +447,7 @@
 <div class="slide-container">
 <!-- 头部 -->
 <header class="header">
-<h1 class="main-title">Technical Skills Required・核心技术栈</h1>
-<p class="sub-title">Full Process Coverage・能力与功能一一匹配</p>
+<h1 class="main-title">Technical Skills · Core Technology Stack</h1><p class="sub-title">Technical Approach</p>
 </header>
 <!-- 核心内容表格 -->
 <div class="table-container">
@@ -358,7 +458,7 @@
 <p class="cap-text">Web Data Processing</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">Python + BeautifulSoup</p>
+<p class="tech-stack">Python + <a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc/" target="_blank" rel="noopener noreferrer">BeautifulSoup</a></p>
 <div class="support-func">
 <span class="func-badge">Function</span>
 <span class="func-text">Page structure and content extraction</span>
@@ -373,7 +473,12 @@
 <p class="cap-text">Language & Cognitive Analysis</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">Python + textstat + rule-based scoring</p>
+<p class="tech-stack">
+    Python +
+    <a href="https://github.com/textstat/textstat" target="_blank" rel="noopener noreferrer">textstat</a>
+    +
+    <a href="https://en.wikipedia.org/wiki/Rule-based_machine_learning" target="_blank" rel="noopener noreferrer">rule-based scoring</a>
+</p>
 <div class="support-func">
 <span class="func-badge">Function</span>
 <span class="func-text">Function: Readability, jargon, and sentence complexity analysis</span>
@@ -388,7 +493,12 @@
 <p class="cap-text">Frontend &amp; Visualization</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">React.js + ECharts + Interactive Dashboard</p>
+<p class="tech-stack">
+    <a href="https://react.dev/" target="_blank" rel="noopener noreferrer">React.js</a>
+    +
+    <a href="https://echarts.apache.org/en/index.html" target="_blank" rel="noopener noreferrer">ECharts</a>
+    + Interactive Dashboard
+</p>
 <div class="support-func">
 <span class="func-badge">Function</span>
 <span class="func-text">Risk visualisation + issue explanation + recommendation interface</span>
@@ -412,22 +522,15 @@
 </div>
 </div>
 </div>
-<!-- 页脚 -->
-<footer class="footer">
-<p class="footer-text">
-<i class="fas fa-check-circle footer-icon"></i>
-            No capability gaps, tech stack fully serves functional delivery.
-        </p>
-</footer>
 </div>
         </section>
 
         <!-- Technical Skills - Team Capability Matching -->
-        <section id="skills-web-team">
-            <div class="slide-container">
-                <header class="header">
-                    <h1 class="main-title">Technical Skills Required・Team Capability Matching</h1>
-                </header>
+<section id="skills-web-team">
+    <div class="slide-container">
+        <header class="header">
+            <h1 class="main-title">Technical Skills Required・Team Capability Matching</h1>
+        </header>
                 <div class="team-table-wrap">
                     <table class="team-capability-table" aria-label="Team members and their technical roles">
                         <thead>
@@ -454,7 +557,7 @@
                                     <span class="member-name">Zezhi Yuan</span>
                                 </td>
                                 <td class="col-spec">Backend & Algorithm</td>
-                                <td class="col-stack">Python (Scrapy/BeautifulSoup), NLP (NLTK/Spacy), custom scoring algorithm</td>
+                                <td class="col-stack">Python + BeautifulSoup, textstat + rule-based scoring</td>
                                 <td class="col-role">Web content extraction, cognitive complexity analysis, data processing pipeline</td>
                             </tr>
                             <tr>
@@ -487,112 +590,132 @@
                         </tbody>
                     </table>
                 </div>
-                <footer class="footer">
-                    <p class="footer-text">
-                        <i class="fas fa-check-circle footer-icon"></i>
-                        Team capabilities fully cover project lifecycle (extraction→analysis→development→evaluation) with no skill gaps.
-                    </p>
-                    <p class="footer-text">
-                        <i class="fas fa-check-circle footer-icon"></i>
-                        All skills aligned with DECO7381 technical requirements & project brief.
-                    </p>
-                </footer>
+    </div>
+</section>
+
+        <!-- System Workflow (SIPOC-style, reference diagram) -->
+        <section id="flow-web">
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">System Workflow</h1>
+                    <p class="sub-title">From webpage input to feature extraction, analysis, dashboard output, and evaluation → Cognitive Analysis → Evaluation &amp; Iteration</p>
+                </header>
+                <div class="sipoc-wrap" role="figure" aria-label="System workflow diagram">
+                    <!-- Top: horizontal line with 5 colored nodes -->
+                    <div class="sipoc-rail">
+                        <span class="sipoc-node sipoc-n1"></span>
+                        <span class="sipoc-node sipoc-n2"></span>
+                        <span class="sipoc-node sipoc-n3"></span>
+                        <span class="sipoc-node sipoc-n4"></span>
+                        <span class="sipoc-node sipoc-n5"></span>
+                    </div>
+                    <!-- Row: step titles (below line, above dashed) -->
+                    <div class="sipoc-titles">
+                        <span class="sipoc-title sipoc-n1">Web Content Input</span>
+                        <span class="sipoc-title sipoc-n2">Feature Extraction</span>
+                        <span class="sipoc-title sipoc-n3">Cognitive Analysis &amp; Mapping</span>
+                        <span class="sipoc-title sipoc-n4">Interactive Result Output</span>
+                        <span class="sipoc-title sipoc-n5">Evaluation &amp; Iteration</span>
+                    </div>
+                    <!-- Columns: dashed line → icon → content block -->
+                    <div class="sipoc-cols">
+                        <article class="sipoc-col sipoc-n1" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-file-import" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Online URL import</li>
+                                    <li>Local HTML file upload</li>
+                                    <li>Single-page &amp; local HTML testing</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n2" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-layer-group" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Text, structure, interaction &amp; media</li>
+                                    <li>Structured dataset creation</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n3" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-brain" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Readability &amp; rule-based analysis</li>
+                                    <li>Cognitive load indicators</li>
+                                    <li>Mapping to WCAG / ISO</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n4" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-chart-pie" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Responsive dashboard</li>
+                                    <li>Actionable recommendations</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n5" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-sync-alt" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Pre/post-optimization comparison</li>
+                                    <li>Validation &amp; improvement verification</li>
+                                </ul>
+                            </div>
+                        </article>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- System Flow -->
-        <section id="flow-web">
-<div class="slide-container">
-<!-- 头部 -->
-<header class="header">
-<h1 class="main-title">System Flow・端到端整体流程</h1>
-<p class="sub-title">End-to-End Process: URL/HTML Input <span style="color: var(--primary)">→</span> Cognitive Analysis <span style="color: var(--primary)">→</span> Evaluation &amp; Iteration</p>
-</header>
-<!-- 流程图主体 -->
-<div class="flow-container">
-<!-- 背景连线 -->
-<div class="flow-line-bg"></div>
-<!-- 步骤 1 -->
-<div class="flow-step">
-<div class="step-icon-circle">
-<span class="step-badge">1</span>
-<i class="fas fa-file-import step-icon"></i>
-</div>
-<div class="step-title"><p>Web Content<br/>Input</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Online URL import<br/>Local HTML file upload<br/>Support batch processing</p>
-</div>
-</div>
-<!-- 箭头 1 -->
-<i class="fas fa-chevron-right flow-arrow arrow-1"></i>
-<!-- 步骤 2 -->
-<div class="flow-step">
-<div class="step-icon-circle">
-<span class="step-badge">2</span>
-<i class="fas fa-layer-group step-icon"></i>
-</div>
-<div class="step-title"><p>Feature<br/>Extraction</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Extract textual / structural<br/>Interactive / media features<br/>Create structured dataset</p>
-</div>
-</div>
-<!-- 箭头 2 -->
-<i class="fas fa-chevron-right flow-arrow arrow-2"></i>
-<!-- 步骤 3 -->
-<div class="flow-step">
-<div class="step-icon-circle">
-<span class="step-badge">3</span>
-<i class="fas fa-brain step-icon"></i>
-</div>
-<div class="step-title"><p>Cognitive Analysis<br/>&amp; Mapping</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Apply NLP algorithms<br/>Cognitive load metrics<br/>Map to WCAG/ISO standards</p>
-</div>
-</div>
-<!-- 箭头 3 -->
-<i class="fas fa-chevron-right flow-arrow arrow-3"></i>
-<!-- 步骤 4 -->
-<div class="flow-step">
-<div class="step-icon-circle">
-<span class="step-badge">4</span>
-<i class="fas fa-chart-pie step-icon"></i>
-</div>
-<div class="step-title"><p>Interactive<br/>Result Output</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Responsive dashboard<br/>Actionable recommendations<br/>Export PDF/Excel reports</p>
-</div>
-</div>
-<!-- 箭头 4 -->
-<i class="fas fa-chevron-right flow-arrow arrow-4"></i>
-<!-- 步骤 5 -->
-<div class="flow-step">
-<div class="step-icon-circle">
-<span class="step-badge">5</span>
-<i class="fas fa-sync-alt step-icon"></i>
-</div>
-<div class="step-title"><p>Evaluation<br/>&amp; Iteration</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Pre/post-optimization<br/>Comparison &amp; Validation<br/>Verify improvement effects</p>
-</div>
-</div>
-</div>
-<!-- 页脚 1-->
+<!-- Ethics（与其他 section 同级） -->
+<section id="ethics-web">
+    <div class="slide-container">
+        <header class="header">
+            <h1 class="main-title">Ethical Considerations</h1>
+            <p class="sub-title">Design recommendations should support inclusive decision-making rather than replace human judgement.</p>
+        </header>
+
+        <div class="card-grid ethics-grid">
+            <article class="card">
+                <h3>Responsible Interpretation</h3>
+                <p>The system identifies potential cognitive complexity, but the results should support designers rather than replace human judgement.</p>
+            </article>
+            <article class="card">
+                <h3>Avoiding Over-Simplification</h3>
+                <p>Reducing cognitive load should not remove important information. Designers must balance simplicity and functionality.</p>
+            </article>
+            <article class="card">
+                <h3>Inclusive Design</h3>
+                <p>Cognitive accessibility needs vary across users. The system should support inclusive design rather than assuming one universal solution.</p>
+            </article>
+            <article class="card">
+                <h3>Transparency</h3>
+                <p>The tool should clearly explain why elements increase cognitive load and how recommendations are generated.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<!-- 页脚 -->
 <footer class="footer">
 <div class="footer-note">
 <span class="footer-tag">Note</span>
-            Aligned with Industry Project Management Standards | Supports Local &amp; Online Dual Modes
+            Supports URL-based and local HTML analysis for prototype evaluation
         </div>
 <div style="font-size: 24px; color: #e0e0e0;">
 <i class="fas fa-project-diagram"></i>
 </div>
 </footer>
 </div>
-        </section>
     </main>
 
     <script src="script.js"></script>
