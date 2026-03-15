@@ -30,6 +30,7 @@
         <li><a href="#technical-skills">Technical Skills Required</a></li>
         <li><a href="#team-matrix">Team Expertise Matrix</a></li>
         <li><a href="#system-flow">System Flow</a></li>
+        <li><a href="#thank-you-qa">Thank You · Q&amp;A</a></li>
       </ul>
     </nav>
   </aside>
@@ -677,17 +678,29 @@
     </div>
   </div>
 
+  <div class="card thankyou-card" id="thank-you-qa">
+    <div class="thankyou-simple">
+      <h2 class="thankyou-simple-title">Thank you for listening.</h2>
+      <p class="thankyou-simple-text">Q&amp;A · We are happy to answer the question!</p>
+    </div>
+  </div>
+
 </div>
   </main>
 
 <script>
 (function(){
-  // 左侧导航：锚点平滑滚动
+  // 左侧导航：锚点平滑滚动 + 即时高亮
   document.querySelectorAll('.sidebar-left a[href^="#"]').forEach(function(anchor){
     anchor.addEventListener('click', function(e){
       e.preventDefault();
       var target = document.querySelector(this.getAttribute('href'));
       if(target) target.scrollIntoView({ behavior: 'smooth' });
+
+      // 立即更新 active 状态，点击时就高亮
+      var navLinks = document.querySelectorAll('.sidebar-left nav a[href^="#"]');
+      navLinks.forEach(function(link){ link.classList.remove('active'); });
+      this.classList.add('active');
     });
   });
   // 滚动时高亮当前区块

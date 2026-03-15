@@ -20,8 +20,16 @@ ul{margin:6px 0 0 18px;}
 .team-table-wrap{border:1px solid #d6deeb;border-radius:14px;overflow:hidden;background:#fff;}
 .team-table-head,.team-row{display:grid;grid-template-columns:1.15fr 0.9fr 1.35fr 1.55fr;gap:24px;padding:22px 26px;align-items:start;}
 .team-table-head{background:#edf2f8;border-bottom:1px solid #d6deeb;font-size:14px;font-weight:800;color:#4c5df2;letter-spacing:.06em;text-transform:uppercase;line-height:1.15;}
-.team-row{border-bottom:1px solid #d6deeb;}
+.team-row{
+  border-bottom:1px solid #d6deeb;
+  transition:background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
 .team-row:last-child{border-bottom:none;}
+.team-row:hover{
+  background:#f5f7ff;
+  box-shadow:0 4px 12px rgba(15,40,70,0.08);
+  transform:translateY(-1px);
+}
 .member-cell{display:flex;align-items:center;gap:14px;font-size:16px;color:#0f2744;line-height:1.25;}
 .member-cell strong{font-weight:800;}
 .member-icon{width:54px;height:54px;border-radius:14px;background:#dceeff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -169,8 +177,18 @@ ul{margin:6px 0 0 18px;}
 .skills-divider{height:3px;background:#1f334b;border-radius:999px;margin-bottom:14px;}
 .skills-scroll{overflow-x:auto;padding-bottom:6px;}
 .skills-list{min-width:980px;border:1px solid #dce5f0;border-radius:12px;overflow:hidden;background:#fff;}
-.skills-row{display:grid;grid-template-columns:34% 66%;border-bottom:1px solid #ecf2f9;}
+.skills-row{
+  display:grid;
+  grid-template-columns:34% 66%;
+  border-bottom:1px solid #ecf2f9;
+  transition:box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
 .skills-row:last-child{border-bottom:none;}
+.skills-row:hover{
+  box-shadow:0 6px 16px rgba(25,40,70,0.10);
+  transform:translateY(-2px);
+  border-color:#d0dcf4;
+}
 .skills-cap{display:flex;align-items:center;gap:14px;padding:20px 22px;background:#f7f9fd;border-right:1px solid #e2eaf4;}
 .skills-cap-icon{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:#253144;flex-shrink:0;}
 .skills-cap-icon svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
@@ -180,6 +198,46 @@ ul{margin:6px 0 0 18px;}
 .skills-role{display:flex;align-items:flex-start;gap:10px;font-size:17px;line-height:1.45;color:#5a687c;}
 .skills-badge{display:inline-block;background:#5f67ef;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;letter-spacing:.02em;line-height:1.4;flex-shrink:0;}
 .skills-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:40px;color:#d7dfea;line-height:1;font-weight:300;}
+.skills-row:hover .skills-cap{
+  background:#eef2ff;
+}
+.skills-row:hover .skills-detail{
+  background:#ffffff;
+}
+.skills-row:hover .skills-arrow{
+  color:#5f67ef;
+}
+.thankyou-card{
+  min-height:calc(100vh - 80px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 32px;
+}
+.thankyou-simple{
+  text-align:center;
+}
+.thankyou-simple-title{
+  font-size:36px;
+  margin:0 0 12px;
+}
+.thankyou-simple-text{
+  font-size:18px;
+  margin:0;
+  color:#4b5563;
+}
+@media (max-width:960px){
+  .thankyou-card{
+    min-height:calc(100vh - 60px);
+    padding:32px 20px;
+  }
+  .thankyou-simple-title{
+    font-size:30px;
+  }
+  .thankyou-simple-text{
+    font-size:16px;
+  }
+}
 @media (max-width:992px){
   .sidebar-left{display:none;}
   .content-main{margin-left:0;padding:70px 16px 40px;}
