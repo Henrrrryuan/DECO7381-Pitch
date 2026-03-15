@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,10 +7,38 @@
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <div class="top-bar"></div>
+
+  <aside class="sidebar-left">
+    <div class="course-header">
+      <h1>SIX MIUNS ONE</h1>
+      <p>
+        <strong>Ruilong Huang</strong><br>
+        <strong>Yanya Liu</strong><br>
+        Daitian Lu<br>
+        Yali Wang<br>
+        Zezhi Yuan
+      </p>
+    </div>
+    <nav>
+      <h2>BCI-Powered Adaptive Environment</h2>
+      <ul>
+        <li><a href="#bci-timeline" class="active">BCI Development Timeline</a></li>
+        <li><a href="#hcd-approach">Human-Centered Design Approach</a></li>
+        <li><a href="#design-plan">Design Transformation Plan</a></li>
+        <li><a href="#demo">Real-Time Adaptive Control Demo</a></li>
+        <li><a href="#system-flow">System Flow</a></li>
+        <li><a href="#team-matrix">Team Expertise Matrix</a></li>
+        <li><a href="#technical-skills">Technical Skills Required</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="content-main">
 <div class="container">
   <h1>BCI-Powered Adaptive Environment</h1>
 
-  <div class="card">
+  <div class="card" id="bci-timeline">
     <h2>BCI Development Timeline</h2>
     <p class="lead">Existing products have demonstrated that wearable EEG and real-time feedback are feasible. The next step is to move from monitoring toward adaptive environments that respond to brain states in real time.</p>
 
@@ -88,7 +116,7 @@
     <p class="quote">Products like Muse and EMOTIV prove feasibility, but they mainly monitor and provide feedback. Our direction is to convert detected mental states into real-time environmental adaptation.</p>
   </div>
 
-  <div class="card">
+  <div class="card" id="hcd-approach">
     <h2>Human-Centered Design Transformation Approach</h2>
     <div class="flip-grid">
       <article class="flip-card" tabindex="0">
@@ -177,7 +205,7 @@
     </div>
   </div>
 
-    <div class="card">
+    <div class="card" id="design-plan">
     <h2>Design Transformation Plan</h2>
     <p><strong>BCI Agent Concept:</strong> Build an adaptive BCI agent that links to connected devices and turns detected mental states into automated actions.</p>
 
@@ -294,7 +322,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="demo">
     <h2>Real-Time Adaptive Control Demo</h2>
     <p class="lead">This module demonstrates a complete BCI loop: EEG input, state classification, explainable decision logic, and adaptive environmental output with user override.</p>
 
@@ -392,7 +420,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="system-flow">
     <h2>System Flow</h2>
     <p class="workflow-subline">End-to-End Process: EEG Input → Cognitive State Detection → Adaptive Environment Response → Cognitive Analysis → Evaluation &amp; Iteration</p>
     <div class="workflow-divider" aria-hidden="true"></div>
@@ -516,7 +544,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="team-matrix">
     <h2>Team Expertise Matrix</h2>
     <div class="team-table-wrap">
       <div class="team-table-head">
@@ -578,7 +606,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="technical-skills">
     <h2>Technical Skills Required</h2>
     <p class="skills-sub">Full Process Coverage</p>
     <div class="skills-divider" aria-hidden="true"></div>
@@ -682,9 +710,32 @@
     </div>
   </div>
 </div>
+  </main>
 
 <script>
 (function(){
+  // 左侧导航：锚点平滑滚动
+  document.querySelectorAll('.sidebar-left a[href^="#"]').forEach(function(anchor){
+    anchor.addEventListener('click', function(e){
+      e.preventDefault();
+      var target = document.querySelector(this.getAttribute('href'));
+      if(target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+  // 滚动时高亮当前区块
+  var sections = document.querySelectorAll('.content-main .card[id]');
+  var navLinks = document.querySelectorAll('.sidebar-left nav a[href^="#"]');
+  window.addEventListener('scroll', function(){
+    var current = '';
+    sections.forEach(function(section){
+      if(window.pageYOffset >= section.offsetTop - 120) current = section.getAttribute('id');
+    });
+    navLinks.forEach(function(link){
+      link.classList.remove('active');
+      if(link.getAttribute('href') === '#' + current) link.classList.add('active');
+    });
+  });
+
   var cards = document.querySelectorAll('.flip-card');
   cards.forEach(function(card){
     card.addEventListener('click', function(){
