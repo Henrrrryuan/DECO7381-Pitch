@@ -447,7 +447,7 @@
 <div class="slide-container">
 <!-- 头部 -->
 <header class="header">
-<h1 class="main-title">Technical Skills · Core Technology Stack</h1><p class="sub-title">Technical Approach</p>
+<h1 class="main-title">Technical Skills · Core Technology Stack</h1><p class="sub-title">Full Process Coverage・能力与功能一一匹配</p>
 </header>
 <!-- 核心内容表格 -->
 <div class="table-container">
@@ -593,86 +593,88 @@
     </div>
 </section>
 
-        <!-- System Flow -->
+        <!-- System Workflow (SIPOC-style, reference diagram) -->
         <section id="flow-web">
-<div class="slide-container">
-<!-- 头部 -->
-<header class="header">
-<h1 class="main-title">System Workflow</h1>
-<p class="sub-title">From webpage input to feature extraction, analysis, dashboard output, and evaluation <span style="color: var(--primary)">→</span> Cognitive Analysis <span style="color: var(--primary)">→</span> Evaluation &amp; Iteration</p>
-</header>
-<!-- 流程图主体 -->
-<div class="flow-container">
-<!-- 背景连线 -->
-<div class="flow-line-bg"></div>
-<!-- 步骤 1 -->
-<div class="flow-step step-1">
-<div class="step-icon-circle">
-<span class="step-badge">1</span>
-<i class="fas fa-file-import step-icon"></i>
-</div>
-<div class="step-title"><p>Web Content<br/>Input</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Online URL import<br/>Local HTML file upload<br/>Supports single-page analysis and local HTML testing</p>
-</div>
-</div>
-
-<!-- 步骤 2 -->
-<div class="flow-step step-2">
-<div class="step-icon-circle">
-<span class="step-badge">2</span>
-<i class="fas fa-layer-group step-icon"></i>
-</div>
-<div class="step-title"><p>Feature<br/>Extraction</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Extract textual / structural<br/>Interactive / media features<br/>Create structured dataset</p>
-</div>
-</div>
-
-<!-- 步骤 3 -->
-<div class="flow-step step-3">
-<div class="step-icon-circle">
-<span class="step-badge">3</span>
-<i class="fas fa-brain step-icon"></i>
-</div>
-<div class="step-title"><p>Cognitive Analysis<br/>&amp; Mapping</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Run readability and rule-based analysis<br/>Generate cognitive load indicators<br/>Map findings to WCAG / ISO principles</p>
-</div>
-</div>
-
-<!-- 步骤 4 -->
-<div class="flow-step step-4">
-<div class="step-icon-circle">
-<span class="step-badge">4</span>
-<i class="fas fa-chart-pie step-icon"></i>
-</div>
-<div class="step-title"><p>Interactive<br/>Result Output</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Responsive dashboard<br/>Actionable recommendations</p>
-</div>
-</div>
-
-<!-- 步骤 5 -->
-<div class="flow-step step-5">
-<div class="step-icon-circle">
-<span class="step-badge">5</span>
-<i class="fas fa-sync-alt step-icon"></i>
-</div>
-<div class="step-title"><p>Evaluation<br/>&amp; Iteration</p></div>
-<div class="action-box">
-<span class="action-label">Core Actions</span>
-<p class="action-text">Pre/post-optimization<br/>Comparison &amp; Validation<br/>Verify improvement effects</p>
-</div>
-</div>
-</div>
-<!-- 关闭 flow-slide-container 与 flow section -->
-</div>
-</section>
+            <div class="slide-container">
+                <header class="header">
+                    <h1 class="main-title">System Workflow</h1>
+                    <p class="sub-title">From webpage input to feature extraction, analysis, dashboard output, and evaluation → Cognitive Analysis → Evaluation &amp; Iteration</p>
+                </header>
+                <div class="sipoc-wrap" role="figure" aria-label="System workflow diagram">
+                    <!-- Top: horizontal line with 5 colored nodes -->
+                    <div class="sipoc-rail">
+                        <span class="sipoc-node sipoc-n1"></span>
+                        <span class="sipoc-node sipoc-n2"></span>
+                        <span class="sipoc-node sipoc-n3"></span>
+                        <span class="sipoc-node sipoc-n4"></span>
+                        <span class="sipoc-node sipoc-n5"></span>
+                    </div>
+                    <!-- Row: step titles (below line, above dashed) -->
+                    <div class="sipoc-titles">
+                        <span class="sipoc-title sipoc-n1">Web Content Input</span>
+                        <span class="sipoc-title sipoc-n2">Feature Extraction</span>
+                        <span class="sipoc-title sipoc-n3">Cognitive Analysis &amp; Mapping</span>
+                        <span class="sipoc-title sipoc-n4">Interactive Result Output</span>
+                        <span class="sipoc-title sipoc-n5">Evaluation &amp; Iteration</span>
+                    </div>
+                    <!-- Columns: dashed line → icon → content block -->
+                    <div class="sipoc-cols">
+                        <article class="sipoc-col sipoc-n1" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-file-import" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Online URL import</li>
+                                    <li>Local HTML file upload</li>
+                                    <li>Single-page &amp; local HTML testing</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n2" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-layer-group" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Text, structure, interaction &amp; media</li>
+                                    <li>Structured dataset creation</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n3" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-brain" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Readability &amp; rule-based analysis</li>
+                                    <li>Cognitive load indicators</li>
+                                    <li>Mapping to WCAG / ISO</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n4" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-chart-pie" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Responsive dashboard</li>
+                                    <li>Actionable recommendations</li>
+                                </ul>
+                            </div>
+                        </article>
+                        <article class="sipoc-col sipoc-n5" role="listitem">
+                            <div class="sipoc-dash" aria-hidden="true"></div>
+                            <div class="sipoc-icon"><i class="fas fa-sync-alt" aria-hidden="true"></i></div>
+                            <div class="sipoc-block">
+                                <ul>
+                                    <li>Pre/post-optimization comparison</li>
+                                    <li>Validation &amp; improvement verification</li>
+                                </ul>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
 
 <!-- Ethics（与其他 section 同级） -->
 <section id="ethics-web">
