@@ -1480,3 +1480,207 @@ letter-spacing: 0.5px;
     font-size: 12px;
     margin-right: 10px;
 }
+
+/* ========== System Workflow — Light, high-contrast, human-friendly ========== */
+#flow-web {
+    --flow-bg: #f8fafc;
+    --flow-card: #ffffff;
+    --flow-text: #1e293b;
+    --flow-text-secondary: #475569;
+    --flow-text-muted: #64748b;
+    --flow-accent: #2563eb;
+    --flow-accent-soft: #eff6ff;
+    --flow-border: #e2e8f0;
+    background: var(--flow-bg);
+    color: var(--flow-text);
+    padding: 2.5rem 1.5rem 3rem;
+    border-radius: 12px;
+    position: relative;
+}
+
+#flow-web::before {
+    display: none;
+}
+
+#flow-web .slide-container {
+    position: relative;
+    z-index: 1;
+}
+
+#flow-web .header {
+    border: none;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--flow-border);
+}
+
+#flow-web .main-title {
+    color: var(--flow-text);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.25rem;
+}
+
+#flow-web .sub-title {
+    color: var(--flow-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    font-weight: 400;
+}
+
+#flow-web .sub-title span {
+    color: var(--flow-accent);
+}
+
+#flow-web .flow-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 0.75rem 0;
+    padding-top: 0.5rem;
+}
+
+#flow-web .flow-line-bg {
+    top: 52px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--flow-border);
+    border-radius: 2px;
+    box-shadow: none;
+    animation: none;
+}
+
+#flow-web .flow-step {
+    width: 192px;
+    opacity: 1;
+    transform: none;
+    animation: none;
+    background: var(--flow-card);
+    border: 1px solid var(--flow-border);
+    border-radius: 10px;
+    padding: 1rem 0.85rem 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+#flow-web .flow-step.step-1,
+#flow-web .flow-step.step-2,
+#flow-web .flow-step.step-3,
+#flow-web .flow-step.step-4,
+#flow-web .flow-step.step-5 {
+    animation: none;
+    opacity: 1;
+}
+
+#flow-web .flow-step:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #cbd5e1;
+}
+
+#flow-web .step-icon-circle {
+    width: 56px;
+    height: 56px;
+    background: var(--flow-accent-soft);
+    border: none;
+    box-shadow: none;
+    margin-bottom: 10px;
+    animation: none;
+}
+
+#flow-web .flow-step:hover .step-icon-circle {
+    background: #dbeafe;
+}
+
+#flow-web .step-icon {
+    color: var(--flow-accent);
+    font-size: 24px;
+}
+
+#flow-web .step-badge {
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    background: var(--flow-accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+#flow-web .step-title {
+    color: var(--flow-text);
+    font-size: 0.9rem;
+    font-weight: 700;
+    height: auto;
+    min-height: auto;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+#flow-web .step-title p {
+    margin: 0;
+    color: inherit;
+}
+
+#flow-web .action-box {
+    background: #f8fafc;
+    border: 1px solid var(--flow-border);
+    border-left: 3px solid var(--flow-accent);
+    padding: 10px 12px;
+    border-radius: 6px;
+    min-height: 160px;
+    height: 90px;
+    box-sizing: border-box;
+    backdrop-filter: none;
+}
+
+#flow-web .action-label {
+    color: var(--flow-text-muted);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+#flow-web .action-text {
+    color: var(--flow-text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    font-weight: 400;
+}
+
+#flow-web .flow-arrow {
+    color: #94a3b8;
+    top: 58px;
+    font-size: 16px;
+    animation: none;
+}
+
+@media (max-width: 1100px) {
+    #flow-web .flow-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    #flow-web .flow-line-bg {
+        width: 2px;
+        height: 80%;
+        left: 50%;
+        right: auto;
+        top: 80px;
+        bottom: 40px;
+        transform: translateX(-50%);
+        background: var(--flow-border);
+    }
+    #flow-web .flow-step {
+        width: 100%;
+        max-width: 320px;
+    }
+    #flow-web .flow-arrow {
+        display: none;
+    }
+}
