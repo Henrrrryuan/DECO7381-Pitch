@@ -420,158 +420,6 @@
     </div>
   </div>
 
-  <div class="card" id="system-flow">
-    <h2>System Flow</h2>
-    <p class="workflow-subline">EEG Input → Cognitive State Detection → Adaptive Environment Response → Cognitive Analysis → Evaluation &amp; Iteration</p>
-    <div class="workflow-divider" aria-hidden="true"></div>
-
-    <div class="workflow-board">
-      <div class="workflow-grid" role="list" aria-label="System workflow steps">
-        <article class="workflow-step step-1" role="listitem">
-          <div class="workflow-tab">EEG Input</div>
-          <div class="workflow-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <rect x="10" y="9" width="18" height="22" rx="2"></rect>
-              <path d="M30 27h9l-4 4"></path>
-              <path d="M14 34h20"></path>
-              <path d="M35 27l-4-4"></path>
-            </svg>
-          </div>
-          <div class="workflow-copy">
-            <h3>EEG Signal Input</h3>
-            <p>Wearable EEG headband data collection, real-time brainwave signal acquisition, and continuous session monitoring.</p>
-          </div>
-        </article>
-
-        <article class="workflow-step step-2" role="listitem">
-          <div class="workflow-tab">State Detection</div>
-          <div class="workflow-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M24 10l14 6-14 6-14-6 14-6z"></path>
-              <path d="M10 25l14 6 14-6"></path>
-              <path d="M10 32l14 6 14-6"></path>
-            </svg>
-          </div>
-          <div class="workflow-copy">
-            <h3>Signal Processing</h3>
-            <p>Filter noise, remove artifacts, extract alpha, beta, and theta features, and build a structured cognitive-state dataset.</p>
-          </div>
-        </article>
-
-        <article class="workflow-step step-3" role="listitem">
-          <div class="workflow-tab">Environment Response</div>
-          <div class="workflow-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M18 15c-4 0-7 3-7 7v4c0 4 3 7 7 7"></path>
-              <path d="M30 15c4 0 7 3 7 7v4c0 4-3 7-7 7"></path>
-              <path d="M18 16c3 2 3 14 0 16"></path>
-              <path d="M30 16c-3 2-3 14 0 16"></path>
-              <path d="M24 13v22"></path>
-            </svg>
-          </div>
-          <div class="workflow-copy">
-            <h3>Cognitive State Detection</h3>
-            <p>Apply ML-based state classification, detect focus and relaxation states, and map brain states to environment rules.</p>
-          </div>
-        </article>
-
-        <article class="workflow-step step-4" role="listitem">
-          <div class="workflow-tab">Cognitive Analysis</div>
-          <div class="workflow-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M24 10v28"></path>
-              <path d="M24 24L37 24"></path>
-              <path d="M24 24L12 17"></path>
-              <path d="M24 24L12 31"></path>
-              <circle cx="24" cy="24" r="2"></circle>
-            </svg>
-          </div>
-          <div class="workflow-copy">
-            <h3>Adaptive Environment Response</h3>
-            <p>Adjust lighting brightness and colour, control soundscape or ambient audio, and display confidence and system status.</p>
-          </div>
-        </article>
-
-        <article class="workflow-step step-5" role="listitem">
-          <div class="workflow-tab">Evaluation</div>
-          <div class="workflow-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M13 24a11 11 0 0 1 19-8"></path>
-              <path d="M35 24a11 11 0 0 1-19 8"></path>
-              <path d="M29 11h5v5"></path>
-              <path d="M19 37h-5v-5"></path>
-            </svg>
-          </div>
-          <div class="workflow-copy">
-            <h3>Evaluation &amp; Iteration</h3>
-            <p>Compare before and after adaptation effects, validate usability and responsiveness, and refine thresholds and control logic.</p>
-          </div>
-        </article>
-      </div>
-    </div>
-  </div>
-  <div class="card" id="team-matrix">
-    <h2>Team Expertise Matrix</h2>
-    <div class="team-table-wrap">
-      <div class="team-table-head">
-        <div>Member</div>
-        <div>Specialization</div>
-        <div>Tech Stack</div>
-        <div>Role</div>
-      </div>
-
-      <div class="team-row">
-        <div class="member-cell">
-          <span class="member-icon"><img src="./assets/icons/user-circle.svg" alt="Ruilong Huang icon"></span>
-          <strong>Ruilong Huang</strong>
-        </div>
-        <div class="spec-cell">Signal Processing</div>
-        <div class="tech-cell">Python, signal filtering, FFT/frequency-domain analysis, NumPy, SciPy</div>
-        <div class="role-cell">Process EEG signals using filtering and frequency-domain analysis to extract features for cognitive-state detection.</div>
-      </div>
-
-      <div class="team-row">
-        <div class="member-cell">
-          <span class="member-icon"><img src="./assets/icons/agent.svg" alt="Yanya Liu icon"></span>
-          <strong>Yanya Liu</strong>
-        </div>
-        <div class="spec-cell">Cognitive State Detection</div>
-        <div class="tech-cell">Python, Scikit-learn, NumPy, data analysis, machine learning models, MongoDB</div>
-        <div class="role-cell">Develop machine learning models to classify cognitive states such as focus and relaxation.</div>
-      </div>
-
-      <div class="team-row">
-        <div class="member-cell">
-          <span class="member-icon"><img src="./assets/icons/phone.svg" alt="Zezhi Yuan icon"></span>
-          <strong>Zezhi Yuan</strong>
-        </div>
-        <div class="spec-cell">Adaptive Environment Control</div>
-        <div class="tech-cell">Python, rule-based control systems, IoT device control, API integration</div>
-        <div class="role-cell">Translate detected cognitive states into adaptive environment responses by dynamically controlling IoT devices such as lighting or sound systems.</div>
-      </div>
-
-      <div class="team-row">
-        <div class="member-cell">
-          <span class="member-icon"><img src="./assets/icons/lamp.svg" alt="Daitian Lu icon"></span>
-          <strong>Daitian Lu</strong>
-        </div>
-        <div class="spec-cell">System Integration &amp; Frontend</div>
-        <div class="tech-cell">React.js, HTML/CSS/JavaScript, REST API integration</div>
-        <div class="role-cell">Integrate system modules and implement the interactive dashboard for real-time monitoring.</div>
-      </div>
-
-      <div class="team-row">
-        <div class="member-cell">
-          <span class="member-icon"><img src="./assets/icons/stairs-up.svg" alt="Yali Wang icon"></span>
-          <strong>Yali Wang</strong>
-        </div>
-        <div class="spec-cell">UI/UX Design</div>
-        <div class="tech-cell">Figma, dashboard design, interaction design</div>
-        <div class="role-cell">Design the user interface and visualise EEG signals and system responses.</div>
-      </div>
-    </div>
-  </div>
-
   <div class="card" id="technical-skills">
     <h2>Technical Skills Required</h2>
     <p class="skills-sub">Full Process Coverage</p>
@@ -670,6 +518,159 @@
             <p class="skills-tech">End-to-end system architecture and prototype implementation</p>
             <div class="skills-role"><span class="skills-badge">ROLE</span><span>Integrate signal processing, AI models, and environment control into a working prototype.</span></div>
             <span class="skills-arrow" aria-hidden="true">&gt;</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="team-matrix">
+    <h2>Team Expertise Matrix</h2>
+    <div class="team-table-wrap">
+      <div class="team-table-head">
+        <div>Member</div>
+        <div>Specialization</div>
+        <div>Tech Stack</div>
+        <div>Role</div>
+      </div>
+
+      <div class="team-row">
+        <div class="member-cell">
+          <span class="member-icon"><img src="./assets/icons/user-circle.svg" alt="Ruilong Huang icon"></span>
+          <strong>Ruilong Huang</strong>
+        </div>
+        <div class="spec-cell">Signal Processing</div>
+        <div class="tech-cell">Python, signal filtering, FFT/frequency-domain analysis, NumPy, SciPy</div>
+        <div class="role-cell">Process EEG signals using filtering and frequency-domain analysis to extract features for cognitive-state detection.</div>
+      </div>
+
+      <div class="team-row">
+        <div class="member-cell">
+          <span class="member-icon"><img src="./assets/icons/agent.svg" alt="Yanya Liu icon"></span>
+          <strong>Yanya Liu</strong>
+        </div>
+        <div class="spec-cell">Cognitive State Detection</div>
+        <div class="tech-cell">Python, Scikit-learn, NumPy, data analysis, machine learning models, MongoDB</div>
+        <div class="role-cell">Develop machine learning models to classify cognitive states such as focus and relaxation.</div>
+      </div>
+
+      <div class="team-row">
+        <div class="member-cell">
+          <span class="member-icon"><img src="./assets/icons/phone.svg" alt="Zezhi Yuan icon"></span>
+          <strong>Zezhi Yuan</strong>
+        </div>
+        <div class="spec-cell">Adaptive Environment Control</div>
+        <div class="tech-cell">Python, rule-based control systems, IoT device control, API integration</div>
+        <div class="role-cell">Translate detected cognitive states into adaptive environment responses by dynamically controlling IoT devices such as lighting or sound systems.</div>
+      </div>
+
+      <div class="team-row">
+        <div class="member-cell">
+          <span class="member-icon"><img src="./assets/icons/lamp.svg" alt="Daitian Lu icon"></span>
+          <strong>Daitian Lu</strong>
+        </div>
+        <div class="spec-cell">System Integration &amp; Frontend</div>
+        <div class="tech-cell">React.js, HTML/CSS/JavaScript, REST API integration</div>
+        <div class="role-cell">Integrate system modules and implement the interactive dashboard for real-time monitoring.</div>
+      </div>
+
+      <div class="team-row">
+        <div class="member-cell">
+          <span class="member-icon"><img src="./assets/icons/stairs-up.svg" alt="Yali Wang icon"></span>
+          <strong>Yali Wang</strong>
+        </div>
+        <div class="spec-cell">UI/UX Design</div>
+        <div class="tech-cell">Figma, dashboard design, interaction design</div>
+        <div class="role-cell">Design the user interface and visualise EEG signals and system responses.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="system-flow">
+    <h2>System Flow</h2>
+    <p class="workflow-subline">EEG Input → Cognitive State Detection → Adaptive Environment Response → Cognitive Analysis → Evaluation &amp; Iteration</p>
+    <div class="workflow-divider" aria-hidden="true"></div>
+
+    <div class="workflow-board">
+      <div class="workflow-grid" role="list" aria-label="System workflow steps">
+        <article class="workflow-step step-1" role="listitem">
+          <div class="workflow-tab">EEG Input</div>
+          <div class="workflow-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <rect x="10" y="9" width="18" height="22" rx="2"></rect>
+              <path d="M30 27h9l-4 4"></path>
+              <path d="M14 34h20"></path>
+              <path d="M35 27l-4-4"></path>
+            </svg>
+          </div>
+          <div class="workflow-copy">
+            <h3>EEG Signal Input</h3>
+            <p>Wearable EEG headband data collection, real-time brainwave signal acquisition, and continuous session monitoring.</p>
+          </div>
+        </article>
+
+        <article class="workflow-step step-2" role="listitem">
+          <div class="workflow-tab">State Detection</div>
+          <div class="workflow-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M24 10l14 6-14 6-14-6 14-6z"></path>
+              <path d="M10 25l14 6 14-6"></path>
+              <path d="M10 32l14 6 14-6"></path>
+            </svg>
+          </div>
+          <div class="workflow-copy">
+            <h3>Signal Processing</h3>
+            <p>Filter noise, remove artifacts, extract alpha, beta, and theta features, and build a structured cognitive-state dataset.</p>
+          </div>
+        </article>
+
+        <article class="workflow-step step-3" role="listitem">
+          <div class="workflow-tab">Environment Response</div>
+          <div class="workflow-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M18 15c-4 0-7 3-7 7v4c0 4 3 7 7 7"></path>
+              <path d="M30 15c4 0 7 3 7 7v4c0 4-3 7-7 7"></path>
+              <path d="M18 16c3 2 3 14 0 16"></path>
+              <path d="M30 16c-3 2-3 14 0 16"></path>
+              <path d="M24 13v22"></path>
+            </svg>
+          </div>
+          <div class="workflow-copy">
+            <h3>Cognitive State Detection</h3>
+            <p>Apply ML-based state classification, detect focus and relaxation states, and map brain states to environment rules.</p>
+          </div>
+        </article>
+
+        <article class="workflow-step step-4" role="listitem">
+          <div class="workflow-tab">Cognitive Analysis</div>
+          <div class="workflow-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M24 10v28"></path>
+              <path d="M24 24L37 24"></path>
+              <path d="M24 24L12 17"></path>
+              <path d="M24 24L12 31"></path>
+              <circle cx="24" cy="24" r="2"></circle>
+            </svg>
+          </div>
+          <div class="workflow-copy">
+            <h3>Adaptive Environment Response</h3>
+            <p>Adjust lighting brightness and colour, control soundscape or ambient audio, and display confidence and system status.</p>
+          </div>
+        </article>
+
+        <article class="workflow-step step-5" role="listitem">
+          <div class="workflow-tab">Evaluation</div>
+          <div class="workflow-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M13 24a11 11 0 0 1 19-8"></path>
+              <path d="M35 24a11 11 0 0 1-19 8"></path>
+              <path d="M29 11h5v5"></path>
+              <path d="M19 37h-5v-5"></path>
+            </svg>
+          </div>
+          <div class="workflow-copy">
+            <h3>Evaluation &amp; Iteration</h3>
+            <p>Compare before and after adaptation effects, validate usability and responsiveness, and refine thresholds and control logic.</p>
           </div>
         </article>
       </div>
@@ -868,5 +869,3 @@
 </script>
 </body>
 </html>
-
-
