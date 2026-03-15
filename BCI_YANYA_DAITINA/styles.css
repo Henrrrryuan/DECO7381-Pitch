@@ -7,6 +7,19 @@ h2{font-size:28px;margin:0 0 12px;}
 .quote{background:#eef4ff;border-left:5px solid #1d4ed8;padding:12px 14px;color:#1e3a8a;font-size:17px;}
 ul{margin:6px 0 0 18px;}
 
+.team-table-wrap{border:1px solid #d6deeb;border-radius:14px;overflow:hidden;background:#fff;}
+.team-table-head,.team-row{display:grid;grid-template-columns:1.15fr 0.9fr 1.35fr 1.55fr;gap:24px;padding:22px 26px;align-items:start;}
+.team-table-head{background:#edf2f8;border-bottom:1px solid #d6deeb;font-size:14px;font-weight:800;color:#4c5df2;letter-spacing:.06em;text-transform:uppercase;line-height:1.15;}
+.team-row{border-bottom:1px solid #d6deeb;}
+.team-row:last-child{border-bottom:none;}
+.member-cell{display:flex;align-items:center;gap:14px;font-size:16px;color:#0f2744;line-height:1.25;}
+.member-cell strong{font-weight:800;}
+.member-icon{width:54px;height:54px;border-radius:14px;background:#dceeff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.member-icon img{width:28px;height:28px;filter:hue-rotate(200deg) saturate(1.2);}
+.spec-cell{font-size:16px;line-height:1.35;color:#4c5df2;font-weight:700;}
+.tech-cell{font-size:15px;line-height:1.5;color:#0f2744;}
+.role-cell{font-size:15px;line-height:1.5;color:#475b72;}
+
 .timeline-shell{overflow-x:auto;padding:8px 0 12px;}
 .timeline{position:relative;min-width:1080px;padding-top:20px;}
 .timeline-line{position:absolute;top:72px;left:54px;right:54px;height:6px;background:#d8e3f0;border-radius:999px;}
@@ -119,6 +132,12 @@ ul{margin:6px 0 0 18px;}
 .metric-main{font-size:20px;font-weight:800;color:#1f4f87;line-height:1.2;}
 .metric-note{font-size:12px;color:#5b7187;margin-top:4px;line-height:1.45;}
 @media (max-width:960px){
+  .team-table-head,.team-row{grid-template-columns:1fr;gap:12px;padding:16px 18px;}
+  .team-table-head{font-size:18px;}
+  .member-cell{font-size:18px;}
+  .member-icon{width:42px;height:42px;border-radius:12px;}
+  .member-icon img{width:22px;height:22px;}
+  .spec-cell,.tech-cell,.role-cell{font-size:16px;}
   .timeline-summary{grid-template-columns:1fr;margin-top:260px;}
   .demo-grid{grid-template-columns:1fr;}
   .pipeline{grid-template-columns:repeat(2,minmax(160px,1fr));}
