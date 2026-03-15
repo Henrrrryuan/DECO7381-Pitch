@@ -191,6 +191,12 @@ body {
     margin: 40px 0 50px; /* 增加上下间距 */
     max-width: 1400px;
 }
+
+/* Ethical Considerations: 2x2 grid */
+.ethics-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
 .card {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -322,6 +328,9 @@ letter-spacing: 0.5px;
 @media (max-width: 768px) {
     .card-grid {
         grid-template-columns: 1fr; /* 小屏幕卡片单列显示 */
+    }
+    .ethics-grid {
+        grid-template-columns: 1fr;
     }
     .flow-step {
         min-width: 100%; /* 小屏幕流程步骤单列显示 */
