@@ -147,6 +147,22 @@ ul{margin:6px 0 0 18px;}
 .ws-box ul{margin:0;padding-left:22px;}
 .ws-box li{font-size:17px;color:#2c3e52;line-height:1.5;margin-bottom:4px;}
 .ws-box li:last-child{margin-bottom:0;}
+
+.skills-sub{font-size:18px;color:#1f334b;margin:0 0 10px;}
+.skills-divider{height:3px;background:#1f334b;border-radius:999px;margin-bottom:14px;}
+.skills-scroll{overflow-x:auto;padding-bottom:6px;}
+.skills-list{min-width:980px;border:1px solid #dce5f0;border-radius:12px;overflow:hidden;background:#fff;}
+.skills-row{display:grid;grid-template-columns:34% 66%;border-bottom:1px solid #ecf2f9;}
+.skills-row:last-child{border-bottom:none;}
+.skills-cap{display:flex;align-items:center;gap:14px;padding:20px 22px;background:#f7f9fd;border-right:1px solid #e2eaf4;}
+.skills-cap-icon{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:#253144;flex-shrink:0;}
+.skills-cap-icon svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.skills-cap h3{margin:0;font-size:20px;color:#1f2d3d;line-height:1.3;}
+.skills-detail{position:relative;padding:16px 42px 16px 20px;background:#fbfcff;}
+.skills-tech{margin:0 0 10px;font-size:18px;font-weight:700;letter-spacing:.01em;color:#1f2d3d;}
+.skills-role{display:flex;align-items:flex-start;gap:10px;font-size:17px;line-height:1.45;color:#5a687c;}
+.skills-badge{display:inline-block;background:#5f67ef;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;letter-spacing:.02em;line-height:1.4;flex-shrink:0;}
+.skills-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:40px;color:#d7dfea;line-height:1;font-weight:300;}
 @media (max-width:960px){
   .team-table-head,.team-row{grid-template-columns:1fr;gap:12px;padding:16px 18px;}
   .team-table-head{font-size:18px;}
@@ -158,6 +174,10 @@ ul{margin:6px 0 0 18px;}
   .workflow-step h3{font-size:22px;}
   .ws-box li{font-size:16px;}
   .workflow-step:not(:last-child)::after{display:none;}
+  .skills-list{min-width:860px;}
+  .skills-cap h3{font-size:18px;}
+  .skills-tech{font-size:16px;}
+  .skills-role{font-size:15px;}
   .timeline-summary{grid-template-columns:1fr;margin-top:260px;}
   .demo-grid{grid-template-columns:1fr;}
   .pipeline{grid-template-columns:repeat(2,minmax(160px,1fr));}
@@ -170,6 +190,17 @@ ul{margin:6px 0 0 18px;}
   .workflow-step h3{font-size:20px;}
   .ws-label{font-size:14px;}
   .ws-box li{font-size:15px;}
+  .skills-sub{font-size:15px;}
+  .skills-list{min-width:0;}
+  .skills-row{grid-template-columns:1fr;}
+  .skills-cap{padding:14px 16px;border-right:none;border-bottom:1px solid #ecf2f9;}
+  .skills-cap-icon{width:40px;height:40px;}
+  .skills-cap-icon svg{width:28px;height:28px;}
+  .skills-cap h3{font-size:18px;}
+  .skills-detail{padding:12px 32px 14px 14px;}
+  .skills-tech{font-size:15px;}
+  .skills-role{font-size:14px;}
+  .skills-arrow{font-size:28px;right:10px;}
   .metrics-grid{grid-template-columns:1fr;}
   .pipeline{grid-template-columns:1fr;}
   .pipe-step::after{display:none;}
