@@ -1,51 +1,4 @@
-(function(){
-  // Smooth scroll for in-page nav links
-  document.querySelectorAll('a[href^="#"]').forEach(function(anchor){
-    anchor.addEventListener('click', function(e){
-      var target = document.querySelector(this.getAttribute('href'));
-      if(target){
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth' });
-
-        // update active state on sidebar links
-        document.querySelectorAll('.sidebar-left nav ul li a').forEach(function(link){
-          link.classList.remove('active');
-        });
-        this.classList.add('active');
-      }
-    });
-  });
-
-  // Highlight sidebar item based on scroll position
-  var sections = document.querySelectorAll('#problem-bci, #design-bci, #plan-bci, #qa-bci');
-  var navLinks = document.querySelectorAll('.sidebar-left nav ul li a');
-
-  function syncActiveOnScroll() {
-    var currentId = null;
-    var scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-
-    sections.forEach(function(sec){
-      var rect = sec.getBoundingClientRect();
-      var offsetTop = rect.top + scrollPos;
-      if (scrollPos >= offsetTop - 140) {
-        currentId = sec.id;
-      }
-    });
-
-    if(currentId){
-      navLinks.forEach(function(link){
-        link.classList.remove('active');
-        if(link.getAttribute('href') === '#' + currentId){
-          link.classList.add('active');
-        }
-      });
-    }
-  }
-
-  window.addEventListener('scroll', syncActiveOnScroll);
-  syncActiveOnScroll();
-
-  // Flip-card interaction
+﻿(function(){
   var cards = document.querySelectorAll('.flip-card');
   cards.forEach(function(card){
     card.addEventListener('click', function(){
@@ -59,7 +12,6 @@
     });
   });
 
-  // Timeline auto-play
   var events = document.querySelectorAll('.t-event');
   var progress = document.getElementById('timelineProgress');
   if(events.length && progress){
@@ -76,7 +28,6 @@
       if(idx >= events.length - 1){ clearInterval(timer); }
     }, 900);
   }
-  // Scalability tree animation
   var tree = document.getElementById('scaleTreeSvg');
   if(tree){
     var seq = [

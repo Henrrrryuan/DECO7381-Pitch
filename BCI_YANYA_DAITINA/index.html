@@ -1,44 +1,152 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>7831 Project Content Showcase</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#1f2d3d;line-height:1.7;}
+.container{max-width:1180px;margin:24px auto;padding:0 16px;}
+.card{background:#fff;border:1px solid #dce5f0;border-radius:12px;padding:22px;margin-bottom:16px;}
+h1{font-size:36px;margin:0 0 10px;}
+h2{font-size:28px;margin:0 0 12px;}
+.lead{background:#e9f7f4;border-left:5px solid #0f766e;padding:12px 14px;margin-bottom:14px;font-size:18px;}
+.quote{background:#eef4ff;border-left:5px solid #1d4ed8;padding:12px 14px;color:#1e3a8a;font-size:17px;}
+ul{margin:6px 0 0 18px;}
+
+.timeline-shell{overflow-x:auto;padding:8px 0 12px;}
+.timeline{position:relative;min-width:1080px;padding-top:20px;}
+.timeline-line{position:absolute;top:72px;left:54px;right:54px;height:6px;background:#d8e3f0;border-radius:999px;}
+.timeline-progress{height:100%;width:0;background:linear-gradient(90deg,#0f766e,#2563eb);border-radius:999px;transition:width .7s ease;}
+.timeline-row{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:10px;position:relative;z-index:2;padding:0 20px 8px;}
+.t-event{text-align:center;position:relative;opacity:.45;transform:translateY(8px);transition:.5s ease;}
+.t-event.active{opacity:1;transform:translateY(0);}
+.t-dot{width:22px;height:22px;border-radius:50%;background:#c7d4e3;border:2px solid #c7d4e3;margin:18px auto 12px;transition:.45s ease;}
+.t-event.active .t-dot{background:#0f766e;border-color:#0f766e;box-shadow:0 0 0 7px rgba(15,118,110,.14);}
+.t-year{font-weight:800;font-size:18px;}
+.t-label{font-size:13px;color:#53667b;max-width:170px;margin:6px auto 0;line-height:1.45;}
+.branch-wrap{position:relative;height:0;}
+.branch-card{position:absolute;left:50%;transform:translateX(-50%) translateY(14px);top:32px;width:250px;border:1px solid #dce5f0;border-radius:11px;background:#fff;overflow:hidden;opacity:0;pointer-events:none;transition:.55s ease;box-shadow:0 10px 22px rgba(25,40,55,.10);}
+.branch-card::before{content:"";position:absolute;left:50%;top:-38px;width:2px;height:38px;background:#b9c9dd;}
+.t-event.active .branch-card{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.branch-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #ebf1f8;font-weight:700;font-size:14px;}
+.branch-head img{height:16px;width:auto;object-fit:contain;}
+.branch-card .pic{width:100%;height:130px;object-fit:cover;display:block;}
+.branch-note{font-size:12px;color:#5d7084;padding:8px 10px;background:#f8fbff;line-height:1.45;}
+.timeline-summary{margin-top:240px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.summary-box{border:1px solid #dce5f0;border-radius:10px;background:#fafcff;padding:12px;}
+.summary-title{font-weight:700;font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+
+
+.flip-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px;}
+.flip-card{perspective:1200px;min-height:270px;}
+.flip-inner{position:relative;width:100%;height:100%;min-height:270px;transform-style:preserve-3d;transition:transform .7s ease;cursor:pointer;}
+.flip-card.is-flipped .flip-inner,.flip-card:hover .flip-inner{transform:rotateY(180deg);}
+.flip-face{position:absolute;inset:0;border:1px solid #dce5f0;border-radius:10px;background:#fafcff;padding:14px;backface-visibility:hidden;overflow:auto;}
+.flip-back{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.flip-front{transform:rotateY(180deg);background:#ffffff;}
+.flip-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.flip-hint{font-size:12px;color:#627489;}
+.icon-combo{position:relative;width:150px;height:110px;display:flex;align-items:center;justify-content:center;}
+.icon-combo img{width:44px;height:44px;filter:grayscale(1) brightness(.45);}
+.icon-combo .small{width:36px;height:36px;position:absolute;right:16px;top:8px;}
+.icon-combo .left{position:absolute;left:16px;top:36px;}
+.icon-combo .right{position:absolute;right:16px;top:36px;}
+.icon-combo .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);}
+
+.agent-grid{display:grid;grid-template-columns:repeat(2,minmax(280px,1fr));gap:14px;margin-top:10px;}
+.agent-card{border:1px solid #dce5f0;border-radius:11px;background:#fafcff;overflow:hidden;}
+.agent-anim{height:180px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#eef5ff,#f7fbff);border-bottom:1px solid #e3ebf5;}
+.agent-anim svg{width:190px;height:130px;stroke:#27405b;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.agent-text{padding:10px 12px 12px;font-size:14px;color:#2d4258;line-height:1.5;}
+.agent-text strong{display:block;color:#1f334b;font-size:16px;margin-bottom:4px;}
+.fatigue-moon{animation:floatY 3s ease-in-out infinite;}
+.fatigue-lamp{animation:dimGlow 2.6s ease-in-out infinite;}
+.focus-headset{animation:headsetPulse 2.2s ease-in-out infinite;}
+.focus-wave{animation:waveFade 1.4s ease-in-out infinite;}
+.stress-ring{animation:breathe 2.6s ease-in-out infinite;transform-origin:50% 50%;}
+.stress-line{animation:drift 2.2s linear infinite;}
+.conf-bar{animation:barLow 2.5s ease-in-out infinite;}
+.conf-alert{animation:blink 1.1s linear infinite;}
+.override-btn{animation:btnPulse 1.8s ease-in-out infinite;}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes dimGlow{0%,100%{opacity:.95}50%{opacity:.35}}
+@keyframes headsetPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes waveFade{0%{opacity:.15}50%{opacity:.9}100%{opacity:.15}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+@keyframes drift{0%{transform:translateX(-12px);opacity:0}50%{opacity:.9}100%{transform:translateX(12px);opacity:0}}
+@keyframes barLow{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(.85)}}
+@keyframes blink{0%,45%,100%{opacity:.2}50%,90%{opacity:1}}
+@keyframes btnPulse{0%,100%{opacity:.75}50%{opacity:1}}
+.scalability-block{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:10px;}
+.scale-tree{border:1px solid #dce5f0;border-radius:11px;background:#f9fcff;padding:10px;}
+.scale-tree svg{width:100%;height:250px;display:block;}
+.scale-tree .line{stroke:#b9c8d9;stroke-width:2.4;fill:none;transition:stroke .3s ease,filter .3s ease;}
+.scale-tree .node{fill:#ffffff;stroke:#9db1c8;stroke-width:2;transition:stroke .3s ease,fill .3s ease,filter .3s ease;}
+.scale-tree image{opacity:.45;transition:opacity .3s ease,filter .3s ease;}
+.scale-tree .line.on{stroke:#2d7bdb;filter:drop-shadow(0 0 4px rgba(45,123,219,.55));}
+.scale-tree .node.on{stroke:#2d7bdb;fill:#eef6ff;filter:drop-shadow(0 0 6px rgba(45,123,219,.4));}
+.scale-tree image.on{opacity:1;filter:drop-shadow(0 0 3px rgba(45,123,219,.45));}
+.scale-tree .root{fill:#eaf4ff;stroke:#2d5b86;}
+.scale-note{border:1px solid #dce5f0;border-radius:11px;background:#fafcff;padding:12px;line-height:1.55;color:#2b4157;font-size:14px;}
+.scale-note strong{display:block;font-size:16px;color:#1f334b;margin-bottom:6px;}
+.scale-note ul{margin:6px 0 0 18px;}
+
+.demo-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-top:10px;}
+.demo-block{border:1px solid #dce5f0;border-radius:11px;background:#fafcff;padding:12px;}
+.demo-title{font-size:18px;font-weight:700;color:#1f334b;margin:0 0 8px;}
+.pipeline{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;}
+.pipe-step{position:relative;border:1px solid #dce5f0;border-radius:10px;background:#fff;padding:10px;opacity:.55;transform:translateY(6px);transition:.35s ease;}
+.pipe-step.on{opacity:1;transform:translateY(0);border-color:#9dc2ea;box-shadow:0 8px 18px rgba(39,81,124,.08);}
+.pipe-step:not(:last-child)::after{content:"";position:absolute;top:50%;right:-8px;width:14px;height:2px;background:#b8c9dc;transform:translateY(-50%);}
+.pipe-k{font-size:12px;color:#5c7086;margin-bottom:4px;}
+.pipe-v{font-size:14px;color:#243a51;font-weight:700;}
+.state-pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eaf3ff;color:#1e4f89;font-size:12px;font-weight:700;}
+.control-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.mode-badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:999px;background:#eaf8f4;color:#0f766e;}
+.mode-badge.conservative{background:#fff4e8;color:#9a5a00;}
+.mode-badge.manual{background:#eef4ff;color:#1d4ed8;}
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed #dce5f0;}
+.kv:last-child{border-bottom:none;}
+.kv span{font-size:13px;color:#4f647b;}
+.kv strong{font-size:14px;color:#243a51;}
+.slider-list{margin-top:10px;}
+.slider-row{margin-bottom:10px;}
+.slider-row:last-child{margin-bottom:0;}
+.slider-label{display:flex;justify-content:space-between;font-size:12px;color:#5a6f84;margin-bottom:4px;}
+.slider-track{height:8px;border-radius:999px;background:#e3ebf4;overflow:hidden;}
+.slider-fill{height:100%;width:10%;background:linear-gradient(90deg,#0f766e,#2563eb);transition:width .5s ease;}
+.explain{margin-top:10px;border:1px solid #dce5f0;border-radius:9px;background:#fff;padding:9px;font-size:13px;color:#2b4157;line-height:1.5;}
+.control-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.chip{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #cbd9e8;background:#f8fbff;color:#3d546c;}
+.chip.safe{background:#eaf8f4;border-color:#b8e4d9;color:#0f766e;}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,minmax(170px,1fr));gap:10px;margin-top:12px;}
+.metric-card{border:1px solid #dce5f0;border-radius:10px;background:#fafcff;padding:10px;}
+.metric-card strong{display:block;font-size:14px;color:#1f334b;margin-bottom:4px;}
+.metric-main{font-size:20px;font-weight:800;color:#1f4f87;line-height:1.2;}
+.metric-note{font-size:12px;color:#5b7187;margin-top:4px;line-height:1.45;}
+@media (max-width:960px){
+  .timeline-summary{grid-template-columns:1fr;margin-top:260px;}
+  .demo-grid{grid-template-columns:1fr;}
+  .pipeline{grid-template-columns:repeat(2,minmax(160px,1fr));}
+}
+@media (max-width:760px){
+  .flip-grid{grid-template-columns:1fr;}
+  .agent-grid{grid-template-columns:1fr;}
+  .metrics-grid{grid-template-columns:1fr;}
+  .pipeline{grid-template-columns:1fr;}
+  .pipe-step::after{display:none;}
+  h1{font-size:30px;}
+  h2{font-size:24px;}
+}
+</style>
 </head>
 <body>
-    <aside class="sidebar-left">
-        <div class="course-header">
-            <h1>SIX MIUNS ONE</h1>
-            <p> 
-                <strong>Ruilong Huang</strong><br>
-                <strong>Yanya Liu</strong><br>
-                Daitian Lu<br>
-                Yali Wang<br>
-                Zezhi Yuan
-            </p>
-        </div>
-
-        <nav>
-            <h2>BCI-Powered Adaptive Environment</h2>
-            <ul>
-                <li><a href="#problem-bci" class="active">Problem & Ethics</a></li>
-                <li><a href="#design-bci">Human-Centered Design</a></li>
-                <li><a href="#plan-bci">Design Transformation Plan</a></li>
-                <li><a href="#system-flow-bci">System Flow</a></li>
-                <li><a href="#tech-skills-bci">Technical Skills</a></li>
-                <li><a href="#qa-bci">Q&amp;A</a></li>
-            </ul>
-        </nav>
-    </aside>
-
-<main class="content-main">
 <div class="container">
   <h1>BCI-Powered Adaptive Environment</h1>
 
-  <div class="card" id="problem-bci">
-    <h2>Problem & Ethics</h2>
+  <div class="card">
+    <h2>BCI Development Timeline</h2>
     <p class="lead">Existing products have demonstrated that wearable EEG and real-time feedback are feasible. The next step is to move from monitoring toward adaptive environments that respond to brain states in real time.</p>
 
     <div class="timeline-shell">
@@ -93,12 +201,20 @@
 
         <div class="timeline-summary">
           <div class="summary-box">
-            <div class="summary-title">Muse <img src="./assets/images/muse-logo-dark.png" alt="Muse logo"></div>
-            Consumer EEG headband for real-time neurofeedback, focus, and relaxation training.
+            <div class="summary-title">Ethics Dilemmas: Privacy</div>
+            Continuous brain-state sensing may expose sensitive emotional or cognitive patterns beyond user intent.
           </div>
           <div class="summary-box">
-            <div class="summary-title">EMOTIV <img src="./assets/images/emotiv-logo.svg" alt="EMOTIV logo"></div>
-            Wireless EEG headsets for real-world brain data collection and research use.
+            <div class="summary-title">Ethics Dilemmas: Autonomy</div>
+            Over-automation can reduce user agency if system actions are not transparent or easy to override.
+          </div>
+          <div class="summary-box">
+            <div class="summary-title">Ethics Dilemmas: Bias</div>
+            Models trained on limited populations may perform unevenly across users and contexts.
+          </div>
+          <div class="summary-box">
+            <div class="summary-title">Ethics Dilemmas: Trust & Safety</div>
+            Wrong inferences can trigger inappropriate environmental changes, affecting comfort and performance.
           </div>
         </div>
       </div>
@@ -107,7 +223,7 @@
     <p class="quote">Products like Muse and EMOTIV prove feasibility, but they mainly monitor and provide feedback. Our direction is to convert detected mental states into real-time environmental adaptation.</p>
   </div>
 
-  <div class="card" id="design-bci">
+  <div class="card">
     <h2>Human-Centered Design Transformation Approach</h2>
     <div class="flip-grid">
       <article class="flip-card" tabindex="0">
@@ -196,7 +312,7 @@
     </div>
   </div>
 
-    <div class="card" id="plan-bci">
+    <div class="card">
     <h2>Design Transformation Plan</h2>
     <p><strong>BCI Agent Concept:</strong> Build an adaptive BCI agent that links to connected devices and turns detected mental states into automated actions.</p>
 
@@ -302,204 +418,285 @@
         </svg>
       </div>
       <div class="scale-note">
-        <strong>Scalability by Connected Devices</strong>
-        The BCI agent scales with the number of connected devices.
+        <strong>Ethics Mitigation Strategies</strong>
+        To address ethical risks in BCI-powered environments, the system should follow explicit safeguards.
         <ul>
-          <li>More endpoints enable finer and more personalized automation.</li>
-          <li>Blinds, lamp, AC, and phone can coordinate as one adaptive workflow.</li>
-          <li>The same logic can extend to speakers, wearables, and desk systems.</li>
+          <li>Privacy by design: process sensitive signals locally when possible, and minimize data retention.</li>
+          <li>Human-in-the-loop control: require transparent explanations and always keep manual override available.</li>
+          <li>Fairness and safety checks: calibrate across user groups, monitor model drift, and fail safely under uncertainty.</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <div class="card card-section" id="system-flow-bci">
-    <div class="section-header">
-      <h2>System Flow・端到端整体流程</h2>
-      <p class="lead">End-to-End Process: EEG Input → Cognitive State Detection → Adaptive Environment Response → Cognitive Analysis → Evaluation &amp; Iteration</p>
-      <div class="section-divider"></div>
-    </div>
-    <div class="flow-container">
-      <div class="flow-step">
-        <div class="step-icon-circle">
-          <span class="step-badge">1</span>
-          <i class="fas fa-file-import step-icon"></i>
-        </div>
-        <div class="step-title"><p>EEG Signal<br/>Input</p></div>
-        <div class="action-box">
-          <span class="action-label">Core Actions</span>
-          <p class="action-text">Wearable EEG headband data collection<br/>Real-time brainwave signal acquisition<br/>Support continuous session monitoring</p>
-        </div>
-      </div>
-      <i class="fas fa-chevron-right flow-arrow arrow-1"></i>
-      <div class="flow-step">
-        <div class="step-icon-circle">
-          <span class="step-badge">2</span>
-          <i class="fas fa-layer-group step-icon"></i>
-        </div>
-        <div class="step-title"><p>Signal<br/>Processing</p></div>
-        <div class="action-box">
-          <span class="action-label">Core Actions</span>
-          <p class="action-text">Filter noise and remove artifacts<br/>Extract alpha / beta / theta features<br/>Build structured cognitive-state dataset</p>
-        </div>
-      </div>
-      <i class="fas fa-chevron-right flow-arrow arrow-2"></i>
-      <div class="flow-step">
-        <div class="step-icon-circle">
-          <span class="step-badge">3</span>
-          <i class="fas fa-brain step-icon"></i>
-        </div>
-        <div class="step-title"><p>Cognitive<br/>&amp; Analysis</p></div>
-        <div class="action-box">
-          <span class="action-label">Core Actions</span>
-          <p class="action-text">Apply ML-based state classification<br/>Detect focus / relaxation states<br/>Map brain states to environment rules</p>
-        </div>
-      </div>
-      <i class="fas fa-chevron-right flow-arrow arrow-3"></i>
-      <div class="flow-step">
-        <div class="step-icon-circle">
-          <span class="step-badge">4</span>
-          <i class="fas fa-chart-pie step-icon"></i>
-        </div>
-        <div class="step-title"><p>Adaptive<br/>Environment</p></div>
-        <div class="action-box">
-          <span class="action-label">Core Actions</span>
-          <p class="action-text">Adjust lighting brightness / colour<br/>Control soundscape or ambient audio<br/>Display confidence and system status</p>
-        </div>
-      </div>
-      <i class="fas fa-chevron-right flow-arrow arrow-4"></i>
-      <div class="flow-step">
-        <div class="step-icon-circle">
-          <span class="step-badge">5</span>
-          <i class="fas fa-sync-alt step-icon"></i>
-        </div>
-        <div class="step-title"><p>Evaluation<br/>&amp; Iteration</p></div>
-        <div class="action-box">
-          <span class="action-label">Core Actions</span>
-          <p class="action-text">Compare before/after adaptation effects<br/>Validate usability and responsiveness<br/>Refine thresholds and control logic</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="card">
+    <h2>Real-Time Adaptive Control Demo</h2>
+    <p class="lead">This module demonstrates a complete BCI loop: EEG input, state classification, explainable decision logic, and adaptive environmental output with user override.</p>
 
-  <div class="card card-section" id="tech-skills-bci">
-    <div class="section-header">
-      <h2>Technical Skills Required・核心技术栈</h2>
-      <p class="lead">Full Process Coverage・能力与功能一一匹配</p>
-      <div class="section-divider"></div>
-    </div>
-    <div class="table-container">
-      <div class="tech-row">
-        <div class="col-capability">
-          <div class="cap-icon"><i class="fas fa-network-wired"></i></div>
-          <p class="cap-text">EEG Signal Processing</p>
-        </div>
-        <div class="col-tech">
-          <div class="col-tech-inner">
-            <p class="tech-stack">Brainwave acquisition, signal filtering, feature extraction</p>
-            <div class="support-func">
-              <span class="func-badge">ROLE</span>
-              <span class="func-text">Processing EEG signals, removing noise, extracting alpha / beta / theta brainwave features for cognitive-state detection</span>
-            </div>
+    <div class="demo-grid">
+      <div class="demo-block">
+        <h3 class="demo-title">Closed-Loop Pipeline</h3>
+        <div class="pipeline" id="pipelineSteps">
+          <div class="pipe-step" data-step="0">
+            <div class="pipe-k">Step 1: EEG Input</div>
+            <div class="pipe-v">Quality: <span id="sigQuality">82%</span></div>
+            <div class="pipe-v">Artifact: <span id="artifactLevel">Low</span></div>
           </div>
-          <i class="fas fa-chevron-right arrow-indicator"></i>
-        </div>
-      </div>
-      <div class="tech-row">
-        <div class="col-capability">
-          <div class="cap-icon"><i class="fas fa-brain"></i></div>
-          <p class="cap-text">Cognitive State Detection</p>
-        </div>
-        <div class="col-tech">
-          <div class="col-tech-inner">
-            <p class="tech-stack">Machine learning models for mental-state classification</p>
-            <div class="support-func">
-              <span class="func-badge">ROLE</span>
-              <span class="func-text">Develop algorithms to detect user states such as focus, relaxation, or fatigue based on EEG features</span>
-            </div>
+          <div class="pipe-step" data-step="1">
+            <div class="pipe-k">Step 2: State Classifier</div>
+            <div class="pipe-v">State: <span id="stateLabel" class="state-pill">Focused</span></div>
+            <div class="pipe-v">Confidence: <span id="confidenceValue">0.84</span></div>
           </div>
-          <i class="fas fa-chevron-right arrow-indicator"></i>
-        </div>
-      </div>
-      <div class="tech-row">
-        <div class="col-capability">
-          <div class="cap-icon"><i class="fas fa-chart-line"></i></div>
-          <p class="cap-text">Adaptive Environment Control</p>
-        </div>
-        <div class="col-tech">
-          <div class="col-tech-inner">
-            <p class="tech-stack">Smart environment logic and response system</p>
-            <div class="support-func">
-              <span class="func-badge">ROLE</span>
-              <span class="func-text">Design rules that translate cognitive states into environmental adjustments such as lighting, sound, or temperature</span>
-            </div>
+          <div class="pipe-step" data-step="2">
+            <div class="pipe-k">Step 3: Decision Engine</div>
+            <div class="pipe-v">Policy: <span id="policyValue">Auto</span></div>
+            <div class="pipe-v">Gate: <span id="gateValue">Pass</span></div>
           </div>
-          <i class="fas fa-chevron-right arrow-indicator"></i>
-        </div>
-      </div>
-      <div class="tech-row">
-        <div class="col-capability">
-          <div class="cap-icon"><i class="fas fa-clipboard-check"></i></div>
-          <p class="cap-text">Interactive Dashboard</p>
-        </div>
-        <div class="col-tech">
-          <div class="col-tech-inner">
-            <p class="tech-stack">User interface for monitoring and interaction</p>
-            <div class="support-func">
-              <span class="func-badge">ROLE</span>
-              <span class="func-text">Visualise EEG signals, cognitive states, and system responses through a responsive dashboard</span>
-            </div>
+          <div class="pipe-step" data-step="3">
+            <div class="pipe-k">Step 4: Environment Output</div>
+            <div class="pipe-v">Light / Sound / Temp</div>
+            <div class="pipe-v"><span id="outputValue">Focus preset applied</span></div>
           </div>
-          <i class="fas fa-chevron-right arrow-indicator"></i>
         </div>
-      </div>
-      <div class="tech-row">
-        <div class="col-capability">
-          <div class="cap-icon"><i class="fas fa-clipboard-check"></i></div>
-          <p class="cap-text">System Integration</p>
-        </div>
-        <div class="col-tech">
-          <div class="col-tech-inner">
-            <p class="tech-stack">End-to-end system architecture and prototype implementation</p>
-            <div class="support-func">
-              <span class="func-badge">ROLE</span>
-              <span class="func-text">Integrate signal processing, AI models, and environment control into a working prototype</span>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right arrow-indicator"></i>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="card qa-fullscreen" id="qa-bci">
-    <div class="qa-inner">
-    <ul class="qa-placeholder-list">
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-    </ul>
-      <h1 class="thankyou-title">Thank you</h1>
-      <h2 class="qa-heading">Q&amp;A・Discussion</h2>
-      <p class="lead">Use this section to address how the BCI-powered adaptive environment handles ethics, reliability, and real-world deployment concerns.</p>
-      <ul class="qa-placeholder-list">
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-        <li>&nbsp;</li>
-      </ul>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <strong>Response Latency</strong>
+            <div class="metric-main" id="latencyValue">920 ms</div>
+            <div class="metric-note">State update to action dispatch time.</div>
+          </div>
+          <div class="metric-card">
+            <strong>False Triggers</strong>
+            <div class="metric-main" id="falseTriggerValue">1</div>
+            <div class="metric-note">Actions canceled by low confidence gate.</div>
+          </div>
+          <div class="metric-card">
+            <strong>Stable Duration</strong>
+            <div class="metric-main" id="stableValue">00:42</div>
+            <div class="metric-note">Continuous period in one cognitive state.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-block">
+        <div class="control-head">
+          <h3 class="demo-title" style="margin:0;">Live Control Panel</h3>
+          <span class="mode-badge" id="modeBadge">Auto Mode</span>
+        </div>
+
+        <div class="kv">
+          <span>Current state</span>
+          <strong id="panelState">Focused</strong>
+        </div>
+        <div class="kv">
+          <span>Signal confidence</span>
+          <strong id="panelConfidence">84%</strong>
+        </div>
+        <div class="kv">
+          <span>Connection status</span>
+          <strong id="connectionState">Stable</strong>
+        </div>
+
+        <div class="slider-list">
+          <div class="slider-row">
+            <div class="slider-label"><span>Light Intensity</span><span id="lightVal">74%</span></div>
+            <div class="slider-track"><div class="slider-fill" id="lightFill"></div></div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-label"><span>Color Temperature</span><span id="colorVal">6300K</span></div>
+            <div class="slider-track"><div class="slider-fill" id="colorFill"></div></div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-label"><span>Soundscape Level</span><span id="soundVal">28%</span></div>
+            <div class="slider-track"><div class="slider-fill" id="soundFill"></div></div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-label"><span>Temperature Setpoint</span><span id="tempVal">23.5C</span></div>
+            <div class="slider-track"><div class="slider-fill" id="tempFill"></div></div>
+          </div>
+        </div>
+
+        <div class="explain" id="explainText">Detected sustained focus and high confidence. Applied cool white light and low-noise profile for concentration.</div>
+
+        <div class="control-actions">
+          <span class="chip safe">Automation ON</span>
+          <span class="chip">Manual Override Ready</span>
+          <span class="chip">Local Processing</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-<script src="script.js"></script>
-</main>
+
+<script>
+(function(){
+  var cards = document.querySelectorAll('.flip-card');
+  cards.forEach(function(card){
+    card.addEventListener('click', function(){
+      card.classList.toggle('is-flipped');
+    });
+    card.addEventListener('keypress', function(e){
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        card.classList.toggle('is-flipped');
+      }
+    });
+  });
+
+  var events = document.querySelectorAll('.t-event');
+  var progress = document.getElementById('timelineProgress');
+  if(events.length && progress){
+    var idx = 0;
+    function paint(i){
+      events.forEach(function(ev, n){ ev.classList.toggle('active', n <= i); });
+      var pct = (i/(events.length-1))*100;
+      progress.style.width = pct + '%';
+    }
+    paint(0);
+    var timer = setInterval(function(){
+      idx += 1;
+      paint(idx);
+      if(idx >= events.length - 1){ clearInterval(timer); }
+    }, 900);
+  }
+  var tree = document.getElementById('scaleTreeSvg');
+  if(tree){
+    var seq = [
+      '.root-line,.n0,.i0',
+      '.branch-line',
+      '.d1,.n1,.i1',
+      '.d2,.n2,.i2',
+      '.d3,.n3,.i3',
+      '.d4,.n4,.i4'
+    ];
+    var step = -1;
+    function resetTree(){
+      tree.querySelectorAll('.on').forEach(function(el){ el.classList.remove('on'); });
+    }
+    function tickTree(){
+      if(step >= seq.length - 1){
+        step = -1;
+        resetTree();
+      }
+      step += 1;
+      tree.querySelectorAll(seq[step]).forEach(function(el){ el.classList.add('on'); });
+    }
+    resetTree();
+    setInterval(tickTree, 650);
+  }
+
+  var demo = {
+    sigQuality: document.getElementById('sigQuality'),
+    artifactLevel: document.getElementById('artifactLevel'),
+    stateLabel: document.getElementById('stateLabel'),
+    confidenceValue: document.getElementById('confidenceValue'),
+    policyValue: document.getElementById('policyValue'),
+    gateValue: document.getElementById('gateValue'),
+    outputValue: document.getElementById('outputValue'),
+    panelState: document.getElementById('panelState'),
+    panelConfidence: document.getElementById('panelConfidence'),
+    connectionState: document.getElementById('connectionState'),
+    modeBadge: document.getElementById('modeBadge'),
+    explainText: document.getElementById('explainText'),
+    latencyValue: document.getElementById('latencyValue'),
+    falseTriggerValue: document.getElementById('falseTriggerValue'),
+    stableValue: document.getElementById('stableValue'),
+    lightVal: document.getElementById('lightVal'),
+    colorVal: document.getElementById('colorVal'),
+    soundVal: document.getElementById('soundVal'),
+    tempVal: document.getElementById('tempVal'),
+    lightFill: document.getElementById('lightFill'),
+    colorFill: document.getElementById('colorFill'),
+    soundFill: document.getElementById('soundFill'),
+    tempFill: document.getElementById('tempFill'),
+    steps: document.querySelectorAll('#pipelineSteps .pipe-step')
+  };
+  if(demo.sigQuality && demo.steps.length){
+    var profiles = [
+      {
+        state:'Focused', confidence:84, quality:82, artifact:'Low', policy:'Auto', gate:'Pass',
+        output:'Focus preset applied', mode:'Auto Mode', modeClass:'',
+        connect:'Stable', explain:'Detected sustained focus and high confidence. Applied cool white light and low-noise profile for concentration.',
+        light:74, color:79, sound:28, temp:58, colorText:'6300K', tempText:'23.5C', latency:'920 ms'
+      },
+      {
+        state:'Relaxed', confidence:79, quality:76, artifact:'Low', policy:'Auto', gate:'Pass',
+        output:'Recovery preset applied', mode:'Auto Mode', modeClass:'',
+        connect:'Stable', explain:'Detected relaxation trend. Dimmed lighting, warmed color temperature, and softened soundscape.',
+        light:46, color:36, sound:42, temp:54, colorText:'3800K', tempText:'24.0C', latency:'870 ms'
+      },
+      {
+        state:'Stress Rise', confidence:62, quality:58, artifact:'Medium', policy:'Conservative', gate:'Caution',
+        output:'Calm profile (limited)', mode:'Conservative', modeClass:'conservative',
+        connect:'Noisy Signal', explain:'Stress indicators rose while signal quality dropped. Applied a minimal safe adjustment and requested user confirmation.',
+        light:52, color:48, sound:24, temp:56, colorText:'4600K', tempText:'23.8C', latency:'1040 ms'
+      },
+      {
+        state:'Low Confidence', confidence:41, quality:43, artifact:'High', policy:'Manual Priority', gate:'Block',
+        output:'No auto change', mode:'Manual Override', modeClass:'manual',
+        connect:'Degraded', explain:'Confidence fell below threshold and artifacts increased. Automation held output and switched to manual-priority mode.',
+        light:50, color:50, sound:30, temp:55, colorText:'5000K', tempText:'23.9C', latency:'1210 ms'
+      }
+    ];
+    var active = 0;
+    var falseTriggers = 1;
+    var stableTicks = 0;
+    function mmss(total){
+      var m = Math.floor(total / 60);
+      var s = total % 60;
+      return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+    function paintPipeline(step){
+      demo.steps.forEach(function(el, i){ el.classList.toggle('on', i <= step); });
+    }
+    function update(profile){
+      paintPipeline(0);
+      setTimeout(function(){ paintPipeline(1); }, 160);
+      setTimeout(function(){ paintPipeline(2); }, 320);
+      setTimeout(function(){ paintPipeline(3); }, 480);
+
+      demo.sigQuality.textContent = profile.quality + '%';
+      demo.artifactLevel.textContent = profile.artifact;
+      demo.stateLabel.textContent = profile.state;
+      demo.confidenceValue.textContent = (profile.confidence / 100).toFixed(2);
+      demo.policyValue.textContent = profile.policy;
+      demo.gateValue.textContent = profile.gate;
+      demo.outputValue.textContent = profile.output;
+
+      demo.panelState.textContent = profile.state;
+      demo.panelConfidence.textContent = profile.confidence + '%';
+      demo.connectionState.textContent = profile.connect;
+      demo.modeBadge.textContent = profile.mode;
+      demo.modeBadge.className = 'mode-badge' + (profile.modeClass ? ' ' + profile.modeClass : '');
+      demo.explainText.textContent = profile.explain;
+
+      demo.lightVal.textContent = profile.light + '%';
+      demo.colorVal.textContent = profile.colorText;
+      demo.soundVal.textContent = profile.sound + '%';
+      demo.tempVal.textContent = profile.tempText;
+      demo.lightFill.style.width = profile.light + '%';
+      demo.colorFill.style.width = profile.color + '%';
+      demo.soundFill.style.width = profile.sound + '%';
+      demo.tempFill.style.width = profile.temp + '%';
+
+      demo.latencyValue.textContent = profile.latency;
+      if(profile.gate === 'Block'){ falseTriggers += 1; }
+      demo.falseTriggerValue.textContent = String(falseTriggers);
+      stableTicks += 18;
+      demo.stableValue.textContent = mmss(stableTicks);
+    }
+    update(profiles[0]);
+    setInterval(function(){
+      active = (active + 1) % profiles.length;
+      update(profiles[active]);
+    }, 1800);
+  }
+})();
+</script>
 </body>
 </html>
+
+
 
 
 
