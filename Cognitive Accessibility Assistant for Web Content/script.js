@@ -65,3 +65,52 @@ insightTabs.forEach(tab => {
         });
     });
 });
+
+// Reference 链接弹窗：点击卡片在当前页弹出小窗口，不离开 111.html
+(function () {
+    const overlay = document.getElementById('ref-modal');
+    const iframe = document.getElementById('ref-modal-iframe');
+    const titleEl = document.getElementById('ref-modal-title');
+    const openNewLink = document.getElementById('ref-modal-open-new');
+    const closeBtn = overlay && overlay.querySelector('.ref-modal-close');
+
+    function openModal(url, title) {
+        if (!overlay || !iframe) return;
+        iframe.src = url;
+        if (titleEl) titleEl.textContent = title || 'Reference';
+        if (openNewLink) {
+            openNewLink.href = url;
+            openNewLink.setAttribute('href', url);
+        }
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        if (!overlay) return;
+        overlay.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+        if (iframe) iframe.src = 'about:blank';
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.ref-modal-trigger').forEach(trigger => {
+        trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-ref-url') || this.getAttribute('href');
+            const title = this.getAttribute('data-ref-title') || '';
+            if (url) openModal(url, title);
+        });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (overlay) {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) closeModal();
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay && overlay.classList.contains('is-open')) closeModal();
+    });
+})();

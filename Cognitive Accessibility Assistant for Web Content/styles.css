@@ -1669,3 +1669,101 @@ letter-spacing: 0.5px;
     font-size: 12px;
     margin-right: 10px;
 }
+
+/* ========== Reference 链接弹窗（课堂展示用） ========== */
+.ref-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.ref-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+.ref-modal-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.ref-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+.ref-modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+}
+.ref-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ref-modal-new-tab {
+    font-size: 0.85rem;
+    color: var(--primary, #4f46e5);
+    text-decoration: none;
+}
+.ref-modal-new-tab:hover {
+    text-decoration: underline;
+}
+.ref-modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 1.5rem;
+    line-height: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.ref-modal-close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+.ref-modal-body {
+    flex: 1;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.ref-modal-body .ref-modal-fallback {
+    margin: 0;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    color: #64748b;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+#ref-modal-iframe {
+    flex: 1;
+    width: 100%;
+    min-height: 420px;
+    border: none;
+    display: block;
+}

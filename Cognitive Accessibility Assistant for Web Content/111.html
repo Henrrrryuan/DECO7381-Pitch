@@ -63,21 +63,21 @@
 
                 <div class="card-grid compact-grid">
                     <article class="card">
-                        <a href="https://wave.webaim.org" target="_blank" rel="noopener" class="card-link">
+                        <a href="https://wave.webaim.org" target="_blank" rel="noopener" class="card-link ref-modal-trigger" data-ref-url="https://wave.webaim.org" data-ref-title="WAVE">
                             <h3>WAVE</h3>
                             <p>Accessibility evaluation tool that detects WCAG issues such as colour contrast and missing alt text.</p>
                             <p class="small-text"><strong>Reference:</strong> wave.webaim.org</p>
                         </a>
                     </article>
                     <article class="card">
-                        <a href="https://www.deque.com/axe" target="_blank" rel="noopener" class="card-link">
+                        <a href="https://www.deque.com/axe" target="_blank" rel="noopener" class="card-link ref-modal-trigger" data-ref-url="https://www.deque.com/axe" data-ref-title="axe DevTools">
                             <h3>axe DevTools</h3>
                             <p>Developer-focused accessibility testing tool that performs automated accessibility audits.</p>
                             <p class="small-text"><strong>Reference:</strong> deque.com/axe</p>
                         </a>
                     </article>
                     <article class="card">
-                        <a href="https://accessibilityinsights.io" target="_blank" rel="noopener" class="card-link">
+                        <a href="https://accessibilityinsights.io" target="_blank" rel="noopener" class="card-link ref-modal-trigger" data-ref-url="https://accessibilityinsights.io" data-ref-title="Accessibility Insights">
                             <h3>Accessibility Insights</h3>
                             <p>Microsoft accessibility testing tool that helps developers identify WCAG compliance issues.</p>
                             <p class="small-text"><strong>Reference:</strong> accessibilityinsights.io</p>
@@ -458,7 +458,7 @@
 <p class="cap-text">Web Data Processing</p>
 </div>
 <div class="col-tech">
-<p class="tech-stack">Python + <a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc/" target="_blank" rel="noopener noreferrer">BeautifulSoup</a></p>
+<p class="tech-stack">Python + <a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc/" target="_blank" rel="noopener noreferrer" class="ref-modal-trigger" data-ref-url="https://www.crummy.com/software/BeautifulSoup/bs4/doc/" data-ref-title="BeautifulSoup">BeautifulSoup</a></p>
 <div class="support-func">
 <span class="func-badge">Function</span>
 <span class="func-text">Page structure and content extraction</span>
@@ -475,9 +475,9 @@
 <div class="col-tech">
 <p class="tech-stack">
     Python +
-    <a href="https://github.com/textstat/textstat" target="_blank" rel="noopener noreferrer">textstat</a>
+    <a href="https://github.com/textstat/textstat" target="_blank" rel="noopener noreferrer" class="ref-modal-trigger" data-ref-url="https://github.com/textstat/textstat" data-ref-title="textstat">textstat</a>
     +
-    <a href="https://en.wikipedia.org/wiki/Rule-based_machine_learning" target="_blank" rel="noopener noreferrer">rule-based scoring</a>
+    <a href="https://en.wikipedia.org/wiki/Rule-based_machine_learning" target="_blank" rel="noopener noreferrer" class="ref-modal-trigger" data-ref-url="https://en.wikipedia.org/wiki/Rule-based_machine_learning" data-ref-title="rule-based scoring">rule-based scoring</a>
 </p>
 <div class="support-func">
 <span class="func-badge">Function</span>
@@ -494,9 +494,9 @@
 </div>
 <div class="col-tech">
 <p class="tech-stack">
-    <a href="https://react.dev/" target="_blank" rel="noopener noreferrer">React.js</a>
+    <a href="https://react.dev/" target="_blank" rel="noopener noreferrer" class="ref-modal-trigger" data-ref-url="https://react.dev/" data-ref-title="React.js">React.js</a>
     +
-    <a href="https://echarts.apache.org/en/index.html" target="_blank" rel="noopener noreferrer">ECharts</a>
+    <a href="https://echarts.apache.org/en/index.html" target="_blank" rel="noopener noreferrer" class="ref-modal-trigger" data-ref-url="https://echarts.apache.org/en/index.html" data-ref-title="ECharts">ECharts</a>
     + Interactive Dashboard
 </p>
 <div class="support-func">
@@ -717,6 +717,23 @@
 </footer>
 </div>
     </main>
+
+    <!-- Reference 链接弹窗：课堂展示时在当前页弹出小窗口 -->
+    <div id="ref-modal" class="ref-modal-overlay" aria-hidden="true">
+        <div class="ref-modal-box" role="dialog" aria-modal="true" aria-labelledby="ref-modal-title">
+            <div class="ref-modal-header">
+                <h2 id="ref-modal-title" class="ref-modal-title"></h2>
+                <div class="ref-modal-actions">
+                    <a id="ref-modal-open-new" href="#" target="_blank" rel="noopener" class="ref-modal-new-tab">在新标签页打开</a>
+                    <button type="button" class="ref-modal-close" aria-label="关闭">&times;</button>
+                </div>
+            </div>
+            <div class="ref-modal-body">
+                <iframe id="ref-modal-iframe" title="Reference preview" src="about:blank"></iframe>
+                <p class="ref-modal-fallback">若无法在此处加载，请点击「在新标签页打开」。</p>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
