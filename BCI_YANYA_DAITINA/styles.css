@@ -155,7 +155,17 @@ ul{margin:6px 0 0 18px;}
 .workflow-board{padding-top:8px;}
 .workflow-grid{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;}
 .workflow-step{border-radius:0;background:#fff7;border:1px solid #e0e7f1;text-align:center;overflow:hidden;box-shadow:none;}
-.workflow-tab{padding:14px 10px 50px;color:#fff;font-size:15px;font-weight:800;text-align:center;}
+.workflow-tab{
+  height:90px;
+  padding:0 10px 50px;
+  color:#fff;
+  font-size:15px;
+  font-weight:800;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 .workflow-icon{width:84px;height:84px;border-radius:50%;margin:-42px auto 18px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(31,45,61,.08);}
 .workflow-icon svg{width:42px;height:42px;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
 .workflow-copy{padding:0 16px 18px;}
