@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local Gaze Focus Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="top-panel">
+        <div>
+          <h1>Gaze Focus Tracker</h1>
+          <p class="sub">
+            Real-time gaze point + heatmap of places you already looked at.
+          </p>
+        </div>
+        <div class="controls">
+          <button id="startBtn">Start Tracking</button>
+          <button id="pauseBtn" disabled>Pause</button>
+          <button id="clearBtn" disabled>Clear Heatmap</button>
+          <button id="previewBtn" disabled>Show Camera Preview</button>
+        </div>
+      </header>
+
+      <section id="viewport" aria-label="Gaze tracking area">
+        <canvas id="heatmapCanvas"></canvas>
+        <div id="gazeDot" aria-hidden="true"></div>
+
+        <div id="calibrationLayer" class="hidden">
+          <p class="calibration-note">
+            Calibration: click each point 5 times while looking at it.
+          </p>
+
+          <button class="cal-point" data-x="0.08" data-y="0.12" style="--x: 8%; --y: 12%"></button>
+          <button class="cal-point" data-x="0.5" data-y="0.12" style="--x: 50%; --y: 12%"></button>
+          <button class="cal-point" data-x="0.92" data-y="0.12" style="--x: 92%; --y: 12%"></button>
+          <button class="cal-point" data-x="0.08" data-y="0.5" style="--x: 8%; --y: 50%"></button>
+          <button class="cal-point" data-x="0.5" data-y="0.5" style="--x: 50%; --y: 50%"></button>
+          <button class="cal-point" data-x="0.92" data-y="0.5" style="--x: 92%; --y: 50%"></button>
+          <button class="cal-point" data-x="0.08" data-y="0.88" style="--x: 8%; --y: 88%"></button>
+          <button class="cal-point" data-x="0.5" data-y="0.88" style="--x: 50%; --y: 88%"></button>
+          <button class="cal-point" data-x="0.92" data-y="0.88" style="--x: 92%; --y: 88%"></button>
+        </div>
+      </section>
+
+      <aside class="stats-panel">
+        <div class="status-row">
+          <span class="label">Status</span>
+          <span id="statusText">Idle - click "Start Tracking"</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Gaze</span>
+          <span id="coordsText">x: -, y: -</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Samples</span>
+          <span id="samplesText">0</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Coverage</span>
+          <span id="coverageText">0%</span>
+        </div>
+
+        <h2>Visited Map</h2>
+        <canvas id="coverageCanvas" width="300" height="180"></canvas>
+      </aside>
+    </div>
+
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
