@@ -1,31 +1,38 @@
 # Local Gaze Focus Tracker
 
-This project uses your webcam to estimate gaze position in real time and draw:
+This project tracks webcam gaze in real time and overlays:
 - current focus point (moving dot)
-- gaze heatmap (where you have looked)
-- coverage map (which screen regions have been visited)
+- gaze heatmap (where you looked)
+- coverage map (which regions were visited)
 
-## Run in VSCode
+It includes a single-page browser UI where you can input any target URL and load that site through a local proxy.
 
-1. Open folder `D:\eye` in VSCode.
-2. Open VSCode terminal.
-3. Start a local server:
+## Run
+
+1. Open this folder in VSCode.
+2. Open terminal in this folder.
+3. Start the local proxy server:
 
 ```powershell
-python -m http.server 5500
+python proxy_server.py --port 5500
 ```
 
-4. Open browser at:
+4. Open:
 
 ```text
 http://localhost:5500
 ```
 
-5. Click `Start Tracking`, allow camera permission, then finish calibration (click each red point 5 times while looking at it).
+5. In the page:
+- Enter target URL (for example `https://example.com`)
+- Click `Load URL`
+- Click `Start Tracking`
+- Allow camera permission
+- Complete calibration (click each red point 5 times while looking at it)
 
 ## Notes
 
-- Camera access usually needs a secure context; `localhost` works.
-- Better lighting and staying roughly centered in front of camera will improve accuracy.
-- This app uses WebGazer from:
-  - https://webgazer.cs.brown.edu/webgazer.js
+- `localhost` is treated as a secure context for camera access in most browsers.
+- Proxy mode improves iframe compatibility for many sites, but very dynamic/login-heavy pages can still behave differently.
+- Better lighting and keeping your face centered improve gaze accuracy.
+- WebGazer source: https://webgazer.cs.brown.edu/webgazer.js

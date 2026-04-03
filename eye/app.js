@@ -9,6 +9,10 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const clearBtn = document.getElementById("clearBtn");
 const previewBtn = document.getElementById("previewBtn");
+const urlInput = document.getElementById("urlInput");
+const loadUrlBtn = document.getElementById("loadUrlBtn");
+const targetFrame = document.getElementById("targetFrame");
+const frameHint = document.getElementById("frameHint");
 
 const statusText = document.getElementById("statusText");
 const coordsText = document.getElementById("coordsText");
@@ -34,13 +38,15 @@ const state = {
   gridCols: 24,
   gridRows: 14,
   cellCounts: [],
-  visitedCellIds: new Set()
+  visitedCellIds: new Set(),
+  currentTargetUrl: ""
 };
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
 const FACE_MESH_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/";
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
+const TRACKER_CANDIDATES = ["TFFacemesh", "clmtrackr"];
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -71,6 +77,60 @@ function getErrorMessage(error) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function normalizeTargetUrl(rawInput) {
+  const value = String(rawInput || "").trim();
+  if (!value) {
+    throw new Error("Please input a URL first.");
+  }
+
+  const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value)
+    ? value
+    : `https://${value}`;
+
+  let parsed;
+  try {
+    parsed = new URL(withProtocol);
+  } catch (_) {
+    throw new Error("Invalid URL format.");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Only http:// or https:// URLs are supported.");
+  }
+
+  return parsed.href;
+}
+
+function setFrameHint(text) {
+  if (frameHint) {
+    frameHint.textContent = text;
+  }
+}
+
+function toProxyUrl(targetUrl) {
+  return `/proxy?url=${encodeURIComponent(targetUrl)}`;
+}
+
+function loadTargetUrl(rawInput) {
+  if (!targetFrame) {
+    return;
+  }
+
+  try {
+    const normalizedUrl = normalizeTargetUrl(rawInput);
+    state.currentTargetUrl = normalizedUrl;
+    urlInput.value = normalizedUrl;
+    targetFrame.src = toProxyUrl(normalizedUrl);
+    setFrameHint(
+      "Page is loaded through local proxy mode. Some highly dynamic or login-heavy sites may still behave differently."
+    );
+    resetTrackingData();
+    setStatus(`Loading page: ${normalizedUrl}`);
+  } catch (error) {
+    setStatus(getErrorMessage(error));
+  }
 }
 
 function getViewportRect() {
@@ -275,25 +335,54 @@ async function beginTracking() {
     throw new Error("webgazer script did not load.");
   }
 
-  if (window.webgazer.params) {
-    // Avoid missing local mediapipe files by forcing a hosted solution path.
-    window.webgazer.params.faceMeshSolutionPath = FACE_MESH_CDN;
-  }
-
-  if (typeof window.webgazer.setRegression === "function") {
-    window.webgazer.setRegression("ridge");
-  }
   if (typeof window.webgazer.saveDataAcrossSessions === "function") {
     window.webgazer.saveDataAcrossSessions(false);
   }
   if (typeof window.webgazer.applyKalmanFilter === "function") {
     window.webgazer.applyKalmanFilter(true);
   }
-  window.webgazer.setGazeListener((data) => {
-    handleGaze(data);
-  });
+  if (typeof window.webgazer.setRegression === "function") {
+    window.webgazer.setRegression("ridge");
+  }
+  if (typeof window.webgazer.setGazeListener === "function") {
+    window.webgazer.setGazeListener((data) => {
+      handleGaze(data);
+    });
+  }
 
-  await window.webgazer.begin();
+  let beginSucceeded = false;
+  let lastError = null;
+
+  for (const trackerName of TRACKER_CANDIDATES) {
+    try {
+      if (typeof window.webgazer.end === "function") {
+        try {
+          window.webgazer.end();
+        } catch (_) {
+          // swallow cleanup errors between retries
+        }
+      }
+      if (window.webgazer.params && trackerName === "TFFacemesh") {
+        // Avoid missing local mediapipe files by forcing a hosted solution path.
+        window.webgazer.params.faceMeshSolutionPath = FACE_MESH_CDN;
+      }
+      if (typeof window.webgazer.setTracker === "function") {
+        window.webgazer.setTracker(trackerName);
+      }
+
+      await window.webgazer.begin();
+      beginSucceeded = true;
+      break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!beginSucceeded) {
+    const reason = getErrorMessage(lastError);
+    throw new Error(`Unable to start tracker (${reason}).`);
+  }
+
   state.started = true;
   state.paused = false;
   pauseBtn.textContent = "Pause";
@@ -404,9 +493,43 @@ previewBtn.addEventListener("click", () => {
   updatePreviewVisibility();
 });
 
+loadUrlBtn.addEventListener("click", () => {
+  loadTargetUrl(urlInput.value);
+});
+
+urlInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") {
+    return;
+  }
+  event.preventDefault();
+  loadTargetUrl(urlInput.value);
+});
+
 calibrationPoints.forEach((point) => {
   point.addEventListener("click", onCalibrationPointClick);
 });
+
+if (targetFrame) {
+  targetFrame.addEventListener("load", () => {
+    if (!state.currentTargetUrl) {
+      return;
+    }
+    if (state.started && state.calibrated && !state.paused) {
+      setStatus(`Page loaded: ${state.currentTargetUrl}. Tracking active.`);
+    } else if (state.started && state.paused) {
+      setStatus(`Page loaded: ${state.currentTargetUrl}. Tracking paused.`);
+    } else {
+      setStatus(`Page loaded: ${state.currentTargetUrl}. Click "Start Tracking".`);
+    }
+  });
+
+  targetFrame.addEventListener("error", () => {
+    setFrameHint(
+      "Target page could not be loaded by local proxy. Try another URL."
+    );
+    setStatus("Failed to load page.");
+  });
+}
 
 window.addEventListener("resize", () => {
   resizeHeatmapCanvas();
@@ -421,3 +544,7 @@ window.addEventListener("beforeunload", () => {
 
 resizeHeatmapCanvas();
 drawCoverageMap();
+
+if (urlInput && urlInput.value) {
+  loadTargetUrl(urlInput.value);
+}
