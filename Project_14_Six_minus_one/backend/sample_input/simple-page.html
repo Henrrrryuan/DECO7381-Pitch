@@ -1,11 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>Worst Readability Page</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认知无障碍功能测试 - RD / VC / ID 维度</title>
+    <style>
+        body { font-family: "Segoe UI", system-ui, sans-serif; line-height: 1.6; color: #333; padding: 20px; background-color: #f5f5f5; }
+        .test-wrapper { max-width: 1000px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        h2 { color: #2980b9; margin-top: 40px; border-left: 6px solid #2980b9; padding-left: 15px; }
+        section { margin-bottom: 30px; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; }
+        .rule-tag { background: #607d8b; color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        /* VC-1: 首屏重点元素过多 */
+        .hero-section { display: flex; flex-wrap: wrap; gap: 10px; padding: 15px; background: #fafafa; }
+        .hero-item { width: 100px; height: 50px; background: #34495e; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 12px; }
+
+        /* VC-2: 内容块过密专项测试 */
+        .dense-container { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 12px; 
+            padding: 20px; 
+            background: #fff9c4; 
+            border: 2px dashed #fbc02d;
+        }
+        .item-card { 
+            background: white; border: 1px solid #ddd; padding: 10px; 
+            text-align: center; border-radius: 5px; font-size: 14px;
+        }
+
+        /* VC-3 & ID-2: 侧边栏与动画 */
+        .sidebar-mock { width: 120px; background: #ffecb3; padding: 10px; margin-bottom: 10px; font-size: 12px; }
+        .moving-box { 
+            width: 60px; height: 60px; background: #e67e22; margin: 10px; 
+            animation: bounce 1.5s infinite alternate ease-in-out; 
+            display: inline-block; 
+        }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+        /* ID-3: CTA 竞争 */
+        .action-area { text-align: center; padding: 20px; background: #eceff1; }
+        .btn-main { 
+            background: #d32f2f; color: white; padding: 12px 24px; 
+            border: none; border-radius: 5px; margin: 8px; font-weight: bold; cursor: pointer; 
+        }
+    </style>
 </head>
 <body>
 
-<h1>Test Page</h1>
+<div class="test-wrapper">
+    <h1>认知无障碍自动化检测专项页面</h1>
+
+    <section>
+        <h2>5.1 Readability (易读性)</h2>
+        <p><span class="rule-tag">RD-1 & RD-2</span> <strong>测试长句 (>20词) 与长段落 (>4句)：</strong></p >
 
 <!-- RD-1: 全部超长句 -->
 <p>
@@ -15,35 +64,67 @@
 <p>
     Another very long sentence is written here which again continues far beyond what would be considered readable or user friendly and this sentence includes multiple clauses and ideas combined together without proper segmentation or clarity making it cognitively demanding for users to process the information effectively.
 </p>
+        <p>
+            This is an exceptionally long sentence designed to fail the readability test by including more than twenty words in a single continuous string without any commas or periods to allow the reader's working memory a moment to pause and process the information provided. 
+            This is the second sentence of this paragraph. 
+            This is the third sentence, which adds more density to the block. 
+            This is the fourth sentence, reaching the common threshold. 
+            This is the fifth sentence, which should now trigger a "Paragraph Too Long" error.
+        </p >
 
-<!-- RD-2: 超长段落（多句） -->
-<p>
-    This is sentence one which is also long and difficult to read and unnecessarily complex. This is sentence two which again continues with excessive wording and does not help readability at all. This is sentence three which further increases the difficulty for users trying to understand the content. This is sentence four which continues the same pattern. This is sentence five which makes the paragraph overly dense. This is sentence six which adds even more cognitive burden.
-</p>
+        <p><span class="rule-tag">RD-3</span> <strong>模糊文案按钮测试：</strong></p >
+        <button>Next</button> 
+        <button>Click here</button> 
+        <a href=" ">Learn More</a > 
+        <a href="#">Continue</a >
+    </section>
 
-<p>
-    This paragraph also has multiple sentences that are intentionally verbose and overly long. Sentence two continues the same issue. Sentence three again repeats the same problem. Sentence four adds more unnecessary complexity. Sentence five ensures the threshold is exceeded. Sentence six further worsens readability.
-</p>
+    <section>
+        <h2>5.2 Visual Complexity (视觉复杂度)</h2>
+        
+        <p><span class="rule-tag">VC-1</span> <strong>首屏重点元素过多 (>12)：</strong></p >
+        <div class="hero-section">
+            <div class="hero-item">Menu 1</div><div class="hero-item">Menu 2</div><div class="hero-item">Menu 3</div>
+            <div class="hero-item">Menu 4</div><div class="hero-item">Menu 5</div><div class="hero-item">Menu 6</div>
+            <div class="hero-item">Menu 7</div><div class="hero-item">Menu 8</div><div class="hero-item">Menu 9</div>
+            <div class="hero-item">Menu 10</div><div class="hero-item">Menu 11</div><div class="hero-item">Menu 12</div>
+            <div class="hero-item">Menu 13</div><div class="hero-item">Menu 14</div>
+        </div>
 
-<!-- RD-3: 模糊按钮泛滥 -->
-<div>
-    <button>Next</button>
-    <button>Click here</button>
-    <button>More</button>
-    <button>Continue</button>
-    <button>Go</button>
+        <p><span class="rule-tag">VC-2</span> <strong>内容块过密 (同一区域卡片 > 6)：</strong></p >
+        <div class="dense-container">
+            <div class="item-card">Card Item A</div><div class="item-card">Card Item B</div>
+            <div class="item-card">Card Item C</div><div class="item-card">Card Item D</div>
+            <div class="item-card">Card Item E</div><div class="item-card">Card Item F</div>
+            <div class="item-card">Card Item G</div><div class="item-card">Card Item H</div>
+        </div>
+
+        <p><span class="rule-tag">VC-3</span> <strong>侧边栏/横幅干扰：</strong></p >
+        <div class="sidebar-mock">AD: Sidebar 1</div>
+        <div class="sidebar-mock">AD: Sidebar 2</div>
+        <div style="width: 100%; height: 50px; background: #cfd8dc; text-align: center;">Banner Ad</div>
+    </section>
+
+    <section>
+        <h2>5.3 Interaction & Distraction (交互与干扰)</h2>
+        
+        <p><span class="rule-tag">ID-1</span> <strong>自动播放媒体：</strong></p >
+        <video width="200" autoplay muted loop><source src="https://www.w3schools.com/html/mov_bbb.mp4"></video>
+        <audio autoplay loop><source src="https://www.w3schools.com/html/horse.ogg"></audio>
+
+        <p><span class="rule-tag">ID-2</span> <strong>同一视口动画元素过多 (>2)：</strong></p >
+        <div class="moving-box">Anim 1</div>
+        <div class="moving-box" style="animation-delay: 0.5s;">Anim 2</div>
+        <div class="moving-box" style="animation-delay: 1s;">Anim 3</div>
+
+        <p><span class="rule-tag">ID-3</span> <strong>CTA 竞争 (同一区域主操作 > 2)：</strong></p >
+        <div class="action-area">
+            <button class="btn-main">立即注册</button>
+            <button class="btn-main">确认支付</button>
+            <button class="btn-main">申请会员</button>
+        </div>
+    </section>
 </div>
-
-<div>
-    <a href="#">Click here</a>
-    <a href="#">Next</a>
-    <a href="#">More</a>
-</div>
-
-<!-- 混合干扰 -->
-<p>
-    This is yet another long sentence that keeps going without any attempt to simplify the structure or make it easier to understand and it continues to pile on additional clauses and descriptive elements that do not add value but instead increase the cognitive effort required to process the information effectively.
-</p>
 
 </body>
 </html>
