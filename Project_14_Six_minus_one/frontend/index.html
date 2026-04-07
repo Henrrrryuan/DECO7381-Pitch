@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniLens Report</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="workspace">
+    <header class="topbar panel">
+      <div class="brand-block">
+        <p class="kicker">report-v1</p>
+        <h1>CogniLens Dashboard</h1>
+        <p class="tagline">面向开发者的认知无障碍分析面板</p>
+      </div>
+
+      <section class="control-cluster">
+        <div class="field compact">
+          <label for="apiBase">后端地址</label>
+          <input id="apiBase" type="text" value="http://127.0.0.1:8001">
+        </div>
+
+        <div class="actions">
+          <button id="loadSimpleBtn" class="secondary">载入 simple sample</button>
+          <button id="loadDenseBtn" class="secondary">载入 dense sample</button>
+          <label class="file-btn" for="fileInput">选择 HTML 文件</label>
+          <input id="fileInput" type="file" accept=".html,.htm,text/html">
+          <button id="analyzeBtn" class="primary">Analyze</button>
+        </div>
+      </section>
+    </header>
+
+    <section class="report-shell">
+      <div id="leftPanelMount" class="column-shell"></div>
+      <div id="rightPanelMount" class="column-shell"></div>
+    </section>
+  </main>
+
+  <div id="previewOverlay" class="overlay hidden" aria-hidden="true">
+    <div class="preview-modal panel" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div class="preview-header">
+        <div>
+          <p class="modal-kicker">Website Preview</p>
+          <h2 id="previewTitle">被检测网页预览</h2>
+        </div>
+        <div class="preview-actions">
+          <button id="previewRenderedTab" class="tab-btn active" type="button">Rendered View</button>
+          <button id="previewCodeTab" class="tab-btn" type="button">HTML Code</button>
+          <button id="closePreviewBtn" class="icon-btn" type="button" aria-label="Close preview">×</button>
+        </div>
+      </div>
+
+      <div class="preview-body">
+        <iframe id="previewFrame" title="Detected website preview"></iframe>
+        <pre id="previewCode" class="preview-code hidden"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

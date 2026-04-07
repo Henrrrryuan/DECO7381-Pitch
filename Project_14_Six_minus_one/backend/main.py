@@ -28,12 +28,20 @@ def analyze_html_dict(html: str) -> dict[str, Any]:
 
 try:
     from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
 
     class AnalyzePayload(BaseModel):
         html: str
 
     app = FastAPI(title="Cognitive Accessibility Assistant API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:

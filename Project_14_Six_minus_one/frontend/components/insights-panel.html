@@ -1,0 +1,39 @@
+<section class="panel right-panel">
+  <section class="right-top">
+    <div>
+      <p class="kicker small">Inspection Workspace</p>
+      <h2>Explanation</h2>
+    </div>
+    <button id="openPreviewBtn" class="link-button" type="button">Click to view the website</button>
+  </section>
+
+  <section class="right-content">
+    <article class="insight-card explanation-card">
+      <div class="field">
+        <label for="htmlInput">HTML 输入</label>
+        <textarea id="htmlInput" spellcheck="false"></textarea>
+      </div>
+      <div id="explanationContent" class="rich-text empty">
+        这里会解释每个维度的分数、风险来源和为什么会增加认知负担。
+      </div>
+    </article>
+
+    <article class="insight-card suggestion-card">
+      <div class="section-header">
+        <h2>Suggestion</h2>
+        <span class="placeholder-tag">AI-ready</span>
+      </div>
+      <div id="suggestionContent" class="suggestion-feed">
+        <article class="suggestion-bubble system">
+          <p>这里会先显示基于规则生成的建议。</p>
+          <p>后期可将此区域接入 AI API，生成更细的修改建议。</p>
+        </article>
+      </div>
+
+      <form id="suggestionForm" class="suggestion-form">
+        <input id="suggestionInput" type="text" placeholder="预留给 AI suggestion 接口..." disabled>
+        <button id="suggestionSendBtn" type="submit" disabled>Send</button>
+      </form>
+    </article>
+  </section>
+</section>
