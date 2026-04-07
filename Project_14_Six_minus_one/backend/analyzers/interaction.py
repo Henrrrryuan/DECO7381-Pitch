@@ -1,18 +1,37 @@
 from __future__ import annotations
 
-from html.parser import HTMLParser
+import json
+from dataclasses import dataclass, asdict
+from pathlib import Path
 from typing import Any
 
-from ..schemas import DimensionResult, Issue, Severity
-from ..scoring import calculate_dimension_score, calculate_penalty
+from bs4 import BeautifulSoup, Tag
+
 
 DIMENSION_NAME = "Interaction & Distraction"
 
-REGULAR_BASE_PENALTY = 3
-SERIOUS_BASE_PENALTY = 4
+SEVERITY_MULTIPLIER = {
+    "minor": 1,
+    "major": 2,
+    "critical": 3,
+}
 
-CTA_HINTS = ("btn", "button", "cta", "primary", "action", "submit")
-CTA_TEXT_HINTS = (
+BASE_PENALTY = {
+    "ID-1": 4,
+    "ID-2": 3,
+    "ID-3": 3,
+}
+
+CTA_HINTS = [
+    "btn",
+    "button",
+    "cta",
+    "primary",
+    "action",
+    "submit",
+]
+
+CTA_TEXT_HINTS = [
     "buy now",
     "start",
     "get started",
@@ -24,8 +43,9 @@ CTA_TEXT_HINTS = (
     "join now",
     "try now",
     "learn more",
-)
-ANIMATION_HINTS = (
+]
+
+ANIMATION_HINTS = [
     "carousel",
     "slider",
     "swiper",
@@ -35,368 +55,405 @@ ANIMATION_HINTS = (
     "motion",
     "rotator",
     "ticker",
-)
-CONTAINER_TAGS = {"section", "form", "article", "main", "header", "nav", "aside"}
-CANDIDATE_REGION_TAGS = ("header", "main", "section", "article", "form")
+]
+
+CONTAINER_TAGS = ["section", "form", "article", "main", "header", "nav", "aside"]
 
 
-class InteractionHTMLExtractor(HTMLParser):
-    """Collect lightweight structural signals for interaction/distraction rules."""
+@dataclass
+class Issue:
+    rule_id: str
+    rule_name: str
+    severity: str
+    penalty: int
+    message: str
+    reason: str
+    suggestion: str
+    evidence: dict[str, Any]
 
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self._stack: list[dict[str, Any]] = []
-        self._node_seq = 0
-        self._region_seq = 0
-        self._current_region_id: str | None = None
 
-        self.regions: dict[str, dict[str, Any]] = {}
-        self.autoplay_media: list[dict[str, Any]] = []
-        self.embedded_autoplay_media: list[dict[str, Any]] = []
+def make_issue(
+    rule_id: str,
+    rule_name: str,
+    severity: str,
+    message: str,
+    reason: str,
+    suggestion: str,
+    evidence: dict[str, Any] | None = None,
+) -> Issue:
+    return Issue(
+        rule_id=rule_id,
+        rule_name=rule_name,
+        severity=severity,
+        penalty=BASE_PENALTY[rule_id] * SEVERITY_MULTIPLIER[severity],
+        message=message,
+        reason=reason,
+        suggestion=suggestion,
+        evidence=evidence or {},
+    )
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self._on_start(tag, attrs, is_self_closing=False)
 
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self._on_start(tag, attrs, is_self_closing=True)
+def analyze_interaction_distraction(html: str) -> dict[str, Any]:
+    soup = BeautifulSoup(html, "html.parser")
 
-    def handle_endtag(self, tag: str) -> None:
-        normalized_tag = tag.lower()
-        for index in range(len(self._stack) - 1, -1, -1):
-            entry = self._stack[index]
-            if entry["tag"] == normalized_tag:
-                self._stack = self._stack[:index]
-                self._current_region_id = self._find_current_region_id()
-                return
+    issues: list[Issue] = []
+    issues.extend(detect_autoplay_media(soup))
+    issues.extend(detect_too_many_animated_elements(soup))
+    issues.extend(detect_cta_competition(soup))
 
-    def _on_start(
-        self,
-        tag: str,
-        attrs: list[tuple[str, str | None]],
-        *,
-        is_self_closing: bool,
-    ) -> None:
-        normalized_tag = tag.lower()
-        attributes = {key.lower(): (value or "") for key, value in attrs}
-        self._node_seq += 1
+    total_penalty = sum(issue.penalty for issue in issues)
+    score = max(0, 100 - total_penalty)
 
-        entry = {
-            "tag": normalized_tag,
-            "attrs": attributes,
-            "node_id": f"n{self._node_seq}",
-            "region_id": self._current_region_id,
-        }
+    return {
+        "dimension": DIMENSION_NAME,
+        "score": score,
+        "total_penalty": total_penalty,
+        "issue_count": len(issues),
+        "issues": [asdict(issue) for issue in issues],
+    }
 
-        if normalized_tag in CANDIDATE_REGION_TAGS:
-            self._region_seq += 1
-            region_id = f"r{self._region_seq}"
-            region_summary = summarize_tag(normalized_tag, attributes)
-            self.regions[region_id] = {
-                "tag": normalized_tag,
-                "summary": region_summary,
-                "animated_elements": [],
-                "ctas": [],
-            }
-            entry["region_id"] = region_id
-            self._current_region_id = region_id
 
-        self._record_autoplay_media(normalized_tag, attributes)
-        self._record_animated_hint(normalized_tag, attributes, entry["region_id"])
-        self._record_cta(normalized_tag, attributes, entry["region_id"])
+def detect_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
+    issues: list[Issue] = []
 
-        if not is_self_closing:
-            self._stack.append(entry)
-        else:
-            self._current_region_id = self._find_current_region_id()
-
-    def _find_current_region_id(self) -> str | None:
-        for entry in reversed(self._stack):
-            if entry["tag"] in CANDIDATE_REGION_TAGS and entry["region_id"] is not None:
-                return entry["region_id"]
-        return None
-
-    def _record_autoplay_media(self, tag: str, attrs: dict[str, str]) -> None:
-        if tag in {"video", "audio"} and "autoplay" in attrs:
-            self.autoplay_media.append(
-                {
-                    "tag": tag,
-                    "muted": "muted" in attrs,
-                    "summary": summarize_tag(tag, attrs),
-                }
+    for video in soup.select("video[autoplay]"):
+        muted = video.has_attr("muted")
+        severity = "major" if muted else "critical"
+        issues.append(
+            make_issue(
+                rule_id="ID-1",
+                rule_name="Autoplay Media",
+                severity=severity,
+                message="Detected autoplay video.",
+                reason=(
+                    "Autoplay video can pull attention away from the main task "
+                    "before the user has understood the page structure."
+                ),
+                suggestion=(
+                    "Disable autoplay by default. If autoplay is necessary, mute "
+                    "the video and avoid placing it in the primary task area."
+                ),
+                evidence={
+                    "tag": "video",
+                    "muted": muted,
+                    "html_snippet": get_tag_snippet(video),
+                },
             )
+        )
 
-        if tag == "iframe":
-            src = attrs.get("src", "").lower()
-            if "autoplay=1" in src or "autoplay=true" in src:
-                self.embedded_autoplay_media.append(
-                    {
-                        "tag": tag,
-                        "src": attrs.get("src", ""),
-                        "summary": summarize_tag(tag, attrs),
-                    }
+    for audio in soup.select("audio[autoplay]"):
+        issues.append(
+            make_issue(
+                rule_id="ID-1",
+                rule_name="Autoplay Media",
+                severity="critical",
+                message="Detected autoplay audio.",
+                reason=(
+                    "Autoplay audio is highly disruptive and can interrupt reading, "
+                    "orientation, and task focus immediately."
+                ),
+                suggestion="Require explicit user action to start audio playback.",
+                evidence={
+                    "tag": "audio",
+                    "html_snippet": get_tag_snippet(audio),
+                },
+            )
+        )
+
+    for iframe in soup.find_all("iframe"):
+        src = iframe.get("src", "")
+        src_lower = src.lower()
+        if "autoplay=1" in src_lower or "autoplay=true" in src_lower:
+            issues.append(
+                make_issue(
+                    rule_id="ID-1",
+                    rule_name="Autoplay Media",
+                    severity="major",
+                    message="Detected embedded media with autoplay enabled.",
+                    reason=(
+                        "Embedded autoplay media can distract users before they establish "
+                        "focus on the main content."
+                    ),
+                    suggestion=(
+                        "Disable autoplay in embedded media unless it is essential to the "
+                        "user's primary task."
+                    ),
+                    evidence={
+                        "tag": "iframe",
+                        "src": src,
+                        "html_snippet": get_tag_snippet(iframe),
+                    },
                 )
-
-    def _record_animated_hint(self, tag: str, attrs: dict[str, str], region_id: str | None) -> None:
-        if region_id is None:
-            return
-
-        if looks_animated(tag, attrs):
-            self.regions[region_id]["animated_elements"].append(
-                {
-                    "tag": tag,
-                    "summary": summarize_tag(tag, attrs),
-                }
             )
 
-    def _record_cta(self, tag: str, attrs: dict[str, str], region_id: str | None) -> None:
-        if region_id is None:
-            return
+    return issues
 
-        if looks_like_primary_cta(tag, attrs):
-            self.regions[region_id]["ctas"].append(
-                {
-                    "tag": tag,
-                    "text": extract_control_label(attrs),
-                    "summary": summarize_tag(tag, attrs),
-                }
+
+def detect_too_many_animated_elements(soup: BeautifulSoup) -> list[Issue]:
+    issues: list[Issue] = []
+    candidate_regions = get_candidate_regions(soup)
+
+    for region in candidate_regions:
+        animated_tags = [tag for tag in region.find_all(True) if looks_animated(tag)]
+        if len(animated_tags) <= 2:
+            continue
+
+        if len(animated_tags) <= 4:
+            severity = "major"
+        else:
+            severity = "critical"
+
+        issues.append(
+            make_issue(
+                rule_id="ID-2",
+                rule_name="Too Many Animated Elements",
+                severity=severity,
+                message=f"Detected {len(animated_tags)} animated or motion-heavy elements in the same region.",
+                reason=(
+                    "Multiple moving or motion-signalling elements can compete for attention "
+                    "and reduce focus on the main content."
+                ),
+                suggestion=(
+                    "Reduce non-essential motion, limit auto-rotating components, and keep "
+                    "only one necessary animated element in the main task area."
+                ),
+                evidence={
+                    "animated_count": len(animated_tags),
+                    "region": get_tag_summary(region),
+                    "examples": [get_tag_summary(tag) for tag in animated_tags[:5]],
+                    "note": (
+                        "This MVP checks each major content region separately as a proxy "
+                        "for same-viewport distraction risk."
+                    ),
+                },
             )
+        )
+
+    return issues
+
+
+def detect_cta_competition(soup: BeautifulSoup) -> list[Issue]:
+    issues: list[Issue] = []
+    containers = soup.find_all(CONTAINER_TAGS)
+
+    for container in containers:
+        ctas = get_region_primary_ctas(container)
+        if len(ctas) <= 2:
+            continue
+
+        severity = classify_cta_severity(container, ctas)
+
+        issues.append(
+            make_issue(
+                rule_id="ID-3",
+                rule_name="CTA Competition",
+                severity=severity,
+                message=f"Detected {len(ctas)} CTA-like controls in the same region.",
+                reason=(
+                    "Multiple competing calls-to-action increase decision burden and make "
+                    "it harder to identify the primary next step."
+                ),
+                suggestion=(
+                    "Keep one primary CTA and downgrade the others to secondary buttons "
+                    "or text links."
+                ),
+                evidence={
+                    "cta_count": len(ctas),
+                    "container": get_tag_summary(container),
+                    "cta_examples": [get_cta_label(tag) for tag in ctas[:5]],
+                },
+            )
+        )
+
+    return issues
+
+
+def looks_animated(tag: Tag) -> bool:
+    if not isinstance(tag, Tag):
+        return False
+
+    if tag.name == "marquee":
+        return True
+
+    if tag.name in {"video", "audio"} and tag.has_attr("autoplay"):
+        return True
+
+    combined = " ".join(
+        [
+            tag.get("id", ""),
+            " ".join(tag.get("class", [])),
+            tag.get("style", ""),
+            " ".join(
+                str(tag.get(attr, ""))
+                for attr in ["data-animation", "data-aos", "data-swiper", "role"]
+            ),
+        ]
+    ).lower()
+
+    if any(hint in combined for hint in ANIMATION_HINTS):
+        return True
+
+    style = tag.get("style", "").lower()
+    if "animation" in style or "transition" in style:
+        return True
+
+    return False
+
+
+def looks_like_cta(tag: Tag) -> bool:
+    if not isinstance(tag, Tag):
+        return False
+
+    class_text = " ".join(tag.get("class", []))
+    id_text = tag.get("id", "")
+    role_text = tag.get("role", "")
+    style_text = tag.get("style", "")
+    combined = f"{class_text} {id_text} {role_text} {style_text}".lower()
+    text = normalize_text(
+        tag.get_text(" ", strip=True)
+        or tag.get("aria-label", "")
+        or tag.get("title", "")
+        or tag.get("value", "")
+    ).lower()
+
+    has_primary_hint = any(keyword in combined for keyword in CTA_HINTS)
+    has_action_text = any(phrase in text for phrase in CTA_TEXT_HINTS)
+
+    if tag.name == "button":
+        return has_primary_hint or has_action_text
+
+    if tag.name == "input" and tag.get("type", "").lower() in {"submit", "button"}:
+        return has_primary_hint or has_action_text
+
+    if tag.name == "a":
+        return has_primary_hint or has_action_text
+
+    return False
+
+
+def classify_cta_severity(container: Tag, ctas: list[Tag]) -> str:
+    cta_count = len(ctas)
+    container_summary = get_tag_summary(container).lower()
+    labels = [get_cta_label(tag).lower() for tag in ctas]
+
+    prominent_cta_count = 0
+    for cta in ctas:
+        combined = " ".join(
+            [
+                cta.get("id", ""),
+                " ".join(cta.get("class", [])),
+                cta.get("style", ""),
+            ]
+        ).lower()
+        if any(hint in combined for hint in ["primary", "cta", "hero", "main", "action"]):
+            prominent_cta_count += 1
+
+    if cta_count >= 4:
+        return "critical"
+
+    if prominent_cta_count >= 2:
+        return "critical"
+
+    if any(tag in container_summary for tag in ["header", "hero", "main"]):
+        return "major"
+
+    if len(set(labels)) < len(labels):
+        return "major"
+
+    return "major"
+
+
+def get_cta_label(tag: Tag) -> str:
+    if tag.name == "input":
+        return normalize_text(tag.get("value", "") or tag.get("aria-label", "") or tag.get("name", ""))
+    return normalize_text(tag.get_text(" ", strip=True) or tag.get("aria-label", "") or tag.get("title", ""))
+
+
+def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
+    body = soup.body
+    if body is None:
+        return []
+
+    regions: list[Tag] = []
+    for selector in ["header", "main", "section", "article", "form"]:
+        regions.extend(body.find_all(selector))
+
+    if regions:
+        return regions
+
+    direct_children = [child for child in body.find_all(recursive=False) if isinstance(child, Tag)]
+    if direct_children:
+        return direct_children
+
+    return [body]
+
+
+def get_region_primary_ctas(container: Tag) -> list[Tag]:
+    ctas: list[Tag] = []
+    for tag in container.find_all(["button", "a", "input"]):
+        if not looks_like_cta(tag):
+            continue
+
+        nearest = get_nearest_container_ancestor(tag)
+        if nearest is container:
+            ctas.append(tag)
+
+    return ctas
+
+
+def get_nearest_container_ancestor(tag: Tag) -> Tag | None:
+    current = tag
+    while current is not None:
+        if isinstance(current, Tag) and current.name in CONTAINER_TAGS:
+            return current
+        current = current.parent
+    return None
+
+
+def get_tag_summary(tag: Tag) -> str:
+    tag_name = tag.name or "unknown"
+    element_id = f"#{tag.get('id')}" if tag.get("id") else ""
+    classes = "." + ".".join(tag.get("class", [])) if tag.get("class") else ""
+    return f"{tag_name}{element_id}{classes}"
+
+
+def get_tag_snippet(tag: Tag, max_length: int = 180) -> str:
+    snippet = str(tag)
+    if len(snippet) <= max_length:
+        return snippet
+    return snippet[: max_length - 3] + "..."
 
 
 def normalize_text(text: str) -> str:
     return " ".join(text.split())
 
 
-def attrs_text(attrs: dict[str, str]) -> str:
-    parts: list[str] = []
-    for key, value in attrs.items():
-        parts.append(key.lower())
-        if value:
-            parts.append(value.lower())
-    return " ".join(parts)
+def load_html_from_file(path: str | Path) -> str:
+    return Path(path).read_text(encoding="utf-8")
 
 
-def summarize_tag(tag: str, attrs: dict[str, str]) -> str:
-    element_id = f"#{attrs.get('id')}" if attrs.get("id") else ""
-    classes = "." + ".".join(attrs.get("class", "").split()) if attrs.get("class") else ""
-    return f"{tag}{element_id}{classes}"
+def main() -> None:
+    import argparse
 
-
-def extract_control_label(attrs: dict[str, str]) -> str:
-    return normalize_text(
-        attrs.get("aria-label", "")
-        or attrs.get("title", "")
-        or attrs.get("value", "")
-        or attrs.get("data-text", "")
+    parser = argparse.ArgumentParser(
+        description="Analyze the Interaction & Distraction dimension for an HTML file."
     )
-
-
-def looks_animated(tag: str, attrs: dict[str, str]) -> bool:
-    if tag == "marquee":
-        return True
-
-    if tag in {"video", "audio"} and "autoplay" in attrs:
-        return True
-
-    combined = attrs_text(attrs)
-    return any(hint in combined for hint in ANIMATION_HINTS)
-
-
-def looks_like_primary_cta(tag: str, attrs: dict[str, str]) -> bool:
-    if tag not in {"button", "a", "input"}:
-        return False
-
-    if tag == "input" and attrs.get("type", "").lower() not in {"submit", "button"}:
-        return False
-
-    combined = attrs_text(attrs)
-    label = extract_control_label(attrs).lower()
-
-    has_primary_hint = any(keyword in combined for keyword in CTA_HINTS)
-    has_action_text = any(phrase in label for phrase in CTA_TEXT_HINTS)
-
-    return has_primary_hint or has_action_text
-
-
-def build_issue(
-    *,
-    rule_id: str,
-    title: str,
-    severity: Severity,
-    base_penalty: int,
-    description: str,
-    suggestion: str,
-    evidence: dict[str, Any],
-    locations: list[dict[str, Any]] | None = None,
-) -> Issue:
-    return Issue(
-        rule_id=rule_id,
-        title=title,
-        severity=severity,
-        base_penalty=base_penalty,
-        penalty=calculate_penalty(base_penalty, severity),
-        description=description,
-        suggestion=suggestion,
-        evidence=evidence,
-        locations=locations or [],
+    parser.add_argument("html_file", help="Path to an HTML file")
+    parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output",
     )
+    args = parser.parse_args()
+
+    html = load_html_from_file(args.html_file)
+    result = analyze_interaction_distraction(html)
+
+    if args.pretty:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print(json.dumps(result, ensure_ascii=False))
 
 
-def detect_id1_autoplay_media(extractor: InteractionHTMLExtractor) -> list[Issue]:
-    issues: list[Issue] = []
-
-    for media in extractor.autoplay_media:
-        if media["tag"] == "audio":
-            severity: Severity = "critical"
-        elif media["muted"]:
-            severity = "major"
-        else:
-            severity = "critical"
-
-        issues.append(
-            build_issue(
-                rule_id="ID-1",
-                title="自动播放媒体",
-                severity=severity,
-                base_penalty=SERIOUS_BASE_PENALTY,
-                description="页面存在 autoplay 音频或视频，可能在用户建立页面理解前直接打断注意力。",
-                suggestion="默认关闭 autoplay；如必须自动播放，请静音并避免放在主任务区域。",
-                evidence={
-                    "tag": media["tag"],
-                    "muted": media["muted"],
-                },
-                locations=[{"summary": media["summary"]}],
-            )
-        )
-
-    for embedded in extractor.embedded_autoplay_media:
-        issues.append(
-            build_issue(
-                rule_id="ID-1",
-                title="自动播放媒体",
-                severity="major",
-                base_penalty=SERIOUS_BASE_PENALTY,
-                description="页面存在启用 autoplay 的嵌入媒体，可能在用户浏览主内容前造成额外干扰。",
-                suggestion="关闭嵌入媒体的 autoplay，除非它与用户当前主任务直接相关。",
-                evidence={
-                    "tag": embedded["tag"],
-                    "src": embedded["src"],
-                },
-                locations=[{"summary": embedded["summary"]}],
-            )
-        )
-
-    return issues
-
-
-def detect_id2_too_many_animated_elements(extractor: InteractionHTMLExtractor) -> list[Issue]:
-    issues: list[Issue] = []
-
-    for region in extractor.regions.values():
-        animated_elements = region["animated_elements"]
-        animated_count = len(animated_elements)
-        if animated_count <= 2:
-            continue
-
-        if animated_count >= 5:
-            severity: Severity = "critical"
-        else:
-            severity = "major"
-
-        issues.append(
-            build_issue(
-                rule_id="ID-2",
-                title="动画元素过多",
-                severity=severity,
-                base_penalty=REGULAR_BASE_PENALTY,
-                description="同一区域内存在过多动态元素，可能同时争夺用户注意力并削弱主任务聚焦。",
-                suggestion="减少非必要动效，限制自动轮播或持续运动组件，并保留一个必要动态元素即可。",
-                evidence={
-                    "animated_count": animated_count,
-                    "threshold": 2,
-                    "region": region["summary"],
-                },
-                locations=animated_elements[:5],
-            )
-        )
-
-    return issues
-
-
-def detect_id3_cta_competition(extractor: InteractionHTMLExtractor) -> list[Issue]:
-    issues: list[Issue] = []
-
-    for region in extractor.regions.values():
-        ctas = region["ctas"]
-        cta_count = len(ctas)
-        if cta_count <= 2:
-            continue
-
-        if cta_count >= 4:
-            severity: Severity = "critical"
-        else:
-            severity = "major"
-
-        issues.append(
-            build_issue(
-                rule_id="ID-3",
-                title="CTA 竞争",
-                severity=severity,
-                base_penalty=REGULAR_BASE_PENALTY,
-                description="同一区域主操作按钮超过 2 个，容易增加决策负担，使用户难以判断下一步操作。",
-                suggestion="保留 1 个主 CTA，其余改为次按钮或文本链接，明确操作层级。",
-                evidence={
-                    "cta_count": cta_count,
-                    "threshold": 2,
-                    "region": region["summary"],
-                    "cta_examples": [cta["text"] or cta["summary"] for cta in ctas[:5]],
-                },
-                locations=ctas[:5],
-            )
-        )
-
-    return issues
-
-
-def analyze_interaction(html: str) -> DimensionResult:
-    """Analyze interaction and distraction risks for HTML input.
-
-    Scope limits:
-    - Supports HTML files or HTML snippets only
-    - Detects proxy indicators of distraction and cognitive load
-    - Does not model human cognition or provide compliance certification
-    """
-
-    extractor = InteractionHTMLExtractor()
-    extractor.feed(html or "")
-    extractor.close()
-
-    issues = [
-        issue
-        for issue in (
-            detect_id1_autoplay_media(extractor)
-            + detect_id2_too_many_animated_elements(extractor)
-            + detect_id3_cta_competition(extractor)
-        )
-        if issue is not None
-    ]
-
-    total_penalty = sum(issue.penalty for issue in issues)
-    score = calculate_dimension_score(total_penalty)
-
-    return DimensionResult(
-        dimension=DIMENSION_NAME,
-        score=score,
-        issues=issues,
-        metadata={
-            "implemented_rules": ["ID-1", "ID-2", "ID-3"],
-            "pending_rules": [],
-            "input_scope": ["html_file", "html_snippet"],
-            "out_of_scope": ["pdf", "image", "live_url_fetch", "multi_source_mixed_input"],
-            "region_count": len(extractor.regions),
-            "autoplay_media_count": len(extractor.autoplay_media) + len(extractor.embedded_autoplay_media),
-            "scoring_model": {
-                "formula": "Dimension Score = max(0, 100 - Sum(Penalties))",
-                "penalty_formula": "Penalty = Base Penalty * Severity",
-            },
-        },
-    )
+if __name__ == "__main__":
+    main()
