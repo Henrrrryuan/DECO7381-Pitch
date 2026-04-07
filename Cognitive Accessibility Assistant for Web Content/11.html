@@ -1,0 +1,239 @@
+
+
+<head>
+    <meta charset="UTF-8">
+    ="viewport" content="width=device-width, initial-scale=1.0">
+     - Affinity Diagram
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 30px;
+            line-height: 1.4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 40px;
+            font-size: 28px;
+        }
+
+        /* 亲和图容器 */
+        .affinity-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* 分类卡片 */
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        /* 分类标题栏（按类别配色） */
+        .category-header {
+            padding: 18px 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-1 { background-color: #e53e3e; } /* 基础生存与安全 */
+        .header-2 { background-color: #9f7aea; } /* 居住舒适与隐私 */
+        .header-3 { background-color: #38b2ac; } /* 饮食与物资 */
+        .header-4 { background-color: #48bb78; } /* 健康与医疗 */
+        .header-5 { background-color: #ed8936; } /* 运动与放松 */
+        .header-6 { background-color: #4299e1; } /* 智能科技与控制 */
+        .header-7 { background-color: #f687b3; } /* 娱乐与社交 */
+        .header-8 { background-color: #7472FE; } /* 空间利用与家具 */
+        .header-9 { background-color: #A2B1FB; } /* 环境调节与氛围 */
+
+        .category-count {
+            background: rgba(255,255,255,0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        /* 功能列表 */
+        .feature-list {
+            padding: 20px;
+            list-style: none;
+        }
+
+        .feature-item {
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            transition: background-color 0.2s ease;
+        }
+
+        .feature-item:hover {
+            background-color: #f0f4f8;
+            transform: translateX(3px);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .affinity-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .category-header {
+                font-size: 16px;
+                padding: 15px 18px;
+            }
+        }
+    </style>
+</head>
+     Habitat 50 Features - Affinity Diagram>
+
+    ="affinity-container">
+        生存与安全 -->
+        ">
+            ="category-header header-1">
+                1. Survival & Safety
+                <span class="category-count">8 Items             ">
+                ="feature-item">Artificial gravity rooms                -item">Radiation shielding walls</li>
+                <li class="feature-item">Emergency escape pods
+                feature-item">Emergency oxygen backup system ">Space debris detection and avoidance system ">Water recycling system>
+                ="feature-item">Smart oxygen monitor ">Water recycling shower>
+            
+                舒适与隐私 -->
+        ">
+            ="category-header header-2">
+                2. Living Comfort & Privacy
+                ">7 Items
+                        -list">
+                 class="feature-item">Personal sleeping pods with soundproofing</li>
+                <li class="feature-item">Foldable sleeping pod</li>
+                 class="feature-item">Private quiet zone                -item">Temperature-adjustable personal zones ">Customisable personal living space</li>
+                <li class="feature-item">Noise control system for quiet environment</li>
+                <li class="feature-item">Noise-cancelling wall panels</li>
+            </ul>
+        >
+
+        、饮食与物资 -->
+        -card">
+             class="category-header header-3">
+                3. Food & Supplies
+                ">4 Items
+                        -list">
+                 class="feature-item">Space garden to grow fresh food</li>
+                 class="feature-item">Hydroponic food garden>
+                ="feature-item">Smart food printer (3D printed meals)</li>
+                <li class="feature-item">Personal storage lockers with smart access </ul>
+        </div>
+
+        四、健康与医疗 -->
+        category-card">
+            <div class="category-header header-4">
+                4. Health & Medical
+                -count">5 Items>
+            
+            feature-list">
+                <li class="feature-item">Automated medical diagnosis system</li>
+                 class="feature-item">Wearable health monitoring devices</li>
+                 class="feature-item">AI health assistant                -item">Emergency medical pod</li>
+                 class="feature-item">AI mental health support system>
+            
+                与放松 -->
+        <div class="category-card">
+            category-header header-5">
+                5. Exercise & Relaxation
+                <span class="category-count">5 Items             ">
+                ="feature-item">Compact gym with resistance machines
+                feature-item">Exercise resistance gym</li>
+                <li class="feature-item">Zero-gravity sports area</li>
+                 class="feature-item">VR relaxation room                -item">Dream simulator cabin</li>
+            >
+        
+
+        智能科技与控制 -->
+        -card">
+             class="category-header header-6">
+                6. Smart Tech & Control
+                -count">8 Items>
+            
+            feature-list">
+                <li class="feature-item">Smart AI assistant to manage daily tasks ">Voice-controlled control panels</li>
+                 class="feature-item">Robotic arms for repairs outside the shuttle ">Robotic helper arms</li>
+                 class="feature-item">Autonomous repair drones
+                feature-item">Self-cleaning surfaces ">Self-cleaning toilet</li>
+                 class="feature-item">Auto-cleaning floor surfaces>
+            
+                与社交 -->
+        <div class="category-card">
+            category-header header-7">
+                7. Entertainment & Social
+                 class="category-count">9 Items </div>
+            <ul class="feature-list">
+                feature-item">Virtual reality room to simulate Earth environments>
+                ="feature-item">Entertainment system (movies, games, music)</li>
+                <li class="feature-item">Zero-gravity game room</li>
+                 class="feature-item">360° window for viewing space ">Digital window with Earth view</li>
+                <li class="feature-item">Real-time communication with family on Earth ">Hologram meeting room</li>
+                <li class="feature-item">Hologram communication wall</li>
+                 class="feature-item">Team social area             </div>
+
+         八、空间利用与家具 -->
+         class="category-card">
+            -header header-8">
+                8. Space & Furniture
+                ="category-count">2 Items</span>
+            </div>
+             class="feature-list">
+                -item">Multi-purpose modular furniture</li>
+                <li class="feature-item">Multi-use furniture
+                     与氛围 -->
+        <div class="category-card">
+            category-header header-9">
+                9. Environment & Ambiance
+                ">2 Items
+                        -list">
+                 class="feature-item">Mood lighting system that changes with emotions ">Mood lighting system</li>
+            >
+        
+         // 可选交互功能：点击分类标题折叠/展开列表
+        document.querySelectorAll('.category-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const list = header.nextElementSibling;
+                list.style.display = list.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+
+        // 初始化所有列表为展开状态
+        document.querySelectorAll('.feature-list').forEach(list => {
+            list.style.display = 'block';
+        });
+    </script>
+</body>
+
