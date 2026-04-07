@@ -1,0 +1,52 @@
+// Cognitive Accessibility Assistant - MVP data model
+// For draw.io / dbdiagram import
+
+Enum severity_level {
+  minor
+  major
+  critical
+}
+
+Table analysis_runs {
+  id varchar [pk, note: 'UUID or string id']
+  created_at timestamp [not null]
+  source_name varchar [note: 'file name or sample label']
+  html_content text [not null]
+  overall_score int [not null]
+  weighted_average int [not null]
+  min_dimension_score int [not null]
+}
+
+Table dimension_results {
+  id varchar [pk, note: 'UUID or string id']
+  run_id varchar [not null]
+  dimension varchar [not null, note: 'Readability | Visual Complexity | Interaction & Distraction | Consistency']
+  score int [not null]
+  metadata_json text [note: 'JSON string from analyzer metadata']
+}
+
+Table issues {
+  id varchar [pk, note: 'UUID or string id']
+  dimension_result_id varchar [not null]
+  rule_id varchar [not null]
+  title varchar [not null]
+  severity severity_level [not null]
+  base_penalty int [not null]
+  penalty int [not null]
+  description text [not null]
+  suggestion text [not null]
+  evidence_json text [note: 'JSON string']
+  locations_json text [note: 'JSON string']
+}
+
+Table compare_pairs {
+  id varchar [pk, note: 'UUID or string id']
+  previous_run_id varchar [not null]
+  current_run_id varchar [not null]
+  created_at timestamp [not null]
+}
+
+Ref: dimension_results.run_id > analysis_runs.id
+Ref: issues.dimension_result_id > dimension_results.id
+Ref: compare_pairs.previous_run_id > analysis_runs.id
+Ref: compare_pairs.current_run_id > analysis_runs.id
