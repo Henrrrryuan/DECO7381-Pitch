@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
-from ..schemas import DimensionResult, Issue, Severity
-from ..scoring import calculate_dimension_score, calculate_penalty
+if __package__ in {None, ""}:
+    project_root = Path(__file__).resolve().parents[2]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    from backend.schemas import DimensionResult, Issue, Severity
+    from backend.scoring import calculate_dimension_score, calculate_penalty
+else:
+    from ..schemas import DimensionResult, Issue, Severity
+    from ..scoring import calculate_dimension_score, calculate_penalty
 
 DIMENSION_NAME = "Interaction & Distraction"
 
@@ -50,8 +59,19 @@ ANIMATION_HINTS = (
     "ticker",
 )
 
-CANDIDATE_REGION_TAGS = ("header", "main", "section", "article", "form")
-CONTAINER_TAGS = {"section", "form", "article", "main", "header", "nav", "aside"}
+CANDIDATE_REGION_TAGS = ("header", "main", "section", "article", "form", "nav")
+CTA_PRIMARY_HINTS = CTA_HINTS + ("hero", "main")
+NON_CTA_LABEL_HINTS = (
+    "cancel",
+    "back",
+    "go back",
+    "close",
+    "dismiss",
+    "menu",
+    "previous",
+    "prev",
+    "skip",
+)
 
 
 def analyze_interaction(html: str) -> DimensionResult:
@@ -65,20 +85,20 @@ def analyze_interaction(html: str) -> DimensionResult:
 
     soup = BeautifulSoup(html or "", "html.parser")
 
+    candidate_regions = get_candidate_regions(soup)
+
     issues = [
         issue
         for issue in (
             detect_id1_autoplay_media(soup)
-            + detect_id2_too_many_animated_elements(soup)
-            + detect_id3_cta_competition(soup)
+            + detect_id2_too_many_animated_elements(candidate_regions)
+            + detect_id3_cta_competition(candidate_regions)
         )
         if issue is not None
     ]
 
     total_penalty = sum(issue.penalty for issue in issues)
     score = calculate_dimension_score(total_penalty)
-
-    candidate_regions = get_candidate_regions(soup)
 
     return DimensionResult(
         dimension=DIMENSION_NAME,
@@ -182,11 +202,11 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
     return issues
 
 
-def detect_id2_too_many_animated_elements(soup: BeautifulSoup) -> list[Issue]:
+def detect_id2_too_many_animated_elements(candidate_regions: list[Tag]) -> list[Issue]:
     issues: list[Issue] = []
 
-    for region in get_candidate_regions(soup):
-        animated_tags = [tag for tag in region.find_all(True) if looks_animated(tag)]
+    for region in candidate_regions:
+        animated_tags = get_region_scoped_tags(region, candidate_regions, looks_animated)
         animated_count = len(animated_tags)
         if animated_count <= ANIMATION_THRESHOLD:
             continue
@@ -216,11 +236,11 @@ def detect_id2_too_many_animated_elements(soup: BeautifulSoup) -> list[Issue]:
     return issues
 
 
-def detect_id3_cta_competition(soup: BeautifulSoup) -> list[Issue]:
+def detect_id3_cta_competition(candidate_regions: list[Tag]) -> list[Issue]:
     issues: list[Issue] = []
 
-    for region in get_candidate_regions(soup):
-        ctas = get_region_primary_ctas(region)
+    for region in candidate_regions:
+        ctas = get_region_primary_ctas(region, candidate_regions)
         cta_count = len(ctas)
         if cta_count <= CTA_THRESHOLD:
             continue
@@ -280,13 +300,7 @@ def looks_like_cta(tag: Tag) -> bool:
     if not isinstance(tag, Tag):
         return False
 
-    if tag.name == "button":
-        return True
-
-    if tag.name == "input" and tag.get("type", "").lower() in {"submit", "button"}:
-        return True
-
-    if tag.name != "a":
+    if tag.name not in {"button", "a", "input"}:
         return False
 
     combined = " ".join(
@@ -299,11 +313,16 @@ def looks_like_cta(tag: Tag) -> bool:
     ).lower()
     label = get_cta_label(tag).lower()
 
-    has_primary_hint = any(keyword in combined for keyword in CTA_HINTS)
+    if any(hint in label for hint in NON_CTA_LABEL_HINTS):
+        return False
+
+    has_primary_hint = any(keyword in combined for keyword in CTA_PRIMARY_HINTS)
     has_action_text = any(phrase in label for phrase in CTA_TEXT_HINTS)
     is_button_like = tag.get("role", "").lower() == "button"
+    is_submit_input = tag.name == "input" and tag.get("type", "").lower() == "submit"
+    is_submit_button = tag.name == "button" and tag.get("type", "").lower() == "submit"
 
-    return has_primary_hint or has_action_text or is_button_like
+    return has_primary_hint or has_action_text or is_button_like or is_submit_input or is_submit_button
 
 
 def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
@@ -319,7 +338,7 @@ def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
                 cta.get("style", ""),
             ]
         ).lower()
-        if any(hint in combined for hint in ("primary", "cta", "hero", "main", "action")):
+        if any(hint in combined for hint in CTA_PRIMARY_HINTS):
             prominent_cta_count += 1
 
     if cta_count >= 4 or prominent_cta_count >= 2:
@@ -332,41 +351,60 @@ def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
 
 
 def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
-    body = soup.body
-    if body is None:
-        return []
+    root = soup.body if soup.body is not None else soup
 
     regions: list[Tag] = []
     for selector in CANDIDATE_REGION_TAGS:
-        regions.extend(body.find_all(selector))
+        regions.extend(root.find_all(selector))
 
     if regions:
         return regions
 
-    direct_children = [child for child in body.find_all(recursive=False) if isinstance(child, Tag)]
+    direct_children = [child for child in root.find_all(recursive=False) if isinstance(child, Tag)]
     if direct_children:
         return direct_children
 
-    return [body]
+    if isinstance(root, Tag):
+        return [root]
+
+    return []
 
 
-def get_region_primary_ctas(region: Tag) -> list[Tag]:
+def get_region_primary_ctas(region: Tag, candidate_regions: list[Tag]) -> list[Tag]:
     ctas: list[Tag] = []
     for tag in region.find_all(["button", "a", "input"]):
         if not looks_like_cta(tag):
             continue
 
-        nearest_region = get_nearest_region_ancestor(tag)
+        nearest_region = get_nearest_candidate_region(tag, candidate_regions)
         if nearest_region is region:
             ctas.append(tag)
 
     return ctas
 
 
-def get_nearest_region_ancestor(tag: Tag) -> Tag | None:
+def get_region_scoped_tags(
+    region: Tag,
+    candidate_regions: list[Tag],
+    predicate: Any,
+) -> list[Tag]:
+    scoped_tags: list[Tag] = []
+    for tag in region.find_all(True):
+        if not predicate(tag):
+            continue
+
+        nearest_region = get_nearest_candidate_region(tag, candidate_regions)
+        if nearest_region is region:
+            scoped_tags.append(tag)
+
+    return scoped_tags
+
+
+def get_nearest_candidate_region(tag: Tag, candidate_regions: list[Tag]) -> Tag | None:
+    region_ids = {id(region) for region in candidate_regions}
     current = tag
     while current is not None:
-        if isinstance(current, Tag) and current.name in CONTAINER_TAGS:
+        if isinstance(current, Tag) and id(current) in region_ids:
             return current
         current = current.parent
     return None
