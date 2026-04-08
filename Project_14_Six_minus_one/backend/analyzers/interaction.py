@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -23,28 +24,40 @@ SERIOUS_BASE_PENALTY = 4
 
 ANIMATION_THRESHOLD = 2
 CTA_THRESHOLD = 2
+PRIMARY_CTA_SCORE_THRESHOLD = 3
 
 CTA_HINTS = (
-    "btn",
-    "button",
     "cta",
     "primary",
-    "action",
     "submit",
+    "hero",
+    "checkout",
+    "signup",
+    "subscribe",
+    "purchase",
 )
 
 CTA_TEXT_HINTS = (
     "buy now",
     "start",
     "get started",
-    "continue",
     "sign up",
     "subscribe",
     "book now",
     "download",
     "join now",
     "try now",
-    "learn more",
+    "start free trial",
+    "create account",
+    "checkout",
+    "立即注册",
+    "确认支付",
+    "申请会员",
+    "立即购买",
+    "立即订阅",
+    "开始使用",
+    "免费试用",
+    "提交申请",
 )
 
 ANIMATION_HINTS = (
@@ -71,7 +84,35 @@ NON_CTA_LABEL_HINTS = (
     "previous",
     "prev",
     "skip",
+    "upload",
+    "load",
+    "open",
+    "filter",
+    "sort",
+    "preview",
 )
+
+ANIMATED_CLASS_HINTS = (
+    "animate",
+    "animated",
+    "animation",
+    "moving",
+    "motion",
+    "carousel",
+    "slider",
+    "swiper",
+    "ticker",
+    "marquee",
+    "pulse",
+    "blink",
+    "spin",
+    "spinner",
+    "bounce",
+)
+
+STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
+CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
+ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
 
 
 def analyze_interaction(html: str) -> DimensionResult:
@@ -86,13 +127,14 @@ def analyze_interaction(html: str) -> DimensionResult:
     soup = BeautifulSoup(html or "", "html.parser")
 
     candidate_regions = get_candidate_regions(soup)
+    style_hints = extract_style_hints(soup)
 
     issues = [
         issue
         for issue in (
             detect_id1_autoplay_media(soup)
-            + detect_id2_too_many_animated_elements(candidate_regions)
-            + detect_id3_cta_competition(candidate_regions)
+            + detect_id2_too_many_animated_elements(candidate_regions, style_hints)
+            + detect_id3_cta_competition(candidate_regions, style_hints)
         )
         if issue is not None
     ]
@@ -202,16 +244,28 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
     return issues
 
 
-def detect_id2_too_many_animated_elements(candidate_regions: list[Tag]) -> list[Issue]:
+def detect_id2_too_many_animated_elements(
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Issue]:
     issues: list[Issue] = []
 
     for region in candidate_regions:
-        animated_tags = get_region_scoped_tags(region, candidate_regions, looks_animated)
+        animated_tags = get_region_scoped_tags(
+            region,
+            candidate_regions,
+            lambda tag: looks_distracting_animation(tag, style_hints),
+        )
         animated_count = len(animated_tags)
         if animated_count <= ANIMATION_THRESHOLD:
             continue
 
-        severity: Severity = "critical" if animated_count >= 5 else "major"
+        if animated_count >= 6:
+            severity: Severity = "critical"
+        elif animated_count >= 4:
+            severity = "major"
+        else:
+            severity = "minor"
         issues.append(
             build_issue(
                 rule_id="ID-2",
@@ -236,11 +290,14 @@ def detect_id2_too_many_animated_elements(candidate_regions: list[Tag]) -> list[
     return issues
 
 
-def detect_id3_cta_competition(candidate_regions: list[Tag]) -> list[Issue]:
+def detect_id3_cta_competition(
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Issue]:
     issues: list[Issue] = []
 
     for region in candidate_regions:
-        ctas = get_region_primary_ctas(region, candidate_regions)
+        ctas = get_region_primary_ctas(region, candidate_regions, style_hints)
         cta_count = len(ctas)
         if cta_count <= CTA_THRESHOLD:
             continue
@@ -296,7 +353,59 @@ def looks_animated(tag: Tag) -> bool:
     return "animation" in style or "transition" in style
 
 
-def looks_like_cta(tag: Tag) -> bool:
+def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+    """Count only likely attention-grabbing motion for ID-2.
+
+    Autoplay media is handled by ID-1 already, so we avoid counting it again here.
+    We also exclude plain transitions because they are often harmless state changes
+    rather than continuous motion competing for attention.
+    """
+
+    if not isinstance(tag, Tag):
+        return False
+
+    if tag.name in {"video", "audio", "iframe"} and has_autoplay_media(tag):
+        return False
+
+    if tag.name == "marquee":
+        return True
+
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
+    if classes & style_hints["animated_classes"]:
+        return True
+    if element_id and element_id in style_hints["animated_ids"]:
+        return True
+    if any(hint in class_name for class_name in classes for hint in ANIMATED_CLASS_HINTS):
+        return True
+
+    combined = " ".join(
+        [
+            tag.get("id", ""),
+            " ".join(tag.get("class", [])),
+            tag.get("style", ""),
+            " ".join(str(tag.get(attr, "")) for attr in ["data-animation", "data-aos", "data-swiper", "role"]),
+        ]
+    ).lower()
+
+    strong_hints = ("carousel", "slider", "swiper", "marquee", "animate", "animation", "rotator", "ticker")
+    if any(hint in combined for hint in strong_hints):
+        return True
+
+    style = tag.get("style", "").lower()
+    return "animation" in style
+
+
+def has_autoplay_media(tag: Tag) -> bool:
+    if tag.name in {"video", "audio"}:
+        return tag.has_attr("autoplay")
+    if tag.name == "iframe":
+        src = tag.get("src", "").lower()
+        return "autoplay=1" in src or "autoplay=true" in src
+    return False
+
+
+def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
     if not isinstance(tag, Tag):
         return False
 
@@ -316,13 +425,36 @@ def looks_like_cta(tag: Tag) -> bool:
     if any(hint in label for hint in NON_CTA_LABEL_HINTS):
         return False
 
-    has_primary_hint = any(keyword in combined for keyword in CTA_PRIMARY_HINTS)
-    has_action_text = any(phrase in label for phrase in CTA_TEXT_HINTS)
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
+    score = 0
+    if any(keyword in combined for keyword in CTA_PRIMARY_HINTS):
+        score += 2
+    if any(phrase in label for phrase in CTA_TEXT_HINTS):
+        score += 2
+    if classes & style_hints["primary_cta_classes"]:
+        score += 2
+    if element_id and element_id in style_hints["primary_cta_ids"]:
+        score += 2
+    if any(class_name in {"btn-main", "main-btn", "primary-btn", "hero-cta"} for class_name in classes):
+        score += 2
+
+    style = tag.get("style", "").lower()
+    if "background" in style or "font-weight:bold" in style or "font-weight: bold" in style:
+        score += 1
+
     is_button_like = tag.get("role", "").lower() == "button"
     is_submit_input = tag.name == "input" and tag.get("type", "").lower() == "submit"
     is_submit_button = tag.name == "button" and tag.get("type", "").lower() == "submit"
+    if is_button_like:
+        score += 1
+    if is_submit_input or is_submit_button:
+        score += 2
 
-    return has_primary_hint or has_action_text or is_button_like or is_submit_input or is_submit_button
+    if tag.name == "button":
+        score += 1
+
+    return score >= PRIMARY_CTA_SCORE_THRESHOLD
 
 
 def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
@@ -338,16 +470,23 @@ def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
                 cta.get("style", ""),
             ]
         ).lower()
-        if any(hint in combined for hint in CTA_PRIMARY_HINTS):
+        classes = {item.lower() for item in cta.get("class", [])}
+        if any(hint in combined for hint in CTA_PRIMARY_HINTS) or any(
+            class_name in {"btn-main", "main-btn", "primary-btn", "hero-cta"}
+            for class_name in classes
+        ):
             prominent_cta_count += 1
 
-    if cta_count >= 4 or prominent_cta_count >= 2:
+    if cta_count >= 5:
         return "critical"
+
+    if cta_count >= 4 or prominent_cta_count >= 2:
+        return "major"
 
     if any(tag_name in region_summary for tag_name in ("header", "hero", "main")):
         return "major"
 
-    return "major"
+    return "minor"
 
 
 def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
@@ -370,10 +509,14 @@ def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
     return []
 
 
-def get_region_primary_ctas(region: Tag, candidate_regions: list[Tag]) -> list[Tag]:
+def get_region_primary_ctas(
+    region: Tag,
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Tag]:
     ctas: list[Tag] = []
     for tag in region.find_all(["button", "a", "input"]):
-        if not looks_like_cta(tag):
+        if not looks_like_cta(tag, style_hints):
             continue
 
         nearest_region = get_nearest_candidate_region(tag, candidate_regions)
@@ -432,6 +575,39 @@ def get_tag_snippet(tag: Tag, max_length: int = 180) -> str:
 
 def normalize_text(text: str) -> str:
     return " ".join(text.split())
+
+
+def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
+    animated_classes: set[str] = set()
+    animated_ids: set[str] = set()
+    primary_cta_classes: set[str] = set()
+    primary_cta_ids: set[str] = set()
+
+    for style_tag in soup.find_all("style"):
+        css = style_tag.get_text(" ", strip=True)
+        for selector_group, declarations in STYLE_RULE_PATTERN.findall(css):
+            normalized_declarations = declarations.lower()
+            selector_classes = {match.lower() for match in CLASS_SELECTOR_PATTERN.findall(selector_group)}
+            selector_ids = {match.lower() for match in ID_SELECTOR_PATTERN.findall(selector_group)}
+
+            if "animation" in normalized_declarations:
+                animated_classes.update(selector_classes)
+                animated_ids.update(selector_ids)
+
+            if "background" in normalized_declarations or "font-weight" in normalized_declarations:
+                if any(
+                    hint in selector_group.lower()
+                    for hint in ("cta", "primary", "btn-main", "main-btn", "hero-cta", "submit")
+                ):
+                    primary_cta_classes.update(selector_classes)
+                    primary_cta_ids.update(selector_ids)
+
+    return {
+        "animated_classes": animated_classes,
+        "animated_ids": animated_ids,
+        "primary_cta_classes": primary_cta_classes,
+        "primary_cta_ids": primary_cta_ids,
+    }
 
 
 def load_html_from_file(path: str | Path) -> str:
