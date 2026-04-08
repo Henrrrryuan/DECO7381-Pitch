@@ -9,6 +9,7 @@ const state = {
 const samples = {
   simple: "../backend/sample_input/simple-page.html",
   dense: "../backend/sample_input/dense-page.html",
+  consistency: "../backend/sample_input/consistency-combined.html",
 };
 
 async function loadPanelHtml(targetId, path) {
@@ -339,6 +340,12 @@ function bindEvents() {
 
   document.getElementById("loadDenseBtn").addEventListener("click", () => {
     fetchSample("dense").catch((error) => {
+      document.getElementById("explanationContent").textContent = String(error);
+    });
+  });
+
+  document.getElementById("loadConsistencyBtn").addEventListener("click", () => {
+    fetchSample("consistency").catch((error) => {
       document.getElementById("explanationContent").textContent = String(error);
     });
   });

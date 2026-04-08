@@ -19,12 +19,14 @@
         <div class="field compact">
           <label for="apiBase">后端地址</label>
           <input id="apiBase" type="text" value="http://127.0.0.1:8001">
+          <small id="apiStatus" class="subtle">Backend status: checking...</small>
         </div>
 
         <div class="actions">
           <button id="loadSimpleBtn" class="secondary">载入 simple sample</button>
           <button id="loadDenseBtn" class="secondary">载入 dense sample</button>
           <label class="file-btn" for="fileInput">选择 HTML / ZIP 文件</label>
+          <button id="loadConsistencyBtn" class="secondary">Load consistency sample</button>
           <input id="fileInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
           <button id="analyzeBtn" class="primary">Analyze</button>
         </div>
