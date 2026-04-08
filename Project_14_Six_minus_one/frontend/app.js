@@ -178,36 +178,48 @@ function renderExplanation(result) {
 
 function renderSuggestions(result) {
   const suggestionContent = document.getElementById("suggestionContent");
-  const readability = findDimension(result, "Readability");
-  const suggestions = [];
+  const sections = [];
 
-  if (readability) {
-    readability.issues.forEach((issue) => {
-      suggestions.push(`
-        <article class="suggestion-bubble system">
-          <p><strong>${issue.rule_id}</strong>：${issue.suggestion}</p>
-          <p class="subtle">原因：${issue.description}</p>
-        </article>
-      `);
-    });
-  }
+  result.dimensions.forEach((dimension) => {
+    if (!dimension.issues.length) {
+      return;
+    }
 
-  if (!suggestions.length) {
-    suggestions.push(`
+    const issueCards = dimension.issues
+      .map(
+        (issue) => `
+          <article class="suggestion-bubble system">
+            <p><strong>${issue.rule_id}</strong>：${issue.suggestion}</p>
+            <p class="subtle">原因：${issue.description}</p>
+          </article>
+        `,
+      )
+      .join("");
+
+    sections.push(`
+      <section class="suggestion-group">
+        <h3>${dimension.dimension}</h3>
+        ${issueCards}
+      </section>
+    `);
+  });
+
+  if (!sections.length) {
+    sections.push(`
       <article class="suggestion-bubble system">
-        <p>当前没有 Readability 命中问题，可继续测试其他 HTML 或等待其他维度接入。</p>
+        <p>当前没有命中规则，可继续测试其他 HTML 或等待更多分析结果接入。</p>
       </article>
     `);
   }
 
-  suggestions.push(`
+  sections.push(`
     <article class="suggestion-bubble ai-placeholder">
       <p><strong>AI API 接口预留</strong></p>
       <p>后期可在这里调用 \`requestAiSuggestion(context)\`，根据当前分析结果生成更细的解释或修改建议。</p>
     </article>
   `);
 
-  suggestionContent.innerHTML = suggestions.join("");
+  suggestionContent.innerHTML = sections.join("");
 }
 
 function renderPreviewContent() {
