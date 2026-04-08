@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 import sys
 from typing import Any
 
@@ -50,14 +49,6 @@ CTA_TEXT_HINTS = (
     "start free trial",
     "create account",
     "checkout",
-    "立即注册",
-    "确认支付",
-    "申请会员",
-    "立即购买",
-    "立即订阅",
-    "开始使用",
-    "免费试用",
-    "提交申请",
 )
 
 ANIMATION_HINTS = (
@@ -92,28 +83,6 @@ NON_CTA_LABEL_HINTS = (
     "preview",
 )
 
-ANIMATED_CLASS_HINTS = (
-    "animate",
-    "animated",
-    "animation",
-    "moving",
-    "motion",
-    "carousel",
-    "slider",
-    "swiper",
-    "ticker",
-    "marquee",
-    "pulse",
-    "blink",
-    "spin",
-    "spinner",
-    "bounce",
-)
-
-STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
-CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
-ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
-
 
 def analyze_interaction(html: str) -> DimensionResult:
     """Analyze interaction and distraction risks for HTML input.
@@ -127,14 +96,13 @@ def analyze_interaction(html: str) -> DimensionResult:
     soup = BeautifulSoup(html or "", "html.parser")
 
     candidate_regions = get_candidate_regions(soup)
-    style_hints = extract_style_hints(soup)
 
     issues = [
         issue
         for issue in (
             detect_id1_autoplay_media(soup)
-            + detect_id2_too_many_animated_elements(candidate_regions, style_hints)
-            + detect_id3_cta_competition(candidate_regions, style_hints)
+            + detect_id2_too_many_animated_elements(candidate_regions)
+            + detect_id3_cta_competition(candidate_regions)
         )
         if issue is not None
     ]
@@ -244,18 +212,11 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
     return issues
 
 
-def detect_id2_too_many_animated_elements(
-    candidate_regions: list[Tag],
-    style_hints: dict[str, set[str]],
-) -> list[Issue]:
+def detect_id2_too_many_animated_elements(candidate_regions: list[Tag]) -> list[Issue]:
     issues: list[Issue] = []
 
     for region in candidate_regions:
-        animated_tags = get_region_scoped_tags(
-            region,
-            candidate_regions,
-            lambda tag: looks_distracting_animation(tag, style_hints),
-        )
+        animated_tags = get_region_scoped_tags(region, candidate_regions, looks_distracting_animation)
         animated_count = len(animated_tags)
         if animated_count <= ANIMATION_THRESHOLD:
             continue
@@ -290,14 +251,11 @@ def detect_id2_too_many_animated_elements(
     return issues
 
 
-def detect_id3_cta_competition(
-    candidate_regions: list[Tag],
-    style_hints: dict[str, set[str]],
-) -> list[Issue]:
+def detect_id3_cta_competition(candidate_regions: list[Tag]) -> list[Issue]:
     issues: list[Issue] = []
 
     for region in candidate_regions:
-        ctas = get_region_primary_ctas(region, candidate_regions, style_hints)
+        ctas = get_region_primary_ctas(region, candidate_regions)
         cta_count = len(ctas)
         if cta_count <= CTA_THRESHOLD:
             continue
@@ -353,7 +311,7 @@ def looks_animated(tag: Tag) -> bool:
     return "animation" in style or "transition" in style
 
 
-def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+def looks_distracting_animation(tag: Tag) -> bool:
     """Count only likely attention-grabbing motion for ID-2.
 
     Autoplay media is handled by ID-1 already, so we avoid counting it again here.
@@ -368,15 +326,6 @@ def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> b
         return False
 
     if tag.name == "marquee":
-        return True
-
-    classes = {item.lower() for item in tag.get("class", [])}
-    element_id = (tag.get("id") or "").lower()
-    if classes & style_hints["animated_classes"]:
-        return True
-    if element_id and element_id in style_hints["animated_ids"]:
-        return True
-    if any(hint in class_name for class_name in classes for hint in ANIMATED_CLASS_HINTS):
         return True
 
     combined = " ".join(
@@ -405,7 +354,7 @@ def has_autoplay_media(tag: Tag) -> bool:
     return False
 
 
-def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+def looks_like_cta(tag: Tag) -> bool:
     if not isinstance(tag, Tag):
         return False
 
@@ -425,18 +374,10 @@ def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
     if any(hint in label for hint in NON_CTA_LABEL_HINTS):
         return False
 
-    classes = {item.lower() for item in tag.get("class", [])}
-    element_id = (tag.get("id") or "").lower()
     score = 0
     if any(keyword in combined for keyword in CTA_PRIMARY_HINTS):
         score += 2
     if any(phrase in label for phrase in CTA_TEXT_HINTS):
-        score += 2
-    if classes & style_hints["primary_cta_classes"]:
-        score += 2
-    if element_id and element_id in style_hints["primary_cta_ids"]:
-        score += 2
-    if any(class_name in {"btn-main", "main-btn", "primary-btn", "hero-cta"} for class_name in classes):
         score += 2
 
     style = tag.get("style", "").lower()
@@ -450,9 +391,6 @@ def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
         score += 1
     if is_submit_input or is_submit_button:
         score += 2
-
-    if tag.name == "button":
-        score += 1
 
     return score >= PRIMARY_CTA_SCORE_THRESHOLD
 
@@ -470,11 +408,7 @@ def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
                 cta.get("style", ""),
             ]
         ).lower()
-        classes = {item.lower() for item in cta.get("class", [])}
-        if any(hint in combined for hint in CTA_PRIMARY_HINTS) or any(
-            class_name in {"btn-main", "main-btn", "primary-btn", "hero-cta"}
-            for class_name in classes
-        ):
+        if any(hint in combined for hint in CTA_PRIMARY_HINTS):
             prominent_cta_count += 1
 
     if cta_count >= 5:
@@ -509,14 +443,10 @@ def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
     return []
 
 
-def get_region_primary_ctas(
-    region: Tag,
-    candidate_regions: list[Tag],
-    style_hints: dict[str, set[str]],
-) -> list[Tag]:
+def get_region_primary_ctas(region: Tag, candidate_regions: list[Tag]) -> list[Tag]:
     ctas: list[Tag] = []
     for tag in region.find_all(["button", "a", "input"]):
-        if not looks_like_cta(tag, style_hints):
+        if not looks_like_cta(tag):
             continue
 
         nearest_region = get_nearest_candidate_region(tag, candidate_regions)
@@ -575,39 +505,6 @@ def get_tag_snippet(tag: Tag, max_length: int = 180) -> str:
 
 def normalize_text(text: str) -> str:
     return " ".join(text.split())
-
-
-def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
-    animated_classes: set[str] = set()
-    animated_ids: set[str] = set()
-    primary_cta_classes: set[str] = set()
-    primary_cta_ids: set[str] = set()
-
-    for style_tag in soup.find_all("style"):
-        css = style_tag.get_text(" ", strip=True)
-        for selector_group, declarations in STYLE_RULE_PATTERN.findall(css):
-            normalized_declarations = declarations.lower()
-            selector_classes = {match.lower() for match in CLASS_SELECTOR_PATTERN.findall(selector_group)}
-            selector_ids = {match.lower() for match in ID_SELECTOR_PATTERN.findall(selector_group)}
-
-            if "animation" in normalized_declarations:
-                animated_classes.update(selector_classes)
-                animated_ids.update(selector_ids)
-
-            if "background" in normalized_declarations or "font-weight" in normalized_declarations:
-                if any(
-                    hint in selector_group.lower()
-                    for hint in ("cta", "primary", "btn-main", "main-btn", "hero-cta", "submit")
-                ):
-                    primary_cta_classes.update(selector_classes)
-                    primary_cta_ids.update(selector_ids)
-
-    return {
-        "animated_classes": animated_classes,
-        "animated_ids": animated_ids,
-        "primary_cta_classes": primary_cta_classes,
-        "primary_cta_ids": primary_cta_ids,
-    }
 
 
 def load_html_from_file(path: str | Path) -> str:
