@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from html.parser import HTMLParser
+import re
 from typing import Iterable
 
 from ..schemas import DimensionResult, Issue, Severity
@@ -55,7 +56,8 @@ SIDEBAR_BANNER_KEYWORDS = (
     "banner",
     "promo",
     "advert",
-    "ad",
+    "ads",
+    "ad-banner",
     "floating",
     "sticky",
     "popup",
@@ -109,7 +111,10 @@ class _VisualHTMLParser(HTMLParser):
             region_id = self._nearest_region_id()
             self._region_item_counts[region_id] += 1
 
-        matched_keywords = self._matched_keywords(attrs_text, SIDEBAR_BANNER_KEYWORDS)
+        matched_keywords = self._matched_sidebar_banner_keywords(
+            attrs_text,
+            SIDEBAR_BANNER_KEYWORDS,
+        )
         is_sidebar_banner = tag == "aside" or bool(matched_keywords)
         if is_sidebar_banner:
             self.sidebar_banner_count += 1
@@ -148,6 +153,16 @@ class _VisualHTMLParser(HTMLParser):
     def _matched_keywords(text: str, keywords: Iterable[str]) -> set[str]:
         lowered = text.lower()
         return {keyword for keyword in keywords if keyword in lowered}
+
+    @staticmethod
+    def _matched_sidebar_banner_keywords(text: str, keywords: Iterable[str]) -> set[str]:
+        lowered = text.lower()
+        matched: set[str] = set()
+        for keyword in keywords:
+            pattern = rf"(?<![a-z0-9]){re.escape(keyword.lower())}(?![a-z0-9])"
+            if re.search(pattern, lowered):
+                matched.add(keyword)
+        return matched
 
     def max_items_in_region(self) -> tuple[int, str]:
         if not self._region_item_counts:
