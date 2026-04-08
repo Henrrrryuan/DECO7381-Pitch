@@ -17,6 +17,23 @@ MVP 阶段统一输入：
 - 所有 analyzer 都吃同一个 `html: str`
 - 不在 analyzer 层处理文件路径、PDF、URL 或图片
 
+### 1.1 ZIP 上传扩展（兼容模式）
+
+为保持兼容，保留原有 `POST /analyze`（JSON: `{"html": "..."}`）不变。
+
+新增：
+
+- `POST /analyze-zip`
+- Content-Type: `multipart/form-data`
+- 字段：`file`（`.zip`）
+
+后端行为：
+
+1. 读取 ZIP
+2. 优先查找 `index.html` / `index.htm`
+3. 若不存在则使用 ZIP 内第一个 `.html/.htm`
+4. 复用现有分析流程并返回与 `/analyze` 完全一致的结果结构
+
 ## 2. 单个维度输出
 
 每个 analyzer 必须返回：

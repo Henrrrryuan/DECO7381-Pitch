@@ -31,6 +31,14 @@ docs/
 frontend/
 ```
 
+## 运行依赖
+
+在启动后端前，先安装依赖：
+
+```bash
+python -m pip install -r requirements.txt
+```
+
 ## 后续分工
 
 - Readability: 在 `backend/analyzers/readability.py` 中实现

@@ -3,6 +3,7 @@ const state = {
   currentResult: null,
   previousResult: null,
   aiSuggestionEndpoint: null,
+  selectedFile: null,
 };
 
 const samples = {
@@ -16,6 +17,22 @@ async function loadPanelHtml(targetId, path) {
     throw new Error(`无法加载面板：${path}`);
   }
   document.getElementById(targetId).innerHTML = await response.text();
+}
+
+function getFileExtension(fileName) {
+  const index = fileName.lastIndexOf(".");
+  if (index < 0) return "";
+  return fileName.slice(index).toLowerCase();
+}
+
+function isZipFile(file) {
+  const extension = getFileExtension(file?.name || "");
+  return extension === ".zip";
+}
+
+function isHtmlFile(file) {
+  const extension = getFileExtension(file?.name || "");
+  return [".html", ".htm"].includes(extension);
 }
 
 function setLoadingState(loading) {
@@ -218,36 +235,56 @@ async function fetchSample(sampleName) {
   }
   const html = await response.text();
   document.getElementById("htmlInput").value = html;
+  document.getElementById("fileInput").value = "";
+  state.selectedFile = null;
   state.currentHtml = html;
+}
+
+async function requestAnalyzeResult(apiBase, html, selectedFile) {
+  if (selectedFile && isZipFile(selectedFile)) {
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const response = await fetch(`${apiBase}/analyze-zip`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(`后端请求失败：${response.status}`);
+    }
+    return response.json();
+  }
+
+  const response = await fetch(`${apiBase}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html }),
+  });
+  if (!response.ok) {
+    throw new Error(`后端请求失败：${response.status}`);
+  }
+  return response.json();
 }
 
 async function analyzeHtml() {
   const htmlInput = document.getElementById("htmlInput");
   const html = htmlInput.value.trim();
   const apiBase = document.getElementById("apiBase").value.trim();
+  const selectedFile = state.selectedFile;
+  const useZipUpload = selectedFile && isZipFile(selectedFile);
 
-  if (!html) {
-    alert("请先输入或载入 HTML。");
+  if (!useZipUpload && !html) {
+    alert("请先输入/载入 HTML，或者选择 ZIP 文件。");
     return;
   }
 
   setLoadingState(true);
   try {
-    const response = await fetch(`${apiBase}/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`后端请求失败：${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await requestAnalyzeResult(apiBase, html, selectedFile);
     if (state.currentResult) {
       state.previousResult = state.currentResult;
     }
-    state.currentHtml = html;
+    state.currentHtml = useZipUpload ? `<!-- ZIP: ${selectedFile.name} -->` : html;
     renderResult(result);
   } catch (error) {
     document.getElementById("explanationContent").className = "rich-text empty";
@@ -297,9 +334,32 @@ function bindEvents() {
   document.getElementById("fileInput").addEventListener("change", async (event) => {
     const [file] = event.target.files;
     if (!file) return;
-    const html = await file.text();
-    document.getElementById("htmlInput").value = html;
-    state.currentHtml = html;
+
+    if (isZipFile(file)) {
+      state.selectedFile = file;
+      state.currentHtml = `<!-- ZIP: ${file.name} -->`;
+      document.getElementById("htmlInput").value =
+        `<!-- 已选择 ZIP 文件：${file.name} -->\n<!-- 点击 Analyze 后会走 /analyze-zip -->`;
+      return;
+    }
+
+    if (isHtmlFile(file)) {
+      const html = await file.text();
+      state.selectedFile = null;
+      document.getElementById("htmlInput").value = html;
+      state.currentHtml = html;
+      return;
+    }
+
+    state.selectedFile = null;
+    event.target.value = "";
+    alert("仅支持上传 HTML 或 ZIP 文件。");
+  });
+
+  document.getElementById("htmlInput").addEventListener("input", () => {
+    if (!state.selectedFile) return;
+    state.selectedFile = null;
+    document.getElementById("fileInput").value = "";
   });
 
   document.getElementById("analyzeBtn").addEventListener("click", analyzeHtml);
