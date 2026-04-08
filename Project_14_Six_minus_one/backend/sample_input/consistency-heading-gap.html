@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consistency Heading Gap Sample</title>
+    <style>
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-wrapper {
+            max-width: 960px;
+            margin: auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        section {
+            margin-top: 24px;
+            padding: 18px;
+            border: 1px solid #ececec;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-wrapper">
+        <main>
+            <h2>Checkout Overview</h2>
+            <p>This sample is designed to trigger CS-1 only.</p>
+
+            <section>
+                <h4>Payment Details</h4>
+                <p>The page starts at h2 and jumps to h4, which should count as a hierarchy gap.</p>
+            </section>
+
+            <section>
+                <h2>Review</h2>
+                <p>Returning to h2 is allowed, but the earlier jump should still be flagged.</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

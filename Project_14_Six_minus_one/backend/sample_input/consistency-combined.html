@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consistency Combined Sample</title>
+    <style>
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+            background: #f4f2ee;
+        }
+
+        .test-wrapper {
+            max-width: 960px;
+            margin: auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-card {
+            margin-top: 16px;
+            padding: 18px;
+            border: 1px solid #eadfcb;
+            border-radius: 10px;
+            background: #fffaf1;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-wrapper">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/account">Account</a>
+            <a href="/checkout">Checkout</a>
+        </nav>
+
+        <main>
+            <h2>Checkout Center</h2>
+            <p>This sample is designed to trigger both CS-1 and CS-2.</p>
+
+            <section>
+                <h4>Payment Setup</h4>
+                <p>The heading starts from h2 and then jumps to h4.</p>
+            </section>
+
+            <section class="step-card checkout-stage">Contact Details</section>
+            <section class="step-card checkout-stage">Billing Address</section>
+            <section class="step-card checkout-stage">Order Review</section>
+        </main>
+    </div>
+</body>
+</html>
