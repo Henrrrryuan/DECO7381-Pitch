@@ -205,11 +205,11 @@ def analyze_visual(html: str) -> DimensionResult:
         issues.append(
             _build_issue(
                 rule_id="VC-1",
-                title="首屏元素过多",
+                title="Too many elements on the first screen",
                 severity=_severity_from_excess(parser.focus_elements_count - VC1_THRESHOLD),
                 base_penalty=3,
-                description="首屏区域的关键元素数量过多，可能增加视觉扫描与选择负担。",
-                suggestion="减少首屏同时竞争注意力的元素，突出 1-2 个主要任务入口。",
+                description="The number of key elements in the first screen area is excessive, which may increase the burden of visual scanning and selection.",
+                suggestion="Reduce the number of elements competing for attention on the first screen simultaneously, and highlight 1 to 2 main task entry points.",
                 evidence={
                     "focus_elements_count": parser.focus_elements_count,
                     "threshold": VC1_THRESHOLD,
@@ -222,11 +222,11 @@ def analyze_visual(html: str) -> DimensionResult:
         issues.append(
             _build_issue(
                 rule_id="VC-2",
-                title="内容块过密",
+                title="Content blocks are too dense",
                 severity=_severity_from_excess(max_items_in_region - VC2_THRESHOLD),
                 base_penalty=3,
-                description="同一区域内项目数量偏多，信息密度较高，可能降低可扫描性。",
-                suggestion="将内容拆分到多个分区，或引入折叠/分页来降低单屏密度。",
+                description="An excessive number of projects within the same region results in high information density, which may reduce scannability.",
+                suggestion="Split the content into multiple partitions, or introduce folding/pagination to reduce the density of a single screen.",
                 evidence={
                     "max_items_in_region": max_items_in_region,
                     "threshold": VC2_THRESHOLD,
@@ -239,11 +239,11 @@ def analyze_visual(html: str) -> DimensionResult:
         issues.append(
             _build_issue(
                 rule_id="VC-3",
-                title="侧栏或横幅干扰过多",
+                title="Excessive interference from sidebars or banners",
                 severity=_severity_from_excess(parser.sidebar_banner_count - VC3_THRESHOLD),
                 base_penalty=4,
-                description="页面存在较多侧栏、横幅或悬浮干扰区域，可能分散用户注意力。",
-                suggestion="合并或移除非关键侧栏/横幅，仅保留支持主任务的辅助信息。",
+                description="The page contains numerous sidebars, banners, or floating interference areas, which may distract users' attention.",
+                suggestion="Merge or remove non-critical sidebars/banners, retaining only auxiliary information that supports the main task.",
                 evidence={
                     "sidebar_banner_count": parser.sidebar_banner_count,
                     "threshold": VC3_THRESHOLD,
