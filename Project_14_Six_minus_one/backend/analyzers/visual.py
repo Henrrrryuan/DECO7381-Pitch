@@ -191,7 +191,7 @@ def _build_issue(
 
 
 def analyze_visual(html: str) -> DimensionResult:
-    """Analyze visual complexity using shared MVP rules VC-1/VC-2/VC-3."""
+    """rukou Analyze visual complexity using shared MVP rules VC-1/VC-2/VC-3."""
 
     parser = _VisualHTMLParser()
     parser.feed(html or "")
