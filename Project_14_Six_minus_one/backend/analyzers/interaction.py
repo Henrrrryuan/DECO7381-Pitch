@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -32,21 +33,13 @@ CTA_HINTS = (
     "hero",
     "checkout",
     "signup",
-    "subscribe",
-    "purchase",
 )
 
 CTA_TEXT_HINTS = (
     "buy now",
-    "start",
     "get started",
     "sign up",
-    "subscribe",
-    "book now",
     "download",
-    "join now",
-    "try now",
-    "start free trial",
     "create account",
     "checkout",
 )
@@ -83,6 +76,22 @@ NON_CTA_LABEL_HINTS = (
     "preview",
 )
 
+ANIMATED_CLASS_HINTS = (
+    "animate",
+    "animated",
+    "animation",
+    "carousel",
+    "slider",
+    "swiper",
+    "ticker",
+    "marquee",
+)
+
+STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
+CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
+ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
+SEVERITY_RANK: dict[Severity, int] = {"minor": 1, "major": 2, "critical": 3}
+
 
 def analyze_interaction(html: str) -> DimensionResult:
     """Analyze interaction and distraction risks for HTML input.
@@ -96,13 +105,14 @@ def analyze_interaction(html: str) -> DimensionResult:
     soup = BeautifulSoup(html or "", "html.parser")
 
     candidate_regions = get_candidate_regions(soup)
+    style_hints = extract_style_hints(soup)
 
     issues = [
         issue
         for issue in (
             detect_id1_autoplay_media(soup)
-            + detect_id2_too_many_animated_elements(candidate_regions)
-            + detect_id3_cta_competition(candidate_regions)
+            + detect_id2_too_many_animated_elements(candidate_regions, style_hints)
+            + detect_id3_cta_competition(candidate_regions, style_hints)
         )
         if issue is not None
     ]
@@ -154,135 +164,231 @@ def build_issue(
 
 
 def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
-    issues: list[Issue] = []
+    autoplay_locations: list[dict[str, Any]] = []
+    autoplay_videos = 0
+    autoplay_muted_videos = 0
+    autoplay_audios = 0
+    autoplay_iframes = 0
 
     for video in soup.select("video[autoplay]"):
+        autoplay_videos += 1
         muted = video.has_attr("muted")
-        severity: Severity = "major" if muted else "critical"
-        issues.append(
-            build_issue(
-                rule_id="ID-1",
-                title="自动播放媒体",
-                severity=severity,
-                base_penalty=SERIOUS_BASE_PENALTY,
-                description="页面存在 autoplay 视频，可能在用户理解页面结构前直接打断注意力。",
-                suggestion="默认关闭 autoplay；如必须自动播放，请静音并避免放在主任务区域。",
-                evidence={
-                    "tag": "video",
-                    "muted": muted,
-                },
-                locations=[{"summary": get_tag_summary(video), "html_snippet": get_tag_snippet(video)}],
-            )
+        if muted:
+            autoplay_muted_videos += 1
+        autoplay_locations.append(
+            {
+                "summary": get_tag_summary(video),
+                "html_snippet": get_tag_snippet(video),
+                "tag": "video",
+                "muted": muted,
+            }
         )
 
     for audio in soup.select("audio[autoplay]"):
-        issues.append(
-            build_issue(
-                rule_id="ID-1",
-                title="自动播放媒体",
-                severity="critical",
-                base_penalty=SERIOUS_BASE_PENALTY,
-                description="页面存在 autoplay 音频，会在用户尚未建立页面理解时直接干扰阅读与定位。",
-                suggestion="要求用户主动触发音频播放，不要默认自动播放。",
-                evidence={"tag": "audio"},
-                locations=[{"summary": get_tag_summary(audio), "html_snippet": get_tag_snippet(audio)}],
-            )
+        autoplay_audios += 1
+        autoplay_locations.append(
+            {
+                "summary": get_tag_summary(audio),
+                "html_snippet": get_tag_snippet(audio),
+                "tag": "audio",
+                "muted": audio.has_attr("muted"),
+            }
         )
 
     for iframe in soup.find_all("iframe"):
         src = iframe.get("src", "")
         src_lower = src.lower()
         if "autoplay=1" in src_lower or "autoplay=true" in src_lower:
-            issues.append(
-                build_issue(
-                    rule_id="ID-1",
-                    title="自动播放媒体",
-                    severity="major",
-                    base_penalty=SERIOUS_BASE_PENALTY,
-                    description="页面中存在启用 autoplay 的嵌入媒体，可能在用户聚焦主内容前造成额外干扰。",
-                    suggestion="关闭嵌入媒体 autoplay，除非它与用户当前主任务直接相关。",
-                    evidence={
-                        "tag": "iframe",
-                        "src": src,
-                    },
-                    locations=[{"summary": get_tag_summary(iframe), "html_snippet": get_tag_snippet(iframe)}],
-                )
+            autoplay_iframes += 1
+            autoplay_locations.append(
+                {
+                    "summary": get_tag_summary(iframe),
+                    "html_snippet": get_tag_snippet(iframe),
+                    "tag": "iframe",
+                    "src": src,
+                }
             )
 
-    return issues
+    total_autoplay_media = autoplay_videos + autoplay_audios + autoplay_iframes
+    if total_autoplay_media == 0:
+        return []
+
+    has_unmuted_video = autoplay_videos > autoplay_muted_videos
+    if autoplay_audios >= 1 or total_autoplay_media >= 3 or has_unmuted_video:
+        severity: Severity = "critical"
+    elif total_autoplay_media >= 2 or autoplay_iframes >= 1:
+        severity = "major"
+    else:
+        severity = "minor"
+
+    return [
+        build_issue(
+            rule_id="ID-1",
+            title="自动播放媒体",
+            severity=severity,
+            base_penalty=SERIOUS_BASE_PENALTY,
+            description="页面存在自动播放媒体，会在用户理解页面结构前直接打断注意力，并增加认知负担。",
+            suggestion="默认关闭 autoplay；只有在与当前主任务直接相关时才考虑启用，并优先改为用户主动触发。",
+            evidence={
+                "autoplay_video_count": autoplay_videos,
+                "autoplay_muted_video_count": autoplay_muted_videos,
+                "autoplay_audio_count": autoplay_audios,
+                "autoplay_iframe_count": autoplay_iframes,
+                "total_autoplay_media": total_autoplay_media,
+            },
+            locations=autoplay_locations[:5],
+        )
+    ]
 
 
-def detect_id2_too_many_animated_elements(candidate_regions: list[Tag]) -> list[Issue]:
-    issues: list[Issue] = []
+def detect_id2_too_many_animated_elements(
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Issue]:
+    violating_regions: list[dict[str, Any]] = []
 
     for region in candidate_regions:
-        animated_tags = get_region_scoped_tags(region, candidate_regions, looks_distracting_animation)
+        animated_tags = get_region_scoped_tags(
+            region,
+            candidate_regions,
+            lambda tag: looks_distracting_animation(tag, style_hints),
+        )
         animated_count = len(animated_tags)
         if animated_count <= ANIMATION_THRESHOLD:
             continue
-
-        if animated_count >= 6:
-            severity: Severity = "critical"
-        elif animated_count >= 4:
-            severity = "major"
-        else:
-            severity = "minor"
-        issues.append(
-            build_issue(
-                rule_id="ID-2",
-                title="动画元素过多",
-                severity=severity,
-                base_penalty=REGULAR_BASE_PENALTY,
-                description="同一区域内存在过多动态元素，可能同时争夺用户注意力并削弱主任务聚焦。",
-                suggestion="减少非必要动效，限制自动轮播或持续运动组件，并保留一个必要动态元素即可。",
-                evidence={
-                    "animated_count": animated_count,
-                    "threshold": ANIMATION_THRESHOLD,
-                    "region": get_tag_summary(region),
-                    "note": "MVP 以 major content region 作为同一视口的近似代理。",
-                },
-                locations=[
-                    {"summary": get_tag_summary(tag), "html_snippet": get_tag_snippet(tag)}
-                    for tag in animated_tags[:5]
-                ],
-            )
+        violating_regions.append(
+            {
+                "region": region,
+                "animated_count": animated_count,
+                "animated_tags": animated_tags,
+            }
         )
 
-    return issues
+    if not violating_regions:
+        return []
+
+    max_animated_count = max(item["animated_count"] for item in violating_regions)
+    total_animated_elements = sum(item["animated_count"] for item in violating_regions)
+    if max_animated_count >= 6 or len(violating_regions) >= 3:
+        severity: Severity = "critical"
+    elif max_animated_count >= 4 or len(violating_regions) >= 2:
+        severity = "major"
+    else:
+        severity = "minor"
+
+    locations: list[dict[str, Any]] = []
+    region_summaries: list[dict[str, Any]] = []
+    for item in sorted(violating_regions, key=lambda region: region["animated_count"], reverse=True):
+        region_summaries.append(
+            {
+                "region": get_tag_summary(item["region"]),
+                "animated_count": item["animated_count"],
+            }
+        )
+        for tag in item["animated_tags"][:3]:
+            locations.append(
+                {
+                    "summary": get_tag_summary(tag),
+                    "html_snippet": get_tag_snippet(tag),
+                    "region": get_tag_summary(item["region"]),
+                }
+            )
+
+    return [
+        build_issue(
+            rule_id="ID-2",
+            title="动画元素过多",
+            severity=severity,
+            base_penalty=REGULAR_BASE_PENALTY,
+            description="页面中存在区域内动画元素超过阈值的情况，多个动态对象会同时争夺用户注意力并削弱主任务聚焦。",
+            suggestion="减少非必要动效，限制自动轮播或持续运动组件，并尽量把每个主要区域的动态元素控制在 1 到 2 个以内。",
+            evidence={
+                "threshold": ANIMATION_THRESHOLD,
+                "violating_region_count": len(violating_regions),
+                "max_animated_count_in_region": max_animated_count,
+                "total_animated_elements_in_violating_regions": total_animated_elements,
+                "regions": region_summaries[:5],
+                "note": "MVP 以 major content region 作为同一视口的近似代理。",
+            },
+            locations=locations[:5],
+        )
+    ]
 
 
-def detect_id3_cta_competition(candidate_regions: list[Tag]) -> list[Issue]:
-    issues: list[Issue] = []
+def detect_id3_cta_competition(
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Issue]:
+    violating_regions: list[dict[str, Any]] = []
 
     for region in candidate_regions:
-        ctas = get_region_primary_ctas(region, candidate_regions)
+        ctas = get_region_primary_ctas(region, candidate_regions, style_hints)
         cta_count = len(ctas)
         if cta_count <= CTA_THRESHOLD:
             continue
 
-        severity = classify_cta_severity(region, ctas)
-        issues.append(
-            build_issue(
-                rule_id="ID-3",
-                title="CTA 竞争",
-                severity=severity,
-                base_penalty=REGULAR_BASE_PENALTY,
-                description="同一区域主操作按钮超过 2 个，容易增加决策负担，使用户难以判断下一步操作。",
-                suggestion="保留 1 个主 CTA，其余改为次按钮或文本链接，明确操作层级。",
-                evidence={
-                    "cta_count": cta_count,
-                    "threshold": CTA_THRESHOLD,
-                    "region": get_tag_summary(region),
-                    "cta_examples": [get_cta_label(tag) or get_tag_summary(tag) for tag in ctas[:5]],
-                },
-                locations=[
-                    {"summary": get_tag_summary(tag), "label": get_cta_label(tag)}
-                    for tag in ctas[:5]
-                ],
-            )
+        violating_regions.append(
+            {
+                "region": region,
+                "ctas": ctas,
+                "cta_count": cta_count,
+            }
         )
 
-    return issues
+    if not violating_regions:
+        return []
+
+    highest_risk_region = max(
+        violating_regions,
+        key=lambda item: (
+            SEVERITY_RANK[classify_cta_severity(item["region"], item["ctas"])],
+            item["cta_count"],
+        ),
+    )
+    max_cta_count = max(item["cta_count"] for item in violating_regions)
+    if max_cta_count >= 5 or len(violating_regions) >= 3:
+        severity: Severity = "critical"
+    elif max_cta_count >= 4 or len(violating_regions) >= 2:
+        severity = "major"
+    else:
+        severity = classify_cta_severity(highest_risk_region["region"], highest_risk_region["ctas"])
+
+    locations: list[dict[str, Any]] = []
+    region_summaries: list[dict[str, Any]] = []
+    for item in sorted(violating_regions, key=lambda region: region["cta_count"], reverse=True):
+        region_summaries.append(
+            {
+                "region": get_tag_summary(item["region"]),
+                "cta_count": item["cta_count"],
+                "cta_examples": [get_cta_label(tag) or get_tag_summary(tag) for tag in item["ctas"][:3]],
+            }
+        )
+        for tag in item["ctas"][:3]:
+            locations.append(
+                {
+                    "summary": get_tag_summary(tag),
+                    "label": get_cta_label(tag),
+                    "region": get_tag_summary(item["region"]),
+                }
+            )
+
+    return [
+        build_issue(
+            rule_id="ID-3",
+            title="CTA 竞争",
+            severity=severity,
+            base_penalty=REGULAR_BASE_PENALTY,
+            description="页面中存在区域内主操作按钮超过 2 个的情况，容易增加决策负担，使用户难以判断下一步操作。",
+            suggestion="每个主要区域优先保留 1 个主 CTA，其余改为次按钮或文本链接，明确操作层级。",
+            evidence={
+                "threshold": CTA_THRESHOLD,
+                "violating_region_count": len(violating_regions),
+                "max_cta_count_in_region": max_cta_count,
+                "regions": region_summaries[:5],
+            },
+            locations=locations[:5],
+        )
+    ]
 
 
 def looks_animated(tag: Tag) -> bool:
@@ -311,7 +417,7 @@ def looks_animated(tag: Tag) -> bool:
     return "animation" in style or "transition" in style
 
 
-def looks_distracting_animation(tag: Tag) -> bool:
+def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
     """Count only likely attention-grabbing motion for ID-2.
 
     Autoplay media is handled by ID-1 already, so we avoid counting it again here.
@@ -326,6 +432,15 @@ def looks_distracting_animation(tag: Tag) -> bool:
         return False
 
     if tag.name == "marquee":
+        return True
+
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
+    if classes & style_hints["animated_classes"]:
+        return True
+    if element_id and element_id in style_hints["animated_ids"]:
+        return True
+    if any(hint in class_name for class_name in classes for hint in ANIMATED_CLASS_HINTS):
         return True
 
     combined = " ".join(
@@ -354,11 +469,14 @@ def has_autoplay_media(tag: Tag) -> bool:
     return False
 
 
-def looks_like_cta(tag: Tag) -> bool:
+def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
     if not isinstance(tag, Tag):
         return False
 
     if tag.name not in {"button", "a", "input"}:
+        return False
+
+    if tag.name == "input" and tag.get("type", "").lower() not in {"submit", "button"}:
         return False
 
     combined = " ".join(
@@ -374,10 +492,18 @@ def looks_like_cta(tag: Tag) -> bool:
     if any(hint in label for hint in NON_CTA_LABEL_HINTS):
         return False
 
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
     score = 0
     if any(keyword in combined for keyword in CTA_PRIMARY_HINTS):
         score += 2
     if any(phrase in label for phrase in CTA_TEXT_HINTS):
+        score += 2
+    if classes & style_hints["primary_cta_classes"]:
+        score += 2
+    if element_id and element_id in style_hints["primary_cta_ids"]:
+        score += 2
+    if any(class_name in {"btn-primary", "primary-btn", "hero-cta"} for class_name in classes):
         score += 2
 
     style = tag.get("style", "").lower()
@@ -391,6 +517,9 @@ def looks_like_cta(tag: Tag) -> bool:
         score += 1
     if is_submit_input or is_submit_button:
         score += 2
+
+    if tag.name == "button":
+        score += 1
 
     return score >= PRIMARY_CTA_SCORE_THRESHOLD
 
@@ -408,7 +537,11 @@ def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
                 cta.get("style", ""),
             ]
         ).lower()
-        if any(hint in combined for hint in CTA_PRIMARY_HINTS):
+        classes = {item.lower() for item in cta.get("class", [])}
+        if any(hint in combined for hint in CTA_PRIMARY_HINTS) or any(
+            class_name in {"btn-primary", "primary-btn", "hero-cta"}
+            for class_name in classes
+        ):
             prominent_cta_count += 1
 
     if cta_count >= 5:
@@ -443,10 +576,14 @@ def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
     return []
 
 
-def get_region_primary_ctas(region: Tag, candidate_regions: list[Tag]) -> list[Tag]:
+def get_region_primary_ctas(
+    region: Tag,
+    candidate_regions: list[Tag],
+    style_hints: dict[str, set[str]],
+) -> list[Tag]:
     ctas: list[Tag] = []
     for tag in region.find_all(["button", "a", "input"]):
-        if not looks_like_cta(tag):
+        if not looks_like_cta(tag, style_hints):
             continue
 
         nearest_region = get_nearest_candidate_region(tag, candidate_regions)
@@ -505,6 +642,36 @@ def get_tag_snippet(tag: Tag, max_length: int = 180) -> str:
 
 def normalize_text(text: str) -> str:
     return " ".join(text.split())
+
+
+def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
+    animated_classes: set[str] = set()
+    animated_ids: set[str] = set()
+    primary_cta_classes: set[str] = set()
+    primary_cta_ids: set[str] = set()
+
+    for style_tag in soup.find_all("style"):
+        css = style_tag.get_text(" ", strip=True)
+        for selector_group, declarations in STYLE_RULE_PATTERN.findall(css):
+            normalized_declarations = declarations.lower()
+            selector_classes = {match.lower() for match in CLASS_SELECTOR_PATTERN.findall(selector_group)}
+            selector_ids = {match.lower() for match in ID_SELECTOR_PATTERN.findall(selector_group)}
+
+            if "animation" in normalized_declarations:
+                animated_classes.update(selector_classes)
+                animated_ids.update(selector_ids)
+
+            if "background" in normalized_declarations or "font-weight" in normalized_declarations:
+                if any(hint in selector_group.lower() for hint in ("cta", "primary", "hero", "submit", "btn")):
+                    primary_cta_classes.update(selector_classes)
+                    primary_cta_ids.update(selector_ids)
+
+    return {
+        "animated_classes": animated_classes,
+        "animated_ids": animated_ids,
+        "primary_cta_classes": primary_cta_classes,
+        "primary_cta_ids": primary_cta_ids,
+    }
 
 
 def load_html_from_file(path: str | Path) -> str:
