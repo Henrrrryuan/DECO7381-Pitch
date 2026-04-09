@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
+from pathlib import Path
 from typing import Any
 
 REQUIRED_RUNTIME_MODULES: dict[str, str] = {
@@ -55,6 +56,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 MAX_ZIP_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB
+SAMPLE_INPUT_DIR = Path(__file__).resolve().parent / "sample_input"
+SAMPLE_FILE_MAP = {
+    "simple": SAMPLE_INPUT_DIR / "simple-page.html",
+    "dense": SAMPLE_INPUT_DIR / "dense-page.html",
+    "consistency": SAMPLE_INPUT_DIR / "consistency-combined.html",
+}
 
 init_history_store()
 
@@ -127,6 +134,18 @@ def root() -> dict[str, Any]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/samples/{sample_name}")
+def get_sample(sample_name: str) -> dict[str, str]:
+    sample_path = SAMPLE_FILE_MAP.get(sample_name)
+    if sample_path is None:
+        raise HTTPException(status_code=404, detail="Sample not found.")
+    return {
+        "name": sample_name,
+        "source_name": sample_path.name,
+        "html": sample_path.read_text(encoding="utf-8"),
+    }
 
 
 @app.get("/history")
