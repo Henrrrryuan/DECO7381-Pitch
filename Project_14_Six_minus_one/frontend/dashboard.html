@@ -27,8 +27,11 @@
       <aside class="tool-sidebar">
         <div class="tool-sidebar-inner">
           <header class="sidebar-header">
-            <p class="sidebar-kicker">Dashboard</p>
-            <p id="dashboardStatus" class="sidebar-status">Waiting for analysis</p>
+            <div>
+              <p class="sidebar-kicker">Dashboard</p>
+              <p id="dashboardStatus" class="sidebar-status">Waiting for analysis</p>
+            </div>
+            <a class="sidebar-action-button" href="./index.html">Re-upload</a>
           </header>
 
           <section class="overall-panel">
@@ -41,6 +44,7 @@
 
             <div class="overall-copy">
               <p class="overall-heading">Current score</p>
+              <p id="dashboardSourceName" class="overall-source">Waiting for upload</p>
               <p id="dashboardSummaryText" class="overall-text">
                 Run an analysis to populate the dashboard summary.
               </p>
@@ -75,10 +79,22 @@
             </div>
           </section>
 
+          <section class="sidebar-section overall-comments-section">
+            <div class="sidebar-section-header">
+              <h2>Overall comments</h2>
+            </div>
+            <p id="overallComments" class="overall-comments-text">
+              Overall comments will appear here after the current page is processed.
+            </p>
+          </section>
+
           <section class="sidebar-section comparison-section">
             <div class="sidebar-section-header">
               <h2>Comparison</h2>
               <span id="comparisonMeta" class="sidebar-meta">No baseline</span>
+            </div>
+            <div id="comparisonSummary" class="comparison-summary empty">
+              Upload and analyze a new file to compare it against your previous submission.
             </div>
             <div id="comparisonList" class="comparison-list empty">
               Upload and analyze a new file to compare it against your previous submission.

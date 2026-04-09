@@ -10,11 +10,27 @@ const state = {
   currentResult: null,
 };
 
+const DIMENSION_CONFIG = [
+  { name: "Visual Complexity", className: "visual" },
+  { name: "Readability", className: "readability" },
+  { name: "Interaction & Distraction", className: "interaction" },
+  { name: "Consistency", className: "consistency" },
+];
+
 function scoreStatus(score) {
   if (score >= 85) return "Strong";
   if (score >= 70) return "Moderate risk";
   if (score >= 50) return "Needs work";
   return "High risk";
+}
+
+function deltaMeta(currentScore, previousScore) {
+  const delta = currentScore - previousScore;
+  return {
+    delta,
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+    label: delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${delta}`,
+  };
 }
 
 function renderScoreRing(score) {
@@ -33,14 +49,7 @@ function renderDimensionBars(result) {
     return;
   }
 
-  const config = [
-    { name: "Visual Complexity", className: "visual" },
-    { name: "Readability", className: "readability" },
-    { name: "Interaction & Distraction", className: "interaction" },
-    { name: "Consistency", className: "consistency" },
-  ];
-
-  dimensionBars.innerHTML = config.map(({ name, className }) => {
+  dimensionBars.innerHTML = DIMENSION_CONFIG.map(({ name, className }) => {
     const dimension = findDimension(result, name);
     const score = dimension ? dimension.score : 0;
     return `
@@ -56,10 +65,11 @@ function renderDimensionBars(result) {
 function renderDashboardSummary(result) {
   const summaryNode = document.getElementById("dashboardSummaryText");
   const statusNode = document.getElementById("dashboardStatus");
+  const commentsNode = document.getElementById("overallComments");
   const lowest = result.min_dimension_score;
   const totalIssues = result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0);
 
-  if (!summaryNode || !statusNode) {
+  if (!summaryNode || !statusNode || !commentsNode) {
     return;
   }
 
@@ -67,14 +77,20 @@ function renderDashboardSummary(result) {
   summaryNode.textContent = [
     `Overall score ${result.overall_score}.`,
     `Lowest dimension ${lowest}.`,
-    `${totalIssues} issues detected.`,
+    `${totalIssues} issues detected in this report.`,
   ].join(" ");
+
+  commentsNode.textContent = totalIssues === 0
+    ? "This version does not trigger any of the current heuristic rules. The page looks stable under the present MVP checks."
+    : [
+        `This interface currently sits in the "${scoreStatus(result.overall_score)}" band.`,
+        `The weakest dimension score is ${lowest}, so that area is shaping the overall experience most strongly.`,
+        `${totalIssues} rule hits are currently contributing to cognitive load in this version.`,
+      ].join(" ");
 }
 
 function comparisonRow(label, currentScore, previousScore, className = "") {
-  const delta = currentScore - previousScore;
-  const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
-  const deltaLabel = delta === 0 ? "0" : `${delta > 0 ? "+" : ""}${delta}`;
+  const { direction, label: deltaLabel } = deltaMeta(currentScore, previousScore);
   const previousWidth = Math.max(0, Math.min(100, previousScore));
   const currentWidth = Math.max(0, Math.min(100, currentScore));
 
@@ -103,18 +119,30 @@ function comparisonRow(label, currentScore, previousScore, className = "") {
 function renderComparison(currentResult, previousResult, previousSourceName) {
   const comparisonList = document.getElementById("comparisonList");
   const comparisonMeta = document.getElementById("comparisonMeta");
-  if (!comparisonList || !comparisonMeta) {
+  const comparisonSummary = document.getElementById("comparisonSummary");
+  if (!comparisonList || !comparisonMeta || !comparisonSummary) {
     return;
   }
 
   if (!previousResult) {
     comparisonMeta.textContent = "No baseline";
+    comparisonSummary.className = "comparison-summary empty";
+    comparisonSummary.textContent = "Analyze a revised version next to see overall score movement and dimension-level deltas.";
     comparisonList.className = "comparison-list empty";
     comparisonList.textContent = "Upload and analyze a new file to compare it against your previous submission.";
     return;
   }
 
+  const overallMeta = deltaMeta(currentResult.overall_score, previousResult.overall_score);
   comparisonMeta.textContent = previousSourceName ? `vs ${previousSourceName}` : "Previous run";
+  comparisonSummary.className = `comparison-summary ${overallMeta.direction}`;
+  comparisonSummary.innerHTML = `
+    <strong>${overallMeta.label}</strong>
+    <span>
+      Overall moved from ${previousResult.overall_score} to ${currentResult.overall_score}.
+      Use this panel to see which dimensions improved after re-upload.
+    </span>
+  `;
   comparisonList.className = "comparison-list";
   comparisonList.innerHTML = [
     comparisonRow("Overall", currentResult.overall_score, previousResult.overall_score, "overall"),
@@ -245,6 +273,10 @@ async function init() {
 
   const currentResult = buildAnalysisView(currentSession.payload);
   const previousResult = previousSession?.payload ? buildAnalysisView(previousSession.payload) : null;
+  const sourceNode = document.getElementById("dashboardSourceName");
+  if (sourceNode) {
+    sourceNode.textContent = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
+  }
 
   renderResult(
     currentResult,

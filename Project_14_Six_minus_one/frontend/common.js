@@ -50,6 +50,35 @@ async function analyzeHtmlText(html, sourceName = "uploaded.html") {
   });
 }
 
+function isZipFile(file) {
+  return Boolean(file?.name?.toLowerCase().endsWith(".zip"));
+}
+
+function isHtmlFile(file) {
+  return Boolean(file?.name?.toLowerCase().match(/\.html?$/));
+}
+
+async function analyzeUploadFile(file, baselineRunId = null) {
+  if (isZipFile(file)) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (baselineRunId) {
+      formData.append("baseline_run_id", baselineRunId);
+    }
+    return fetchJson(`${API_BASE}/analyze-zip`, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  if (!isHtmlFile(file)) {
+    throw new Error("Only HTML or ZIP files are supported.");
+  }
+
+  const html = await file.text();
+  return analyzeHtmlText(html, file.name);
+}
+
 function saveDashboardSession(payload) {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -88,12 +117,15 @@ export {
   API_BASE,
   STORAGE_KEY,
   analyzeHtmlText,
+  analyzeUploadFile,
   buildAnalysisView,
   clearDashboardSession,
   escapeHtml,
   fetchJson,
   findDimension,
   formatDate,
+  isHtmlFile,
+  isZipFile,
   loadDashboardSession,
   saveDashboardSession,
 };

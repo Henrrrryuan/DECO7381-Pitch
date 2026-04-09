@@ -1,4 +1,10 @@
-import { analyzeHtmlText, loadDashboardSession, saveDashboardSession } from "./common.js";
+import {
+  analyzeUploadFile,
+  isHtmlFile,
+  isZipFile,
+  loadDashboardSession,
+  saveDashboardSession,
+} from "./common.js";
 
 const state = {
   file: null,
@@ -19,7 +25,7 @@ function setStatus(message, isError = false) {
 
 function syncFile(file) {
   state.file = file || null;
-  selectedFileName.textContent = file ? file.name : "or choose an HTML file";
+  selectedFileName.textContent = file ? file.name : "or choose an HTML / ZIP file";
   analyzeButton.disabled = !file || state.loading;
   if (file) {
     setStatus(`${file.name} is ready for analysis.`);
@@ -44,9 +50,12 @@ async function handleSubmit(event) {
   setStatus("Running cognitive accessibility analysis...");
 
   try {
-    const html = await state.file.text();
-    const payload = await analyzeHtmlText(html, state.file.name);
     const previousSession = loadDashboardSession();
+    const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
+    const payload = await analyzeUploadFile(state.file, baselineRunId);
+    const html = isHtmlFile(state.file)
+      ? await state.file.text()
+      : payload.html_content || "";
     saveDashboardSession({
       current: {
         payload,
@@ -86,8 +95,8 @@ function bindDropzone() {
     if (!file) {
       return;
     }
-    if (!file.name.toLowerCase().match(/\.(html?|HTML?)$/)) {
-      setStatus("Only HTML files are supported on the upload page.", true);
+    if (!isHtmlFile(file) && !isZipFile(file)) {
+      setStatus("Only HTML and ZIP files are supported on the upload page.", true);
       return;
     }
     uploadInput.files = event.dataTransfer.files;
@@ -101,10 +110,10 @@ uploadInput.addEventListener("change", (event) => {
     syncFile(null);
     return;
   }
-  if (!file.name.toLowerCase().match(/\.(html?|HTML?)$/)) {
+  if (!isHtmlFile(file) && !isZipFile(file)) {
     event.target.value = "";
     syncFile(null);
-    setStatus("Only HTML files are supported on the upload page.", true);
+    setStatus("Only HTML and ZIP files are supported on the upload page.", true);
     return;
   }
   syncFile(file);

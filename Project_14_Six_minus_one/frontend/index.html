@@ -28,16 +28,16 @@
         <p class="upload-kicker">CogniLens</p>
         <h1>Evaluate Cognitive Accessibility</h1>
         <p class="upload-description">
-          Upload an HTML file to inspect readability, visual complexity,
+          Upload an HTML file or ZIP package to inspect readability, visual complexity,
           distraction, and structural consistency before opening the dashboard.
         </p>
       </div>
 
       <form id="uploadForm" class="upload-form" novalidate>
         <label id="dropzone" class="dropzone" for="uploadInput">
-          <input id="uploadInput" type="file" accept=".html,.htm,text/html">
-          <span class="dropzone-label">Drag &amp; drop your HTML file here</span>
-          <span id="selectedFileName" class="dropzone-file">or choose an HTML file</span>
+          <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
+          <span class="dropzone-label">Drag &amp; drop your HTML or ZIP file here</span>
+          <span id="selectedFileName" class="dropzone-file">or choose an HTML / ZIP file</span>
         </label>
 
         <button id="analyzeButton" class="upload-analyze-button" type="submit" disabled>

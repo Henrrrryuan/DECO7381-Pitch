@@ -110,8 +110,9 @@ input {
 
 .upload-body {
   background:
-    radial-gradient(circle at top, rgba(47, 111, 235, 0.12), transparent 26rem),
-    linear-gradient(180deg, #f7f8fb 0%, #eef1f7 100%);
+    radial-gradient(circle at 50% 22%, rgba(91, 156, 255, 0.26), transparent 18rem),
+    radial-gradient(circle at top right, rgba(76, 201, 255, 0.16), transparent 22rem),
+    linear-gradient(180deg, #071122 0%, #0d1c35 56%, #0b1324 100%);
 }
 
 .upload-page {
@@ -128,11 +129,21 @@ input {
   gap: 32px;
   justify-items: center;
   text-align: center;
+  width: 100%;
+  padding: 52px 48px;
+  border: 1px solid rgba(132, 181, 255, 0.24);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(9, 22, 43, 0.92), rgba(15, 33, 61, 0.82)),
+    radial-gradient(circle at center, rgba(79, 143, 255, 0.18), transparent 45%);
+  box-shadow:
+    0 28px 70px rgba(4, 11, 24, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .upload-kicker {
   margin: 0;
-  color: var(--accent);
+  color: #8ec7ff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 13px;
@@ -143,12 +154,13 @@ input {
   margin: 12px 0 0;
   font-size: clamp(38px, 6vw, 64px);
   line-height: 1.06;
+  color: #fff;
 }
 
 .upload-description {
   max-width: 720px;
   margin: 18px auto 0;
-  color: var(--muted);
+  color: rgba(232, 240, 255, 0.78);
   font-size: 18px;
   line-height: 1.6;
 }
@@ -165,16 +177,19 @@ input {
   gap: 10px;
   min-height: 220px;
   padding: 28px;
-  border: 2px dashed rgba(47, 111, 235, 0.4);
+  border: 1px solid rgba(115, 171, 255, 0.52);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(242, 246, 255, 0.94));
-  box-shadow: inset 0 0 0 1px rgba(47, 111, 235, 0.08);
+    linear-gradient(180deg, rgba(18, 39, 73, 0.92), rgba(13, 28, 55, 0.96));
+  box-shadow:
+    0 0 0 1px rgba(97, 161, 255, 0.12),
+    inset 0 0 28px rgba(89, 156, 255, 0.16);
   cursor: pointer;
+  border-radius: 22px;
 }
 
 .dropzone.dragging {
-  border-color: var(--accent);
-  background: #f3f7ff;
+  border-color: #77c0ff;
+  background: linear-gradient(180deg, rgba(21, 48, 90, 0.96), rgba(14, 33, 64, 0.98));
 }
 
 .dropzone input {
@@ -184,20 +199,23 @@ input {
 .dropzone-label {
   font-size: 22px;
   font-weight: 700;
+  color: #fff;
 }
 
 .dropzone-file {
-  color: var(--muted);
+  color: rgba(219, 231, 249, 0.76);
   font-size: 15px;
 }
 
 .upload-analyze-button {
   min-height: 56px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
+  border: 1px solid rgba(97, 161, 255, 0.72);
+  background: linear-gradient(135deg, #165df6 0%, #2f8eff 100%);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+  border-radius: 18px;
+  box-shadow: 0 18px 32px rgba(22, 93, 246, 0.26);
 }
 
 .upload-analyze-button:disabled {
@@ -208,7 +226,7 @@ input {
 .upload-status {
   min-height: 24px;
   margin: 0;
-  color: var(--muted);
+  color: rgba(219, 231, 249, 0.76);
   font-size: 14px;
 }
 
@@ -225,7 +243,7 @@ input {
 .tool-sidebar-shell {
   min-width: 0;
   border-right: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 100%);
 }
 
 .tool-workspace-shell {
@@ -242,7 +260,7 @@ input {
 .tool-sidebar-inner {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: auto auto auto auto;
   overflow-y: auto;
 }
 
@@ -258,6 +276,13 @@ input {
 .sidebar-section,
 .workspace-pane {
   padding: 18px 20px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .sidebar-kicker {
@@ -285,6 +310,7 @@ input {
   grid-template-columns: 108px 1fr;
   gap: 16px;
   align-items: center;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
 .score-ring {
@@ -324,10 +350,43 @@ input {
   letter-spacing: 0.04em;
 }
 
+.overall-source {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .overall-text {
   margin: 0;
   line-height: 1.6;
   font-size: 14px;
+}
+
+.sidebar-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sidebar-action-button:hover {
+  background: #f4f7fb;
+}
+
+.sidebar-meta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .sidebar-section-header,
@@ -406,8 +465,41 @@ input {
   margin-top: 12px;
 }
 
+.comparison-summary {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.comparison-summary strong {
+  font-size: 15px;
+}
+
+.comparison-summary.up {
+  border-color: rgba(19, 122, 73, 0.18);
+  background: #edf9f2;
+}
+
+.comparison-summary.down {
+  border-color: rgba(180, 35, 24, 0.16);
+  background: #fff1ef;
+}
+
+.comparison-summary.flat {
+  border-color: rgba(95, 102, 115, 0.18);
+  background: #f5f7fa;
+}
+
 .comparison-list.empty,
-.rich-text.empty {
+.comparison-summary.empty,
+.rich-text.empty,
+.overall-comments-text.empty {
   color: var(--muted);
 }
 
@@ -415,6 +507,7 @@ input {
   padding: 12px;
   border: 1px solid var(--border);
   background: var(--surface-alt);
+  border-radius: 16px;
 }
 
 .comparison-item.overall {
@@ -466,9 +559,8 @@ input {
 }
 
 .comparison-delta {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .comparison-delta.up {
@@ -499,6 +591,17 @@ input {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   background: var(--surface);
+}
+
+.overall-comments-section {
+  border-bottom: 0;
+}
+
+.overall-comments-text {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 14px;
 }
 
 .explanation-pane {
@@ -660,6 +763,10 @@ input {
 
   .upload-page {
     padding: 24px;
+  }
+
+  .upload-hero {
+    padding: 28px 22px;
   }
 
   .tool-shell,
