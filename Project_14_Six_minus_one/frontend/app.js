@@ -1,23 +1,76 @@
 const state = {
   currentHtml: "",
   currentResult: null,
+  currentRun: null,
   previousResult: null,
+  previousRun: null,
+  baselineRunId: null,
+  baselineResult: null,
+  baselineRun: null,
+  historyItems: [],
   aiSuggestionEndpoint: null,
   selectedFile: null,
+  currentSourceName: "Manual HTML",
 };
 
 const samples = {
-  simple: "../backend/sample_input/simple-page.html",
-  dense: "../backend/sample_input/dense-page.html",
-  consistency: "../backend/sample_input/consistency-combined.html",
+  simple: {
+    path: "../backend/sample_input/simple-page.html",
+    sourceName: "simple-page.html",
+  },
+  dense: {
+    path: "../backend/sample_input/dense-page.html",
+    sourceName: "dense-page.html",
+  },
+  consistency: {
+    path: "../backend/sample_input/consistency-combined.html",
+    sourceName: "consistency-combined.html",
+  },
 };
 
 async function loadPanelHtml(targetId, path) {
-  const response = await fetch(path);
+  const response = await fetch(path, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`无法加载面板：${path}`);
+    throw new Error(`Could not load panel: ${path}`);
   }
   document.getElementById(targetId).innerHTML = await response.text();
+}
+
+function getApiBase() {
+  return document.getElementById("apiBase").value.trim() || "http://127.0.0.1:8001";
+}
+
+function setApiStatus(message) {
+  const statusNode = document.getElementById("apiStatus");
+  if (statusNode) {
+    statusNode.textContent = message;
+  }
+}
+
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    let detail = `Request failed with status ${response.status}`;
+    try {
+      const payload = await response.json();
+      if (payload?.detail) {
+        detail = payload.detail;
+      }
+    } catch (error) {
+      // Ignore JSON parsing errors and fall back to the status text.
+    }
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+async function checkBackendHealth() {
+  try {
+    await fetchJson(`${getApiBase()}/health`);
+    setApiStatus("Backend status: connected");
+  } catch (error) {
+    setApiStatus(`Backend status: ${error.message}`);
+  }
 }
 
 function getFileExtension(fileName) {
@@ -27,13 +80,11 @@ function getFileExtension(fileName) {
 }
 
 function isZipFile(file) {
-  const extension = getFileExtension(file?.name || "");
-  return extension === ".zip";
+  return getFileExtension(file?.name || "") === ".zip";
 }
 
 function isHtmlFile(file) {
-  const extension = getFileExtension(file?.name || "");
-  return [".html", ".htm"].includes(extension);
+  return [".html", ".htm"].includes(getFileExtension(file?.name || ""));
 }
 
 function setLoadingState(loading) {
@@ -42,21 +93,85 @@ function setLoadingState(loading) {
   analyzeBtn.textContent = loading ? "Analyzing..." : "Analyze";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character];
+  });
+}
+
 function findDimension(result, name) {
-  return result.dimensions.find((dimension) => dimension.dimension === name);
+  return result?.dimensions?.find((dimension) => dimension.dimension === name);
 }
 
 function scoreStatus(score) {
-  if (score >= 85) return "表现较好";
-  if (score >= 70) return "中等风险";
-  if (score >= 50) return "需要改进";
-  return "高风险";
+  if (score >= 85) return "Strong";
+  if (score >= 70) return "Moderate risk";
+  if (score >= 50) return "Needs work";
+  return "High risk";
 }
 
 function issueSeverityText(issueCount) {
-  if (issueCount === 0) return "当前没有命中规则。";
-  if (issueCount === 1) return "当前命中 1 条重点规则。";
-  return `当前命中 ${issueCount} 条重点规则。`;
+  if (issueCount === 0) return "No rules were triggered.";
+  if (issueCount === 1) return "1 rule is currently triggered.";
+  return `${issueCount} rules are currently triggered.`;
+}
+
+function formatDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
+
+function normalizeAnalysisPayload(payload, fallbackHtml) {
+  return {
+    analysis: {
+      overall_score: payload.overall_score,
+      weighted_average: payload.weighted_average,
+      min_dimension_score: payload.min_dimension_score,
+      dimensions: payload.dimensions || [],
+    },
+    run: payload.run || null,
+    htmlContent: payload.html_content || fallbackHtml || "",
+    baselineRunId: payload.baseline_run_id || null,
+  };
+}
+
+function setComparisonBaseline(run, analysis) {
+  state.baselineRunId = run?.run_id || null;
+  state.baselineRun = run || null;
+  state.baselineResult = analysis || null;
+
+  if (
+    state.currentResult &&
+    state.baselineResult &&
+    state.currentRun &&
+    state.currentRun.run_id !== state.baselineRunId
+  ) {
+    state.previousRun = state.baselineRun;
+    state.previousResult = state.baselineResult;
+  } else if (state.baselineRunId && state.currentRun?.run_id === state.baselineRunId) {
+    state.previousRun = null;
+    state.previousResult = null;
+  }
+}
+
+function clearComparisonBaseline() {
+  state.baselineRunId = null;
+  state.baselineRun = null;
+  state.baselineResult = null;
+  state.previousRun = null;
+  state.previousResult = null;
+  renderHistory();
+  renderComparison(state.currentResult);
 }
 
 function renderScoreRing(score) {
@@ -97,11 +212,11 @@ function renderOverallComments(result) {
   const readability = findDimension(result, "Readability");
   const overallScore = result.overall_score;
   const comment = [
-    `当前页面总分为 ${overallScore}，整体状态为“${scoreStatus(overallScore)}”。`,
-    `最低维度分为 ${result.min_dimension_score}，说明短板维度已经开始明显影响整体体验。`,
+    `The current page scores ${overallScore}, which places it in the "${scoreStatus(overallScore)}" band.`,
+    `The lowest dimension score is ${result.min_dimension_score}, so the weakest area is already pulling down the overall experience.`,
     readability
-      ? `Readability 当前得分为 ${readability.score}。${issueSeverityText(readability.issues.length)}`
-      : "Readability 结果暂不可用。",
+      ? `Readability is currently ${readability.score}. ${issueSeverityText(readability.issues.length)}`
+      : "Readability details are not available yet.",
   ].join(" ");
 
   overallComments.textContent = comment;
@@ -116,7 +231,7 @@ function comparisonLine(label, current, previous) {
   return `
     <div class="comparison-row ${trendClass}">
       <span>${label}</span>
-      <strong>${previous} → ${current}</strong>
+      <strong>${previous} to ${current}</strong>
       <em>${deltaLabel}</em>
     </div>
   `;
@@ -124,14 +239,20 @@ function comparisonLine(label, current, previous) {
 
 function renderComparison(result) {
   const comparisonPanel = document.getElementById("comparisonPanel");
-  if (!state.previousResult) {
+  if (!result || !state.previousResult) {
     comparisonPanel.className = "comparison-panel empty";
-    comparisonPanel.textContent = "还没有前后对比数据。再次分析新的 HTML 后，这里会显示差异。";
+    comparisonPanel.textContent =
+      "Analyze a new page or choose a history baseline to see score deltas here.";
     return;
   }
 
+  const comparisonLabel = state.previousRun
+    ? `Comparing against ${escapeHtml(state.previousRun.source_name)}`
+    : "Comparing against the previous analysis";
+
   comparisonPanel.className = "comparison-panel";
   comparisonPanel.innerHTML = `
+    <p class="comparison-caption subtle">${comparisonLabel}</p>
     ${comparisonLine("Overall Score", result.overall_score, state.previousResult.overall_score)}
     ${comparisonLine(
       "Readability",
@@ -152,22 +273,22 @@ function renderExplanation(result) {
     const issueCount = dimension.issues.length;
     const summary =
       issueCount === 0
-        ? "当前未命中规则，说明这一维度暂时没有显著风险。"
-        : `当前命中 ${issueCount} 条规则，说明这一维度存在可见的认知负担来源。`;
+        ? "No issues were triggered in this dimension for the current analysis."
+        : `${issueCount} issues were triggered in this dimension, which means there are visible cognitive load risks to review.`;
 
     const issues = issueCount
       ? `<ul>${dimension.issues
           .map(
             (issue) =>
-              `<li><strong>${issue.rule_id}</strong>：${issue.description}</li>`,
+              `<li><strong>${escapeHtml(issue.rule_id)}</strong>: ${escapeHtml(issue.description)}</li>`,
           )
           .join("")}</ul>`
       : "";
 
     return `
       <section class="explanation-block">
-        <h3>${dimension.dimension}（Score: ${dimension.score}）</h3>
-        <p>${summary}</p>
+        <h3>${escapeHtml(dimension.dimension)} (Score: ${dimension.score})</h3>
+        <p>${escapeHtml(summary)}</p>
         ${issues}
       </section>
     `;
@@ -190,8 +311,8 @@ function renderSuggestions(result) {
       .map(
         (issue) => `
           <article class="suggestion-bubble system">
-            <p><strong>${issue.rule_id}</strong>：${issue.suggestion}</p>
-            <p class="subtle">原因：${issue.description}</p>
+            <p><strong>${escapeHtml(issue.rule_id)}</strong>: ${escapeHtml(issue.suggestion)}</p>
+            <p class="subtle">Why it matters: ${escapeHtml(issue.description)}</p>
           </article>
         `,
       )
@@ -199,7 +320,7 @@ function renderSuggestions(result) {
 
     sections.push(`
       <section class="suggestion-group">
-        <h3>${dimension.dimension}</h3>
+        <h3>${escapeHtml(dimension.dimension)}</h3>
         ${issueCards}
       </section>
     `);
@@ -208,15 +329,15 @@ function renderSuggestions(result) {
   if (!sections.length) {
     sections.push(`
       <article class="suggestion-bubble system">
-        <p>当前没有命中规则，可继续测试其他 HTML 或等待更多分析结果接入。</p>
+        <p>No rules were triggered in the current run. Try another HTML sample or upload a more complex page.</p>
       </article>
     `);
   }
 
   sections.push(`
     <article class="suggestion-bubble ai-placeholder">
-      <p><strong>AI API 接口预留</strong></p>
-      <p>后期可在这里调用 \`requestAiSuggestion(context)\`，根据当前分析结果生成更细的解释或修改建议。</p>
+      <p><strong>AI API placeholder</strong></p>
+      <p>Later, this area can call <code>requestAiSuggestion(context)</code> to generate richer rewrite suggestions or explanation text.</p>
     </article>
   `);
 
@@ -226,8 +347,72 @@ function renderSuggestions(result) {
 function renderPreviewContent() {
   const previewFrame = document.getElementById("previewFrame");
   const previewCode = document.getElementById("previewCode");
-  previewFrame.srcdoc = state.currentHtml || "<p>还没有可预览的 HTML。</p>";
-  previewCode.textContent = state.currentHtml || "还没有可预览的 HTML。";
+  previewFrame.srcdoc = state.currentHtml || "<p>No HTML preview is available yet.</p>";
+  previewCode.textContent = state.currentHtml || "No HTML preview is available yet.";
+}
+
+function renderHistory(emptyMessage = "Analysis history will appear here after you run the analyzer.") {
+  const historyList = document.getElementById("historyList");
+  const historyMeta = document.getElementById("historyMeta");
+  const historyBaselineText = document.getElementById("historyBaselineText");
+  const clearBaselineBtn = document.getElementById("clearBaselineBtn");
+
+  if (!historyList || !historyMeta || !historyBaselineText || !clearBaselineBtn) {
+    return;
+  }
+
+  historyMeta.textContent = state.historyItems.length
+    ? `Recent ${state.historyItems.length}`
+    : "No records";
+
+  if (state.baselineRun) {
+    historyBaselineText.textContent = `Baseline: ${state.baselineRun.source_name}`;
+    clearBaselineBtn.classList.remove("hidden");
+  } else {
+    historyBaselineText.textContent = "No comparison baseline selected.";
+    clearBaselineBtn.classList.add("hidden");
+  }
+
+  if (!state.historyItems.length) {
+    historyList.className = "history-list empty";
+    historyList.textContent = emptyMessage;
+    return;
+  }
+
+  historyList.className = "history-list";
+  historyList.innerHTML = state.historyItems
+    .map((item) => {
+      const isCurrent = state.currentRun?.run_id === item.run_id;
+      const isBaseline = state.baselineRunId === item.run_id;
+      const itemClasses = [
+        "history-item",
+        isCurrent ? "current" : "",
+        isBaseline ? "baseline" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const baselineLabel = isBaseline ? "Current baseline" : "Set baseline";
+      return `
+        <article class="${itemClasses}">
+          <div class="history-item-top">
+            <strong class="history-item-title" title="${escapeHtml(item.source_name)}">${escapeHtml(item.source_name)}</strong>
+            <span class="history-score">${item.overall_score}</span>
+          </div>
+          <p class="history-meta">${escapeHtml(formatDate(item.created_at))}</p>
+          <div class="history-actions">
+            <button class="history-btn" type="button" data-action="view" data-run-id="${item.run_id}">View</button>
+            <button
+              class="history-btn ${isBaseline ? "active" : ""}"
+              type="button"
+              data-action="baseline"
+              data-run-id="${item.run_id}"
+              ${isBaseline ? "disabled" : ""}
+            >${baselineLabel}</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderResult(result) {
@@ -239,69 +424,144 @@ function renderResult(result) {
   renderExplanation(result);
   renderSuggestions(result);
   renderPreviewContent();
+  renderHistory();
+}
+
+function showInlineError(error) {
+  const explanationContent = document.getElementById("explanationContent");
+  explanationContent.className = "rich-text empty";
+  explanationContent.textContent = String(error);
 }
 
 async function fetchSample(sampleName) {
-  const response = await fetch(samples[sampleName]);
+  const sample = samples[sampleName];
+  const response = await fetch(sample.path, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`无法读取 sample: ${sampleName}`);
+    throw new Error(`Could not load sample: ${sampleName}`);
   }
   const html = await response.text();
   document.getElementById("htmlInput").value = html;
   document.getElementById("fileInput").value = "";
   state.selectedFile = null;
   state.currentHtml = html;
+  state.currentSourceName = sample.sourceName;
+}
+
+async function loadHistory() {
+  try {
+    const payload = await fetchJson(`${getApiBase()}/history?limit=8`);
+    state.historyItems = payload.items || [];
+    renderHistory();
+    setApiStatus("Backend status: connected");
+  } catch (error) {
+    state.historyItems = [];
+    renderHistory("History is unavailable until the backend is reachable.");
+    setApiStatus(`Backend status: ${error.message}`);
+  }
+}
+
+async function loadHistoryRun(runId) {
+  const payload = await fetchJson(`${getApiBase()}/history/${runId}`);
+  const analysis = payload.analysis;
+  const run = payload.run;
+  const htmlContent = payload.html_content || "";
+
+  state.currentRun = run;
+  state.currentResult = analysis;
+  state.currentHtml = htmlContent;
+  state.currentSourceName = run.source_name;
+  state.selectedFile = null;
+  document.getElementById("fileInput").value = "";
+  document.getElementById("htmlInput").value = htmlContent;
+
+  if (state.baselineRunId && state.baselineResult && state.baselineRunId !== run.run_id) {
+    state.previousRun = state.baselineRun;
+    state.previousResult = state.baselineResult;
+  } else {
+    state.previousRun = null;
+    state.previousResult = null;
+  }
+
+  renderResult(analysis);
+}
+
+async function setHistoryBaseline(runId) {
+  const payload = await fetchJson(`${getApiBase()}/history/${runId}`);
+  setComparisonBaseline(payload.run, payload.analysis);
+  renderHistory();
+  renderComparison(state.currentResult);
 }
 
 async function requestAnalyzeResult(apiBase, html, selectedFile) {
   if (selectedFile && isZipFile(selectedFile)) {
     const formData = new FormData();
     formData.append("file", selectedFile);
+    if (state.baselineRunId) {
+      formData.append("baseline_run_id", state.baselineRunId);
+    }
 
-    const response = await fetch(`${apiBase}/analyze-zip`, {
+    return fetchJson(`${apiBase}/analyze-zip`, {
       method: "POST",
       body: formData,
     });
-    if (!response.ok) {
-      throw new Error(`后端请求失败：${response.status}`);
-    }
-    return response.json();
   }
 
-  const response = await fetch(`${apiBase}/analyze`, {
+  return fetchJson(`${apiBase}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ html }),
+    body: JSON.stringify({
+      html,
+      source_name: state.currentSourceName,
+      baseline_run_id: state.baselineRunId,
+    }),
   });
-  if (!response.ok) {
-    throw new Error(`后端请求失败：${response.status}`);
-  }
-  return response.json();
 }
 
 async function analyzeHtml() {
   const htmlInput = document.getElementById("htmlInput");
   const html = htmlInput.value.trim();
-  const apiBase = document.getElementById("apiBase").value.trim();
+  const apiBase = getApiBase();
   const selectedFile = state.selectedFile;
   const useZipUpload = selectedFile && isZipFile(selectedFile);
 
   if (!useZipUpload && !html) {
-    alert("请先输入/载入 HTML，或者选择 ZIP 文件。");
+    alert("Load HTML or choose a ZIP file before running analysis.");
     return;
   }
 
   setLoadingState(true);
   try {
-    const result = await requestAnalyzeResult(apiBase, html, selectedFile);
-    if (state.currentResult) {
+    const payload = await requestAnalyzeResult(apiBase, html, selectedFile);
+    const response = normalizeAnalysisPayload(
+      payload,
+      useZipUpload ? state.currentHtml : html,
+    );
+
+    if (
+      state.baselineRunId &&
+      state.baselineResult &&
+      response.run?.run_id !== state.baselineRunId
+    ) {
+      state.previousRun = state.baselineRun;
+      state.previousResult = state.baselineResult;
+    } else if (state.currentResult) {
+      state.previousRun = state.currentRun;
       state.previousResult = state.currentResult;
+    } else {
+      state.previousRun = null;
+      state.previousResult = null;
     }
-    state.currentHtml = useZipUpload ? `<!-- ZIP: ${selectedFile.name} -->` : html;
-    renderResult(result);
+
+    state.currentRun = response.run;
+    state.currentResult = response.analysis;
+    state.currentHtml = response.htmlContent;
+    state.currentSourceName = response.run?.source_name || state.currentSourceName;
+    document.getElementById("htmlInput").value = response.htmlContent;
+
+    renderResult(response.analysis);
+    await loadHistory();
   } catch (error) {
-    document.getElementById("explanationContent").className = "rich-text empty";
-    document.getElementById("explanationContent").textContent = String(error);
+    showInlineError(error);
   } finally {
     setLoadingState(false);
   }
@@ -332,39 +592,35 @@ function switchPreviewTab(mode) {
 }
 
 function bindEvents() {
-  document.getElementById("loadSimpleBtn").addEventListener("click", () => {
-    fetchSample("simple").catch((error) => {
-      document.getElementById("explanationContent").textContent = String(error);
-    });
+  bindEvent("loadSimpleBtn", "click", () => {
+    fetchSample("simple").catch(showInlineError);
   });
 
-  document.getElementById("loadDenseBtn").addEventListener("click", () => {
-    fetchSample("dense").catch((error) => {
-      document.getElementById("explanationContent").textContent = String(error);
-    });
+  bindEvent("loadDenseBtn", "click", () => {
+    fetchSample("dense").catch(showInlineError);
   });
 
-  document.getElementById("loadConsistencyBtn").addEventListener("click", () => {
-    fetchSample("consistency").catch((error) => {
-      document.getElementById("explanationContent").textContent = String(error);
-    });
+  bindEvent("loadConsistencyBtn", "click", () => {
+    fetchSample("consistency").catch(showInlineError);
   });
 
-  document.getElementById("fileInput").addEventListener("change", async (event) => {
+  bindEvent("fileInput", "change", async (event) => {
     const [file] = event.target.files;
     if (!file) return;
 
     if (isZipFile(file)) {
       state.selectedFile = file;
+      state.currentSourceName = file.name;
       state.currentHtml = `<!-- ZIP: ${file.name} -->`;
       document.getElementById("htmlInput").value =
-        `<!-- 已选择 ZIP 文件：${file.name} -->\n<!-- 点击 Analyze 后会走 /analyze-zip -->`;
+        `<!-- Selected ZIP file: ${file.name} -->\n<!-- Click Analyze to send it to /analyze-zip -->`;
       return;
     }
 
     if (isHtmlFile(file)) {
       const html = await file.text();
       state.selectedFile = null;
+      state.currentSourceName = file.name;
       document.getElementById("htmlInput").value = html;
       state.currentHtml = html;
       return;
@@ -372,61 +628,96 @@ function bindEvents() {
 
     state.selectedFile = null;
     event.target.value = "";
-    alert("仅支持上传 HTML 或 ZIP 文件。");
+    alert("Only HTML and ZIP uploads are supported.");
   });
 
-  document.getElementById("htmlInput").addEventListener("input", () => {
-    if (!state.selectedFile) return;
-    state.selectedFile = null;
-    document.getElementById("fileInput").value = "";
+  bindEvent("htmlInput", "input", (event) => {
+    if (state.selectedFile) {
+      state.selectedFile = null;
+      document.getElementById("fileInput").value = "";
+    }
+    state.currentHtml = event.target.value;
   });
 
-  document.getElementById("analyzeBtn").addEventListener("click", analyzeHtml);
+  bindEvent("analyzeBtn", "click", analyzeHtml);
 
-  document.getElementById("reuploadBtn").addEventListener("click", () => {
+  bindEvent("reuploadBtn", "click", () => {
     document.getElementById("fileInput").click();
   });
 
-  document.getElementById("openPreviewBtn").addEventListener("click", openPreviewModal);
-  document.getElementById("closePreviewBtn").addEventListener("click", closePreviewModal);
-  document.getElementById("previewRenderedTab").addEventListener("click", () => {
+  bindEvent("clearBaselineBtn", "click", () => {
+    clearComparisonBaseline();
+  });
+
+  bindEvent("historyList", "click", (event) => {
+    const actionTarget = event.target.closest("[data-action]");
+    if (!actionTarget) {
+      return;
+    }
+
+    const runId = actionTarget.dataset.runId;
+    if (!runId) {
+      return;
+    }
+
+    if (actionTarget.dataset.action === "view") {
+      loadHistoryRun(runId).catch(showInlineError);
+      return;
+    }
+
+    if (actionTarget.dataset.action === "baseline") {
+      setHistoryBaseline(runId).catch(showInlineError);
+    }
+  });
+
+  bindEvent("openPreviewBtn", "click", openPreviewModal);
+  bindEvent("closePreviewBtn", "click", closePreviewModal);
+  bindEvent("previewRenderedTab", "click", () => {
     switchPreviewTab("rendered");
   });
-  document.getElementById("previewCodeTab").addEventListener("click", () => {
+  bindEvent("previewCodeTab", "click", () => {
     switchPreviewTab("code");
   });
 
-  document.getElementById("previewOverlay").addEventListener("click", (event) => {
+  bindEvent("previewOverlay", "click", (event) => {
     if (event.target.id === "previewOverlay") {
       closePreviewModal();
     }
   });
 
-  document.getElementById("suggestionForm").addEventListener("submit", (event) => {
+  bindEvent("suggestionForm", "submit", (event) => {
     event.preventDefault();
   });
+
+  bindEvent("apiBase", "change", () => {
+    checkBackendHealth();
+    loadHistory();
+  });
+}
+
+function bindEvent(elementId, eventName, handler) {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.warn(`Missing element for event binding: ${elementId}`);
+    return;
+  }
+  element.addEventListener(eventName, handler);
 }
 
 async function requestAiSuggestion(context) {
   if (!state.aiSuggestionEndpoint) {
     return {
       status: "placeholder",
-      message: "AI API 还未接入。后期可以在这里调用真实接口。",
+      message: "AI API is not connected yet. This is a placeholder response.",
       context,
     };
   }
 
-  const response = await fetch(state.aiSuggestionEndpoint, {
+  return fetchJson(state.aiSuggestionEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(context),
   });
-
-  if (!response.ok) {
-    throw new Error(`AI suggestion 请求失败：${response.status}`);
-  }
-
-  return response.json();
 }
 
 async function init() {
@@ -437,9 +728,13 @@ async function init() {
 
   bindEvents();
   switchPreviewTab("rendered");
-  await fetchSample("dense").catch(() => {});
+  await Promise.all([
+    checkBackendHealth(),
+    loadHistory(),
+    fetchSample("dense").catch(() => {}),
+  ]);
 }
 
 init().catch((error) => {
-  document.body.innerHTML = `<pre style="padding: 24px;">${String(error)}</pre>`;
+  document.body.innerHTML = `<pre style="padding: 24px;">${escapeHtml(String(error))}</pre>`;
 });

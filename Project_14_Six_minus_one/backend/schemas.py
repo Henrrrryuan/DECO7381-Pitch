@@ -61,8 +61,47 @@ class AnalysisResult:
 
 
 @dataclass
+class HistoryRunSummary:
+    run_id: str
+    created_at: str
+    source_name: str
+    overall_score: int
+    weighted_average: int
+    min_dimension_score: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class HistoryRunDetail:
+    run: HistoryRunSummary
+    html_content: str
+    analysis: AnalysisResult
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "run": self.run.to_dict(),
+            "html_content": self.html_content,
+            "analysis": self.analysis.to_dict(),
+        }
+
+
+@dataclass
+class HistoryListResponse:
+    items: list[HistoryRunSummary]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "items": [item.to_dict() for item in self.items],
+        }
+
+
+@dataclass
 class AnalyzeRequest:
     html: str
+    source_name: str | None = None
+    baseline_run_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

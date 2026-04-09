@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Report</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=history-fix-1">
 </head>
 <body>
   <main class="workspace">
@@ -12,20 +12,20 @@
       <div class="brand-block">
         <p class="kicker">report-v1</p>
         <h1>CogniLens Dashboard</h1>
-        <p class="tagline">面向开发者的认知无障碍分析面板</p>
+        <p class="tagline">Cognitive accessibility analysis workspace for reviewing HTML and ZIP uploads.</p>
       </div>
 
       <section class="control-cluster">
         <div class="field compact">
-          <label for="apiBase">后端地址</label>
+          <label for="apiBase">Backend URL</label>
           <input id="apiBase" type="text" value="http://127.0.0.1:8001">
           <small id="apiStatus" class="subtle">Backend status: checking...</small>
         </div>
 
         <div class="actions">
-          <button id="loadSimpleBtn" class="secondary">载入 simple sample</button>
-          <button id="loadDenseBtn" class="secondary">载入 dense sample</button>
-          <label class="file-btn" for="fileInput">选择 HTML / ZIP 文件</label>
+          <button id="loadSimpleBtn" class="secondary">Load simple sample</button>
+          <button id="loadDenseBtn" class="secondary">Load dense sample</button>
+          <label class="file-btn" for="fileInput">Choose HTML / ZIP</label>
           <button id="loadConsistencyBtn" class="secondary">Load consistency sample</button>
           <input id="fileInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
           <button id="analyzeBtn" class="primary">Analyze</button>
@@ -44,12 +44,12 @@
       <div class="preview-header">
         <div>
           <p class="modal-kicker">Website Preview</p>
-          <h2 id="previewTitle">被检测网页预览</h2>
+          <h2 id="previewTitle">Detected website preview</h2>
         </div>
         <div class="preview-actions">
           <button id="previewRenderedTab" class="tab-btn active" type="button">Rendered View</button>
           <button id="previewCodeTab" class="tab-btn" type="button">HTML Code</button>
-          <button id="closePreviewBtn" class="icon-btn" type="button" aria-label="Close preview">×</button>
+          <button id="closePreviewBtn" class="icon-btn" type="button" aria-label="Close preview">X</button>
         </div>
       </div>
 
@@ -60,6 +60,6 @@
     </div>
   </div>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=history-fix-1"></script>
 </body>
 </html>

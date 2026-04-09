@@ -1,69 +1,51 @@
-# API 与数据结构约定
+# API Contract
 
-这份文档用于统一前后端与四个 analyzer 的接口格式。
+This document defines the current backend contract for the cognitive accessibility dashboard.
 
-## 1. 输入
+## 1. Analyze HTML
 
-MVP 阶段统一输入：
+`POST /analyze`
 
-```json
-{
-  "html": "<html>...</html>"
-}
-```
-
-说明：
-
-- 所有 analyzer 都吃同一个 `html: str`
-- 不在 analyzer 层处理文件路径、PDF、URL 或图片
-
-### 1.1 ZIP 上传扩展（兼容模式）
-
-为保持兼容，保留原有 `POST /analyze`（JSON: `{"html": "..."}`）不变。
-
-新增：
-
-- `POST /analyze-zip`
-- Content-Type: `multipart/form-data`
-- 字段：`file`（`.zip`）
-
-后端行为：
-
-1. 读取 ZIP
-2. 优先查找 `index.html` / `index.htm`
-3. 若不存在则使用 ZIP 内第一个 `.html/.htm`
-4. 复用现有分析流程并返回与 `/analyze` 完全一致的结果结构
-
-## 2. 单个维度输出
-
-每个 analyzer 必须返回：
+Request body:
 
 ```json
 {
-  "dimension": "Readability",
-  "score": 82,
-  "issues": [
-    {
-      "rule_id": "RD-1",
-      "title": "平均句长过长",
-      "severity": "major",
-      "base_penalty": 3,
-      "penalty": 6,
-      "description": "平均句长超过 20 个词，增加阅读负担。",
-      "suggestion": "将长句拆分为更短的句子。",
-      "evidence": {
-        "average_sentence_length": 24.1
-      },
-      "locations": []
-    }
-  ],
-  "metadata": {}
+  "html": "<html>...</html>",
+  "source_name": "simple-page.html",
+  "baseline_run_id": "optional-history-run-id"
 }
 ```
 
-## 3. 总接口输出
+Notes:
 
-`POST /analyze` 返回：
+- `html` is still the unified analyzer input.
+- `source_name` is optional. When omitted, the backend stores `"Manual HTML"`.
+- `baseline_run_id` is optional. When present and valid, the backend records that the new run was compared against a previous history run.
+
+## 2. Analyze ZIP
+
+`POST /analyze-zip`
+
+Request type:
+
+- `multipart/form-data`
+
+Fields:
+
+- `file`: required `.zip` file
+- `baseline_run_id`: optional history run id
+
+Backend behavior:
+
+1. Read the ZIP file.
+2. Prefer `index.html` or `index.htm`.
+3. Otherwise use the first `.html` / `.htm` file found in the archive.
+4. Reuse the normal analysis pipeline.
+5. Persist the new analysis run to history.
+
+## 3. Analysis Response Shape
+
+Both `POST /analyze` and `POST /analyze-zip` return the analysis result plus persisted run metadata:
 
 ```json
 {
@@ -76,50 +58,134 @@ MVP 阶段统一输入：
       "score": 82,
       "issues": [],
       "metadata": {}
-    },
+    }
+  ],
+  "run": {
+    "run_id": "8a9d7c...",
+    "created_at": "2026-04-09T18:20:00+10:00",
+    "source_name": "simple-page.html",
+    "overall_score": 74,
+    "weighted_average": 79,
+    "min_dimension_score": 68
+  },
+  "html_content": "<html>...</html>",
+  "baseline_run_id": "optional-history-run-id"
+}
+```
+
+## 4. History List
+
+`GET /history?limit=8`
+
+Response:
+
+```json
+{
+  "items": [
     {
-      "dimension": "Visual Complexity",
-      "score": 68,
-      "issues": [],
-      "metadata": {}
-    },
-    {
-      "dimension": "Interaction & Distraction",
-      "score": 77,
-      "issues": [],
-      "metadata": {}
-    },
-    {
-      "dimension": "Consistency",
-      "score": 71,
-      "issues": [],
-      "metadata": {}
+      "run_id": "8a9d7c...",
+      "created_at": "2026-04-09T18:20:00+10:00",
+      "source_name": "simple-page.html",
+      "overall_score": 74,
+      "weighted_average": 79,
+      "min_dimension_score": 68
     }
   ]
 }
 ```
 
-## 4. 严重程度与扣分
+Notes:
 
-统一 severity：
+- Results are returned newest first.
+- `limit` is clamped to `1..50`.
+
+## 5. History Detail
+
+`GET /history/{run_id}`
+
+Response:
+
+```json
+{
+  "run": {
+    "run_id": "8a9d7c...",
+    "created_at": "2026-04-09T18:20:00+10:00",
+    "source_name": "simple-page.html",
+    "overall_score": 74,
+    "weighted_average": 79,
+    "min_dimension_score": 68
+  },
+  "html_content": "<html>...</html>",
+  "analysis": {
+    "overall_score": 74,
+    "weighted_average": 79,
+    "min_dimension_score": 68,
+    "dimensions": [
+      {
+        "dimension": "Readability",
+        "score": 82,
+        "issues": [],
+        "metadata": {}
+      }
+    ]
+  }
+}
+```
+
+This endpoint is used by the frontend `History` card for:
+
+- viewing an older run
+- setting a history item as the comparison baseline
+- restoring the original HTML into the preview/editor
+
+## 6. Dimension Result Shape
+
+Each analyzer returns:
+
+```json
+{
+  "dimension": "Readability",
+  "score": 82,
+  "issues": [
+    {
+      "rule_id": "RD-1",
+      "title": "Average sentence length is too long",
+      "severity": "major",
+      "base_penalty": 3,
+      "penalty": 6,
+      "description": "Average sentence length exceeds the threshold.",
+      "suggestion": "Split long sentences into shorter statements.",
+      "evidence": {
+        "average_sentence_length": 24.1
+      },
+      "locations": []
+    }
+  ],
+  "metadata": {}
+}
+```
+
+## 7. Severity and Penalty
+
+Allowed severity values:
 
 - `minor`
 - `major`
 - `critical`
 
-统一 penalty 公式：
+Penalty formula:
 
 ```text
 Penalty = Base Penalty * Severity Multiplier
 ```
 
-统一 multiplier：
+Severity multipliers:
 
 - `minor = 1`
 - `major = 2`
 - `critical = 3`
 
-## 5. 最终总分
+## 8. Final Score
 
 ```text
 Weighted Average
@@ -133,9 +199,10 @@ Final Score
 + 0.5 * weighted_average
 ```
 
-## 6. 模块职责
+## 9. Module Responsibilities
 
-- `analyzers/*.py`：负责规则检测与问题返回
-- `scoring.py`：负责统一扣分和总分
-- `main.py`：负责整合四个 analyzer
-- `frontend/`：只负责展示返回结果
+- `analyzers/*.py`: detect issues for a single dimension
+- `scoring.py`: calculate penalties and overall scores
+- `history_store.py`: persist and read analysis history in SQLite
+- `main.py`: expose API routes and orchestrate analysis + persistence
+- `frontend/`: render dashboard, comparison, and history interactions
