@@ -337,58 +337,18 @@ function renderExplanation(result) {
 
 function renderSuggestions(result) {
   const suggestionContent = document.getElementById("suggestionContent");
-  const sections = [];
+  const issueCount = result.dimensions.reduce(
+    (count, dimension) => count + dimension.issues.length,
+    0,
+  );
 
-  result.dimensions.forEach((dimension) => {
-    if (!dimension.issues.length) {
-      return;
-    }
-
-    const sortedIssues = sortIssuesBySeverity(dimension.issues);
-    const issueCards = sortedIssues
-      .map(
-        (issue) => `
-          <article class="suggestion-bubble system">
-            <div class="suggestion-card-head">
-              <strong>${escapeHtml(issue.rule_id)}</strong>
-              <span class="severity-badge severity-${escapeHtml(issue.severity)}">${severityLabel(issue.severity)}</span>
-            </div>
-            <p class="suggestion-label">Recommended change</p>
-            <p>${escapeHtml(issue.suggestion)}</p>
-            <p class="suggestion-label subtle">Why it matters</p>
-            <p class="subtle">${escapeHtml(issue.description)}</p>
-          </article>
-        `,
-      )
-      .join("");
-
-    sections.push(`
-      <section class="suggestion-group">
-        <div class="suggestion-group-head">
-          <h3>${escapeHtml(dimension.dimension)}</h3>
-          <span class="metric-pill">${dimension.issues.length} item${dimension.issues.length === 1 ? "" : "s"}</span>
-        </div>
-        ${issueCards}
-      </section>
-    `);
-  });
-
-  if (!sections.length) {
-    sections.push(`
-      <article class="suggestion-bubble system">
-        <p>No rules were triggered in the current run. Try another HTML sample or upload a more complex page.</p>
-      </article>
-    `);
-  }
-
-  sections.push(`
+  suggestionContent.innerHTML = `
     <article class="suggestion-bubble ai-placeholder">
-      <p><strong>AI API placeholder</strong></p>
-      <p>Later, this area can call <code>requestAiSuggestion(context)</code> to generate richer rewrite suggestions or explanation text.</p>
+      <p><strong>AI Suggestion Placeholder</strong></p>
+      <p>This section is reserved for a later AI API integration.</p>
+      <p class="subtle">Current analysis has detected ${issueCount} rule-triggered issue${issueCount === 1 ? "" : "s"} across the four dimensions. A future AI service can use this context to generate rewrite suggestions, prioritised fixes, or clearer implementation guidance.</p>
     </article>
-  `);
-
-  suggestionContent.innerHTML = sections.join("");
+  `;
 }
 
 function renderPreviewContent() {
