@@ -15,15 +15,15 @@ const state = {
 
 const samples = {
   simple: {
-    path: "../backend/sample_input/simple-page.html",
+    apiName: "simple",
     sourceName: "simple-page.html",
   },
   dense: {
-    path: "../backend/sample_input/dense-page.html",
+    apiName: "dense",
     sourceName: "dense-page.html",
   },
   consistency: {
-    path: "../backend/sample_input/consistency-combined.html",
+    apiName: "consistency",
     sourceName: "consistency-combined.html",
   },
 };
@@ -267,28 +267,65 @@ function renderComparison(result) {
   `;
 }
 
+const severityOrder = {
+  critical: 0,
+  major: 1,
+  minor: 2,
+};
+
+function sortIssuesBySeverity(issues) {
+  return [...issues].sort((left, right) => {
+    const leftRank = severityOrder[left.severity] ?? 99;
+    const rightRank = severityOrder[right.severity] ?? 99;
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+    return left.rule_id.localeCompare(right.rule_id);
+  });
+}
+
+function severityLabel(severity) {
+  if (severity === "critical") return "Critical";
+  if (severity === "major") return "Major";
+  return "Minor";
+}
+
 function renderExplanation(result) {
   const explanationContent = document.getElementById("explanationContent");
   const blocks = result.dimensions.map((dimension) => {
     const issueCount = dimension.issues.length;
+    const sortedIssues = sortIssuesBySeverity(dimension.issues);
     const summary =
       issueCount === 0
-        ? "No issues were triggered in this dimension for the current analysis."
+        ? "No high-priority issues were triggered in this dimension for the current analysis."
         : `${issueCount} issues were triggered in this dimension, which means there are visible cognitive load risks to review.`;
 
     const issues = issueCount
-      ? `<ul>${dimension.issues
+      ? `<div class="issue-list">${sortedIssues
           .map(
-            (issue) =>
-              `<li><strong>${escapeHtml(issue.rule_id)}</strong>: ${escapeHtml(issue.description)}</li>`,
+            (issue) => `
+              <article class="issue-item">
+                <div class="issue-item-top">
+                  <strong>${escapeHtml(issue.rule_id)}</strong>
+                  <span class="severity-badge severity-${escapeHtml(issue.severity)}">${severityLabel(issue.severity)}</span>
+                </div>
+                <p>${escapeHtml(issue.description)}</p>
+              </article>
+            `,
           )
-          .join("")}</ul>`
-      : "";
+          .join("")}</div>`
+      : `<p class="issue-empty subtle">This dimension did not trigger any rules in the current run.</p>`;
 
     return `
       <section class="explanation-block">
-        <h3>${escapeHtml(dimension.dimension)} (Score: ${dimension.score})</h3>
-        <p>${escapeHtml(summary)}</p>
+        <div class="explanation-head">
+          <h3>${escapeHtml(dimension.dimension)}</h3>
+          <div class="explanation-meta">
+            <span class="metric-pill">Score ${dimension.score}</span>
+            <span class="metric-pill">${issueCount} issue${issueCount === 1 ? "" : "s"}</span>
+          </div>
+        </div>
+        <p class="explanation-summary">${escapeHtml(summary)}</p>
         ${issues}
       </section>
     `;
@@ -307,12 +344,19 @@ function renderSuggestions(result) {
       return;
     }
 
-    const issueCards = dimension.issues
+    const sortedIssues = sortIssuesBySeverity(dimension.issues);
+    const issueCards = sortedIssues
       .map(
         (issue) => `
           <article class="suggestion-bubble system">
-            <p><strong>${escapeHtml(issue.rule_id)}</strong>: ${escapeHtml(issue.suggestion)}</p>
-            <p class="subtle">Why it matters: ${escapeHtml(issue.description)}</p>
+            <div class="suggestion-card-head">
+              <strong>${escapeHtml(issue.rule_id)}</strong>
+              <span class="severity-badge severity-${escapeHtml(issue.severity)}">${severityLabel(issue.severity)}</span>
+            </div>
+            <p class="suggestion-label">Recommended change</p>
+            <p>${escapeHtml(issue.suggestion)}</p>
+            <p class="suggestion-label subtle">Why it matters</p>
+            <p class="subtle">${escapeHtml(issue.description)}</p>
           </article>
         `,
       )
@@ -320,7 +364,10 @@ function renderSuggestions(result) {
 
     sections.push(`
       <section class="suggestion-group">
-        <h3>${escapeHtml(dimension.dimension)}</h3>
+        <div class="suggestion-group-head">
+          <h3>${escapeHtml(dimension.dimension)}</h3>
+          <span class="metric-pill">${dimension.issues.length} item${dimension.issues.length === 1 ? "" : "s"}</span>
+        </div>
         ${issueCards}
       </section>
     `);
@@ -435,16 +482,15 @@ function showInlineError(error) {
 
 async function fetchSample(sampleName) {
   const sample = samples[sampleName];
-  const response = await fetch(sample.path, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Could not load sample: ${sampleName}`);
-  }
-  const html = await response.text();
+  const payload = await fetchJson(`${getApiBase()}/samples/${sample.apiName}`, {
+    cache: "no-store",
+  });
+  const html = payload.html;
   document.getElementById("htmlInput").value = html;
   document.getElementById("fileInput").value = "";
   state.selectedFile = null;
   state.currentHtml = html;
-  state.currentSourceName = sample.sourceName;
+  state.currentSourceName = payload.source_name || sample.sourceName;
 }
 
 async function loadHistory() {
