@@ -3,63 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CogniLens Report</title>
-  <link rel="stylesheet" href="./styles.css?v=history-fix-1">
+  <title>CogniLens Upload</title>
+  <link rel="stylesheet" href="./styles.css?v=upload-flow-1">
 </head>
-<body>
-  <main class="workspace">
-    <header class="topbar panel">
-      <div class="brand-block">
-        <p class="kicker">report-v1</p>
-        <h1>CogniLens Dashboard</h1>
-        <p class="tagline">Cognitive accessibility analysis workspace for reviewing HTML and ZIP uploads.</p>
+<body class="upload-body">
+  <header class="app-nav">
+    <div class="app-nav-inner">
+      <a class="app-brand" href="./index.html">
+        <span class="app-brand-mark">C</span>
+        <span class="app-brand-name">CogniLens</span>
+      </a>
+
+      <nav class="app-nav-links" aria-label="Primary">
+        <a href="./history.html">History</a>
+        <a href="./docs.html">Docs</a>
+        <a class="nav-cta active" href="./index.html">New Analysis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="upload-page">
+    <section class="upload-hero">
+      <div class="upload-copy">
+        <p class="upload-kicker">CogniLens</p>
+        <h1>Evaluate Cognitive Accessibility</h1>
+        <p class="upload-description">
+          Upload an HTML file to inspect readability, visual complexity,
+          distraction, and structural consistency before opening the dashboard.
+        </p>
       </div>
 
-      <section class="control-cluster">
-        <div class="field compact">
-          <label for="apiBase">Backend URL</label>
-          <input id="apiBase" type="text" value="http://127.0.0.1:8001">
-          <small id="apiStatus" class="subtle">Backend status: checking...</small>
-        </div>
+      <form id="uploadForm" class="upload-form" novalidate>
+        <label id="dropzone" class="dropzone" for="uploadInput">
+          <input id="uploadInput" type="file" accept=".html,.htm,text/html">
+          <span class="dropzone-label">Drag &amp; drop your HTML file here</span>
+          <span id="selectedFileName" class="dropzone-file">or choose an HTML file</span>
+        </label>
 
-        <div class="actions">
-          <button id="loadSimpleBtn" class="secondary">Load simple sample</button>
-          <button id="loadDenseBtn" class="secondary">Load dense sample</button>
-          <label class="file-btn" for="fileInput">Choose HTML / ZIP</label>
-          <button id="loadConsistencyBtn" class="secondary">Load consistency sample</button>
-          <input id="fileInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
-          <button id="analyzeBtn" class="primary">Analyze</button>
-        </div>
-      </section>
-    </header>
+        <button id="analyzeButton" class="upload-analyze-button" type="submit" disabled>
+          Analyze
+        </button>
+      </form>
 
-    <section class="report-shell">
-      <div id="leftPanelMount" class="column-shell"></div>
-      <div id="rightPanelMount" class="column-shell"></div>
+      <p id="uploadStatus" class="upload-status" aria-live="polite"></p>
     </section>
   </main>
 
-  <div id="previewOverlay" class="overlay hidden" aria-hidden="true">
-    <div class="preview-modal panel" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
-      <div class="preview-header">
-        <div>
-          <p class="modal-kicker">Website Preview</p>
-          <h2 id="previewTitle">Detected website preview</h2>
-        </div>
-        <div class="preview-actions">
-          <button id="previewRenderedTab" class="tab-btn active" type="button">Rendered View</button>
-          <button id="previewCodeTab" class="tab-btn" type="button">HTML Code</button>
-          <button id="closePreviewBtn" class="icon-btn" type="button" aria-label="Close preview">X</button>
-        </div>
-      </div>
-
-      <div class="preview-body">
-        <iframe id="previewFrame" title="Detected website preview"></iframe>
-        <pre id="previewCode" class="preview-code hidden"></pre>
-      </div>
-    </div>
-  </div>
-
-  <script src="./app.js?v=history-fix-1"></script>
+  <script type="module" src="./upload.js?v=upload-flow-1"></script>
 </body>
 </html>

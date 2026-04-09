@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniLens Dashboard</title>
+  <link rel="stylesheet" href="./styles.css?v=upload-flow-1">
+</head>
+<body class="dashboard-body">
+  <header class="app-nav">
+    <div class="app-nav-inner">
+      <a class="app-brand" href="./index.html">
+        <span class="app-brand-mark">C</span>
+        <span class="app-brand-name">CogniLens</span>
+      </a>
+
+      <nav class="app-nav-links" aria-label="Primary">
+        <a href="./history.html">History</a>
+        <a href="./docs.html">Docs</a>
+        <a class="nav-cta active" href="./index.html">New Analysis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="tool-shell">
+    <div class="tool-sidebar-shell">
+      <aside class="tool-sidebar">
+        <div class="tool-sidebar-inner">
+          <header class="sidebar-header">
+            <p class="sidebar-kicker">Dashboard</p>
+            <p id="dashboardStatus" class="sidebar-status">Waiting for analysis</p>
+          </header>
+
+          <section class="overall-panel">
+            <div class="score-ring" id="scoreRing">
+              <div class="score-ring-inner">
+                <span class="score-ring-value" id="leftOverallScore">-</span>
+                <span class="score-ring-label">Overall</span>
+              </div>
+            </div>
+
+            <div class="overall-copy">
+              <p class="overall-heading">Current score</p>
+              <p id="dashboardSummaryText" class="overall-text">
+                Run an analysis to populate the dashboard summary.
+              </p>
+            </div>
+          </section>
+
+          <section class="sidebar-section">
+            <div class="sidebar-section-header">
+              <h2>Dimensions</h2>
+            </div>
+            <div id="dimensionBars" class="dimension-bars">
+              <div class="dimension-row">
+                <span>Visual Complexity</span>
+                <div class="bar-track"><div class="bar-fill visual" style="width:0%"></div></div>
+                <strong>-</strong>
+              </div>
+              <div class="dimension-row">
+                <span>Readability</span>
+                <div class="bar-track"><div class="bar-fill readability" style="width:0%"></div></div>
+                <strong>-</strong>
+              </div>
+              <div class="dimension-row">
+                <span>Interaction &amp; Distraction</span>
+                <div class="bar-track"><div class="bar-fill interaction" style="width:0%"></div></div>
+                <strong>-</strong>
+              </div>
+              <div class="dimension-row">
+                <span>Consistency</span>
+                <div class="bar-track"><div class="bar-fill consistency" style="width:0%"></div></div>
+                <strong>-</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-section comparison-section">
+            <div class="sidebar-section-header">
+              <h2>Comparison</h2>
+              <span id="comparisonMeta" class="sidebar-meta">No baseline</span>
+            </div>
+            <div id="comparisonList" class="comparison-list empty">
+              Upload and analyze a new file to compare it against your previous submission.
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <div class="tool-workspace-shell">
+      <section class="tool-workspace">
+        <section class="workspace-panels">
+          <article class="workspace-pane explanation-pane">
+            <div class="pane-header">
+              <h2>Explanation</h2>
+            </div>
+            <div id="explanationContent" class="pane-scroll rich-text empty">
+              Analysis explanations will appear here after the current page is processed.
+            </div>
+          </article>
+
+          <article class="workspace-pane suggestion-pane">
+            <div class="pane-header">
+              <h2>Suggestion</h2>
+              <span class="placeholder-tag">AI-ready</span>
+            </div>
+            <div id="suggestionContent" class="suggestion-feed suggestion-static">
+              <article class="suggestion-bubble system">
+                <p>This area shows rule-based suggestions for the current analysis.</p>
+                <p>It can later be extended with an AI API for richer rewrite advice.</p>
+              </article>
+            </div>
+          </article>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js?v=upload-flow-1"></script>
+</body>
+</html>

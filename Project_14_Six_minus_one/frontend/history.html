@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniLens History</title>
+  <link rel="stylesheet" href="./styles.css?v=upload-flow-1">
+</head>
+<body class="history-body">
+  <header class="app-nav">
+    <div class="app-nav-inner">
+      <a class="app-brand" href="./index.html">
+        <span class="app-brand-mark">C</span>
+        <span class="app-brand-name">CogniLens</span>
+      </a>
+
+      <nav class="app-nav-links" aria-label="Primary">
+        <a href="./history.html">History</a>
+        <a href="./docs.html">Docs</a>
+        <a class="nav-cta active" href="./index.html">New Analysis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="history-page">
+    <section class="history-hero">
+      <p class="upload-kicker">History</p>
+      <h1>Previous Analyses</h1>
+      <p class="history-description">
+        Review recent submissions and reopen a previous analysis in the dashboard.
+      </p>
+    </section>
+
+    <section class="history-list-shell">
+      <div class="history-table-head">
+        <span>File</span>
+        <span>Date</span>
+        <span>Overall</span>
+        <span>Action</span>
+      </div>
+      <div id="historyList" class="history-table-body">
+        <p class="history-empty">Loading analysis history...</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./history.js?v=upload-flow-1"></script>
+</body>
+</html>
