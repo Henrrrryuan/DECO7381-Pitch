@@ -39,14 +39,24 @@ from .analyzers import (
     analyze_readability,
     analyze_visual,
 )
+from .history_store import (
+    get_history_run,
+    has_history_run,
+    init_history_store,
+    list_history_runs,
+    record_compare_pair,
+    save_analysis_run,
+)
 from .scoring import calculate_overall_score
 from .schemas import AnalysisResult
 from .zip_input import ZipInputError, extract_html_from_zip_bytes
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 MAX_ZIP_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB
+
+init_history_store()
 
 
 def analyze_html(html: str) -> AnalysisResult:
@@ -65,6 +75,28 @@ def analyze_html_dict(html: str) -> dict[str, Any]:
 
 class AnalyzePayload(BaseModel):
     html: str
+    source_name: str | None = None
+    baseline_run_id: str | None = None
+
+
+def build_analysis_response(
+    analysis: AnalysisResult,
+    *,
+    html_content: str,
+    source_name: str | None,
+    baseline_run_id: str | None,
+) -> dict[str, Any]:
+    saved_run = save_analysis_run(analysis, html_content, source_name)
+    resolved_baseline_run_id = None
+    if baseline_run_id and has_history_run(baseline_run_id):
+        record_compare_pair(baseline_run_id, saved_run.run_id)
+        resolved_baseline_run_id = baseline_run_id
+
+    payload = analysis.to_dict()
+    payload["run"] = saved_run.to_dict()
+    payload["html_content"] = html_content
+    payload["baseline_run_id"] = resolved_baseline_run_id
+    return payload
 
 
 app = FastAPI(title="Cognitive Accessibility Assistant API")
@@ -77,29 +109,69 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+def root() -> dict[str, Any]:
+    return {
+        "name": "Cognitive Accessibility Assistant API",
+        "status": "ok",
+        "endpoints": [
+            "/health",
+            "/analyze",
+            "/analyze-zip",
+            "/history",
+            "/history/{run_id}",
+        ],
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/history")
+def history(limit: int = Query(default=10, ge=1, le=50)) -> dict[str, Any]:
+    return list_history_runs(limit=limit).to_dict()
+
+
+@app.get("/history/{run_id}")
+def history_detail(run_id: str) -> dict[str, Any]:
+    detail = get_history_run(run_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="History run not found.")
+    return detail.to_dict()
+
+
 @app.post("/analyze")
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
-    return analyze_html_dict(payload.html)
+    analysis = analyze_html(payload.html)
+    return build_analysis_response(
+        analysis,
+        html_content=payload.html,
+        source_name=payload.source_name,
+        baseline_run_id=payload.baseline_run_id,
+    )
 
 
 @app.post("/analyze-zip")
-async def analyze_zip(file: UploadFile = File(...)) -> dict[str, Any]:
+async def analyze_zip(
+    file: UploadFile = File(...),
+    baseline_run_id: str | None = Form(None),
+) -> dict[str, Any]:
     filename = (file.filename or "").lower()
     if not filename.endswith(".zip"):
-        raise HTTPException(status_code=400, detail="仅支持 .zip 文件。")
+        raise HTTPException(status_code=400, detail="Only .zip uploads are supported.")
 
     zip_bytes = await file.read()
     if not zip_bytes:
-        raise HTTPException(status_code=400, detail="上传的 ZIP 文件为空。")
+        raise HTTPException(status_code=400, detail="The uploaded ZIP file is empty.")
     if len(zip_bytes) > MAX_ZIP_UPLOAD_BYTES:
         raise HTTPException(
             status_code=413,
-            detail=f"ZIP 文件过大，限制为 {MAX_ZIP_UPLOAD_BYTES // (1024 * 1024)}MB。",
+            detail=(
+                "ZIP file is too large. Limit: "
+                f"{MAX_ZIP_UPLOAD_BYTES // (1024 * 1024)}MB."
+            ),
         )
 
     try:
@@ -107,4 +179,10 @@ async def analyze_zip(file: UploadFile = File(...)) -> dict[str, Any]:
     except ZipInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return analyze_html_dict(html)
+    analysis = analyze_html(html)
+    return build_analysis_response(
+        analysis,
+        html_content=html,
+        source_name=file.filename or "uploaded.zip",
+        baseline_run_id=baseline_run_id,
+    )

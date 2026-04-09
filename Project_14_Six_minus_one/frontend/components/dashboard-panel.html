@@ -15,8 +15,8 @@
         </div>
 
         <div class="summary-caption">
-          <p id="dashboardStatus">等待分析</p>
-          <p id="dashboardSummaryText">上传 HTML 后将在这里显示总体状态。</p>
+          <p id="dashboardStatus">Waiting for analysis</p>
+          <p id="dashboardSummaryText">Run an analysis to populate the dashboard summary.</p>
         </div>
       </div>
 
@@ -32,7 +32,7 @@
           <strong>-</strong>
         </div>
         <div class="dimension-row">
-          <span>Interaction & Distraction</span>
+          <span>Interaction &amp; Distraction</span>
           <div class="bar-track"><div class="bar-fill interaction" style="width:0%"></div></div>
           <strong>-</strong>
         </div>
@@ -49,7 +49,7 @@
         <h2>Overall Comments</h2>
       </div>
       <div id="overallComments" class="text-panel">
-        系统会根据四个维度分数，在这里生成整体评价。
+        The dashboard will summarize the current analysis here.
       </div>
     </section>
 
@@ -58,7 +58,21 @@
         <h2>Comparison</h2>
       </div>
       <div id="comparisonPanel" class="comparison-panel empty">
-        还没有前后对比数据。再次分析新的 HTML 后，这里会显示差异。
+        Analyze a new page or choose a history baseline to see score deltas here.
+      </div>
+    </section>
+
+    <section class="left-section">
+      <div class="section-header">
+        <h2>History</h2>
+        <span id="historyMeta" class="subtle">No records</span>
+      </div>
+      <div class="history-baseline-row">
+        <p id="historyBaselineText" class="subtle">No comparison baseline selected.</p>
+        <button id="clearBaselineBtn" class="link-button hidden" type="button">Clear baseline</button>
+      </div>
+      <div id="historyList" class="history-list empty">
+        Analysis history will appear here after you run the analyzer.
       </div>
     </section>
   </div>

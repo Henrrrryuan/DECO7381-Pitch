@@ -10,11 +10,11 @@
   <section class="right-content">
     <article class="insight-card explanation-card">
       <div class="field">
-        <label for="htmlInput">HTML 输入</label>
+        <label for="htmlInput">HTML Input</label>
         <textarea id="htmlInput" spellcheck="false"></textarea>
       </div>
       <div id="explanationContent" class="rich-text empty">
-        这里会解释每个维度的分数、风险来源和为什么会增加认知负担。
+        Analysis explanations will appear here after the current page is processed.
       </div>
     </article>
 
@@ -25,13 +25,13 @@
       </div>
       <div id="suggestionContent" class="suggestion-feed">
         <article class="suggestion-bubble system">
-          <p>这里会先显示基于规则生成的建议。</p>
-          <p>后期可将此区域接入 AI API，生成更细的修改建议。</p>
+          <p>This area shows rule-based suggestions for the current analysis.</p>
+          <p>It can later be extended with an AI API for richer rewrite advice.</p>
         </article>
       </div>
 
       <form id="suggestionForm" class="suggestion-form">
-        <input id="suggestionInput" type="text" placeholder="预留给 AI suggestion 接口..." disabled>
+        <input id="suggestionInput" type="text" placeholder="Reserved for a future AI suggestion input..." disabled>
         <button id="suggestionSendBtn" type="submit" disabled>Send</button>
       </form>
     </article>
