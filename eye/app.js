@@ -2,8 +2,6 @@ const viewportEl = document.getElementById("viewport");
 const heatmapCanvas = document.getElementById("heatmapCanvas");
 const coverageCanvas = document.getElementById("coverageCanvas");
 const gazeDot = document.getElementById("gazeDot");
-const calibrationLayer = document.getElementById("calibrationLayer");
-const calibrationPoints = Array.from(document.querySelectorAll(".cal-point"));
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
@@ -27,8 +25,7 @@ const state = {
   paused: false,
   previewVisible: false,
   calibrated: false,
-  calibrationTargetClicks: 5,
-  calibrationFinishedPoints: 0,
+  lastTrackerState: null,
   samples: 0,
   filteredPoint: null,
   lastRawPoint: null,
@@ -43,10 +40,8 @@ const state = {
 };
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
-const FACE_MESH_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/";
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
-const TRACKER_CANDIDATES = ["TFFacemesh", "clmtrackr"];
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -56,6 +51,12 @@ function distance(a, b) {
 
 function setStatus(text) {
   statusText.textContent = text;
+}
+
+function setTrackingControlsEnabled(enabled) {
+  pauseBtn.disabled = !enabled;
+  clearBtn.disabled = !enabled;
+  previewBtn.disabled = !enabled;
 }
 
 function getErrorMessage(error) {
@@ -159,6 +160,7 @@ function resetTrackingData() {
   samplesText.textContent = "0";
   coverageText.textContent = "0%";
   coordsText.textContent = "x: -, y: -";
+  gazeDot.style.opacity = "0";
   drawCoverageMap();
 }
 
@@ -238,18 +240,101 @@ function updateCoverage(x, y, width, height) {
   coverageText.textContent = `${coveragePercent}%`;
 }
 
-function handleGaze(data) {
-  if (!data || !state.started || state.paused || !state.calibrated) {
+function setPreviewVisibility(visible) {
+  state.previewVisible = Boolean(visible);
+  document.body.classList.toggle("gaze-preview-hidden", !state.previewVisible);
+  previewBtn.textContent = state.previewVisible
+    ? "Hide Camera Preview"
+    : "Show Camera Preview";
+}
+
+function handleTrackerStop(message) {
+  state.started = false;
+  state.paused = false;
+  state.calibrated = false;
+  state.lastTrackerState = null;
+  pauseBtn.textContent = "Pause";
+  setTrackingControlsEnabled(false);
+  setPreviewVisibility(false);
+  gazeDot.style.opacity = "0";
+  setStatus(message);
+}
+
+function updateTrackerState(gazeState) {
+  if (state.lastTrackerState === gazeState || state.paused) {
     return;
+  }
+
+  state.lastTrackerState = gazeState;
+
+  if (gazeState === 0) {
+    setStatus("Tracking active. Move your eyes naturally.");
+    return;
+  }
+
+  if (gazeState === 1) {
+    setStatus("Calibration in progress. Follow the GazeCloudAPI overlay.");
+    return;
+  }
+
+  if (gazeState === -1) {
+    gazeDot.style.opacity = "0";
+    setStatus(
+      state.calibrated
+        ? "Face tracking lost. Keep your face centered in the camera."
+        : "Waiting for face detection..."
+    );
+  }
+}
+
+function getGazeClientPoint(data) {
+  if (Number.isFinite(data.docX) && Number.isFinite(data.docY)) {
+    return {
+      x: data.docX - window.scrollX,
+      y: data.docY - window.scrollY
+    };
+  }
+
+  if (Number.isFinite(data.x) && Number.isFinite(data.y)) {
+    return { x: data.x, y: data.y };
+  }
+
+  return null;
+}
+
+function handleGaze(data) {
+  if (!data || !state.started || state.paused) {
+    return;
+  }
+
+  if (typeof data.state === "number") {
+    if (data.state === 0 && !state.calibrated) {
+      state.calibrated = true;
+    }
+    updateTrackerState(data.state);
+    if (data.state !== 0 || !state.calibrated) {
+      return;
+    }
   }
 
   const rect = getViewportRect();
-  const rawX = clamp(data.x - rect.left, 0, rect.width);
-  const rawY = clamp(data.y - rect.top, 0, rect.height);
-  if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) {
+  const point = getGazeClientPoint(data);
+  if (!point) {
     return;
   }
 
+  if (
+    point.x < rect.left ||
+    point.x > rect.right ||
+    point.y < rect.top ||
+    point.y > rect.bottom
+  ) {
+    gazeDot.style.opacity = "0";
+    return;
+  }
+
+  const rawX = point.x - rect.left;
+  const rawY = point.y - rect.top;
   const now = performance.now();
   const rawPoint = { x: rawX, y: rawY };
 
@@ -302,161 +387,53 @@ function handleGaze(data) {
   coordsText.textContent = `x: ${Math.round(x)}, y: ${Math.round(y)}`;
 }
 
-function updatePreviewVisibility() {
-  if (!window.webgazer) {
-    return;
-  }
-  if (typeof window.webgazer.showVideoPreview === "function") {
-    window.webgazer.showVideoPreview(state.previewVisible);
-  }
-  const container = document.getElementById("webgazerVideoContainer");
-  if (container) {
-    container.style.display = state.previewVisible ? "block" : "none";
-  }
-  previewBtn.textContent = state.previewVisible
-    ? "Hide Camera Preview"
-    : "Show Camera Preview";
-}
-
-function resetCalibrationUi() {
-  calibrationPoints.forEach((point) => {
-    point.disabled = false;
-    point.dataset.count = "0";
-    point.textContent = "";
-  });
-  state.calibrationFinishedPoints = 0;
-  state.calibrated = false;
-  calibrationLayer.classList.remove("hidden");
-  setStatus("Calibration active. Click each dot 5 times.");
-}
-
-async function beginTracking() {
-  if (!window.webgazer) {
-    throw new Error("webgazer script did not load.");
+function beginTracking() {
+  if (!window.GazeCloudAPI) {
+    throw new Error("GazeCloudAPI script did not load.");
   }
 
-  if (typeof window.webgazer.saveDataAcrossSessions === "function") {
-    window.webgazer.saveDataAcrossSessions(false);
-  }
-  if (typeof window.webgazer.applyKalmanFilter === "function") {
-    window.webgazer.applyKalmanFilter(true);
-  }
-  if (typeof window.webgazer.setRegression === "function") {
-    window.webgazer.setRegression("ridge");
-  }
-  if (typeof window.webgazer.setGazeListener === "function") {
-    window.webgazer.setGazeListener((data) => {
-      handleGaze(data);
-    });
-  }
-
-  let beginSucceeded = false;
-  let lastError = null;
-
-  for (const trackerName of TRACKER_CANDIDATES) {
-    try {
-      if (typeof window.webgazer.end === "function") {
-        try {
-          window.webgazer.end();
-        } catch (_) {
-          // swallow cleanup errors between retries
-        }
-      }
-      if (window.webgazer.params && trackerName === "TFFacemesh") {
-        // Avoid missing local mediapipe files by forcing a hosted solution path.
-        window.webgazer.params.faceMeshSolutionPath = FACE_MESH_CDN;
-      }
-      if (typeof window.webgazer.setTracker === "function") {
-        window.webgazer.setTracker(trackerName);
-      }
-
-      await window.webgazer.begin();
-      beginSucceeded = true;
-      break;
-    } catch (error) {
-      lastError = error;
+  window.GazeCloudAPI.UseClickRecalibration = false;
+  window.GazeCloudAPI.OnResult = handleGaze;
+  window.GazeCloudAPI.OnCalibrationComplete = () => {
+    state.calibrated = true;
+    state.lastTrackerState = null;
+    if (!state.paused) {
+      setStatus("Calibration complete. Tracking active.");
     }
-  }
+  };
+  window.GazeCloudAPI.OnCamDenied = () => {
+    handleTrackerStop("Camera access denied.");
+  };
+  window.GazeCloudAPI.OnError = (message) => {
+    handleTrackerStop(`GazeCloudAPI error: ${getErrorMessage(message)}`);
+  };
+  window.GazeCloudAPI.OnStopGazeFlow = () => {
+    if (state.started) {
+      handleTrackerStop("Tracking stopped.");
+    }
+  };
 
-  if (!beginSucceeded) {
-    const reason = getErrorMessage(lastError);
-    throw new Error(`Unable to start tracker (${reason}).`);
-  }
-
+  resetTrackingData();
   state.started = true;
   state.paused = false;
+  state.calibrated = false;
+  state.lastTrackerState = null;
+  setTrackingControlsEnabled(true);
   pauseBtn.textContent = "Pause";
-  pauseBtn.disabled = false;
-  clearBtn.disabled = false;
-  previewBtn.disabled = false;
-
-  if (typeof window.webgazer.showPredictionPoints === "function") {
-    window.webgazer.showPredictionPoints(false);
-  }
-  if (typeof window.webgazer.showFaceOverlay === "function") {
-    window.webgazer.showFaceOverlay(false);
-  }
-  if (typeof window.webgazer.showFaceFeedbackBox === "function") {
-    window.webgazer.showFaceFeedbackBox(false);
-  }
-  updatePreviewVisibility();
+  setPreviewVisibility(true);
+  setStatus("Starting GazeCloudAPI. Allow camera access and follow the calibration overlay.");
+  window.GazeCloudAPI.StartEyeTracking();
 }
 
-function onCalibrationPointClick(event) {
-  if (!state.started) {
-    return;
-  }
-
-  const btn = event.currentTarget;
-  if (btn.disabled) {
-    return;
-  }
-
-  const nextCount = Number(btn.dataset.count || "0") + 1;
-  btn.dataset.count = String(nextCount);
-  btn.textContent = String(nextCount);
-
-  const rect = getViewportRect();
-  const x = rect.left + rect.width * Number(btn.dataset.x);
-  const y = rect.top + rect.height * Number(btn.dataset.y);
-  if (typeof window.webgazer.recordScreenPosition === "function") {
-    window.webgazer.recordScreenPosition(x, y, "click");
-  }
-
-  btn.style.opacity = String(clamp(nextCount / state.calibrationTargetClicks, 0.3, 1));
-
-  if (nextCount >= state.calibrationTargetClicks) {
-    btn.disabled = true;
-    state.calibrationFinishedPoints += 1;
-  }
-
-  if (state.calibrationFinishedPoints === calibrationPoints.length) {
-    state.calibrated = true;
-    calibrationLayer.classList.add("hidden");
-    setStatus("Tracking active. Move your eyes naturally.");
-  }
-}
-
-startBtn.addEventListener("click", async () => {
+startBtn.addEventListener("click", () => {
   if (state.started) {
     setStatus("Tracking already running.");
     return;
   }
   try {
-    setStatus("Requesting camera permission...");
-    await beginTracking();
-    resetTrackingData();
-    resetCalibrationUi();
+    beginTracking();
   } catch (error) {
-    if (window.webgazer && typeof window.webgazer.end === "function") {
-      try {
-        window.webgazer.end();
-      } catch (_) {
-        // swallow cleanup errors
-      }
-    }
-    const message = getErrorMessage(error);
-    setStatus(`Failed to start: ${message}`);
+    handleTrackerStop(`Failed to start: ${getErrorMessage(error)}`);
     // eslint-disable-next-line no-console
     console.error(error);
   }
@@ -467,19 +444,19 @@ pauseBtn.addEventListener("click", () => {
     return;
   }
   if (state.paused) {
-    if (typeof window.webgazer.resume === "function") {
-      window.webgazer.resume();
-    }
     state.paused = false;
+    state.lastTrackerState = null;
     pauseBtn.textContent = "Pause";
-    setStatus("Tracking active.");
+    setStatus(
+      state.calibrated
+        ? "Tracking resumed."
+        : "Calibration in progress. Follow the GazeCloudAPI overlay."
+    );
   } else {
-    if (typeof window.webgazer.pause === "function") {
-      window.webgazer.pause();
-    }
     state.paused = true;
     pauseBtn.textContent = "Resume";
-    setStatus("Tracking paused.");
+    gazeDot.style.opacity = "0";
+    setStatus("Tracking paused locally. GazeCloudAPI is still running.");
   }
 });
 
@@ -489,8 +466,7 @@ clearBtn.addEventListener("click", () => {
 });
 
 previewBtn.addEventListener("click", () => {
-  state.previewVisible = !state.previewVisible;
-  updatePreviewVisibility();
+  setPreviewVisibility(!state.previewVisible);
 });
 
 loadUrlBtn.addEventListener("click", () => {
@@ -505,10 +481,6 @@ urlInput.addEventListener("keydown", (event) => {
   loadTargetUrl(urlInput.value);
 });
 
-calibrationPoints.forEach((point) => {
-  point.addEventListener("click", onCalibrationPointClick);
-});
-
 if (targetFrame) {
   targetFrame.addEventListener("load", () => {
     if (!state.currentTargetUrl) {
@@ -518,6 +490,10 @@ if (targetFrame) {
       setStatus(`Page loaded: ${state.currentTargetUrl}. Tracking active.`);
     } else if (state.started && state.paused) {
       setStatus(`Page loaded: ${state.currentTargetUrl}. Tracking paused.`);
+    } else if (state.started) {
+      setStatus(
+        `Page loaded: ${state.currentTargetUrl}. Finish calibration in the GazeCloudAPI overlay.`
+      );
     } else {
       setStatus(`Page loaded: ${state.currentTargetUrl}. Click "Start Tracking".`);
     }
@@ -537,13 +513,15 @@ window.addEventListener("resize", () => {
 });
 
 window.addEventListener("beforeunload", () => {
-  if (window.webgazer && typeof window.webgazer.end === "function") {
-    window.webgazer.end();
+  if (window.GazeCloudAPI && typeof window.GazeCloudAPI.StopEyeTracking === "function") {
+    window.GazeCloudAPI.StopEyeTracking();
   }
 });
 
 resizeHeatmapCanvas();
 drawCoverageMap();
+setPreviewVisibility(false);
+setTrackingControlsEnabled(false);
 
 if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);

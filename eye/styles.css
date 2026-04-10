@@ -178,47 +178,44 @@ button:disabled {
   z-index: 3;
 }
 
-#calibrationLayer {
-  position: absolute;
-  inset: 0;
-  background: #03071299;
-  z-index: 4;
+#GazeFlowContainer {
+  z-index: 15 !important;
+  background: transparent !important;
+  pointer-events: none !important;
 }
 
-#calibrationLayer.hidden {
-  display: none;
+#camid,
+#showinit {
+  z-index: 20 !important;
 }
 
-.calibration-note {
-  position: absolute;
-  top: 8px;
-  left: 12px;
-  right: 12px;
-  margin: 0;
-  padding: 8px;
-  border-radius: 8px;
-  background: #111827d9;
-  border: 1px solid var(--line);
-  color: #fca5a5;
+#camid {
+  position: fixed !important;
+  top: 18px !important;
+  right: 18px !important;
+  left: auto !important;
+  margin-left: 0 !important;
 }
 
-.cal-point {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid #fca5a5;
-  background: #be123c99;
-  transform: translate(-50%, -50%);
-  padding: 0;
+#showinit {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 16px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
 }
 
-.cal-point:disabled {
-  background: #16a34acc;
-  border-color: #86efac;
-  opacity: 1;
+#showvideoid,
+#facemaskimgok,
+#facemaskimgno {
+  border-radius: 16px !important;
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.42);
+}
+
+body.gaze-preview-hidden #camid,
+body.gaze-preview-hidden #showinit,
+body.gaze-preview-hidden #GazeFlowContainer {
+  display: none !important;
 }
 
 .stats-panel {

@@ -1,0 +1,118 @@
+127.0.0.1 - - [10/Apr/2026 20:11:27] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:15] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:15] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:15] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:15] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:16] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:16] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:13:16] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:13:59] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:59] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:59] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:59] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:13:59] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:14:00] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:14:00] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:14:36] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:14:36] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:22:18] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:18] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:18] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:18] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:19] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:19] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:22:19] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:22:45] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:45] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:45] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:45] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:46] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:22:46] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:22:46] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:24:22] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:24:22] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:24:22] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:24:22] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:24:23] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:24:23] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:24:23] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:24:46] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:25:09] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [10/Apr/2026 20:25:09] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:25:09] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 55575)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+----------------------------------------
+127.0.0.1 - - [10/Apr/2026 20:25:10] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:22] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:26:23] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:26:23] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:26:23] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:26:23] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:27:25] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:27:25] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:27:25] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:27:25] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:27:26] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:27:26] code 404, message File not found
+127.0.0.1 - - [10/Apr/2026 20:27:26] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Apr/2026 20:28:06] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [10/Apr/2026 20:28:06] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:28:06] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Apr/2026 20:28:06] "GET /app.js HTTP/1.1" 304 -
+127.0.0.1 - - [10/Apr/2026 20:28:07] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -

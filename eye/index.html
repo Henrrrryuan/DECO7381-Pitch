@@ -49,22 +49,6 @@
 
         <canvas id="heatmapCanvas"></canvas>
         <div id="gazeDot" aria-hidden="true"></div>
-
-        <div id="calibrationLayer" class="hidden">
-          <p class="calibration-note">
-            Calibration: click each point 5 times while looking at it.
-          </p>
-
-          <button class="cal-point" data-x="0.08" data-y="0.12" style="--x: 8%; --y: 12%"></button>
-          <button class="cal-point" data-x="0.5" data-y="0.12" style="--x: 50%; --y: 12%"></button>
-          <button class="cal-point" data-x="0.92" data-y="0.12" style="--x: 92%; --y: 12%"></button>
-          <button class="cal-point" data-x="0.08" data-y="0.5" style="--x: 8%; --y: 50%"></button>
-          <button class="cal-point" data-x="0.5" data-y="0.5" style="--x: 50%; --y: 50%"></button>
-          <button class="cal-point" data-x="0.92" data-y="0.5" style="--x: 92%; --y: 50%"></button>
-          <button class="cal-point" data-x="0.08" data-y="0.88" style="--x: 8%; --y: 88%"></button>
-          <button class="cal-point" data-x="0.5" data-y="0.88" style="--x: 50%; --y: 88%"></button>
-          <button class="cal-point" data-x="0.92" data-y="0.88" style="--x: 92%; --y: 88%"></button>
-        </div>
       </section>
 
       <aside class="stats-panel">
@@ -90,7 +74,7 @@
       </aside>
     </div>
 
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
