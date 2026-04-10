@@ -87,13 +87,26 @@ ANIMATED_CLASS_HINTS = (
     "marquee",
 )
 
+JS_AUTOPLAY_PATTERN = re.compile(
+    r"autoplay\s*[:=]\s*(?:true|1)|\.play\s*\(",
+    re.IGNORECASE,
+)
+JS_MOTION_PATTERN = re.compile(
+    r"new\s+Swiper\s*\(|carousel|slider|marquee|requestAnimationFrame\s*\(|setInterval\s*\(|gsap|anime\s*\(",
+    re.IGNORECASE,
+)
+JS_CTA_PATTERN = re.compile(
+    r"createElement\s*\(\s*['\"]button['\"]\s*\)|insertAdjacentHTML\s*\(|innerHTML\s*=|appendChild\s*\(|classList\.add\s*\([^)]*(cta|primary|hero-cta)",
+    re.IGNORECASE,
+)
+
 STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
 CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
 ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
 SEVERITY_RANK: dict[Severity, int] = {"minor": 1, "major": 2, "critical": 3}
 
 
-def analyze_interaction(html: str) -> DimensionResult:
+def analyze_interaction(html: str, js_sources: list[str] | None = None) -> DimensionResult:
     """Analyze interaction and distraction risks for HTML input.
 
     Scope limits:
@@ -106,13 +119,14 @@ def analyze_interaction(html: str) -> DimensionResult:
 
     candidate_regions = get_candidate_regions(soup)
     style_hints = extract_style_hints(soup)
+    js_hints = extract_js_hints(js_sources or [])
 
     issues = [
         issue
         for issue in (
-            detect_id1_autoplay_media(soup)
-            + detect_id2_too_many_animated_elements(candidate_regions, style_hints)
-            + detect_id3_cta_competition(candidate_regions, style_hints)
+            detect_id1_autoplay_media(soup, js_hints)
+            + detect_id2_too_many_animated_elements(candidate_regions, style_hints, js_hints)
+            + detect_id3_cta_competition(candidate_regions, style_hints, js_hints)
         )
         if issue is not None
     ]
@@ -130,6 +144,11 @@ def analyze_interaction(html: str) -> DimensionResult:
             "input_scope": ["html_file", "html_snippet"],
             "out_of_scope": ["pdf", "image", "live_url_fetch", "multi_source_mixed_input"],
             "region_count": len(candidate_regions),
+            "js_signal_summary": {
+                "autoplay_signals": js_hints["autoplay_count"],
+                "motion_signals": js_hints["motion_count"],
+                "cta_injection_signals": js_hints["cta_count"],
+            },
             "total_penalty": total_penalty,
             "scoring_model": {
                 "formula": "Dimension Score = max(0, 100 - Sum(Penalties))",
@@ -163,7 +182,10 @@ def build_issue(
     )
 
 
-def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
+def detect_id1_autoplay_media(
+    soup: BeautifulSoup,
+    js_hints: dict[str, Any],
+) -> list[Issue]:
     autoplay_locations: list[dict[str, Any]] = []
     autoplay_videos = 0
     autoplay_muted_videos = 0
@@ -210,16 +232,27 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
             )
 
     total_autoplay_media = autoplay_videos + autoplay_audios + autoplay_iframes
-    if total_autoplay_media == 0:
+    js_autoplay_count = js_hints["autoplay_count"]
+    if total_autoplay_media == 0 and js_autoplay_count == 0:
         return []
 
     has_unmuted_video = autoplay_videos > autoplay_muted_videos
-    if autoplay_audios >= 1 or total_autoplay_media >= 3 or has_unmuted_video:
+    if autoplay_audios >= 1 or total_autoplay_media >= 3 or has_unmuted_video or js_autoplay_count >= 2:
         severity: Severity = "critical"
-    elif total_autoplay_media >= 2 or autoplay_iframes >= 1:
+    elif total_autoplay_media >= 2 or autoplay_iframes >= 1 or js_autoplay_count >= 1:
         severity = "major"
     else:
         severity = "minor"
+
+    locations = autoplay_locations[:5]
+    for sample in js_hints["autoplay_samples"][:2]:
+        locations.append(
+            {
+                "summary": "script-triggered autoplay signal",
+                "html_snippet": sample,
+                "tag": "script",
+            }
+        )
 
     return [
         build_issue(
@@ -235,8 +268,9 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
                 "autoplay_audio_count": autoplay_audios,
                 "autoplay_iframe_count": autoplay_iframes,
                 "total_autoplay_media": total_autoplay_media,
+                "js_autoplay_signal_count": js_autoplay_count,
             },
-            locations=autoplay_locations[:5],
+            locations=locations,
         )
     ]
 
@@ -244,6 +278,7 @@ def detect_id1_autoplay_media(soup: BeautifulSoup) -> list[Issue]:
 def detect_id2_too_many_animated_elements(
     candidate_regions: list[Tag],
     style_hints: dict[str, set[str]],
+    js_hints: dict[str, Any],
 ) -> list[Issue]:
     violating_regions: list[dict[str, Any]] = []
 
@@ -264,14 +299,16 @@ def detect_id2_too_many_animated_elements(
             }
         )
 
-    if not violating_regions:
+    js_motion_count = js_hints["motion_count"]
+    if not violating_regions and js_motion_count == 0:
         return []
 
-    max_animated_count = max(item["animated_count"] for item in violating_regions)
+    max_animated_count = max((item["animated_count"] for item in violating_regions), default=0)
     total_animated_elements = sum(item["animated_count"] for item in violating_regions)
-    if max_animated_count >= 6 or len(violating_regions) >= 3:
+    effective_motion_count = max_animated_count + js_motion_count
+    if effective_motion_count >= 6 or len(violating_regions) >= 3 or js_motion_count >= 3:
         severity: Severity = "critical"
-    elif max_animated_count >= 4 or len(violating_regions) >= 2:
+    elif effective_motion_count >= 4 or len(violating_regions) >= 2 or js_motion_count >= 2:
         severity = "major"
     else:
         severity = "minor"
@@ -294,6 +331,15 @@ def detect_id2_too_many_animated_elements(
                 }
             )
 
+    for sample in js_hints["motion_samples"][:2]:
+        locations.append(
+            {
+                "summary": "script-driven motion signal",
+                "html_snippet": sample,
+                "region": "script",
+            }
+        )
+
     return [
         build_issue(
             rule_id="ID-2",
@@ -306,6 +352,8 @@ def detect_id2_too_many_animated_elements(
                 "threshold": ANIMATION_THRESHOLD,
                 "violating_region_count": len(violating_regions),
                 "max_animated_count_in_region": max_animated_count,
+                "js_motion_signal_count": js_motion_count,
+                "effective_motion_count": effective_motion_count,
                 "total_animated_elements_in_violating_regions": total_animated_elements,
                 "regions": region_summaries[:5],
                 "note": "MVP 以 major content region 作为同一视口的近似代理。",
@@ -318,6 +366,7 @@ def detect_id2_too_many_animated_elements(
 def detect_id3_cta_competition(
     candidate_regions: list[Tag],
     style_hints: dict[str, set[str]],
+    js_hints: dict[str, Any],
 ) -> list[Issue]:
     violating_regions: list[dict[str, Any]] = []
 
@@ -335,23 +384,33 @@ def detect_id3_cta_competition(
             }
         )
 
-    if not violating_regions:
+    js_cta_count = js_hints["cta_count"]
+    if not violating_regions and js_cta_count == 0:
         return []
 
-    highest_risk_region = max(
-        violating_regions,
-        key=lambda item: (
-            SEVERITY_RANK[classify_cta_severity(item["region"], item["ctas"])],
-            item["cta_count"],
-        ),
+    highest_risk_region = (
+        max(
+            violating_regions,
+            key=lambda item: (
+                SEVERITY_RANK[classify_cta_severity(item["region"], item["ctas"])],
+                item["cta_count"],
+            ),
+        )
+        if violating_regions
+        else None
     )
-    max_cta_count = max(item["cta_count"] for item in violating_regions)
-    if max_cta_count >= 5 or len(violating_regions) >= 3:
+    max_cta_count = max((item["cta_count"] for item in violating_regions), default=0)
+    effective_cta_count = max_cta_count + js_cta_count
+    if effective_cta_count >= 5 or len(violating_regions) >= 3 or js_cta_count >= 3:
         severity: Severity = "critical"
-    elif max_cta_count >= 4 or len(violating_regions) >= 2:
+    elif effective_cta_count >= 4 or len(violating_regions) >= 2 or js_cta_count >= 2:
         severity = "major"
     else:
-        severity = classify_cta_severity(highest_risk_region["region"], highest_risk_region["ctas"])
+        severity = (
+            classify_cta_severity(highest_risk_region["region"], highest_risk_region["ctas"])
+            if highest_risk_region is not None
+            else "minor"
+        )
 
     locations: list[dict[str, Any]] = []
     region_summaries: list[dict[str, Any]] = []
@@ -372,6 +431,16 @@ def detect_id3_cta_competition(
                 }
             )
 
+    for sample in js_hints["cta_samples"][:2]:
+        locations.append(
+            {
+                "summary": "script-generated CTA signal",
+                "label": "dynamic button injection",
+                "region": "script",
+                "html_snippet": sample,
+            }
+        )
+
     return [
         build_issue(
             rule_id="ID-3",
@@ -384,6 +453,8 @@ def detect_id3_cta_competition(
                 "threshold": CTA_THRESHOLD,
                 "violating_region_count": len(violating_regions),
                 "max_cta_count_in_region": max_cta_count,
+                "js_cta_signal_count": js_cta_count,
+                "effective_cta_count": effective_cta_count,
                 "regions": region_summaries[:5],
             },
             locations=locations[:5],
@@ -671,6 +742,45 @@ def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
         "animated_ids": animated_ids,
         "primary_cta_classes": primary_cta_classes,
         "primary_cta_ids": primary_cta_ids,
+    }
+
+
+def extract_js_hints(js_sources: list[str]) -> dict[str, Any]:
+    autoplay_samples: list[str] = []
+    motion_samples: list[str] = []
+    cta_samples: list[str] = []
+
+    autoplay_count = 0
+    motion_count = 0
+    cta_count = 0
+
+    for source in js_sources:
+        normalized = normalize_text(source)
+        if not normalized:
+            continue
+
+        autoplay_matches = JS_AUTOPLAY_PATTERN.findall(source)
+        motion_matches = JS_MOTION_PATTERN.findall(source)
+        cta_matches = JS_CTA_PATTERN.findall(source)
+
+        autoplay_count += len(autoplay_matches)
+        motion_count += len(motion_matches)
+        cta_count += len(cta_matches)
+
+        if autoplay_matches and len(autoplay_samples) < 3:
+            autoplay_samples.append(source[:180].strip())
+        if motion_matches and len(motion_samples) < 3:
+            motion_samples.append(source[:180].strip())
+        if cta_matches and len(cta_samples) < 3:
+            cta_samples.append(source[:180].strip())
+
+    return {
+        "autoplay_count": autoplay_count,
+        "motion_count": motion_count,
+        "cta_count": cta_count,
+        "autoplay_samples": autoplay_samples,
+        "motion_samples": motion_samples,
+        "cta_samples": cta_samples,
     }
 
 

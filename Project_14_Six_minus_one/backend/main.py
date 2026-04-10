@@ -50,7 +50,12 @@ from .history_store import (
 )
 from .scoring import calculate_overall_score
 from .schemas import AnalysisResult
-from .zip_input import ZipInputError, extract_html_from_zip_bytes
+from .zip_input import (
+    ExtractedWebBundle,
+    ZipInputError,
+    extract_html_from_zip_bytes,
+    extract_web_bundle_from_zip_bytes,
+)
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -66,18 +71,28 @@ SAMPLE_FILE_MAP = {
 init_history_store()
 
 
-def analyze_html(html: str) -> AnalysisResult:
+def analyze_html(
+    html: str,
+    *,
+    css_sources: list[str] | None = None,
+    js_sources: list[str] | None = None,
+) -> AnalysisResult:
     dimensions = [
         analyze_readability(html),
-        analyze_visual(html),
-        analyze_interaction(html),
+        analyze_visual(html, css_sources=css_sources, js_sources=js_sources),
+        analyze_interaction(html, js_sources=js_sources),
         analyze_consistency(html),
     ]
     return calculate_overall_score(dimensions)
 
 
-def analyze_html_dict(html: str) -> dict[str, Any]:
-    return analyze_html(html).to_dict()
+def analyze_html_dict(
+    html: str,
+    *,
+    css_sources: list[str] | None = None,
+    js_sources: list[str] | None = None,
+) -> dict[str, Any]:
+    return analyze_html(html, css_sources=css_sources, js_sources=js_sources).to_dict()
 
 
 class AnalyzePayload(BaseModel):
@@ -194,14 +209,26 @@ async def analyze_zip(
         )
 
     try:
-        html = extract_html_from_zip_bytes(zip_bytes)
+        bundle = extract_web_bundle_from_zip_bytes(zip_bytes)
     except ZipInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    analysis = analyze_html(html)
-    return build_analysis_response(
+    analysis = analyze_html(
+        bundle.inlined_html,
+        css_sources=list(bundle.css_files.values()),
+        js_sources=list(bundle.js_files.values()),
+    )
+    payload = build_analysis_response(
         analysis,
-        html_content=html,
+        html_content=bundle.html,
         source_name=file.filename or "uploaded.zip",
         baseline_run_id=baseline_run_id,
     )
+    payload["resource_bundle"] = {
+        "entry_name": bundle.entry_name,
+        "css_file_count": len(bundle.css_files),
+        "js_file_count": len(bundle.js_files),
+        "css_files": sorted(bundle.css_files.keys()),
+        "js_files": sorted(bundle.js_files.keys()),
+    }
+    return payload

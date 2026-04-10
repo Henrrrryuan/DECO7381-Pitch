@@ -63,6 +63,7 @@ SIDEBAR_BANNER_KEYWORDS = (
     "popup",
     "modal",
 )
+FIXED_POSITION_PATTERN = re.compile(r"position\s*:\s*(fixed|sticky)", re.IGNORECASE)
 
 
 class _VisualHTMLParser(HTMLParser):
@@ -205,12 +206,18 @@ def _build_issue(
     )
 
 
-def analyze_visual(html: str) -> DimensionResult:
+def analyze_visual(
+    html: str,
+    *,
+    css_sources: list[str] | None = None,
+    js_sources: list[str] | None = None,
+) -> DimensionResult:
     """rukou Analyze visual complexity using shared MVP rules VC-1/VC-2/VC-3."""
 
     parser = _VisualHTMLParser()
     parser.feed(html or "")
     parser.close()
+    resource_hints = extract_resource_visual_hints(css_sources or [], js_sources or [])
 
     max_items_in_region, max_items_region_tag = parser.max_items_in_region()
 
@@ -250,19 +257,24 @@ def analyze_visual(html: str) -> DimensionResult:
             )
         )
 
-    if parser.sidebar_banner_count >= VC3_THRESHOLD:
+    effective_sidebar_banner_count = parser.sidebar_banner_count + resource_hints["sidebar_banner_signal_count"]
+    if effective_sidebar_banner_count >= VC3_THRESHOLD:
         issues.append(
             _build_issue(
                 rule_id="VC-3",
                 title="Excessive interference from sidebars or banners",
-                severity=_severity_from_excess(parser.sidebar_banner_count - VC3_THRESHOLD),
+                severity=_severity_from_excess(effective_sidebar_banner_count - VC3_THRESHOLD),
                 base_penalty=4,
                 description="The page contains numerous sidebars, banners, or floating interference areas, which may distract users' attention.",
                 suggestion="Merge or remove non-critical sidebars/banners, retaining only auxiliary information that supports the main task.",
                 evidence={
                     "sidebar_banner_count": parser.sidebar_banner_count,
+                    "resource_sidebar_banner_signal_count": resource_hints["sidebar_banner_signal_count"],
+                    "effective_sidebar_banner_count": effective_sidebar_banner_count,
                     "threshold": VC3_THRESHOLD,
-                    "matched_keywords": sorted(parser.detected_sidebar_banner_keywords),
+                    "matched_keywords": sorted(
+                        parser.detected_sidebar_banner_keywords | resource_hints["matched_keywords"]
+                    ),
                 },
             )
         )
@@ -282,6 +294,36 @@ def analyze_visual(html: str) -> DimensionResult:
                 "max_items_in_region": max_items_in_region,
                 "max_items_region_tag": max_items_region_tag,
                 "sidebar_banner_count": parser.sidebar_banner_count,
+                "resource_sidebar_banner_signal_count": resource_hints["sidebar_banner_signal_count"],
             },
         },
     )
+
+
+def extract_resource_visual_hints(
+    css_sources: list[str],
+    js_sources: list[str],
+) -> dict[str, object]:
+    matched_keywords: set[str] = set()
+    sidebar_banner_signal_count = 0
+
+    for css_text in css_sources:
+        lowered = css_text.lower()
+        keyword_hits = {keyword for keyword in SIDEBAR_BANNER_KEYWORDS if keyword in lowered}
+        matched_keywords.update(keyword_hits)
+        if keyword_hits:
+            sidebar_banner_signal_count += len(keyword_hits)
+        if FIXED_POSITION_PATTERN.search(css_text):
+            sidebar_banner_signal_count += 1
+
+    for js_text in js_sources:
+        lowered = js_text.lower()
+        keyword_hits = {keyword for keyword in SIDEBAR_BANNER_KEYWORDS if keyword in lowered}
+        matched_keywords.update(keyword_hits)
+        if keyword_hits:
+            sidebar_banner_signal_count += len(keyword_hits)
+
+    return {
+        "sidebar_banner_signal_count": sidebar_banner_signal_count,
+        "matched_keywords": matched_keywords,
+    }
