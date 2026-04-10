@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Dashboard</title>
-  <link rel="stylesheet" href="./styles.css?v=upload-flow-1">
+  <link rel="stylesheet" href="./styles.css?v=dashboard-print-1">
 </head>
 <body class="dashboard-body">
   <header class="app-nav">
@@ -31,7 +31,10 @@
               <p class="sidebar-kicker">Dashboard</p>
               <p id="dashboardStatus" class="sidebar-status">Waiting for analysis</p>
             </div>
-            <a class="sidebar-action-button" href="./index.html">Re-upload</a>
+            <div class="sidebar-actions">
+              <button id="printReportBtn" class="sidebar-action-button" type="button">Print report</button>
+              <a class="sidebar-action-button" href="./index.html">Re-upload</a>
+            </div>
           </header>
 
           <section class="overall-panel">
@@ -133,6 +136,6 @@
     </div>
   </main>
 
-  <script type="module" src="./app.js?v=upload-flow-1"></script>
+  <script type="module" src="./app.js?v=dashboard-print-1"></script>
 </body>
 </html>

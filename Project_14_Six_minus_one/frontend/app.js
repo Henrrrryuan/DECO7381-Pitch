@@ -257,7 +257,12 @@ function renderResult(result, html) {
 }
 
 function bindEvents() {
-  // Reserved for future workspace interactions.
+  const printButton = document.getElementById("printReportBtn");
+  if (printButton) {
+    printButton.addEventListener("click", () => {
+      window.print();
+    });
+  }
 }
 
 async function init() {

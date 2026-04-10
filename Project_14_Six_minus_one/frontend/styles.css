@@ -285,6 +285,14 @@ input {
   gap: 16px;
 }
 
+.sidebar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .sidebar-kicker {
   margin: 0;
   font-size: 12px;
@@ -375,6 +383,7 @@ input {
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .sidebar-action-button:hover {
@@ -787,5 +796,76 @@ input {
   .history-table-head,
   .history-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  html,
+  body,
+  .dashboard-body {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .app-nav,
+  .sidebar-actions,
+  .placeholder-tag {
+    display: none !important;
+  }
+
+  .tool-shell,
+  .tool-sidebar,
+  .tool-sidebar-inner,
+  .tool-workspace,
+  .workspace-panels,
+  .pane-scroll,
+  .comparison-list {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .tool-shell {
+    display: block;
+  }
+
+  .tool-sidebar-shell,
+  .tool-workspace-shell {
+    border: 0;
+  }
+
+  .tool-sidebar {
+    position: static;
+  }
+
+  .tool-sidebar-shell,
+  .tool-workspace-shell,
+  .workspace-pane,
+  .overall-panel,
+  .sidebar-section,
+  .comparison-item,
+  .comparison-summary,
+  .explanation-block,
+  .suggestion-bubble {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .tool-sidebar-shell,
+  .tool-workspace-shell {
+    width: 100%;
+  }
+
+  .workspace-panels {
+    display: block;
+  }
+
+  .workspace-pane,
+  .overall-panel,
+  .sidebar-section {
+    border-bottom: 1px solid #d9dde5;
   }
 }
