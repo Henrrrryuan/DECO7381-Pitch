@@ -341,9 +341,16 @@ function renderResult(result, html) {
 }
 
 function bindEvents() {
+  const printButton = document.getElementById("printReportBtn");
   const assistantForm = document.getElementById("assistantForm");
   const assistantInput = document.getElementById("assistantInput");
   const clearButton = document.getElementById("clearAssistantButton");
+
+  if (printButton) {
+    printButton.addEventListener("click", () => {
+      window.print();
+    });
+  }
 
   if (assistantForm) {
     assistantForm.addEventListener("submit", handleAssistantSubmit);
