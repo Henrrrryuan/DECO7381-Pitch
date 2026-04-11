@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import json
+import os
+import ssl
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 REQUIRED_RUNTIME_MODULES: dict[str, str] = {
     "bs4": "beautifulsoup4",
@@ -101,6 +106,12 @@ class AnalyzePayload(BaseModel):
     baseline_run_id: str | None = None
 
 
+class AssistantChatPayload(BaseModel):
+    message: str
+    source_name: str | None = None
+    analysis_context: dict[str, Any] | None = None
+
+
 def build_analysis_response(
     analysis: AnalysisResult,
     *,
@@ -119,6 +130,148 @@ def build_analysis_response(
     payload["html_content"] = html_content
     payload["baseline_run_id"] = resolved_baseline_run_id
     return payload
+
+
+def format_analysis_context(context: dict[str, Any] | None) -> str:
+    if not context:
+        return "No analysis context was provided."
+
+    lines = [
+        f"Source: {context.get('source_name') or 'Uploaded file'}",
+        f"Overall score: {context.get('overall_score', 'n/a')}",
+        f"Lowest dimension score: {context.get('min_dimension_score', 'n/a')}",
+    ]
+
+    for dimension in context.get("dimensions", []):
+        lines.append(
+            f"- {dimension.get('dimension', 'Unknown dimension')}: score {dimension.get('score', 'n/a')}"
+        )
+        for issue in dimension.get("issues", [])[:4]:
+            lines.append(
+                "  "
+                + f"* {issue.get('rule_id', 'rule')}: {issue.get('description', '')} "
+                + f"Suggested fix: {issue.get('suggestion', '')}"
+            )
+
+    return "\n".join(lines)
+
+
+def build_fallback_assistant_reply(payload: AssistantChatPayload) -> str:
+    context = payload.analysis_context or {}
+    dimensions = context.get("dimensions", [])
+    risky_dimensions = [dimension for dimension in dimensions if dimension.get("issues")]
+
+    opening = (
+        "Claude API is not currently available, so this reply is generated from the local analysis context."
+    )
+    if not risky_dimensions:
+        return (
+            f"{opening}\n\n"
+            "The current page does not trigger any of the active heuristic rules. "
+            "You can ask me to explain a dimension in more detail or upload a denser page for richer feedback."
+        )
+
+    first_dimension = risky_dimensions[0]
+    bullets = []
+    for issue in first_dimension.get("issues", [])[:3]:
+        bullets.append(
+            f"- {issue.get('rule_id', 'Issue')}: {issue.get('suggestion', 'Review this issue and simplify the interaction.')}"
+        )
+
+    return (
+        f"{opening}\n\n"
+        f"Based on your question: \"{payload.message}\", the most urgent area is "
+        f"{first_dimension.get('dimension', 'the current dimension')} "
+        f"(score {first_dimension.get('score', 'n/a')}).\n\n"
+        "Recommended first fixes:\n"
+        + "\n".join(bullets)
+    )
+
+
+def call_claude_assistant(payload: AssistantChatPayload) -> str:
+    auth_token = os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_API_KEY")
+    if not auth_token:
+        return build_fallback_assistant_reply(payload)
+
+    base_url = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").rstrip("/")
+    endpoint = f"{base_url}/v1/messages"
+    preferred_models = [
+        os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+        "claude-sonnet-4-6",
+        "claude-sonnet-4-5-20250929",
+        "claude-opus-4-6",
+        "claude-haiku-4-5-20251001",
+    ]
+    system_prompt = (
+        "You are an AI accessibility assistant inside CogniLens. "
+        "Answer briefly and concretely. Focus on cognitive accessibility, readability, visual clutter, "
+        "interaction distraction, and consistency. Use the provided analysis context to prioritize fixes "
+        "for developers. Avoid markdown tables."
+    )
+    user_prompt = (
+        f"User question:\n{payload.message}\n\n"
+        "Analysis context:\n"
+        f"{format_analysis_context(payload.analysis_context)}"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": auth_token,
+        "Authorization": f"Bearer {auth_token}",
+        "anthropic-version": "2023-06-01",
+    }
+    ssl_context = None
+    if endpoint.startswith("https://"):
+        if find_spec("certifi") is not None:
+            import certifi
+
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+        elif "api.anthropic.com" not in endpoint:
+            ssl_context = ssl._create_unverified_context()
+
+    opener = None
+    if ssl_context is not None:
+        opener = urllib_request.build_opener(urllib_request.HTTPSHandler(context=ssl_context))
+
+    last_error: Exception | None = None
+    for model in dict.fromkeys(preferred_models):
+        request_body = {
+            "model": model,
+            "max_tokens": 700,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_prompt}],
+        }
+        request = urllib_request.Request(
+            endpoint,
+            data=json.dumps(request_body).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            open_fn = opener.open if opener is not None else urllib_request.urlopen
+            with open_fn(request, timeout=45) as response:
+                payload_json = json.loads(response.read().decode("utf-8"))
+        except urllib_error.HTTPError as exc:
+            error_body = exc.read().decode("utf-8", errors="ignore")
+            if "model_not_found" in error_body:
+                last_error = exc
+                continue
+            return build_fallback_assistant_reply(payload)
+        except (urllib_error.URLError, TimeoutError) as exc:
+            last_error = exc
+            break
+
+        content = payload_json.get("content", [])
+        text_parts = [
+            block.get("text", "")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        ]
+        reply = "\n".join(part.strip() for part in text_parts if part.strip())
+        if reply:
+            return reply
+
+    return build_fallback_assistant_reply(payload)
 
 
 app = FastAPI(title="Cognitive Accessibility Assistant API")
@@ -185,6 +338,20 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
+
+
+@app.post("/assistant/chat")
+def assistant_chat(payload: AssistantChatPayload) -> dict[str, Any]:
+    reply = call_claude_assistant(payload)
+    provider = (
+        "claude"
+        if (os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_API_KEY"))
+        else "fallback"
+    )
+    return {
+        "reply": reply,
+        "provider": provider,
+    }
 
 
 @app.post("/analyze-zip")

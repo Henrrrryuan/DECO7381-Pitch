@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Dashboard</title>
-  <link rel="stylesheet" href="./styles.css?v=upload-flow-1">
+  <link rel="stylesheet" href="./styles.css?v=ai-chat-1">
 </head>
 <body class="dashboard-body">
   <header class="app-nav">
@@ -118,21 +118,33 @@
 
           <article class="workspace-pane suggestion-pane">
             <div class="pane-header">
-              <h2>Suggestion</h2>
-              <span class="placeholder-tag">AI-ready</span>
+              <h2>AI Assistant</h2>
+              <div class="assistant-header-actions">
+                <span class="placeholder-tag">AI-powered / Claude</span>
+                <button id="clearAssistantButton" class="assistant-clear-button" type="button">Clear</button>
+              </div>
             </div>
-            <div id="suggestionContent" class="suggestion-feed suggestion-static">
-              <article class="suggestion-bubble system">
-                <p>This area shows rule-based suggestions for the current analysis.</p>
-                <p>It can later be extended with an AI API for richer rewrite advice.</p>
+            <div id="assistantMessages" class="assistant-messages" aria-live="polite">
+              <article class="assistant-message assistant-message-assistant">
+                <p>Ask me how to improve readability, reduce visual clutter, or fix specific issues.</p>
               </article>
             </div>
+            <form id="assistantForm" class="assistant-input-area">
+              <input
+                id="assistantInput"
+                class="assistant-input"
+                type="text"
+                placeholder="Ask how to improve this page…"
+                autocomplete="off"
+              >
+              <button id="assistantSendButton" class="assistant-send-button" type="submit">Send</button>
+            </form>
           </article>
         </section>
       </section>
     </div>
   </main>
 
-  <script type="module" src="./app.js?v=upload-flow-1"></script>
+  <script type="module" src="./app.js?v=ai-chat-1"></script>
 </body>
 </html>

@@ -50,6 +50,14 @@ async function analyzeHtmlText(html, sourceName = "uploaded.html") {
   });
 }
 
+async function chatWithAssistant(payload) {
+  return fetchJson(`${API_BASE}/assistant/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 function isZipFile(file) {
   return Boolean(file?.name?.toLowerCase().endsWith(".zip"));
 }
@@ -119,6 +127,7 @@ export {
   analyzeHtmlText,
   analyzeUploadFile,
   buildAnalysisView,
+  chatWithAssistant,
   clearDashboardSession,
   escapeHtml,
   fetchJson,

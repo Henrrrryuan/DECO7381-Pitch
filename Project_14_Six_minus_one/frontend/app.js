@@ -1,5 +1,6 @@
 import {
   buildAnalysisView,
+  chatWithAssistant,
   escapeHtml,
   findDimension,
   loadDashboardSession,
@@ -8,6 +9,10 @@ import {
 const state = {
   currentHtml: "",
   currentResult: null,
+  currentPayload: null,
+  sourceName: "",
+  chatMessages: [],
+  chatPending: false,
 };
 
 const DIMENSION_CONFIG = [
@@ -202,48 +207,127 @@ function renderExplanation(result) {
   explanationContent.innerHTML = blocks.join("");
 }
 
-function renderSuggestions(result) {
-  const suggestionContent = document.getElementById("suggestionContent");
-  if (!suggestionContent) {
+function buildAssistantContext() {
+  const result = state.currentResult;
+  if (!result) {
+    return null;
+  }
+
+  return {
+    source_name: state.sourceName || "Uploaded file",
+    overall_score: result.overall_score,
+    weighted_average: result.weighted_average,
+    min_dimension_score: result.min_dimension_score,
+    dimensions: result.dimensions.map((dimension) => ({
+      dimension: dimension.dimension,
+      score: dimension.score,
+      issues: dimension.issues.map((issue) => ({
+        rule_id: issue.rule_id,
+        title: issue.title,
+        description: issue.description,
+        suggestion: issue.suggestion,
+        severity: issue.severity,
+      })),
+    })),
+  };
+}
+
+function ensureInitialAssistantMessage() {
+  if (state.chatMessages.length) {
+    return;
+  }
+  state.chatMessages = [
+    {
+      role: "assistant",
+      content: "Ask me how to improve readability, reduce visual clutter, or fix specific issues.",
+    },
+  ];
+}
+
+function renderAssistantMessages() {
+  const messageContainer = document.getElementById("assistantMessages");
+  const sendButton = document.getElementById("assistantSendButton");
+  const input = document.getElementById("assistantInput");
+  if (!messageContainer) {
     return;
   }
 
-  const sections = [];
+  ensureInitialAssistantMessage();
 
-  result.dimensions.forEach((dimension) => {
-    if (!dimension.issues.length) {
-      return;
-    }
+  messageContainer.innerHTML = state.chatMessages.map((message) => `
+    <article class="assistant-message assistant-message-${escapeHtml(message.role)}">
+      <p>${escapeHtml(message.content)}</p>
+    </article>
+  `).join("");
 
-    sections.push(`
-      <section class="suggestion-group">
-        <h3>${escapeHtml(dimension.dimension)}</h3>
-        ${dimension.issues.map((issue) => `
-          <article class="suggestion-bubble system">
-            <p><strong>${escapeHtml(issue.rule_id)}</strong>: ${escapeHtml(issue.suggestion)}</p>
-            <p class="subtle">Why it matters: ${escapeHtml(issue.description)}</p>
-          </article>
-        `).join("")}
-      </section>
-    `);
-  });
-
-  if (!sections.length) {
-    sections.push(`
-      <article class="suggestion-bubble system">
-        <p>No rules were triggered in the current run. Upload another HTML page to inspect more complex cases.</p>
-      </article>
-    `);
+  if (state.chatPending) {
+    messageContainer.insertAdjacentHTML(
+      "beforeend",
+      `
+        <article class="assistant-message assistant-message-assistant assistant-message-pending">
+          <p>Thinking…</p>
+        </article>
+      `,
+    );
   }
 
-  sections.push(`
-    <article class="suggestion-bubble ai-placeholder">
-      <p><strong>AI API placeholder</strong></p>
-      <p>Later, this area can call a dedicated AI endpoint to generate richer rewrite suggestions or explanation text.</p>
-    </article>
-  `);
+  if (sendButton) {
+    sendButton.disabled = state.chatPending;
+    sendButton.textContent = state.chatPending ? "Sending..." : "Send";
+  }
 
-  suggestionContent.innerHTML = sections.join("");
+  if (input) {
+    input.disabled = state.chatPending;
+  }
+
+  messageContainer.scrollTop = messageContainer.scrollHeight;
+}
+
+async function handleAssistantSubmit(event) {
+  event.preventDefault();
+
+  const input = document.getElementById("assistantInput");
+  if (!input || state.chatPending) {
+    return;
+  }
+
+  const prompt = input.value.trim();
+  if (!prompt) {
+    return;
+  }
+
+  state.chatMessages.push({ role: "user", content: prompt });
+  input.value = "";
+  state.chatPending = true;
+  renderAssistantMessages();
+
+  try {
+    const response = await chatWithAssistant({
+      message: prompt,
+      analysis_context: buildAssistantContext(),
+      source_name: state.sourceName || "Uploaded file",
+    });
+
+    state.chatMessages.push({
+      role: "assistant",
+      content: response.reply || "No assistant response was returned.",
+    });
+  } catch (error) {
+    state.chatMessages.push({
+      role: "assistant",
+      content: `I could not reach the AI assistant right now. ${error.message || String(error)}`,
+    });
+  } finally {
+    state.chatPending = false;
+    renderAssistantMessages();
+    input.focus();
+  }
+}
+
+function handleAssistantClear() {
+  state.chatMessages = [];
+  ensureInitialAssistantMessage();
+  renderAssistantMessages();
 }
 
 function renderResult(result, html) {
@@ -253,11 +337,30 @@ function renderResult(result, html) {
   renderDimensionBars(result);
   renderDashboardSummary(result);
   renderExplanation(result);
-  renderSuggestions(result);
+  renderAssistantMessages();
 }
 
 function bindEvents() {
-  // Reserved for future workspace interactions.
+  const assistantForm = document.getElementById("assistantForm");
+  const assistantInput = document.getElementById("assistantInput");
+  const clearButton = document.getElementById("clearAssistantButton");
+
+  if (assistantForm) {
+    assistantForm.addEventListener("submit", handleAssistantSubmit);
+  }
+
+  if (assistantInput) {
+    assistantInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        assistantForm?.requestSubmit();
+      }
+    });
+  }
+
+  if (clearButton) {
+    clearButton.addEventListener("click", handleAssistantClear);
+  }
 }
 
 async function init() {
@@ -274,8 +377,10 @@ async function init() {
   const currentResult = buildAnalysisView(currentSession.payload);
   const previousResult = previousSession?.payload ? buildAnalysisView(previousSession.payload) : null;
   const sourceNode = document.getElementById("dashboardSourceName");
+  state.currentPayload = currentSession.payload;
+  state.sourceName = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
   if (sourceNode) {
-    sourceNode.textContent = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
+    sourceNode.textContent = state.sourceName;
   }
 
   renderResult(
