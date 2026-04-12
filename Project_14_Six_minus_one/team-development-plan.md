@@ -1,47 +1,47 @@
-# 项目前期协作规划
+# Early-Stage Collaboration Plan
 
-本文档用于统一小组开发方式，避免出现“每个人都写了代码，但最后拼不起来”的情况。
+This document is used to align the team’s development approach and avoid the situation where “everyone writes code, but nothing integrates cleanly at the end.”
 
-当前项目采用四维度分工：
+The current project is divided into four dimensions:
 
 1. Readability
 2. Visual Complexity
 3. Interaction & Distraction
 4. Consistency
 
-每位组员分别负责一个维度，但必须在同一个技术协议下开发。
+Each team member is responsible for one dimension, but everyone must develop under the same technical agreement.
 
 ---
 
-## 1. 开发总原则
+## 1. Core Development Principles
 
-在开始写各自模块之前，团队必须先统一以下内容：
+Before anyone starts implementing their own module, the team must first align on the following:
 
-1. 输入格式
-2. 输出数据结构
-3. 目录结构
-4. 评分方式
-5. 后端总入口
-6. 前后端接口协议
+1. Input format
+2. Output data structure
+3. Directory structure
+4. Scoring method
+5. Unified backend entry point
+6. Frontend-backend API contract
 
-原因很简单：
+The reason is simple:
 
-- 如果每个人的输入不一样，模块不能互换
-- 如果每个人的输出字段不一样，前端无法统一展示
-- 如果每个人自己算总分，最后分数会不一致
-- 如果没有统一目录，合并时冲突会很多
+- If everyone uses different input formats, the modules cannot be swapped or integrated
+- If everyone returns different output fields, the frontend cannot render them consistently
+- If everyone calculates the final score differently, the scores will conflict
+- If there is no unified directory structure, merging will create many conflicts
 
-所以本项目的正确顺序应该是：
+So the correct order for this project should be:
 
-1. 先统一协议
-2. 再分头开发
-3. 最后统一集成
+1. Align the contract first
+2. Develop in parallel second
+3. Integrate everything at the end
 
 ---
 
-## 2. 推荐项目结构
+## 2. Recommended Project Structure
 
-建议使用如下结构：
+The following structure is recommended:
 
 ```text
 project/
@@ -66,169 +66,169 @@ project/
 
 ---
 
-## 3. 每个部分是干嘛的
+## 3. Responsibility of Each Part
 
 ### 3.1 `backend/analyzers/`
 
-这里存放四个维度的分析模块。
+This folder stores the analysis modules for the four dimensions.
 
-每个人只需要负责自己那个文件，例如：
+Each person only needs to own one file, for example:
 
-- 做 Readability 的人写 `readability.py`
-- 做 Visual 的人写 `visual.py`
-- 做 Interaction 的人写 `interaction.py`
-- 做 Consistency 的人写 `consistency.py`
+- The Readability owner works in `readability.py`
+- The Visual owner works in `visual.py`
+- The Interaction owner works in `interaction.py`
+- The Consistency owner works in `consistency.py`
 
-这些文件的职责是：
+The responsibilities of these files are:
 
-- 接收统一输入
-- 检测本维度规则
-- 返回统一格式的结果
+- Receive the unified input
+- Detect rules for the assigned dimension
+- Return results in the unified format
 
-它们**不能**做的事：
+What they **must not** do:
 
-- 不能自己决定总分怎么算
-- 不能输出跟别人不一样的字段名
-- 不能擅自增加前端依赖
+- They must not decide how the final overall score is calculated
+- They must not invent field names that differ from the rest of the team
+- They must not add frontend dependencies on their own
 
 ### 3.2 `backend/schemas.py`
 
-这里放统一的数据结构定义。
+This file stores the unified data structure definitions.
 
-它的作用是：
+Its role is to:
 
-- 规定每个 analyzer 必须返回什么字段
-- 规定每条 issue 长什么样
-- 规定总返回结果长什么样
+- Define which fields every analyzer must return
+- Define what each issue object looks like
+- Define what the final overall result looks like
 
-它相当于团队的“数据合同”。
+It functions as the team’s “data contract.”
 
-如果没有这个文件，最后很容易出现：
+Without this file, it is easy to end up with situations like:
 
-- A 同学返回 `severity`
-- B 同学返回 `level`
-- C 同学返回 `risk`
+- Person A returns `severity`
+- Person B returns `level`
+- Person C returns `risk`
 
-前端就没法接。
+and then the frontend cannot consume the results.
 
 ### 3.3 `backend/scoring.py`
 
-这里专门负责分数计算。
+This file is dedicated to score calculation.
 
-它的职责是：
+Its responsibilities are:
 
-- 统一 severity 系数
-- 统一 penalty 算法
-- 统一总分算法
+- Unify severity multipliers
+- Unify the penalty algorithm
+- Unify the overall score formula
 
-建议写在这里的内容：
+Recommended contents include:
 
 - `Penalty = Base * Severity`
-- `Final = 0.5 * 最低维度分 + 0.5 * 加权平均分`
+- `Final = 0.5 * min_dimension_score + 0.5 * weighted_average`
 
-这样四个 analyzer 只负责“发现问题”，不负责“决定最终总分”。
+That way, the four analyzers are responsible only for “finding issues,” not for “deciding the final score.”
 
 ### 3.4 `backend/main.py`
 
-这是后端统一入口。
+This is the unified backend entry point.
 
-它的职责是：
+Its responsibilities are:
 
-1. 接收前端传来的 HTML 或文件内容
-2. 依次调用四个 analyzer
-3. 汇总四个维度结果
-4. 调用 `scoring.py` 计算总分
-5. 把统一结果返回给前端
+1. Receive HTML or file content from the frontend
+2. Call the four analyzers in sequence
+3. Aggregate the four dimension results
+4. Call `scoring.py` to calculate the final score
+5. Return the unified result to the frontend
 
-前端以后只请求一个接口，比如：
+The frontend should only call one endpoint in the future, for example:
 
 - `POST /analyze`
 
-前端不应该分别请求四个维度。
+The frontend should not call the four dimensions separately.
 
 ### 3.5 `backend/sample_input/`
 
-放测试用的 HTML 示例。
+This folder stores example HTML files for testing.
 
-作用：
+Its role is to:
 
-- 让每个人都能用同一份输入调试
-- 方便明天合并前做统一测试
+- Let everyone debug against the same inputs
+- Make it easier to perform a unified test before merging
 
-建议至少放：
+At a minimum, it is recommended to include:
 
 - `simple-page.html`
 - `dense-page.html`
 
 ### 3.6 `frontend/`
 
-前端只做一件事：
+The frontend should do only one thing:
 
-- 接后端统一返回的数据
-- 展示 dashboard
+- Consume the unified backend response
+- Render the dashboard
 
-前端不应该自己重新计算分数。
+The frontend should not recalculate scores on its own.
 
-前端展示重点：
+The frontend should focus on displaying:
 
-1. 四维分数
-2. 总分
-3. 问题列表
-4. 严重程度
-5. 修改建议
-6. reupload 前后对比
+1. Four dimension scores
+2. The overall score
+3. The issue list
+4. Severity levels
+5. Suggested fixes
+6. Before / after reupload comparison
 
 ### 3.7 `docs/api-contract.md`
 
-这个文件是给团队看的接口文档。
+This file is the team-facing interface document.
 
-它的职责是：
+Its responsibilities are:
 
-- 告诉每个人输入长什么样
-- 告诉前端输出长什么样
-- 告诉后端字段名不能乱改
+- Tell everyone what the input should look like
+- Tell the frontend what the output should look like
+- Tell the backend that field names should not be changed casually
 
-这个文件非常重要，等于你们团队的“协议说明书”。
+This file is very important because it acts as the team’s “contract manual.”
 
 ---
 
-## 4. 统一输入格式
+## 4. Unified Input Format
 
-MVP 阶段建议统一输入为：
+At the MVP stage, the recommended unified input is:
 
 ```python
 html: str
 ```
 
-原因：
+Reasons:
 
-- 最简单
-- 最稳定
-- 所有人都能处理
-- 方便后续从文件中读取
+- It is the simplest option
+- It is the most stable option
+- Everyone can handle it
+- It is convenient for later file-based loading
 
-不建议第一版就有人吃：
+It is not recommended in the first version for different people to consume:
 
-- 文件路径
-- URL
-- DOM 对象
-- PDF
-- 图片
+- File paths
+- URLs
+- DOM objects
+- PDFs
+- Images
 
-因为这会让四个人写出来的模块完全不统一。
+because that would make the four modules completely inconsistent.
 
 ---
 
-## 5. 统一函数接口
+## 5. Unified Function Interface
 
-建议四个 analyzer 都采用同样的函数签名：
+It is recommended that all four analyzers use the same function signature:
 
 ```python
 def analyze_readability(html: str) -> dict:
     ...
 ```
 
-其他三个模块同理：
+The other three modules follow the same pattern:
 
 ```python
 def analyze_visual(html: str) -> dict:
@@ -241,20 +241,20 @@ def analyze_consistency(html: str) -> dict:
     ...
 ```
 
-这样做的好处：
+Benefits of this approach:
 
-- `main.py` 很容易调用
-- 每个人写法统一
-- 调试方便
-- 明天合并最稳
+- `main.py` can call them easily
+- Everyone follows a consistent implementation style
+- Debugging is easier
+- Tomorrow’s merge will be much safer
 
 ---
 
-## 6. 统一输出数据结构
+## 6. Unified Output Data Structure
 
-### 6.1 每个维度统一返回格式
+### 6.1 Per-Dimension Return Format
 
-每个 analyzer 都必须返回：
+Each analyzer must return:
 
 ```json
 {
@@ -263,12 +263,12 @@ def analyze_consistency(html: str) -> dict:
   "issues": [
     {
       "rule_id": "RD-1",
-      "title": "平均句长过长",
+      "title": "Average sentence length is too long",
       "severity": "major",
       "base_penalty": 3,
       "penalty": 6,
-      "description": "平均句长超过 20 个词，增加阅读负担。",
-      "suggestion": "将长句拆成更短的句子。",
+      "description": "Average sentence length exceeds 20 words and increases reading burden.",
+      "suggestion": "Split long sentences into shorter ones.",
       "evidence": {
         "average_sentence_length": 24.1
       }
@@ -277,13 +277,13 @@ def analyze_consistency(html: str) -> dict:
 }
 ```
 
-### 6.2 字段说明
+### 6.2 Field Definitions
 
 #### `dimension`
 
-表示当前结果属于哪个维度。
+Indicates which dimension the result belongs to.
 
-固定值：
+Allowed values:
 
 - `Readability`
 - `Visual Complexity`
@@ -292,7 +292,7 @@ def analyze_consistency(html: str) -> dict:
 
 #### `score`
 
-当前维度的分数，范围固定为：
+The score for the current dimension, constrained to:
 
 ```text
 0 - 100
@@ -300,19 +300,19 @@ def analyze_consistency(html: str) -> dict:
 
 #### `issues`
 
-当前维度检测到的问题列表。
+The list of issues detected for the current dimension.
 
-如果没有问题，也必须返回空数组：
+If there are no issues, it must still return an empty array:
 
 ```json
 "issues": []
 ```
 
-### 6.3 单条 issue 字段说明
+### 6.3 Issue Field Definitions
 
 #### `rule_id`
 
-规则编号，例如：
+The rule identifier, for example:
 
 - `RD-1`
 - `VC-2`
@@ -321,37 +321,37 @@ def analyze_consistency(html: str) -> dict:
 
 #### `title`
 
-问题标题，用于 dashboard 直接显示。
+The issue title shown directly in the dashboard.
 
-例如：
+For example:
 
-- `平均句长过长`
-- `首屏元素过多`
-- `存在自动播放媒体`
+- `Average sentence length is too long`
+- `Too many elements on the first screen`
+- `Autoplay media`
 
 #### `severity`
 
-严重程度，必须统一为这三个值之一：
+The severity level, which must be one of:
 
 - `minor`
 - `major`
 - `critical`
 
-不允许自己发明别的写法。
+No other custom values should be introduced.
 
 #### `base_penalty`
 
-规则基础扣分，例如 `3` 或 `4`。
+The base deduction for the rule, such as `3` or `4`.
 
 #### `penalty`
 
-最终扣分，按统一规则计算：
+The final deduction, calculated using the unified rule:
 
 ```text
 Penalty = Base Penalty * Severity Multiplier
 ```
 
-建议系数：
+Recommended multipliers:
 
 - `minor = 1`
 - `major = 2`
@@ -359,24 +359,24 @@ Penalty = Base Penalty * Severity Multiplier
 
 #### `description`
 
-解释为什么这是问题。
+Explains why the issue matters.
 
-这个字段是给用户看的，不是给程序看的。
+This field is intended for users, not for the program itself.
 
 #### `suggestion`
 
-具体修改建议。
+A specific fix recommendation.
 
-例如：
+For example:
 
-- `将按钮文案改成更具体的动作词`
-- `减少主按钮数量，只保留一个主 CTA`
+- `Replace the button label with a more specific action`
+- `Reduce the number of primary buttons and keep only one main CTA`
 
 #### `evidence`
 
-放检测出来的证据数据。
+Stores supporting evidence detected by the rule.
 
-例如：
+For example:
 
 ```json
 {
@@ -384,7 +384,7 @@ Penalty = Base Penalty * Severity Multiplier
 }
 ```
 
-或者：
+or:
 
 ```json
 {
@@ -392,17 +392,17 @@ Penalty = Base Penalty * Severity Multiplier
 }
 ```
 
-这个字段的作用是：
+This field helps with:
 
-- 让问题更可解释
-- 方便调试
-- 方便之后做高亮定位
+- Better explainability
+- Easier debugging
+- Later support for highlight positioning
 
 ---
 
-## 7. 总接口返回结构
+## 7. Overall API Response Structure
 
-`main.py` 最终应该返回如下结构：
+`main.py` should ultimately return:
 
 ```json
 {
@@ -434,40 +434,40 @@ Penalty = Base Penalty * Severity Multiplier
 }
 ```
 
-### 字段说明
+### Field Definitions
 
 #### `overall_score`
 
-最终总分。
+The final overall score.
 
 #### `weighted_average`
 
-四维加权平均分。
+The weighted average across the four dimensions.
 
 #### `min_dimension_score`
 
-四个维度中的最低分。
+The lowest score among the four dimensions.
 
 #### `dimensions`
 
-四个 analyzer 的结果数组。
+The array containing the results of the four analyzers.
 
 ---
 
-## 8. 统一评分规则
+## 8. Unified Scoring Rules
 
-### 8.1 维度权重
+### 8.1 Dimension Weights
 
-统一使用：
+Use the following unified weights:
 
-| 维度 | 权重 |
+| Dimension | Weight |
 | --- | --- |
 | Visual Complexity | 30% |
 | Readability | 25% |
 | Interaction & Distraction | 25% |
 | Consistency | 20% |
 
-### 8.2 最终总分公式
+### 8.2 Final Overall Score Formula
 
 ```text
 Weighted Average
@@ -481,132 +481,132 @@ Final Score
 + 0.5 * weighted_average
 ```
 
-### 8.3 为什么要统一放在 `scoring.py`
+### 8.3 Why This Must Be Centralised in `scoring.py`
 
-因为如果四个人各自算总分，很容易出现：
+If four different people calculate the overall score separately, it is easy to end up with:
 
-- 每个人用的权重不一样
-- 每个人 severity 系数不一样
-- 前端展示和后端结果不一致
+- Different weights
+- Different severity multipliers
+- Mismatches between frontend display and backend results
 
-所以：
+Therefore:
 
-- analyzer 只负责找问题
-- `scoring.py` 统一负责算分
-
----
-
-## 9. 四个人分别做什么
-
-### 9.1 Readability 负责人
-
-负责实现：
-
-- `RD-1` 平均句长 > 20
-- `RD-2` 段落 > 4 句
-- `RD-3` vague button text
-
-输出必须符合统一格式。
-
-### 9.2 Visual 负责人
-
-负责实现：
-
-- `VC-1` 首屏元素 > 12
-- `VC-2` 卡片密集 > 6 items
-- `VC-3` sidebar/banner 过多
-
-输出必须符合统一格式。
-
-### 9.3 Interaction 负责人
-
-负责实现：
-
-- `ID-1` autoplay
-- `ID-2` 动画元素 > 2
-- `ID-3` CTA > 2
-
-输出必须符合统一格式。
-
-### 9.4 Consistency 负责人
-
-负责实现：
-
-- `CS-1` heading 结构断层
-- `CS-2` 无 breadcrumb / progress
-
-输出必须符合统一格式。
+- The analyzers only find issues
+- `scoring.py` is solely responsible for score calculation
 
 ---
 
-## 10. 推荐开发顺序
+## 9. What Each Person Should Build
 
-### 今天先完成
+### 9.1 Readability Owner
 
-1. 确定目录结构
-2. 确定 `schemas.py`
-3. 确定 analyzer 输入输出格式
-4. 确定 `scoring.py` 公式
-5. 确定 sample html
+Responsible for:
 
-### 今天晚上每个人本地开发
+- `RD-1` Average sentence length > 20
+- `RD-2` Paragraph > 4 sentences
+- `RD-3` Vague button text
 
-每个人只做自己的 analyzer，不碰别人模块。
+The output must follow the unified format.
 
-### 明天合并顺序
+### 9.2 Visual Owner
 
-1. 先合并公共文件
+Responsible for:
+
+- `VC-1` First-screen elements > 12
+- `VC-2` Dense cards > 6 items
+- `VC-3` Too many sidebars or banners
+
+The output must follow the unified format.
+
+### 9.3 Interaction Owner
+
+Responsible for:
+
+- `ID-1` Autoplay
+- `ID-2` Animated elements > 2
+- `ID-3` CTA count > 2
+
+The output must follow the unified format.
+
+### 9.4 Consistency Owner
+
+Responsible for:
+
+- `CS-1` Heading structure gap
+- `CS-2` Missing breadcrumb / progress
+
+The output must follow the unified format.
+
+---
+
+## 10. Recommended Development Order
+
+### Complete Today First
+
+1. Confirm the directory structure
+2. Confirm `schemas.py`
+3. Confirm analyzer input/output formats
+4. Confirm the formula in `scoring.py`
+5. Confirm the sample HTML files
+
+### Local Development Tonight
+
+Each person should implement only their own analyzer and avoid changing other people’s modules.
+
+### Merge Order Tomorrow
+
+1. Merge the shared files first
    - `schemas.py`
    - `scoring.py`
    - `main.py`
-2. 再逐个接入四个 analyzer
-3. 最后前端接统一接口
+2. Integrate the four analyzers one by one
+3. Connect the frontend to the unified API last
 
 ---
 
-## 11. Git 协作建议
+## 11. Git Collaboration Suggestions
 
-每个人一个分支：
+Each person should use one branch:
 
 - `feature/readability`
 - `feature/visual`
 - `feature/interaction`
 - `feature/consistency`
 
-不要四个人同时改主分支。
+Do not let four people edit the main branch at the same time.
 
-建议流程：
+Suggested workflow:
 
-1. 先建立公共主分支
-2. 每个人在自己分支写代码
-3. 明天由一个人负责集成
-4. 集成完成后统一测试
-
----
-
-## 12. 最低协作规则
-
-这 6 条必须统一：
-
-1. 输入统一为 `html: str`
-2. 输出字段名必须完全一致
-3. `score` 范围统一为 `0-100`
-4. `severity` 只能是 `minor / major / critical`
-5. 总分只能由 `main.py + scoring.py` 统一计算
-6. 前端只接一个总接口，不直接对接四个 analyzer
+1. Create the shared main branch first
+2. Each person writes code on their own branch
+3. One person is responsible for integration tomorrow
+4. Run unified testing after integration is finished
 
 ---
 
-## 13. 给组员的一句话总结
+## 12. Minimum Collaboration Rules
 
-我们不是四个人各写各的“独立项目”，而是在同一个协议下各做一个分析模块。
+These six rules must be unified:
 
-所以最重要的不是谁先写规则，而是先统一：
+1. Input must always be `html: str`
+2. Output field names must match exactly
+3. The `score` range must always be `0-100`
+4. `severity` may only be `minor / major / critical`
+5. The overall score may only be calculated through `main.py + scoring.py`
+6. The frontend should consume one unified endpoint rather than four separate analyzer endpoints
 
-- 输入
-- 输出
-- 字段名
-- 分数算法
-- 总接口
+---
 
-只要这五件事统一，明天合并就会非常顺。否则每个人都写完了，代码也可能拼不起来。
+## 13. One-Sentence Summary for the Team
+
+We are not building four separate mini-projects. We are building four analysis modules under one shared contract.
+
+So the most important thing is not who writes rules first. The most important thing is to align first on:
+
+- Input
+- Output
+- Field names
+- The scoring algorithm
+- The overall API
+
+As long as those five things are aligned, tomorrow’s merge will be much smoother. Otherwise, everyone may finish their own code and still end up with pieces that do not fit together.

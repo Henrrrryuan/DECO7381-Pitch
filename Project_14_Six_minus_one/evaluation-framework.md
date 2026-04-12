@@ -1,57 +1,57 @@
-# 认知无障碍评估框架
+# Cognitive Accessibility Evaluation Framework
 
-本文档用于支撑 **Project 14: Cognitive Accessibility Assistant for Web Content** 的方法设计、评分逻辑、MVP 范围与评估方案。
+This document supports the method design, scoring logic, MVP scope, and evaluation plan for **Project 14: Cognitive Accessibility Assistant for Web Content**.
 
-本项目的产品定位为：
+The product is positioned as follows:
 
-- 主要用户：开发者、设计师
-- 最终受益者：认知障碍者、神经多样性用户、存在沟通或理解困难的用户
-- 产品形态：先做自动分析与解释，再做可选的用户验证
-
----
-
-## 1. 项目目标
-
-根据 brief，本项目需要完成以下几件事：
-
-1. 分析网页内容中的认知无障碍风险，包括语言复杂度、布局密度、间距、动画使用和视觉层级
-2. 提供一个可解释的 dashboard 或报告界面，说明问题、影响和改进建议
-3. 将分析结果映射到 WCAG / COGA 与 ISO 9241-11 等标准
-4. 提供一个结构化评估方案，证明工具能提升清晰度、理解度或可用性
-
-结合项目定位，我们将系统设计为：
-
-- 前台采用 4 个开发者易理解的评分维度
-- 后台使用规则检测和解释机制完成评分
-- 用户测试作为验证层，不作为每次开发迭代的必经步骤
+- Primary users: developers and designers
+- Beneficiary users: people with cognitive disabilities, neurodivergent users, and users with communication or comprehension difficulties
+- Product form: automated analysis and explanation first, with optional user validation afterward
 
 ---
 
-## 2. 四个核心维度
+## 1. Project Goals
 
-本项目最终对外展示的四个维度为：
+According to the brief, this project should achieve the following:
+
+1. Analyse cognitive accessibility risks in web content, including language complexity, layout density, spacing, animation usage, and visual hierarchy
+2. Provide an interpretable dashboard or report interface that explains issues, impact, and improvement suggestions
+3. Map analysis results to WCAG / COGA and ISO 9241-11 related standards
+4. Provide a structured evaluation plan showing that the tool can improve clarity, comprehension, or usability
+
+Based on this positioning, we designed the system as follows:
+
+- The presentation layer uses four developer-friendly scoring dimensions
+- The backend uses rule-based detection and explanation mechanisms to produce scores
+- User testing is treated as a validation layer, not a required step in every development iteration
+
+---
+
+## 2. Four Core Dimensions
+
+The project ultimately presents four dimensions to end users:
 
 1. `Visual Complexity`
 2. `Readability`
 3. `Interaction & Distraction`
 4. `Consistency`
 
-它们与 brief 的对应关系如下：
+Their relationship to the brief is:
 
-| 维度 | brief 对应内容 | 核心关注点 |
+| Dimension | Related brief topic | Core concern |
 | --- | --- | --- |
-| Visual Complexity | layout density, spacing, visual hierarchy | 页面是否拥挤、视觉层级是否清晰、信息是否容易扫描 |
-| Readability | language complexity, clarity, comprehension | 文本是否容易阅读、理解、执行 |
-| Interaction & Distraction | animation usage, cognitive effort, interruptions | 页面是否分散注意力、交互是否增加额外认知负担 |
-| Consistency | structural organisation, navigation patterns | 页面结构、导航、标签和流程是否稳定可预测 |
+| Visual Complexity | layout density, spacing, visual hierarchy | Whether the page feels crowded, whether hierarchy is clear, and whether information is easy to scan |
+| Readability | language complexity, clarity, comprehension | Whether text is easy to read, understand, and act on |
+| Interaction & Distraction | animation usage, cognitive effort, interruptions | Whether the page distracts users or adds unnecessary cognitive effort through interaction |
+| Consistency | structural organisation, navigation patterns | Whether the structure, navigation, labels, and flow are stable and predictable |
 
 ---
 
-## 3. 理论来源与映射
+## 3. Theoretical Sources and Mapping
 
-本框架参考 `inclusive-design-skills` 仓库中的认知无障碍方法，但不直接照搬其分类，而是将其作为底层分析因素使用。
+This framework draws on cognitive accessibility methods referenced in the `inclusive-design-skills` repository, but does not copy its categories directly. Instead, those ideas are used as underlying analytical factors.
 
-来源框架包括：
+The source concepts include:
 
 1. cognitive load
 2. plain language
@@ -60,173 +60,173 @@
 5. memory load
 6. error prevention and recovery
 
-映射关系如下：
+The mapping is:
 
-| 来源框架 | 主要映射到 | 原因 |
+| Source concept | Mainly mapped to | Reason |
 | --- | --- | --- |
-| visual complexity / information density | Visual Complexity | 直接对应布局密度、拥挤程度、视觉扫描负担 |
-| plain language / reading complexity | Readability | 直接对应文字理解难度 |
-| focus and attention | Visual Complexity / Interaction & Distraction | 既影响视觉清晰度，也影响注意力控制 |
-| wayfinding/navigation | Consistency / Visual Complexity | 同时影响方向感与结构清晰度 |
-| memory load | Consistency / Interaction & Distraction | 影响跨页面记忆负担与流程摩擦 |
-| error prevention/recovery | Interaction & Distraction / Consistency | 影响交互负担与系统可预测性 |
+| visual complexity / information density | Visual Complexity | Directly relates to layout density, crowding, and visual scanning burden |
+| plain language / reading complexity | Readability | Directly relates to text comprehension difficulty |
+| focus and attention | Visual Complexity / Interaction & Distraction | Influences both visual clarity and attention control |
+| wayfinding/navigation | Consistency / Visual Complexity | Affects orientation and structural clarity |
+| memory load | Consistency / Interaction & Distraction | Affects cross-page memory load and flow friction |
+| error prevention/recovery | Interaction & Distraction / Consistency | Affects interaction burden and system predictability |
 
 ---
 
-## 4. 最终 MVP 范围
+## 4. Final MVP Scope
 
-为了保证项目既有研究深度，又能在课程周期内实现，MVP 范围锁定如下。
+To ensure that the project has both research depth and realistic implementation scope within the course timeframe, the MVP scope is defined as follows.
 
-### 4.1 必须实现
+### 4.1 Must-Have Features
 
-1. 文件上传与解析
-2. 四个维度评分
-3. 总分计算
-4. 问题列表展示
-5. 每条问题的原因解释
-6. 对应修改建议
-7. reupload 后前后对比
-8. 基础 standards mapping
+1. File upload and parsing
+2. Four-dimension scoring
+3. Overall score calculation
+4. Issue list display
+5. Explanation for each issue
+6. Suggested fixes for each issue
+7. Reupload comparison before and after changes
+8. Basic standards mapping
 
-### 4.2 建议实现
+### 4.2 Recommended Features
 
-1. 点击问题后高亮对应页面区域
-2. 全文朗读或阅读高亮预览
-3. 更细的分维度 drill-down
-4. AI 辅助解释或改写建议
+1. Highlight the corresponding page region when an issue is selected
+2. Full-text read-aloud or reading highlight preview
+3. More detailed drill-down by dimension
+4. AI-assisted explanations or rewrite suggestions
 
-### 4.3 不纳入 MVP 主流程
+### 4.3 Excluded from the MVP Main Flow
 
-以下内容可以保留在报告中作为 future work：
+The following can be described as future work in the report:
 
-1. 眼动追踪实时接入评分
-2. 每次修改后都进行真实用户测试
-3. 大规模相关性统计验证
-4. 多格式输入同时支持，如 PDF、截图、URL、Figma 导出
-
----
-
-## 5. MVP 最终规则集
-
-本项目最终采用 11 条规则，分布在 4 个维度中。
-
-### 5.1 Readability（3 条）
-
-| 规则编号 | 规则 | 阈值 |
-| --- | --- | --- |
-| RD-1 | 平均句长过长 | 平均句长 `> 20` 个词 |
-| RD-2 | 段落过长 | 单段 `> 4` 句 |
-| RD-3 | 按钮文案模糊 | 出现 `Next`、`Click here` 等模糊文案 |
-
-### 5.2 Visual Complexity（3 条）
-
-| 规则编号 | 规则 | 阈值 |
-| --- | --- | --- |
-| VC-1 | 首屏元素过多 | 首屏可见重点元素 `> 12` |
-| VC-2 | 卡片或内容块过密 | 同一区域内卡片/项目 `> 6` |
-| VC-3 | sidebar / banner 过多 | 存在过多侧栏、横幅、悬浮干扰区 |
-
-### 5.3 Interaction & Distraction（3 条）
-
-| 规则编号 | 规则 | 阈值 |
-| --- | --- | --- |
-| ID-1 | 自动播放媒体 | 存在 autoplay 音频或视频 |
-| ID-2 | 动画元素过多 | 同一视口中动画元素 `> 2` |
-| ID-3 | CTA 竞争 | 同一区域主操作按钮 `> 2` |
-
-### 5.4 Consistency（2 条）
-
-| 规则编号 | 规则 | 阈值 |
-| --- | --- | --- |
-| CS-1 | heading 结构断层 | 标题层级跳跃或结构不连贯 |
-| CS-2 | 缺少 breadcrumb / progress | 多层级或多步骤流程中没有当前位置提示 |
+1. Real-time eye-tracking integrated directly into scoring
+2. Real user testing after every design change
+3. Large-scale statistical correlation validation
+4. Multi-format input support such as PDF, screenshots, live URLs, or Figma exports
 
 ---
 
-## 6. 每个维度的检测重点
+## 5. Final MVP Rule Set
+
+The MVP uses 11 rules distributed across the 4 dimensions.
+
+### 5.1 Readability (3 rules)
+
+| Rule ID | Rule | Threshold |
+| --- | --- | --- |
+| RD-1 | Average sentence length is too long | Average sentence length `> 20` words |
+| RD-2 | Paragraph is too long | A single paragraph `> 4` sentences |
+| RD-3 | Button or link label is vague | Vague labels such as `Next` or `Click here` appear |
+
+### 5.2 Visual Complexity (3 rules)
+
+| Rule ID | Rule | Threshold |
+| --- | --- | --- |
+| VC-1 | Too many elements on the first screen | Visible key elements on the first screen `> 12` |
+| VC-2 | Cards or content blocks are too dense | Cards or items in the same region `> 6` |
+| VC-3 | Too many sidebars or banners | Excessive sidebars, banners, or floating distractions are present |
+
+### 5.3 Interaction & Distraction (3 rules)
+
+| Rule ID | Rule | Threshold |
+| --- | --- | --- |
+| ID-1 | Autoplay media | Autoplay audio or video is present |
+| ID-2 | Too many animated elements | Animated elements in the same viewport `> 2` |
+| ID-3 | Competing CTAs | Primary action buttons in the same region `> 2` |
+
+### 5.4 Consistency (2 rules)
+
+| Rule ID | Rule | Threshold |
+| --- | --- | --- |
+| CS-1 | Heading structure gap | Heading levels jump or the structure is not continuous |
+| CS-2 | Missing breadcrumb or progress indicator | No current-location cue in a multi-level or multi-step flow |
+
+---
+
+## 6. Detection Focus for Each Dimension
 
 ### 6.1 Visual Complexity
 
-定义：
-页面是否过于拥挤、层级不清、信息过多，导致用户难以快速判断“先看哪里”。
+Definition:  
+Whether the page is too crowded, has unclear hierarchy, or contains too much information for users to quickly decide where to look first.
 
-检测重点：
+Detection focus:
 
-- 首屏中同时竞争注意力的元素数量
-- 单一区域内内容块是否过密
-- 侧栏、横幅、悬浮组件是否过多
+- The number of elements competing for attention on the first screen
+- Whether content blocks are too dense within a single region
+- Whether there are too many sidebars, banners, or floating components
 
-高风险表现：
+Typical high-risk patterns:
 
-- 首页一打开就出现大量按钮、卡片、横幅、浮窗
-- 用户无法快速判断主内容区域
-- 非主任务内容占据过多视觉空间
+- A homepage that opens with many buttons, cards, banners, or popups at once
+- Users cannot quickly identify the main content area
+- Non-primary-task content takes up too much visual space
 
 ### 6.2 Readability
 
-定义：
-文本是否足够简洁、易懂、可快速理解。
+Definition:  
+Whether text is concise, understandable, and easy to grasp quickly.
 
-检测重点：
+Detection focus:
 
-- 句子是否太长
-- 段落是否太密
-- 按钮或链接文案是否模糊
+- Whether sentences are too long
+- Whether paragraphs are too dense
+- Whether button or link labels are vague
 
-高风险表现：
+Typical high-risk patterns:
 
-- 用户需要反复阅读同一句话
-- 说明文字过长导致理解缓慢
-- 按钮名字不能直接说明下一步动作
+- Users need to reread the same sentence repeatedly
+- Explanation text is too long and slows understanding
+- Button labels do not clearly state the next action
 
 ### 6.3 Interaction & Distraction
 
-定义：
-页面是否通过动画、自动播放或竞争操作增加认知负担。
+Definition:  
+Whether the page increases cognitive burden through animation, autoplay, or competing actions.
 
-检测重点：
+Detection focus:
 
-- autoplay 媒体
-- 动画元素数量
-- CTA 是否过多
+- Autoplay media
+- The number of animated elements
+- Whether there are too many competing CTAs
 
-高风险表现：
+Typical high-risk patterns:
 
-- 页面存在自动播放声音或视频
-- 同一屏里多个按钮都像主按钮
-- 页面有多个动态元素同时争夺注意力
+- The page contains autoplay sound or video
+- Multiple buttons on the same screen all appear to be primary actions
+- Several moving elements compete for attention at the same time
 
 ### 6.4 Consistency
 
-定义：
-页面结构、导航和流程提示是否稳定、可预测。
+Definition:  
+Whether the page structure, navigation, and progress cues are stable and predictable.
 
-检测重点：
+Detection focus:
 
-- heading 层级是否连续
-- 是否存在 breadcrumb 或 progress
+- Whether heading levels are continuous
+- Whether breadcrumbs or progress indicators are present
 
-高风险表现：
+Typical high-risk patterns:
 
-- 标题层级跳跃，页面结构难以理解
-- 多步骤任务里用户不知道自己现在在哪一步
+- Heading levels jump, making the page structure hard to understand
+- In a multi-step task, users do not know which step they are currently on
 
 ---
 
-## 7. 评分模型
+## 7. Scoring Model
 
-### 7.1 维度权重
+### 7.1 Dimension Weights
 
-建议使用以下权重：
+The recommended weights are:
 
-| 维度 | 权重 |
+| Dimension | Weight |
 | --- | --- |
 | Visual Complexity | 30% |
 | Readability | 25% |
 | Interaction & Distraction | 25% |
 | Consistency | 20% |
 
-### 7.2 加权平均分
+### 7.2 Weighted Average Score
 
 ```text
 Weighted Average Score
@@ -236,154 +236,154 @@ Weighted Average Score
 + Consistency * 0.20
 ```
 
-### 7.3 最终总分
+### 7.3 Final Overall Score
 
 ```text
 Final Score
-= 0.5 * 最低维度分
-+ 0.5 * 加权平均分
+= 0.5 * min_dimension_score
++ 0.5 * weighted_average
 ```
 
-设计理由：
+Rationale:
 
-- 单纯平均分会掩盖严重短板
-- 认知无障碍具有明显“短板效应”
-- 只要某一维度非常差，整体体验仍可能很差
+- A plain average can hide severe weaknesses
+- Cognitive accessibility has a strong weakest-link effect
+- If one dimension performs very poorly, the overall experience can still be poor even when the others score well
 
-例如：
+For example:
 
 - Visual Complexity = 90
 - Readability = 88
 - Interaction & Distraction = 85
 - Consistency = 42
 
-此时如果只做平均，系统看起来仍然“还可以”；但实际上用户可能会因为导航或结构不稳定而持续迷失。  
-因此最终分数必须让最弱维度真实影响结果。
+If we only use an average, the system may still appear acceptable. In practice, however, users may remain disoriented because of unstable navigation or structure.  
+Therefore, the final score must allow the weakest dimension to meaningfully affect the result.
 
 ---
 
-## 8. 惩罚机制
+## 8. Penalty Mechanism
 
-### 8.1 简化版惩罚公式
+### 8.1 Simplified Penalty Formula
 
-MVP 使用简化公式：
+The MVP uses the following simplified formula:
 
 ```text
 Penalty = Base Penalty * Severity
 ```
 
-其中：
+Where:
 
-- `Base Penalty`：规则基础扣分
-- `Severity`：严重程度系数
+- `Base Penalty`: the base deduction for the rule
+- `Severity`: the severity multiplier
 
-建议严重程度系数如下：
+The recommended severity multipliers are:
 
-| 严重程度 | 系数 | 含义 |
+| Severity | Multiplier | Meaning |
 | --- | --- | --- |
-| Minor | 1 | 小范围、单点问题 |
-| Major | 2 | 明显增加认知负担 |
-| Critical | 3 | 可能直接影响理解或任务完成 |
+| Minor | 1 | Small-scale or isolated issue |
+| Major | 2 | Clearly increases cognitive burden |
+| Critical | 3 | May directly affect understanding or task completion |
 
-### 8.2 建议的基础扣分
+### 8.2 Suggested Base Penalties
 
-MVP 中可以统一先设为：
+For the MVP, we can start with:
 
-- 普通规则：`Base Penalty = 3`
-- 严重规则：`Base Penalty = 4`
+- Standard rules: `Base Penalty = 3`
+- More serious rules: `Base Penalty = 4`
 
-示例：
+Example:
 
 ```text
-自动播放媒体
+Autoplay media
 Base Penalty = 4
 Severity = Major = 2
 Penalty = 8
 ```
 
-### 8.3 为什么要加严重程度
+### 8.3 Why Severity Matters
 
-如果没有 severity：
+Without severity:
 
-- 一个轻微问题
-- 一个严重问题
+- A minor issue
+- A serious issue
 
-可能会被系统当作同样程度的扣分，这在逻辑上不合理。
+could be treated as equivalent deductions, which is not logically reasonable.
 
-加入 severity 后：
+By adding severity:
 
-- 评分更符合真实影响
-- dashboard 更容易解释
-- 用户测试时也更容易与真实体验对应
+- The scoring better reflects real impact
+- The dashboard becomes easier to explain
+- It becomes easier to compare the score with real user experience during testing
 
 ---
 
-## 9. 维度分数计算方式
+## 9. Dimension Score Calculation
 
-推荐流程：
+Recommended process:
 
-1. 检测每条规则是否命中
-2. 判断命中的严重程度
-3. 根据 `Penalty = Base * Severity` 计算扣分
-4. 将该维度所有扣分相加
-5. 用 `100 - 总扣分` 得到维度分数
-6. 分数最低不低于 0
+1. Detect whether each rule is triggered
+2. Determine the severity of each triggered rule
+3. Calculate the deduction using `Penalty = Base * Severity`
+4. Sum all deductions for the dimension
+5. Use `100 - total_penalty` to get the dimension score
+6. Clamp the lowest score at 0
 
 ```text
 Dimension Score = max(0, 100 - Sum(Penalties))
 ```
 
-MVP 阶段不强制实现复杂去重模型，但需要在文档中说明：
+At the MVP stage, a complex de-duplication model is not required, but the documentation should state:
 
-> 当前版本采用简化惩罚模型，复杂规则重叠与归一化机制保留为后续优化方向。
+> The current version uses a simplified penalty model. More advanced rule overlap handling and normalization remain future optimisation directions.
 
 ---
 
-## 10. 边界与限制
+## 10. Boundaries and Limitations
 
-为了保证项目范围合理，需要明确以下边界。
+To keep the project scope realistic, the following boundaries should be clearly stated.
 
-### 10.1 输入边界
+### 10.1 Input Boundaries
 
-MVP 建议优先支持一种主要输入形式，例如：
+For the MVP, it is recommended to support one main input type first, such as:
 
-- HTML 文件
-- 网页片段
+- HTML files
+- Webpage fragments
 
-不建议第一版同时支持：
+It is not recommended for the first version to support all of the following simultaneously:
 
 - PDF
-- 图片
-- URL 实时抓取
-- 多源文件混合分析
+- Images
+- Live URL fetching
+- Mixed multi-source analysis
 
-### 10.2 检测边界
+### 10.2 Detection Boundaries
 
-本系统检测的是 **认知负担代理指标**，不是对人类认知过程的完整建模。
+The system detects **proxy indicators of cognitive load**, not a full model of human cognition.
 
-也就是说：
+In other words:
 
-- 系统可以识别与认知负担相关的页面特征
-- 但不能声称自己“准确模拟用户大脑如何理解网页”
+- The system can recognise page features associated with cognitive burden
+- But it should not claim to accurately simulate how the human brain understands a webpage
 
-### 10.3 评分边界
+### 10.3 Scoring Boundaries
 
-本项目输出的是：
+The project outputs:
 
-- 开发决策支持分数
-- 认知无障碍启发式评分
+- decision-support scores for developers
+- heuristic cognitive accessibility scores
 
-而不是：
+rather than:
 
-- 医学诊断
-- 法律认证
-- 官方 WCAG 合规结论
+- medical diagnoses
+- legal certification
+- official WCAG compliance decisions
 
-### 10.4 用户测试边界
+### 10.4 User Testing Boundaries
 
-用户测试用于验证模型是否有帮助，不用于宣称大规模普适性结论。
+User testing is used to validate whether the model is helpful, not to claim large-scale universal findings.
 
-因此报告建议使用如下表述：
+Therefore, the report should prefer wording such as:
 
 - pilot evaluation
 - preliminary evidence
@@ -391,126 +391,126 @@ MVP 建议优先支持一种主要输入形式，例如：
 
 ---
 
-## 11. Dashboard 输出结构
+## 11. Dashboard Output Structure
 
-dashboard 至少应包含以下内容：
+At a minimum, the dashboard should include:
 
-1. 四个维度分数
-2. 最终总分
-3. 问题列表
-4. 每条问题的严重程度
-5. 每条问题的原因解释
-6. 每条问题的修改建议
-7. reupload 前后对比结果
+1. Four dimension scores
+2. The final overall score
+3. An issue list
+4. The severity of each issue
+5. An explanation of why each issue matters
+6. A suggested fix for each issue
+7. Comparison results before and after reupload
 
-如果时间允许，建议加上：
+If time allows, it is recommended to add:
 
-1. 点击问题后高亮页面对应区域
-2. 每个问题对应的 brief / WCAG / COGA / ISO 标签
+1. Highlighting of the corresponding page region when an issue is selected
+2. Standard tags for each issue such as brief / WCAG / COGA / ISO
 
-建议单条问题卡片结构如下：
+A suggested issue card structure is:
 
 ```text
-问题：同一区域出现 3 个主操作按钮
-维度：Interaction & Distraction
-严重程度：Major
-影响：增加决策负担，削弱用户对主任务的注意力集中
-建议：保留 1 个主按钮，其余改为次要按钮或文本链接
+Issue: 3 primary action buttons appear in the same region
+Dimension: Interaction & Distraction
+Severity: Major
+Impact: Increases decision burden and weakens focus on the main task
+Suggestion: Keep 1 primary button and convert the others into secondary buttons or text links
 ```
 
 ---
 
-## 12. 标准映射
+## 12. Standards Mapping
 
-### 12.1 WCAG / COGA 映射
+### 12.1 WCAG / COGA Mapping
 
-| 维度 | 对应标准含义 |
+| Dimension | Related meaning in standards |
 | --- | --- |
-| Visual Complexity | 清晰结构、减少视觉干扰、支持内容扫描 |
-| Readability | 可理解语言、plain language、降低阅读负担 |
-| Interaction & Distraction | 减少自动播放、无关动画、打断性元素 |
-| Consistency | 一致导航、一致识别、可预测的交互与流程 |
+| Visual Complexity | Clear structure, reduced visual distraction, and support for content scanning |
+| Readability | Understandable language, plain language, and reduced reading burden |
+| Interaction & Distraction | Reduced autoplay, irrelevant animation, and interruptive elements |
+| Consistency | Consistent navigation, consistent identification, and predictable interaction and flow |
 
-### 12.2 ISO 9241-11 映射
+### 12.2 ISO 9241-11 Mapping
 
-| ISO 因素 | 本项目对应解释 |
+| ISO factor | Interpretation in this project |
 | --- | --- |
-| Effectiveness | 用户能更准确理解页面信息并完成任务 |
-| Efficiency | 用户理解和操作所需时间减少 |
-| Satisfaction | 用户主观上感觉更清晰、更轻松、更少挫败 |
+| Effectiveness | Users can understand page information more accurately and complete tasks successfully |
+| Efficiency | The time required to understand and operate the page is reduced |
+| Satisfaction | Users subjectively feel that the experience is clearer, easier, and less frustrating |
 
 ---
 
-## 13. Evaluation 方案
+## 13. Evaluation Plan
 
-### 13.1 最小可行评估方案
+### 13.1 Minimum Viable Evaluation
 
-MVP 建议采用一个小规模 before / after 评估：
+For the MVP, a small before / after evaluation is recommended:
 
-- 样本数：5 人
-- 对比方式：修改前版本 vs 修改后版本
-- 目标：验证工具是否帮助页面变得更容易理解、更快完成任务
+- Sample size: 5 participants
+- Comparison method: original version vs improved version
+- Goal: verify whether the tool helps pages become easier to understand and faster to complete
 
-### 13.2 最小问题设置
+### 13.2 Minimum Question Set
 
-可以只问两个核心问题：
+Two core questions are sufficient:
 
-1. 是否更容易理解？
-2. 是否更快完成？
+1. Is the page easier to understand?
+2. Is the task faster to complete?
 
-如果希望再稳一点，可以加：
+If a slightly stronger evaluation is needed, add:
 
-3. 是否更清晰？
-4. 是否更少分心？
+3. Is the page clearer?
+4. Is the page less distracting?
 
-### 13.3 建议指标
+### 13.3 Suggested Metrics
 
-| 指标 | 对应验证目标 |
+| Metric | Validation target |
 | --- | --- |
-| 完成任务时间 | Efficiency |
-| 理解题正确率 | Effectiveness |
-| 主观清晰度评分 | Satisfaction |
-| 主观容易程度评分 | Satisfaction / cognitive load |
+| Task completion time | Efficiency |
+| Comprehension question accuracy | Effectiveness |
+| Subjective clarity rating | Satisfaction |
+| Subjective ease rating | Satisfaction / cognitive load |
 
-### 13.4 推荐报告写法
+### 13.4 Recommended Reporting Language
 
-建议使用如下表述：
+Recommended wording:
 
-> 本项目通过一个小规模 pilot evaluation 比较修改前后页面在理解效率与主观清晰度上的差异，以提供该评分框架有效性的初步证据。
+> This project uses a small-scale pilot evaluation to compare the original and revised webpage versions in terms of comprehension efficiency and subjective clarity, providing preliminary evidence for the effectiveness of the scoring framework.
 
-如果你想写得再研究化一点，可以用：
+If a more research-oriented tone is desired:
 
-> 本评估关注系统评分与用户表现之间是否存在方向一致的变化趋势，而非在 MVP 阶段追求大规模统计显著性。
+> This evaluation focuses on whether the system score and user performance show directionally consistent changes, rather than aiming for large-scale statistical significance at the MVP stage.
 
 ---
 
 ## 14. Future Work
 
-以下内容可明确写入 future work，而不纳入第一版实现：
+The following items can be explicitly described as future work rather than included in the first implementation:
 
-1. 更复杂的规则分组与去重模型
-2. 跨页面、跨内容长度的归一化机制
-3. 眼动追踪数据与规则评分融合
-4. 大样本相关性研究
-5. 个性化认知障碍模式，如 ADHD / dyslexia / autism 定制建议
-6. 多格式输入支持，如 PDF、截图、URL 实时分析
-7. 浏览器插件化，支持边浏览边分析
+1. More advanced rule grouping and de-duplication models
+2. Normalisation across pages and content lengths
+3. Integration of eye-tracking data with rule-based scoring
+4. Large-sample correlation studies
+5. Personalised recommendations for different cognitive profiles such as ADHD, dyslexia, or autism
+6. Multi-format input support such as PDF, screenshots, or live URL analysis
+7. Browser-plugin support for in-context analysis during browsing
 
 ---
 
-## 15. 最终结论
+## 15. Final Conclusion
 
-本项目最终采用的策略是：
+The final strategy used in this project is:
 
-1. 用 4 个维度作为开发者可理解的展示层
-2. 用 11 条启发式规则作为 MVP 的检测核心
-3. 用 `Final = 0.5 * 最低维度分 + 0.5 * 加权平均分` 作为最终评分模型
-4. 用 `Penalty = Base * Severity` 实现可解释、可实现的扣分机制
-5. 用 before / after 的小规模用户评估作为初步验证
-6. 将眼动追踪和复杂统计验证保留为 future work
+1. Use four dimensions as a developer-friendly presentation layer
+2. Use 11 heuristic rules as the core MVP detection model
+3. Use `Final = 0.5 * min_dimension_score + 0.5 * weighted_average` as the overall scoring formula
+4. Use `Penalty = Base * Severity` to implement an explainable and feasible deduction mechanism
+5. Use a small before / after user evaluation as initial validation
+6. Keep eye-tracking and advanced statistical validation as future work
 
-这样可以同时满足三件事：
+This allows the project to satisfy three goals at the same time:
 
-- 能做出来
-- 能讲清楚
-- 能拿高分
+- It can be built
+- It can be explained clearly
+- It can score well academically
