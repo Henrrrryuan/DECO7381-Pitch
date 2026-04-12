@@ -784,6 +784,56 @@ input {
   margin-bottom: 24px;
 }
 
+.history-toolbar {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.history-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 520px);
+}
+
+.history-search-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.history-search-input {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.history-search-button {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.history-search-button:hover {
+  background: #f4f7fb;
+}
+
 .history-description,
 .docs-copy p {
   color: var(--muted);

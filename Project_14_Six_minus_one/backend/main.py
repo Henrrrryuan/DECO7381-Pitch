@@ -317,8 +317,11 @@ def get_sample(sample_name: str) -> dict[str, str]:
 
 
 @app.get("/history")
-def history(limit: int = Query(default=10, ge=1, le=50)) -> dict[str, Any]:
-    return list_history_runs(limit=limit).to_dict()
+def history(
+    limit: int = Query(default=10, ge=1, le=50),
+    query: str | None = Query(default=None),
+) -> dict[str, Any]:
+    return list_history_runs(limit=limit, query=query).to_dict()
 
 
 @app.get("/history/{run_id}")

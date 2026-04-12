@@ -129,23 +129,48 @@ def save_analysis_run(
     )
 
 
-def list_history_runs(limit: int = 10, db_path: Path | None = None) -> HistoryListResponse:
+def list_history_runs(
+    limit: int = 10,
+    *,
+    query: str | None = None,
+    db_path: Path | None = None,
+) -> HistoryListResponse:
+    normalized_query = (query or "").strip()
+
     with _connect(db_path) as connection:
-        rows = connection.execute(
-            """
-            SELECT
-                id,
-                created_at,
-                source_name,
-                overall_score,
-                weighted_average,
-                min_dimension_score
-            FROM analysis_runs
-            ORDER BY rowid DESC
-            LIMIT ?
-            """,
-            (limit,),
-        ).fetchall()
+        if normalized_query:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    created_at,
+                    source_name,
+                    overall_score,
+                    weighted_average,
+                    min_dimension_score
+                FROM analysis_runs
+                WHERE LOWER(source_name) LIKE LOWER(?)
+                ORDER BY rowid DESC
+                LIMIT ?
+                """,
+                (f"%{normalized_query}%", limit),
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    created_at,
+                    source_name,
+                    overall_score,
+                    weighted_average,
+                    min_dimension_score
+                FROM analysis_runs
+                ORDER BY rowid DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
 
     return HistoryListResponse(items=[_row_to_run_summary(row) for row in rows])
 
