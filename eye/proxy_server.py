@@ -206,7 +206,7 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local gaze tracker proxy server.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host. Default: 127.0.0.1")
-    parser.add_argument("--port", type=int, default=5500, help="Bind port. Default: 5500")
+    parser.add_argument("--port", type=int, default=5600, help="Bind port. Default: 5600")
     args = parser.parse_args()
 
     server = ThreadingHTTPServer((args.host, args.port), ProxyHandler)

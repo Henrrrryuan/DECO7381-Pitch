@@ -15,13 +15,13 @@ The tracker is powered by GazeCloudAPI.
 3. Start the local proxy server:
 
 ```powershell
-python proxy_server.py --port 5500
+python proxy_server.py --port 5600
 ```
 
 4. Open:
 
 ```text
-http://localhost:5500
+http://127.0.0.1:5600
 ```
 
 5. Before using the tracker, register the page origin you open in the browser:
@@ -30,7 +30,7 @@ http://localhost:5500
 https://api.gazerecorder.com/register/
 ```
 
-For example, if you open `http://localhost:5500`, register that origin first.
+For example, if you open `http://127.0.0.1:5600`, register that origin first.
 
 6. In the page:
 - Enter target URL (for example `https://example.com`)
@@ -41,7 +41,7 @@ For example, if you open `http://localhost:5500`, register that origin first.
 
 ## Notes
 
-- `localhost` is treated as a secure context for camera access in most browsers.
+- Local loopback origins such as `127.0.0.1` are typically treated as secure contexts for camera access in modern browsers.
 - GazeCloudAPI needs network access and a registered origin to start successfully.
 - Proxy mode improves iframe compatibility for many sites, but very dynamic/login-heavy pages can still behave differently.
 - Better lighting and keeping your face centered improve gaze accuracy.

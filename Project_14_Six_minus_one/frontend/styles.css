@@ -101,6 +101,10 @@ input {
   color: #fff;
 }
 
+.app-nav-links a.active-link {
+  color: #fff;
+}
+
 .nav-cta {
   padding: 10px 14px;
   border-radius: 10px;

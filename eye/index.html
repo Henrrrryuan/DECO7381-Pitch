@@ -3,16 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Local Gaze Focus Tracker</title>
+    <title>CogniLens Eye Tracking</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <header class="app-nav">
+      <div class="app-nav-inner">
+        <a class="app-brand" href="http://127.0.0.1:5500/index.html">
+          <span class="app-brand-mark">C</span>
+          <span class="app-brand-name">CogniLens</span>
+        </a>
+
+        <nav class="app-nav-links" aria-label="Primary">
+          <a class="active-link" href="http://127.0.0.1:5600/">Eye Tracking</a>
+          <a href="http://127.0.0.1:5500/history.html">History</a>
+          <a href="http://127.0.0.1:5500/docs.html">Docs</a>
+          <a class="nav-cta" href="http://127.0.0.1:5500/index.html">New Analysis</a>
+        </nav>
+      </div>
+    </header>
+
     <div class="app-shell">
       <header class="top-panel">
         <div>
+          <p class="tool-kicker">Eye Tracking Tool</p>
           <h1>Gaze Focus Tracker</h1>
           <p class="sub">
-            Open a target URL below, browse it inside this page, and track gaze heatmap.
+            Open a target URL below, browse it inside this page, and use gaze heatmaps as a lightweight validation aid alongside CogniLens analysis.
           </p>
         </div>
         <div class="controls">
