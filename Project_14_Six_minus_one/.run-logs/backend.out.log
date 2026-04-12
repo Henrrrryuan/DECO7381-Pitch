@@ -1,2 +1,14 @@
 INFO:     127.0.0.1:58360 - "GET /health HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58364 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55506 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53248 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53041 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53041 - "OPTIONS /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53041 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53041 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53041 - "GET /history/2841b2a382e74835817c575d5dfcb189 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60823 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60823 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65501 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65501 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65501 - "GET /history/fe13e9cdf1344c4095d45e93b2100d44 HTTP/1.1" 200 OK

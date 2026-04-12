@@ -55,3 +55,108 @@ ConnectionAbortedError: [WinError 10053] ÄãµÄÖ÷»úÖÐµÄÈí¼þÖÐÖ¹ÁËÒ»¸öÒÑ½¨Á¢µÄÁ¬½Ó¡
 ----------------------------------------
 127.0.0.1 - - [12/Apr/2026 22:14:49] code 404, message File not found
 127.0.0.1 - - [12/Apr/2026 22:14:49] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [12/Apr/2026 22:33:05] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [12/Apr/2026 22:33:05] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 60993)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] ÄãµÄÖ÷»úÖÐµÄÈí¼þÖÐÖ¹ÁËÒ»¸öÒÑ½¨Á¢µÄÁ¬½Ó¡£
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] ÄãµÄÖ÷»úÖÐµÄÈí¼þÖÐÖ¹ÁËÒ»¸öÒÑ½¨Á¢µÄÁ¬½Ó¡£
+----------------------------------------
+127.0.0.1 - - [12/Apr/2026 22:33:06] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [12/Apr/2026 22:33:12] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [12/Apr/2026 22:33:12] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54737)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] ÄãµÄÖ÷»úÖÐµÄÈí¼þÖÐÖ¹ÁËÒ»¸öÒÑ½¨Á¢µÄÁ¬½Ó¡£
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+127.0.0.1 - - [12/Apr/2026 22:33:12] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] ÄãµÄÖ÷»úÖÐµÄÈí¼þÖÐÖ¹ÁËÒ»¸öÒÑ½¨Á¢µÄÁ¬½Ó¡£
+----------------------------------------
+127.0.0.1 - - [12/Apr/2026 22:33:17] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
