@@ -30,7 +30,7 @@ def extract_html_from_zip_bytes(zip_bytes: bytes) -> str:
 
 def extract_web_bundle_from_zip_bytes(zip_bytes: bytes) -> ExtractedWebBundle:
     if not zip_bytes:
-        raise ZipInputError("ZIP 文件为空。")
+        raise ZipInputError("The ZIP file is empty.")
 
     try:
         with ZipFile(BytesIO(zip_bytes)) as archive:
@@ -41,7 +41,7 @@ def extract_web_bundle_from_zip_bytes(zip_bytes: bytes) -> ExtractedWebBundle:
                 if member_name.lower().endswith(HTML_EXTENSIONS)
             ]
             if not html_candidates:
-                raise ZipInputError("ZIP 中未找到 .html 或 .htm 文件。")
+                raise ZipInputError("No .html or .htm file was found in the ZIP archive.")
 
             entry_name = _pick_entry_html(html_candidates)
             raw_html = _read_member_bytes(archive, entry_name)
@@ -49,7 +49,7 @@ def extract_web_bundle_from_zip_bytes(zip_bytes: bytes) -> ExtractedWebBundle:
             css_files = _extract_linked_resources(archive, safe_members, entry_name, html, resource_type="css")
             js_files = _extract_linked_resources(archive, safe_members, entry_name, html, resource_type="js")
     except BadZipFile as exc:
-        raise ZipInputError("上传文件不是有效的 ZIP 格式。") from exc
+        raise ZipInputError("The uploaded file is not a valid ZIP archive.") from exc
 
     return ExtractedWebBundle(
         entry_name=entry_name,
@@ -97,7 +97,7 @@ def _decode_text(raw_bytes: bytes) -> str:
             return raw_bytes.decode(encoding)
         except UnicodeDecodeError:
             continue
-    raise ZipInputError("无法解码 ZIP 中的文本文件内容。")
+    raise ZipInputError("Could not decode the text file contents inside the ZIP archive.")
 
 
 def _extract_linked_resources(

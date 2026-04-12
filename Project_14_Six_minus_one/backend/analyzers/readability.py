@@ -257,12 +257,12 @@ def detect_rd1_average_sentence_length(text_blocks: list[dict[str, Any]], fallba
 
     return Issue(
         rule_id="RD-1",
-        title="平均句长过长",
+        title="Average sentence length is too long",
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="页面正文中存在平均句长超过 20 个词的文本块，用户可能需要反复阅读才能理解。",
-        suggestion="将长句拆分为更短、更直接的句子，尽量做到一句只表达一个主要意思。",
+        description="The page contains text blocks with an average sentence length above 20 words, so users may need to reread them to understand the content.",
+        suggestion="Split long sentences into shorter, more direct statements, and try to keep each sentence focused on one main idea.",
         evidence={
             "overloaded_block_count": len(overloaded_blocks),
             "highest_block_average_sentence_length": round(highest_average, 2),
@@ -308,12 +308,12 @@ def detect_rd2_dense_paragraphs(text_blocks: list[dict[str, Any]]) -> Issue | No
 
     return Issue(
         rule_id="RD-2",
-        title="段落过长",
+        title="Paragraph is too long",
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="页面中存在超过 4 句的长正文块，容易降低可扫描性并增加理解负担。",
-        suggestion="将长段落或长列表项拆分为更短的小块，并在必要时加入小标题、列表或强调信息。",
+        description="The page contains long text blocks with more than 4 sentences, which can reduce scannability and increase comprehension effort.",
+        suggestion="Break long paragraphs or list items into shorter chunks, and add subheadings, lists, or emphasis where needed.",
         evidence={
             "overloaded_block_count": len(overloaded_blocks),
             "max_sentence_count": max_sentence_count,
@@ -351,12 +351,12 @@ def detect_rd3_vague_controls(controls: list[dict[str, Any]]) -> Issue | None:
 
     return Issue(
         rule_id="RD-3",
-        title="按钮或链接文案模糊",
+        title="Button or link label is vague",
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="页面中存在含义模糊的按钮或链接文案，用户可能无法快速理解下一步动作。",
-        suggestion="将模糊文案改成具体动作，例如“查看课程详情”或“提交申请表”。",
+        description="The page contains vague button or link labels, so users may not understand the next action quickly.",
+        suggestion="Replace vague labels with specific actions, such as \"View course details\" or \"Submit application form\".",
         evidence={
             "vague_control_count": len(vague_controls),
             "matched_texts": [control["text"] for control in vague_controls],

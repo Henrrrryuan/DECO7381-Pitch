@@ -141,11 +141,11 @@ def detect_cs1_heading_hierarchy(headings: list[dict[str, Any]]) -> Issue | None
 
     return build_issue(
         rule_id="CS-1",
-        title="heading 结构断层",
+        title="Heading structure gap",
         severity=severity,
         base_penalty=REGULAR_BASE_PENALTY,
-        description="标题层级出现跳级或开头不是 h1，会削弱页面结构的连续性，让用户更难预测信息层次与扫读路径。",
-        suggestion="按信息层级连续使用 heading，优先从 h1 开始，避免从较低层级直接跳到更深层级。",
+        description="Heading levels skip steps or do not start with h1, which weakens structural continuity and makes the information hierarchy and scan path harder to predict.",
+        suggestion="Use headings in a continuous hierarchy, preferably starting from h1, and avoid jumping directly from a shallow level to a much deeper one.",
         evidence={
             "heading_count": len(headings),
             "violations_count": len(violations),
@@ -169,11 +169,11 @@ def detect_cs2_missing_location_cue(metrics: dict[str, Any]) -> Issue | None:
 
     return build_issue(
         rule_id="CS-2",
-        title="缺少 breadcrumb 或 progress 提示",
+        title="Missing breadcrumb or progress indicator",
         severity=severity,
         base_penalty=SERIOUS_BASE_PENALTY,
-        description="页面具有多层级导航或多步骤流程特征，但没有提供当前位置提示，可能增加记忆负担并让用户在流程中迷失。",
-        suggestion="为多层级或多步骤界面补充 breadcrumb、stepper、progress 文案，或使用 aria-current 标示当前位置。",
+        description="The page has signs of multi-level navigation or a multi-step flow, but it does not show the current position, which may increase memory load and make users feel lost.",
+        suggestion="Add breadcrumbs, a stepper, progress text, or use aria-current to indicate the current location in multi-level or multi-step interfaces.",
         evidence={
             "requires_location_cue": metrics["requires_location_cue"],
             "reason": metrics["reason"],

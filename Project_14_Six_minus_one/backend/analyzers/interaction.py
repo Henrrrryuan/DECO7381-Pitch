@@ -257,11 +257,11 @@ def detect_id1_autoplay_media(
     return [
         build_issue(
             rule_id="ID-1",
-            title="自动播放媒体",
+            title="Autoplay media",
             severity=severity,
             base_penalty=SERIOUS_BASE_PENALTY,
-            description="页面存在自动播放媒体，会在用户理解页面结构前直接打断注意力，并增加认知负担。",
-            suggestion="默认关闭 autoplay；只有在与当前主任务直接相关时才考虑启用，并优先改为用户主动触发。",
+            description="The page contains autoplay media, which can interrupt attention before users understand the page structure and can increase cognitive load.",
+            suggestion="Disable autoplay by default. Only consider using it when it is directly related to the main task, and prefer a user-initiated trigger instead.",
             evidence={
                 "autoplay_video_count": autoplay_videos,
                 "autoplay_muted_video_count": autoplay_muted_videos,
@@ -343,11 +343,11 @@ def detect_id2_too_many_animated_elements(
     return [
         build_issue(
             rule_id="ID-2",
-            title="动画元素过多",
+            title="Too many animated elements",
             severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
-            description="页面中存在区域内动画元素超过阈值的情况，多个动态对象会同时争夺用户注意力并削弱主任务聚焦。",
-            suggestion="减少非必要动效，限制自动轮播或持续运动组件，并尽量把每个主要区域的动态元素控制在 1 到 2 个以内。",
+            description="The page has regions where animated elements exceed the threshold, so multiple moving objects compete for attention and weaken focus on the main task.",
+            suggestion="Reduce non-essential motion, limit auto-rotating or continuously moving components, and try to keep each main region to 1 or 2 animated elements.",
             evidence={
                 "threshold": ANIMATION_THRESHOLD,
                 "violating_region_count": len(violating_regions),
@@ -356,7 +356,7 @@ def detect_id2_too_many_animated_elements(
                 "effective_motion_count": effective_motion_count,
                 "total_animated_elements_in_violating_regions": total_animated_elements,
                 "regions": region_summaries[:5],
-                "note": "MVP 以 major content region 作为同一视口的近似代理。",
+                "note": "The MVP uses major content regions as an approximate proxy for a shared viewport.",
             },
             locations=locations[:5],
         )
@@ -444,11 +444,11 @@ def detect_id3_cta_competition(
     return [
         build_issue(
             rule_id="ID-3",
-            title="CTA 竞争",
+            title="Competing CTAs",
             severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
-            description="页面中存在区域内主操作按钮超过 2 个的情况，容易增加决策负担，使用户难以判断下一步操作。",
-            suggestion="每个主要区域优先保留 1 个主 CTA，其余改为次按钮或文本链接，明确操作层级。",
+            description="The page has regions with more than 2 primary action buttons, which can increase decision load and make the next step harder to identify.",
+            suggestion="Keep 1 primary CTA in each main region where possible, and convert the others into secondary buttons or text links to clarify action hierarchy.",
             evidence={
                 "threshold": CTA_THRESHOLD,
                 "violating_region_count": len(violating_regions),
