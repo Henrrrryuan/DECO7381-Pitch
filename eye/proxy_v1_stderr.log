@@ -1,12 +1,17 @@
-127.0.0.1 - - [14/Apr/2026 10:35:53] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:40:53] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /styles.css HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /app.js HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+127.0.0.1 - - [21/Apr/2026 07:53:14] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:53:14] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:06] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:07] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:07] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:07] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:07] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:54:07] code 404, message File not found
+127.0.0.1 - - [21/Apr/2026 07:54:07] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [21/Apr/2026 07:58:59] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:58:59] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
 ----------------------------------------
-Exception occurred during processing of request from ('127.0.0.1', 59483)
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+Exception occurred during processing of request from ('127.0.0.1', 64106)
+127.0.0.1 - - [21/Apr/2026 07:58:59] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
 Traceback (most recent call last):
   File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
     self.wfile.write(body)
@@ -54,12 +59,62 @@ Traceback (most recent call last):
     ~~~~~~~~~~~~~~~~~~^^^
 ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
 ----------------------------------------
-127.0.0.1 - - [14/Apr/2026 10:40:54] code 404, message File not found
-127.0.0.1 - - [14/Apr/2026 10:40:54] "GET /favicon.ico HTTP/1.1" 404 -
-127.0.0.1 - - [14/Apr/2026 11:12:07] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:12:07] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+127.0.0.1 - - [21/Apr/2026 08:03:22] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:03:22] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
 ----------------------------------------
-Exception occurred during processing of request from ('127.0.0.1', 54602)
+Exception occurred during processing of request from ('127.0.0.1', 61934)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+127.0.0.1 - - [21/Apr/2026 08:03:22] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+----------------------------------------
+127.0.0.1 - - [21/Apr/2026 08:03:28] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:03:28] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50159)
 Traceback (most recent call last):
   File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
     self.wfile.write(body)
@@ -107,13 +162,120 @@ Traceback (most recent call last):
     ~~~~~~~~~~~~~~~~~~^^^
 ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
 ----------------------------------------
-127.0.0.1 - - [14/Apr/2026 11:12:07] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:12:42] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:23:08] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:23:08] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:23:08] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+127.0.0.1 - - [21/Apr/2026 08:03:28] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:05:44] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:05:44] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
 ----------------------------------------
-Exception occurred during processing of request from ('127.0.0.1', 54900)
+Exception occurred during processing of request from ('127.0.0.1', 55499)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+----------------------------------------
+127.0.0.1 - - [21/Apr/2026 08:05:44] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:05:47] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:06:35] "GET /proxy?url=https%3A%2F%2Fwww.woolworths.com.au%2F%3Fsrsltid%3DAfmBOoqjBvjleU9swltLtDXDyG6femnWHtl4jhAPROGHf29-yhnsy2es HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:07:49] "GET /proxy?url=https%3A%2F%2Fgithub.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:16:48] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:16:48] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:16:48] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54197)
+Traceback (most recent call last):
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 484, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 113, in do_GET
+    self.handle_proxy_request(parsed)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 197, in handle_proxy_request
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 598, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\server.py", line 602, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+----------------------------------------
+127.0.0.1 - - [21/Apr/2026 08:17:00] "GET /proxy?url=https%3A%2F%2Fgithub.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:21:35] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:21:35] "GET /proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:21:35] "GET /proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 502 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 56372)
 Traceback (most recent call last):
   File "C:\Users\16171\Documents\GitHub\DECO7381-Pitch\eye\proxy_server.py", line 171, in handle_proxy_request
     self.wfile.write(body)
