@@ -1,4 +1,5 @@
 import {
+  analyzeUrl,
   analyzeUploadFile,
   isHtmlFile,
   isZipFile,
@@ -8,9 +9,13 @@ import {
 
 const state = {
   file: null,
+  url: "",
   loading: false,
 };
 
+const urlInput = document.getElementById("urlInput");
+const urlForm = document.getElementById("urlForm");
+const analyzeUrlButton = document.getElementById("analyzeUrlButton");
 const uploadInput = document.getElementById("uploadInput");
 const uploadForm = document.getElementById("uploadForm");
 const dropzone = document.getElementById("dropzone");
@@ -34,10 +39,41 @@ function syncFile(file) {
   }
 }
 
+function syncUrl(value) {
+  state.url = (value || "").trim();
+  analyzeUrlButton.disabled = !state.url || state.loading;
+}
+
 function setLoading(loading) {
   state.loading = loading;
   analyzeButton.disabled = loading || !state.file;
-  analyzeButton.textContent = loading ? "Analyzing..." : "Analyze";
+  analyzeUrlButton.disabled = loading || !state.url;
+  analyzeButton.textContent = loading ? "Analyzing..." : "Analyze File";
+  analyzeUrlButton.textContent = loading ? "Analyzing..." : "Analyze URL";
+}
+
+function normalizeUrl(rawUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) {
+    throw new Error("Enter a URL or local dev server address first.");
+  }
+
+  const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value)
+    ? value
+    : `http://${value}`;
+
+  let parsed;
+  try {
+    parsed = new URL(withProtocol);
+  } catch (error) {
+    throw new Error("Enter a valid URL, for example http://localhost:5173.");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Only http:// or https:// URLs are supported.");
+  }
+
+  return parsed.href;
 }
 
 async function handleSubmit(event) {
@@ -66,6 +102,47 @@ async function handleSubmit(event) {
       previous: previousSession?.current || null,
       html,
       sourceName: state.file.name,
+      savedAt: new Date().toISOString(),
+    });
+    window.location.href = "./dashboard.html";
+  } catch (error) {
+    setStatus(error.message, true);
+    setLoading(false);
+  }
+}
+
+async function handleUrlSubmit(event) {
+  event.preventDefault();
+  if (state.loading) {
+    return;
+  }
+
+  let normalizedUrl;
+  try {
+    normalizedUrl = normalizeUrl(state.url);
+  } catch (error) {
+    setStatus(error.message, true);
+    return;
+  }
+
+  setLoading(true);
+  setStatus("Fetching the live page and running cognitive accessibility analysis...");
+
+  try {
+    const previousSession = loadDashboardSession();
+    const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
+    const payload = await analyzeUrl(normalizedUrl, baselineRunId);
+    const html = payload.html_content || "";
+    saveDashboardSession({
+      current: {
+        payload,
+        html,
+        sourceName: normalizedUrl,
+        savedAt: new Date().toISOString(),
+      },
+      previous: previousSession?.current || null,
+      html,
+      sourceName: normalizedUrl,
       savedAt: new Date().toISOString(),
     });
     window.location.href = "./dashboard.html";
@@ -119,5 +196,10 @@ uploadInput.addEventListener("change", (event) => {
   syncFile(file);
 });
 
+urlInput.addEventListener("input", (event) => {
+  syncUrl(event.target.value);
+});
+
+urlForm.addEventListener("submit", handleUrlSubmit);
 uploadForm.addEventListener("submit", handleSubmit);
 bindDropzone();
