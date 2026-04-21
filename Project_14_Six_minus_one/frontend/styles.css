@@ -377,10 +377,13 @@ input {
 
 .overall-panel {
   display: grid;
-  grid-template-columns: 108px 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  justify-items: center;
   align-items: center;
+  text-align: center;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: 18px 16px;
 }
 
 .score-ring {
@@ -401,6 +404,7 @@ input {
   text-align: center;
   border-radius: 50%;
   background: var(--surface);
+  gap: 4px;
 }
 
 .score-ring-value {
@@ -408,8 +412,14 @@ input {
   font-weight: 700;
 }
 
-.score-ring-label {
+.score-ring-risk {
   font-size: 12px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.score-ring-label {
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -420,9 +430,59 @@ input {
   letter-spacing: 0.04em;
 }
 
+.overall-copy {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+}
+
 .overall-source {
-  margin: 0 0 8px;
-  font-size: 15px;
+  display: none;
+}
+
+.overall-summary {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.overall-summary {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+  max-width: 220px;
+  width: 100%;
+}
+
+.overall-summary .summary-line {
+  margin: 0;
+}
+
+.overall-summary .summary-lowest {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.overall-summary .summary-issues,
+.overall-summary .summary-critical,
+.overall-summary .summary-top-issue,
+.overall-summary .summary-priority {
+  color: var(--muted);
+}
+
+.overall-summary .summary-top-issue {
+  font-size: 12px;
+}
+
+.overall-summary .summary-priority {
+  font-size: 12px;
+  color: var(--ink);
   font-weight: 700;
 }
 

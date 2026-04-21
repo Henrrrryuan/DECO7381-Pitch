@@ -28,9 +28,8 @@ const DIMENSION_CONFIG = [
 
 function scoreStatus(score) {
   if (score >= 85) return "Strong";
-  if (score >= 70) return "Moderate risk";
-  if (score >= 50) return "Needs work";
-  return "High risk";
+  if (score >= 70) return "Moderate";
+  return "Weak";
 }
 
 function deltaMeta(currentScore, previousScore) {
@@ -73,29 +72,23 @@ function renderDimensionBars(result) {
 
 function renderDashboardSummary(result) {
   const summaryNode = document.getElementById("dashboardSummaryText");
-  const statusNode = document.getElementById("dashboardStatus");
-  const commentsNode = document.getElementById("overallComments");
-  const lowest = result.min_dimension_score;
-  const totalIssues = result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0);
+  const riskNode = document.getElementById("dashboardRiskLabel");
 
-  if (!summaryNode || !statusNode || !commentsNode) {
+  if (!summaryNode || !riskNode) {
     return;
   }
 
-  statusNode.textContent = scoreStatus(result.overall_score);
-  summaryNode.textContent = [
-    `Overall score ${result.overall_score}.`,
-    `Lowest dimension ${lowest}.`,
-    `${totalIssues} issues detected in this report.`,
-  ].join(" ");
+  const totalIssues = result.dimensions.reduce(
+    (count, dimension) => count + (dimension.issues?.length || 0),
+    0,
+  );
 
-  commentsNode.textContent = totalIssues === 0
-    ? "This version does not trigger any of the current heuristic rules. The page looks stable under the present MVP checks."
-    : [
-        `This interface currently sits in the "${scoreStatus(result.overall_score)}" band.`,
-        `The weakest dimension score is ${lowest}, so that area is shaping the overall experience most strongly.`,
-        `${totalIssues} rule hits are currently contributing to cognitive load in this version.`,
-      ].join(" ");
+  const statusLabel = scoreStatus(result.overall_score);
+  riskNode.textContent = statusLabel;
+
+  summaryNode.innerHTML = `
+    <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
+  `;
 }
 
 function comparisonRow(label, currentScore, previousScore, className = "") {
