@@ -47,12 +47,13 @@ function renderHistoryRows(items) {
   }
 
   if (!items.length) {
-    historyList.innerHTML = `<p class="history-empty">No reports match the current file name search.</p>`;
+    historyList.innerHTML = `<p class="history-empty">No reports match the current file name or ID search.</p>`;
     return;
   }
 
   historyList.innerHTML = items.map((item) => `
     <article class="history-row">
+      <span class="history-cell history-id" title="${escapeHtml(item.run_id)}">${escapeHtml(item.run_id)}</span>
       <span class="history-cell title" title="${escapeHtml(item.source_name)}">${escapeHtml(item.source_name)}</span>
       <span class="history-cell">${escapeHtml(formatDate(item.created_at))}</span>
       <span class="history-cell score">${item.overall_score}</span>
@@ -73,6 +74,7 @@ function applyHistoryFilter() {
 
   const filteredItems = state.items.filter((item) =>
     (item.source_name || "").toLowerCase().includes(query)
+    || (item.run_id || "").toLowerCase().includes(query)
   );
   renderHistoryRows(filteredItems);
 }
@@ -118,7 +120,12 @@ function bindHistorySearch() {
     return;
   }
 
-  searchInput.addEventListener("input", runHistorySearch);
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runHistorySearch();
+    }
+  });
   searchButton.addEventListener("click", runHistorySearch);
   searchInput.dataset.bound = "true";
 }

@@ -150,10 +150,11 @@ def list_history_runs(
                     min_dimension_score
                 FROM analysis_runs
                 WHERE LOWER(source_name) LIKE LOWER(?)
+                   OR LOWER(id) LIKE LOWER(?)
                 ORDER BY rowid DESC
                 LIMIT ?
                 """,
-                (f"%{normalized_query}%", limit),
+                (f"%{normalized_query}%", f"%{normalized_query}%", limit),
             ).fetchall()
         else:
             rows = connection.execute(

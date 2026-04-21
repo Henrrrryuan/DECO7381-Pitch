@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens History</title>
-  <link rel="stylesheet" href="./styles.css?v=history-file-search-2">
+  <link rel="stylesheet" href="./styles.css?v=history-file-search-4">
 </head>
 <body class="history-body">
   <header class="app-nav">
@@ -33,13 +33,13 @@
     </section>
 
     <section class="history-toolbar" aria-label="History search">
-      <label class="history-search-label" for="historySearchInput">Search by file name</label>
+      <label class="history-search-label" for="historySearchInput">Search by file name or report ID</label>
       <div class="history-search-row">
         <input
           id="historySearchInput"
           class="history-search-input"
           type="search"
-          placeholder="Enter a file name"
+          placeholder="Enter a file name or report ID"
           autocomplete="off"
         >
         <button id="historySearchButton" class="history-search-button" type="button" aria-label="Search reports">
@@ -50,6 +50,7 @@
 
     <section class="history-list-shell">
       <div class="history-table-head">
+        <span>Report ID</span>
         <span>File</span>
         <span>Date</span>
         <span>Overall</span>
@@ -61,6 +62,6 @@
     </section>
   </main>
 
-  <script type="module" src="./history.js?v=history-file-search-2"></script>
+  <script type="module" src="./history.js?v=history-file-search-4"></script>
 </body>
 </html>
