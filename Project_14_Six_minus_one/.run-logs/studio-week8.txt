@@ -1,0 +1,146 @@
+===== PAGE 1 =====
+Welcome to 
+DECO3801/DECO7381 Computing 
+Studio 3 - Build
+Semester 1, 2026
+
+===== PAGE 2 =====
+Individual Project Contributions
+Well done, everyone, on completing the Formative 
+Individual Demo last week.
+The teaching team is working to finalise your 
+grades and feedback - these will be available on 
+Blackboard during next week's Studio.
+
+
+===== PAGE 3 =====
+01
+In-class 
+activity: 
+Prototype 
+Testing
+An in-class testing session to 
+gather user feedback to inform 
+and refine your product
+Copyright Notice ©
+This content is protected and may not be shared, uploaded or distributed. The School of EECS at the University of Queensland holds the copyright for this material. Students are not permitted to share these materials on sites external to the University of 
+Queensland.
+
+===== PAGE 4 =====
+In-class Activities
+Activity Due Date Weighting
+EAIT Employability Teamwork Week 3, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Ethics Debate Week 5, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Scrum Retrospective Week 6, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Prototype Testing- TODAY! Week 8, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Reflection Week 9, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Prototype Testing Week 10, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+Mock Exhibit Week 12, during scheduled 
+Studios, 11:00 am
+Engaged /Not Engaged
+
+===== PAGE 5 =====
+Prototype Testing
+Split your team into two groups – A and B roughly the same size. 
+• Round 1: Group A stays at your team's station to guide participants through the testing 
+session. Group B leaves to test another team's prototype as participants.
+• Round 2: Groups swap roles - Group B returns to guide, and Group A leaves to test another 
+team's prototype.
+
+===== PAGE 6 =====
+Prototype Testing 
+Step 1: Preparation (10 mins)
+• Set up your prototype on a laptop
+• Discuss as a team what your research question is for this testing session
+• Outline the step-by-step process and instructions you will give to participants (e.g. a brief 
+introduction to the project and target audience, specific tasks or scenarios to complete, and 
+follow-up questions)
+• Prepare any tools or materials needed  to effectively conduct the testing (e.g. a notebook 
+and pen for quick notes, or a Google Form or similar tool if you prefer to collect some of the 
+responses digitally)
+
+===== PAGE 7 =====
+Prototype Testing 
+Step 1: First round of testing (20 mins)
+If you are Group A (guiding the testing session):
+•  Greet the participants and briefly introduce your project and its target audience
+•  Walk participants through the tasks or scenarios you prepared in Step 1
+•  Observe and record participant responses, behaviours, and any insights
+•  Ask your follow-up questions 
+If you are Group B (participating in another team's session):
+• Engage with the tasks you are given
+• Provide constructive and specific feedback
+• Note any observations that could be useful when you return to your own team
+
+===== PAGE 8 =====
+Prototype Testing 
+Step 2: Recap and Swap (5 mins)
+All team members return to team's desk. 
+Before swapping roles, take a few minutes to debrief as a team how the session went - share any 
+issues, unexpected reactions, or anything that didn't go as planned (e.g. prototype bugs or broken 
+flows)
+
+===== PAGE 9 =====
+Prototype Testing 
+Step 3: Second round of testing (20 mins)
+If you are Group B (guiding the testing session):
+•  Greet the participants and briefly introduce your project and its target audience
+•  Walk participants through the tasks or scenarios you prepared in Step 1
+•  Observe and record participant responses, behaviours, and any insights
+•  Ask your follow-up questions 
+If you are Group A (participating in another team's session):
+• Engage with the tasks you are given
+• Provide constructive and specific feedback
+• Note any observations that could be useful when you return to your own team
+
+===== PAGE 10 =====
+Prototype Testing OneNote Submission
+Please submit to your OneNote
+1. An overview of your testing process prepared in Step 1.
+2. Your individual observations and insights during the testing session.
+
+===== PAGE 11 =====
+02
+Team 
+Project 
+Work
+Time for you to meet with 
+your assigned tutor to discuss 
+progress with Team project
+Copyright Notice ©
+This content is protected and may not be shared, uploaded or distributed. The School of EECS at the University of Queensland holds the copyright for this material. Students are not permitted to share these materials on sites external to the University of 
+Queensland.
+
+===== PAGE 12 =====
+1. Complete and post Weekly Report Back message (see 
+template in W5 on Blackboard) in MS Teams team 
+channel before meeting with your tutor. It should not take 
+longer than 5-10 mins to complete the template.
+2. Meet with your assigned tutor and discuss your 
+prototype testing and your team progress - each team 
+member should show which assigned tasks they have 
+delivered on this week, and which are stalled and explain 
+why they are stalled. Update your Scrum board.
+Your Report Back
+
+===== PAGE 13 =====
+CRICOS 00025B
+CRICOS 00025B •TEQSA PRV12080
+© The University of Queensland 2024
+This content is protected and may not be shared, uploaded, or distributed.
+Questions?
+deco3801@eecs.uq.edu.au
+See also MS Teams Questions & Answers channel
+deco7381@eecs.uq.edu.au

@@ -1,5 +1,5 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
-const API_BASE = "http://127.0.0.1:8001";
+const API_BASE = "";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => {

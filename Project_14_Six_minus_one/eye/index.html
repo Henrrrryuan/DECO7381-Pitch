@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CogniLens Eye Tracking</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-nav">
+      <div class="app-nav-inner">
+        <a class="app-brand" href="/index.html">
+          <span class="app-brand-mark">C</span>
+          <span class="app-brand-name">CogniLens</span>
+        </a>
+
+        <nav class="app-nav-links" aria-label="Primary">
+          <a class="active-link" href="/eye/">Eye Tracking</a>
+          <a href="/history.html">History</a>
+          <a href="/docs.html">Docs</a>
+          <a class="nav-cta" href="/index.html">New Analysis</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <header class="top-panel">
+        <div>
+          <p class="tool-kicker">Eye Tracking Tool</p>
+          <h1>Gaze Focus Tracker</h1>
+          <p class="sub">
+            Open a target URL below, browse it inside this page, and use gaze heatmaps as a lightweight validation aid alongside CogniLens analysis.
+          </p>
+        </div>
+        <div class="controls">
+          <button id="startBtn">Start Tracking</button>
+          <button id="pauseBtn" disabled>Pause</button>
+          <button id="clearBtn" disabled>Clear Heatmap</button>
+          <button id="previewBtn" disabled>Show Camera Preview</button>
+        </div>
+      </header>
+
+      <section class="url-panel" aria-label="Target URL panel">
+        <label for="urlInput">Target URL</label>
+        <input
+          id="urlInput"
+          type="text"
+          inputmode="url"
+          placeholder="https://example.com"
+          value="https://example.com"
+        />
+        <button id="loadUrlBtn">Load URL</button>
+      </section>
+
+      <section id="viewport" aria-label="Gaze tracking area">
+        <iframe
+          id="targetFrame"
+          title="Tracked webpage"
+          src="/eye/proxy?url=https%3A%2F%2Fexample.com"
+          referrerpolicy="strict-origin-when-cross-origin"
+        ></iframe>
+
+        <p id="frameHint" class="frame-hint">
+          Page is loaded through local proxy mode for better compatibility.
+        </p>
+
+        <canvas id="heatmapCanvas"></canvas>
+        <div id="gazeDot" aria-hidden="true"></div>
+      </section>
+
+      <aside class="stats-panel">
+        <div class="status-row">
+          <span class="label">Status</span>
+          <span id="statusText">Idle - click "Start Tracking"</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Gaze</span>
+          <span id="coordsText">x: -, y: -</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Samples</span>
+          <span id="samplesText">0</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Coverage</span>
+          <span id="coverageText">0%</span>
+        </div>
+
+        <h2>Visited Map</h2>
+        <canvas id="coverageCanvas" width="300" height="180"></canvas>
+      </aside>
+    </div>
+
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

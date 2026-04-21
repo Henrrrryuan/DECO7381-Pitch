@@ -45,6 +45,11 @@ from .analyzers import (
     analyze_readability,
     analyze_visual,
 )
+from .eye_proxy import (
+    EyeProxyBadRequest,
+    EyeProxyFetchError,
+    fetch_proxied_response,
+)
 from .history_store import (
     get_history_run,
     has_history_run,
@@ -61,10 +66,14 @@ from .zip_input import (
     extract_html_from_zip_bytes,
     extract_web_bundle_from_zip_bytes,
 )
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+EYE_DIR = PROJECT_ROOT / "eye"
 MAX_ZIP_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parent / "sample_input"
 SAMPLE_FILE_MAP = {
@@ -295,6 +304,8 @@ def root() -> dict[str, Any]:
             "/analyze-zip",
             "/history",
             "/history/{run_id}",
+            "/eye/",
+            "/eye/proxy",
         ],
     }
 
@@ -302,6 +313,28 @@ def root() -> dict[str, Any]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/eye/proxy")
+def eye_proxy(url: str = Query(...)) -> Response:
+    try:
+        proxied = fetch_proxied_response(url)
+    except EyeProxyBadRequest as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EyeProxyFetchError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return Response(
+        content=proxied.body,
+        status_code=proxied.status_code,
+        media_type=proxied.content_type,
+        headers={
+            "Cache-Control": "no-store",
+            "X-Frame-Options": "SAMEORIGIN",
+            "Access-Control-Allow-Origin": "*",
+            "X-Proxy-Final-Url": proxied.final_url,
+        },
+    )
 
 
 @app.get("/samples/{sample_name}")
@@ -402,3 +435,7 @@ async def analyze_zip(
         "js_files": sorted(bundle.js_files.keys()),
     }
     return payload
+
+
+app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
