@@ -1,0 +1,17 @@
+INFO:     127.0.0.1:49741 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49742 - "GET /frontend/index.html HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49743 - "GET /frontend/eye-tracking-test/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55693 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55597 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51045 - "OPTIONS /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51045 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61054 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62569 - "OPTIONS /assistant/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62569 - "POST /assistant/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64481 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51719 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59290 - "GET /history/2841b2a382e74835817c575d5dfcb189 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50263 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58016 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58016 - "GET /history/b1a777dcb47543a99965f95536aebfe9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51251 - "POST /analyze HTTP/1.1" 200 OK

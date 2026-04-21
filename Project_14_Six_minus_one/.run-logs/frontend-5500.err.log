@@ -1,15 +1,22 @@
-127.0.0.1 - - [14/Apr/2026 10:35:18] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:35:53] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:40:51] "GET /index.html HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:51] "GET /styles.css?v=ai-chat-1 HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:51] "GET /upload.js?v=ai-chat-1 HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:51] "GET /common.js HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:52] code 404, message File not found
-127.0.0.1 - - [14/Apr/2026 10:40:52] "GET /favicon.ico HTTP/1.1" 404 -
-127.0.0.1 - - [14/Apr/2026 10:40:57] "GET /history.html HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 10:40:57] "GET /styles.css?v=history-file-search-2 HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 10:40:57] "GET /history.js?v=history-file-search-2 HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:12:40] "GET /docs.html HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:12:46] "GET /dashboard.html HTTP/1.1" 304 -
-127.0.0.1 - - [14/Apr/2026 11:12:46] "GET /styles.css?v=ai-chat-print-1 HTTP/1.1" 200 -
-127.0.0.1 - - [14/Apr/2026 11:12:46] "GET /app.js?v=ai-chat-print-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:49:21] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:49:21] "GET /eye-tracking-test/ HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:49:21] "GET /dashboard.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:49:36] "GET /eye-tracking-test/ HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:02] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:02] "GET /styles.css?v=ai-chat-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:02] "GET /upload.js?v=ai-chat-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:03] "GET /common.js HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /dashboard.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /styles.css?v=ai-chat-print-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /app.js?v=ai-chat-print-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /common.js HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /styles.css?v=ai-chat-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:23] "GET /upload.js?v=ai-chat-1 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 07:50:24] code 404, message File not found
+127.0.0.1 - - [21/Apr/2026 07:50:24] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [21/Apr/2026 07:50:40] "GET /eye-tracking-test/ HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:03:24] "GET /history.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:03:24] "GET /styles.css?v=history-file-search-2 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:03:24] "GET /history.js?v=history-file-search-2 HTTP/1.1" 200 -
+127.0.0.1 - - [21/Apr/2026 08:13:42] "GET /docs.html HTTP/1.1" 200 -
