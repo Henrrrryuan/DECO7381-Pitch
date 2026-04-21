@@ -25,19 +25,19 @@
 
   <main class="tool-shell">
     <div class="tool-sidebar-shell">
-      <aside class="tool-sidebar">
-        <div class="tool-sidebar-inner">
-          <header class="sidebar-header">
-            <div>
-              <p class="sidebar-kicker">Dashboard</p>
-              <p id="dashboardStatus" class="sidebar-status">Waiting for analysis</p>
-            </div>
-            <div class="sidebar-actions">
-              <button id="printReportBtn" class="sidebar-action-button" type="button">Print report</button>
-              <a class="sidebar-action-button" href="./index.html">Re-upload</a>
-            </div>
-          </header>
+      <button
+        id="sidebarToggleButton"
+        class="sidebar-collapse-toggle"
+        type="button"
+        aria-controls="toolSidebar"
+        aria-expanded="true"
+        aria-label="Collapse sidebar"
+      >
+        <span class="sidebar-collapse-toggle-icon" aria-hidden="true">‹</span>
+      </button>
 
+      <aside id="toolSidebar" class="tool-sidebar">
+        <div class="tool-sidebar-inner">
           <section class="overall-panel">
             <div class="score-ring" id="scoreRing">
               <div class="score-ring-inner">
@@ -114,7 +114,24 @@
           <article class="workspace-pane explanation-pane">
             <div class="pane-header">
               <h2>Explanation</h2>
+              <button id="printReportBtn" class="context-print-button" type="button" title="Print current report">
+                <span aria-hidden="true">🖨</span>
+                <span>Print</span>
+              </button>
             </div>
+            <section id="printSummary" class="print-summary" aria-label="Printable summary">
+              <div class="print-summary-top">
+                <div class="print-summary-score">
+                  <span class="print-summary-score-label">Overall</span>
+                  <strong id="printOverallScore">-</strong>
+                </div>
+                <div class="print-summary-copy">
+                  <h3 id="printSourceName">Waiting for upload</h3>
+                  <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
+                </div>
+              </div>
+              <div id="printDimensionSummary" class="print-dimension-summary"></div>
+            </section>
             <div id="explanationContent" class="pane-scroll rich-text empty">
               Analysis explanations will appear here after the current page is processed.
             </div>

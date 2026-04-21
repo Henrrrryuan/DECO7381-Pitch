@@ -241,13 +241,19 @@ input {
 .tool-shell {
   height: calc(100vh - 64px);
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
+  transition: all 0.3s ease;
 }
 
 .tool-sidebar-shell {
-  min-width: 0;
+  position: relative;
+  width: 280px;
+  min-width: 80px;
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 100%);
+  overflow: visible;
+  transition: width 0.3s ease, background 0.3s ease;
+  box-sizing: border-box;
 }
 
 .tool-workspace-shell {
@@ -266,6 +272,58 @@ input {
   display: grid;
   grid-template-rows: auto auto auto auto;
   overflow-y: auto;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.sidebar-collapse-toggle {
+  position: absolute;
+  top: 50%;
+  right: -20px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-collapse-toggle:hover {
+  background: #f4f7fb;
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.18);
+}
+
+.sidebar-collapse-toggle-icon {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.dashboard-body.sidebar-collapsed .tool-shell {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.dashboard-body.sidebar-collapsed .tool-sidebar-inner {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dashboard-body.sidebar-collapsed .tool-sidebar-shell {
+  width: 80px;
+  background: linear-gradient(180deg, #fcfdff 0%, #f4f7fc 100%);
+}
+
+.dashboard-body.sidebar-collapsed .tool-sidebar {
+  overflow: visible;
 }
 
 .sidebar-header,
@@ -392,6 +450,26 @@ input {
 
 .sidebar-action-button:hover {
   background: #f4f7fb;
+}
+
+.context-print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.context-print-button:hover {
+  background: #f4f7fb;
+  color: var(--ink);
 }
 
 .sidebar-meta {
@@ -632,6 +710,72 @@ input {
   overflow-y: auto;
   margin-top: 16px;
   padding-right: 6px;
+}
+
+.print-summary {
+  display: none;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.print-summary-top {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.print-summary-score {
+  display: grid;
+  gap: 6px;
+}
+
+.print-summary-score-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.print-summary-score strong {
+  font-size: 34px;
+}
+
+.print-summary-copy h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.print-summary-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.print-dimension-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.print-dimension-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.print-dimension-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.print-dimension-card strong {
+  font-size: 20px;
 }
 
 .explanation-block {
@@ -898,6 +1042,34 @@ input {
   cursor: pointer;
 }
 
+.history-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--muted);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.history-open-btn,
+.history-print-btn {
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.history-open-btn:hover,
+.history-print-btn:hover {
+  background: #f4f7fb;
+}
+
 .history-empty {
   margin: 0;
   padding: 20px 18px;
@@ -911,6 +1083,10 @@ input {
 @media (max-width: 1100px) {
   .tool-shell {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar-collapse-toggle {
+    display: none;
   }
 
   .tool-sidebar {
@@ -959,6 +1135,11 @@ input {
   .history-row {
     grid-template-columns: 1fr;
   }
+
+  .print-summary-top,
+  .print-dimension-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media print {
@@ -972,18 +1153,21 @@ input {
   }
 
   .app-nav,
-  .sidebar-actions,
+  .tool-sidebar-shell,
+  .sidebar-collapse-toggle,
+  .assistant-input-area,
+  .assistant-clear-button,
+  .context-print-button,
   .placeholder-tag {
     display: none !important;
   }
 
   .tool-shell,
-  .tool-sidebar,
-  .tool-sidebar-inner,
   .tool-workspace,
   .workspace-panels,
   .pane-scroll,
-  .comparison-list {
+  .comparison-list,
+  .assistant-messages {
     height: auto;
     max-height: none;
     overflow: visible;
@@ -993,41 +1177,51 @@ input {
     display: block;
   }
 
-  .tool-sidebar-shell,
   .tool-workspace-shell {
     border: 0;
+    width: 100%;
   }
 
-  .tool-sidebar {
-    position: static;
+  .tool-workspace {
+    background: #fff;
   }
 
-  .tool-sidebar-shell,
-  .tool-workspace-shell,
   .workspace-pane,
-  .overall-panel,
-  .sidebar-section,
-  .comparison-item,
-  .comparison-summary,
   .explanation-block,
-  .suggestion-bubble {
+  .print-summary,
+  .print-dimension-card,
+  .assistant-message {
     break-inside: avoid;
     page-break-inside: avoid;
     box-shadow: none;
-  }
-
-  .tool-sidebar-shell,
-  .tool-workspace-shell {
-    width: 100%;
   }
 
   .workspace-panels {
     display: block;
   }
 
-  .workspace-pane,
-  .overall-panel,
-  .sidebar-section {
+  .workspace-pane {
     border-bottom: 1px solid #d9dde5;
+  }
+
+  .pane-scroll {
+    margin-top: 0;
+    padding-right: 0;
+  }
+
+  .print-summary {
+    display: block;
+  }
+
+  .assistant-messages {
+    padding: 0;
+  }
+
+  .assistant-message {
+    max-width: 100%;
+  }
+
+  .suggestion-pane {
+    background: #fff;
   }
 }

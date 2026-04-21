@@ -13,7 +13,11 @@ const state = {
   sourceName: "",
   chatMessages: [],
   chatPending: false,
+  sidebarCollapsed: false,
 };
+
+const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
+const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 
 const DIMENSION_CONFIG = [
   { name: "Visual Complexity", className: "visual" },
@@ -207,6 +211,36 @@ function renderExplanation(result) {
   explanationContent.innerHTML = blocks.join("");
 }
 
+function renderPrintSummary(result) {
+  const overallNode = document.getElementById("printOverallScore");
+  const sourceNode = document.getElementById("printSourceName");
+  const summaryNode = document.getElementById("printSummaryText");
+  const dimensionNode = document.getElementById("printDimensionSummary");
+
+  if (!overallNode || !sourceNode || !summaryNode || !dimensionNode) {
+    return;
+  }
+
+  overallNode.textContent = String(result.overall_score);
+  sourceNode.textContent = state.sourceName || "Uploaded file";
+  summaryNode.textContent = [
+    `Overall score ${result.overall_score}.`,
+    `Lowest dimension ${result.min_dimension_score}.`,
+    `${result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0)} issues detected in this report.`,
+  ].join(" ");
+
+  dimensionNode.innerHTML = DIMENSION_CONFIG.map(({ name }) => {
+    const dimension = findDimension(result, name);
+    const score = dimension ? dimension.score : 0;
+    return `
+      <article class="print-dimension-card">
+        <span>${escapeHtml(name)}</span>
+        <strong>${score}</strong>
+      </article>
+    `;
+  }).join("");
+}
+
 function buildAssistantContext() {
   const result = state.currentResult;
   if (!result) {
@@ -336,8 +370,42 @@ function renderResult(result, html) {
   renderScoreRing(result.overall_score);
   renderDimensionBars(result);
   renderDashboardSummary(result);
+  renderPrintSummary(result);
   renderExplanation(result);
   renderAssistantMessages();
+}
+
+function applySidebarState() {
+  const isCompactViewport = window.matchMedia("(max-width: 1100px)").matches;
+  const collapsed = !isCompactViewport && state.sidebarCollapsed;
+  const body = document.body;
+  const toggleButton = document.getElementById("sidebarToggleButton");
+  const icon = toggleButton?.querySelector(".sidebar-collapse-toggle-icon");
+
+  body.classList.toggle("sidebar-collapsed", collapsed);
+
+  if (!toggleButton) {
+    return;
+  }
+
+  toggleButton.setAttribute("aria-expanded", String(!collapsed));
+  toggleButton.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+  toggleButton.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  if (icon) {
+    icon.textContent = collapsed ? "▶" : "◀";
+  }
+}
+
+function handleSidebarToggle() {
+  state.sidebarCollapsed = !state.sidebarCollapsed;
+  sessionStorage.setItem(SIDEBAR_STORAGE_KEY, String(state.sidebarCollapsed));
+  applySidebarState();
+}
+
+function initSidebar() {
+  state.sidebarCollapsed = sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
+  applySidebarState();
+  window.addEventListener("resize", applySidebarState);
 }
 
 function bindEvents() {
@@ -345,6 +413,7 @@ function bindEvents() {
   const assistantForm = document.getElementById("assistantForm");
   const assistantInput = document.getElementById("assistantInput");
   const clearButton = document.getElementById("clearAssistantButton");
+  const sidebarToggleButton = document.getElementById("sidebarToggleButton");
 
   if (printButton) {
     printButton.addEventListener("click", () => {
@@ -368,9 +437,14 @@ function bindEvents() {
   if (clearButton) {
     clearButton.addEventListener("click", handleAssistantClear);
   }
+
+  if (sidebarToggleButton) {
+    sidebarToggleButton.addEventListener("click", handleSidebarToggle);
+  }
 }
 
 async function init() {
+  initSidebar();
   bindEvents();
 
   const session = loadDashboardSession();
@@ -395,6 +469,13 @@ async function init() {
     currentSession.html || currentSession.payload.html_content || "",
   );
   renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
+
+  if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
+    sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
+    window.setTimeout(() => {
+      window.print();
+    }, 150);
+  }
 }
 
 init().catch((error) => {

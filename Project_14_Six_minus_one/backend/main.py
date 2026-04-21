@@ -294,12 +294,13 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-def root() -> dict[str, Any]:
+@app.get("/api")
+def api_root() -> dict[str, Any]:
     return {
         "name": "Cognitive Accessibility Assistant API",
         "status": "ok",
         "endpoints": [
+            "/api",
             "/health",
             "/analyze",
             "/analyze-zip",

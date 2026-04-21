@@ -11,6 +11,7 @@ const state = {
 };
 
 let searchRequestToken = 0;
+const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 
 function buildCurrentSession(detail) {
   return {
@@ -37,6 +38,11 @@ async function handleHistoryClick(event) {
 
   const detail = await fetchJson(`${API_BASE}/history/${runId}`);
   saveDashboardSession(buildCurrentSession(detail));
+  if (button.dataset.action === "print") {
+    sessionStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
+  } else {
+    sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
+  }
   window.location.href = "./dashboard.html";
 }
 
@@ -58,7 +64,13 @@ function renderHistoryRows(items) {
       <span class="history-cell">${escapeHtml(formatDate(item.created_at))}</span>
       <span class="history-cell score">${item.overall_score}</span>
       <span class="history-cell action">
-        <button class="history-open-btn" type="button" data-run-id="${item.run_id}">Open</button>
+        <div class="history-actions">
+          <button class="history-open-btn" type="button" data-run-id="${item.run_id}" data-action="open">View</button>
+          <button class="history-print-btn" type="button" data-run-id="${item.run_id}" data-action="print" title="Open this record and print it">
+            <span aria-hidden="true">🖨</span>
+            <span>Print</span>
+          </button>
+        </div>
       </span>
     </article>
   `).join("");
