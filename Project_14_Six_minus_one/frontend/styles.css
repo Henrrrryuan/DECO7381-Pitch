@@ -333,6 +333,10 @@ input {
   border-bottom: 1px solid var(--border);
 }
 
+.overall-panel {
+  border-bottom: 0;
+}
+
 .sidebar-header,
 .overall-panel,
 .sidebar-section,
@@ -378,12 +382,20 @@ input {
 .overall-panel {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 8px;
   justify-items: center;
   align-items: center;
   text-align: center;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  padding: 18px 16px;
+  padding: 14px 16px 4px;
+}
+
+.sidebar-section:first-of-type {
+  padding-top: 4px;
+}
+
+.sidebar-section:first-of-type .dimension-bars {
+  margin-top: 0;
 }
 
 .score-ring {
