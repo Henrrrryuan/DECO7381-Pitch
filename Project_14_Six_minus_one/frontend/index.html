@@ -29,22 +29,62 @@
         <p class="upload-kicker">CogniLens</p>
         <h1>Evaluate Cognitive Accessibility</h1>
         <p class="upload-description">
-          Upload an HTML file or ZIP package to inspect readability, visual complexity,
-          distraction, and structural consistency before opening the dashboard.
+          Analyze a live webpage, local development server, or uploaded static file
+          to inspect readability, visual complexity, distraction, and structural consistency.
         </p>
       </div>
 
-      <form id="uploadForm" class="upload-form" novalidate>
-        <label id="dropzone" class="dropzone" for="uploadInput">
-          <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
-          <span class="dropzone-label">Drag &amp; drop your HTML or ZIP file here</span>
-          <span id="selectedFileName" class="dropzone-file">or choose an HTML / ZIP file</span>
-        </label>
+      <section class="input-workflow" aria-label="CogniLens input workflow">
+        <form id="urlForm" class="primary-input-card" novalidate>
+          <div class="input-card-copy">
+            <span class="input-tier">Primary workflow</span>
+            <h2>URL / Local Dev Server Analysis</h2>
+            <p>
+              Best for active development. Enter a running page from Live Server,
+              Vite, React, Vue, or a deployed website.
+            </p>
+          </div>
 
-        <button id="analyzeButton" class="upload-analyze-button" type="submit" disabled>
-          Analyze
-        </button>
-      </form>
+          <div class="url-input-row">
+            <input
+              id="urlInput"
+              class="url-input"
+              type="url"
+              inputmode="url"
+              placeholder="http://localhost:5173"
+              autocomplete="url"
+            >
+            <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>
+              Analyze URL
+            </button>
+          </div>
+
+          <p class="url-examples">
+            Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html
+          </p>
+        </form>
+
+        <form id="uploadForm" class="upload-form secondary-upload-card" novalidate>
+          <div class="input-card-copy">
+            <span class="input-tier">Secondary options</span>
+            <h2>Static File Upload</h2>
+            <p>
+              Use HTML for a quick static check, or ZIP for an offline/static package
+              containing HTML, CSS, and JavaScript.
+            </p>
+          </div>
+
+          <label id="dropzone" class="dropzone" for="uploadInput">
+            <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
+            <span class="dropzone-label">Drag &amp; drop an HTML or ZIP file</span>
+            <span id="selectedFileName" class="dropzone-file">or choose an HTML / ZIP file</span>
+          </label>
+
+          <button id="analyzeButton" class="upload-analyze-button secondary-action" type="submit" disabled>
+            Analyze File
+          </button>
+        </form>
+      </section>
 
       <p id="uploadStatus" class="upload-status" aria-live="polite"></p>
     </section>

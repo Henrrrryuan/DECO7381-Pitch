@@ -115,6 +115,12 @@ class AnalyzePayload(BaseModel):
     baseline_run_id: str | None = None
 
 
+class AnalyzeUrlPayload(BaseModel):
+    url: str
+    source_name: str | None = None
+    baseline_run_id: str | None = None
+
+
 class AssistantChatPayload(BaseModel):
     message: str
     source_name: str | None = None
@@ -376,6 +382,46 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
+
+
+@app.post("/analyze-url")
+def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
+    try:
+        proxied = fetch_proxied_response(payload.url)
+    except EyeProxyBadRequest as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EyeProxyFetchError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    if proxied.status_code >= 400:
+        raise HTTPException(
+            status_code=proxied.status_code,
+            detail=f"Target URL returned status {proxied.status_code}.",
+        )
+
+    if "text/html" not in proxied.content_type.lower():
+        raise HTTPException(
+            status_code=400,
+            detail="The target URL did not return an HTML page.",
+        )
+
+    html_content = proxied.body.decode("utf-8", errors="replace")
+    analysis = analyze_html(html_content)
+    payload_dict = build_analysis_response(
+        analysis,
+        html_content=html_content,
+        source_name=payload.source_name or proxied.final_url,
+        baseline_run_id=payload.baseline_run_id,
+    )
+    for dimension in payload_dict.get("dimensions", []):
+        metadata = dimension.get("metadata") or {}
+        input_scope = metadata.setdefault("input_scope", [])
+        if "url_fetch" not in input_scope:
+            input_scope.append("url_fetch")
+        metadata["out_of_scope"] = [
+            item for item in metadata.get("out_of_scope", []) if item != "live_url_fetch"
+        ]
+    return payload_dict
 
 
 @app.post("/assistant/chat")

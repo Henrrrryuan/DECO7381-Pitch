@@ -50,6 +50,18 @@ async function analyzeHtmlText(html, sourceName = "uploaded.html") {
   });
 }
 
+async function analyzeUrl(url, baselineRunId = null) {
+  return fetchJson(`${API_BASE}/analyze-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url,
+      source_name: url,
+      baseline_run_id: baselineRunId,
+    }),
+  });
+}
+
 async function chatWithAssistant(payload) {
   return fetchJson(`${API_BASE}/assistant/chat`, {
     method: "POST",
@@ -125,6 +137,7 @@ export {
   API_BASE,
   STORAGE_KEY,
   analyzeHtmlText,
+  analyzeUrl,
   analyzeUploadFile,
   buildAnalysisView,
   chatWithAssistant,
