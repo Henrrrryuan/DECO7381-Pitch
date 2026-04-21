@@ -152,14 +152,14 @@ def format_analysis_context(context: dict[str, Any] | None) -> str:
     ]
 
     for dimension in context.get("dimensions", []):
+        issue_count = len(dimension.get("issues", []))
         lines.append(
-            f"- {dimension.get('dimension', 'Unknown dimension')}: score {dimension.get('score', 'n/a')}"
+            f"- {dimension.get('dimension', 'Unknown dimension')}: score {dimension.get('score', 'n/a')}, issues {issue_count}"
         )
-        for issue in dimension.get("issues", [])[:4]:
+        for issue in dimension.get("issues", [])[:2]:
             lines.append(
                 "  "
-                + f"* {issue.get('rule_id', 'rule')}: {issue.get('description', '')} "
-                + f"Suggested fix: {issue.get('suggestion', '')}"
+                + f"* {issue.get('rule_id', 'rule')}: {issue.get('description', '')}"
             )
 
     return "\n".join(lines)
@@ -205,17 +205,18 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
     base_url = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").rstrip("/")
     endpoint = f"{base_url}/v1/messages"
     preferred_models = [
-        os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+        os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+        "claude-haiku-4-5-20251001",
         "claude-sonnet-4-6",
         "claude-sonnet-4-5-20250929",
+        "claude-sonnet-4-6",
         "claude-opus-4-6",
-        "claude-haiku-4-5-20251001",
     ]
     system_prompt = (
         "You are an AI accessibility assistant inside CogniLens. "
-        "Answer briefly and concretely. Focus on cognitive accessibility, readability, visual clutter, "
-        "interaction distraction, and consistency. Use the provided analysis context to prioritize fixes "
-        "for developers. Avoid markdown tables."
+        "Answer briefly and concretely for a developer. Focus on cognitive accessibility, readability, "
+        "visual clutter, interaction distraction, and consistency. Prioritize the most important fix first. "
+        "Keep the answer concise and avoid markdown tables."
     )
     user_prompt = (
         f"User question:\n{payload.message}\n\n"
@@ -245,7 +246,7 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
     for model in dict.fromkeys(preferred_models):
         request_body = {
             "model": model,
-            "max_tokens": 700,
+            "max_tokens": 320,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_prompt}],
         }
@@ -268,7 +269,7 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
             return build_fallback_assistant_reply(payload)
         except (urllib_error.URLError, TimeoutError) as exc:
             last_error = exc
-            break
+            continue
 
         content = payload_json.get("content", [])
         text_parts = [
