@@ -144,7 +144,7 @@ def detect_cs1_heading_hierarchy(headings: list[dict[str, Any]]) -> Issue | None
         title="Heading structure gap",
         severity=severity,
         base_penalty=REGULAR_BASE_PENALTY,
-        description="Heading levels skip steps or do not start with h1, which weakens structural continuity and makes the information hierarchy and scan path harder to predict.",
+        description="Skipped heading levels weaken the mental model of the page. Users who rely on structure to scan or navigate may struggle to predict relationships between sections, increasing orientation and memory load.",
         suggestion="Use headings in a continuous hierarchy, preferably starting from h1, and avoid jumping directly from a shallow level to a much deeper one.",
         evidence={
             "heading_count": len(headings),
@@ -172,7 +172,7 @@ def detect_cs2_missing_location_cue(metrics: dict[str, Any]) -> Issue | None:
         title="Missing breadcrumb or progress indicator",
         severity=severity,
         base_penalty=SERIOUS_BASE_PENALTY,
-        description="The page has signs of multi-level navigation or a multi-step flow, but it does not show the current position, which may increase memory load and make users feel lost.",
+        description="A multi-step or multi-level page without a current-location cue forces users to remember where they are. This increases wayfinding and memory load, and can make users feel lost or uncertain about progress.",
         suggestion="Add breadcrumbs, a stepper, progress text, or use aria-current to indicate the current location in multi-level or multi-step interfaces.",
         evidence={
             "requires_location_cue": metrics["requires_location_cue"],

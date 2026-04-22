@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Dashboard</title>
-  <link rel="stylesheet" href="./styles.css?v=ai-chat-print-1">
+  <link rel="stylesheet" href="./styles.css?v=assistant-floating-1">
 </head>
 <body class="dashboard-body">
   <header class="app-nav">
@@ -35,6 +35,14 @@
       >
         <span class="sidebar-collapse-toggle-icon" aria-hidden="true">‹</span>
       </button>
+      <div
+        id="sidebarResizeHandle"
+        class="sidebar-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        title="Drag to resize sidebar"
+      ></div>
 
       <aside id="toolSidebar" class="tool-sidebar">
         <div class="tool-sidebar-inner">
@@ -80,14 +88,14 @@
 
           <section class="sidebar-section comparison-section">
             <div class="sidebar-section-header">
-              <h2>Comparison</h2>
-              <span id="comparisonMeta" class="sidebar-meta">No baseline</span>
+              <h2>Fix Priority</h2>
+              <span id="comparisonMeta" class="sidebar-meta">Decision panel</span>
             </div>
             <div id="comparisonSummary" class="comparison-summary empty">
-              Upload and analyze a new file to compare it against your previous submission.
+              Analyze a page to identify the first cognitive accessibility issue to fix.
             </div>
             <div id="comparisonList" class="comparison-list empty">
-              Upload and analyze a new file to compare it against your previous submission.
+              Priority evidence will appear here after analysis.
             </div>
           </section>
         </div>
@@ -100,35 +108,63 @@
           <article class="workspace-pane explanation-pane">
             <div class="pane-header">
               <h2>Explanation</h2>
-              <button id="printReportBtn" class="context-print-button" type="button" title="Print current report">
-                <span aria-hidden="true">🖨</span>
-                <span>Print</span>
-              </button>
+              <div class="pane-header-actions">
+                <button id="websiteViewToggle" class="website-view-toggle" type="button">
+                  Click to view the website
+                </button>
+                <button id="printReportBtn" class="context-print-button" type="button" title="Print current report">
+                  <span aria-hidden="true">Print</span>
+                </button>
+              </div>
             </div>
-            <section id="printSummary" class="print-summary" aria-label="Printable summary">
-              <div class="print-summary-top">
-                <div class="print-summary-score">
-                  <span class="print-summary-score-label">Overall</span>
-                  <strong id="printOverallScore">-</strong>
+            <div id="explanationView" class="workspace-view is-active">
+              <section id="printSummary" class="print-summary" aria-label="Printable summary">
+                <div class="print-summary-top">
+                  <div class="print-summary-score">
+                    <span class="print-summary-score-label">Overall</span>
+                    <strong id="printOverallScore">-</strong>
+                  </div>
+                  <div class="print-summary-copy">
+                    <h3 id="printSourceName">Waiting for upload</h3>
+                    <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
+                  </div>
                 </div>
-                <div class="print-summary-copy">
-                  <h3 id="printSourceName">Waiting for upload</h3>
-                  <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
+                <div id="printDimensionSummary" class="print-dimension-summary"></div>
+              </section>
+              <div id="explanationContent" class="pane-scroll rich-text empty">
+                Analysis explanations will appear here after the current page is processed.
+              </div>
+            </div>
+
+            <div id="websiteView" class="workspace-view website-preview-view" hidden>
+              <div class="website-preview-toolbar">
+                <div>
+                  <strong>Website Preview</strong>
+                  <p id="websitePreviewStatus">Open a dimension to highlight related page areas.</p>
+                </div>
+                <div class="website-highlight-actions" aria-label="Highlight dimensions">
+                  <button type="button" data-highlight-dimension="Visual Complexity">Visual</button>
+                  <button type="button" data-highlight-dimension="Readability">Readability</button>
+                  <button type="button" data-highlight-dimension="Interaction & Distraction">Interaction</button>
+                  <button type="button" data-highlight-dimension="Consistency">Consistency</button>
                 </div>
               </div>
-              <div id="printDimensionSummary" class="print-dimension-summary"></div>
-            </section>
-            <div id="explanationContent" class="pane-scroll rich-text empty">
-              Analysis explanations will appear here after the current page is processed.
+              <iframe id="websitePreviewFrame" class="website-preview-frame" title="Analyzed website preview"></iframe>
             </div>
           </article>
 
-          <article class="workspace-pane suggestion-pane">
-            <div class="pane-header">
+          <article
+            id="assistantFloatingWindow"
+            class="workspace-pane suggestion-pane assistant-floating-window"
+            aria-label="AI Assistant"
+            hidden
+          >
+            <div id="assistantDragHandle" class="pane-header assistant-floating-header">
               <h2>AI Assistant</h2>
               <div class="assistant-header-actions">
                 <span class="placeholder-tag">AI-powered / Claude</span>
                 <button id="clearAssistantButton" class="assistant-clear-button" type="button">Clear</button>
+                <button id="assistantMinimizeButton" class="assistant-clear-button" type="button">Minimize</button>
               </div>
             </div>
             <div id="assistantMessages" class="assistant-messages" aria-live="polite">
@@ -152,6 +188,17 @@
     </div>
   </main>
 
-  <script type="module" src="./app.js?v=ai-chat-print-1"></script>
+  <button
+    id="assistantFloatingButton"
+    class="assistant-floating-button"
+    type="button"
+    aria-controls="assistantFloatingWindow"
+    aria-expanded="false"
+  >
+    <span>AI</span>
+    <strong>Assistant</strong>
+  </button>
+
+  <script type="module" src="./app.js?v=assistant-floating-1"></script>
 </body>
 </html>

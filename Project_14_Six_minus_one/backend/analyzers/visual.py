@@ -75,11 +75,14 @@ class _VisualHTMLParser(HTMLParser):
         self.sidebar_banner_count = 0
         self.start_tag_count = 0
         self.detected_sidebar_banner_keywords: set[str] = set()
+        self.focus_element_locations: list[dict[str, str]] = []
+        self.sidebar_banner_locations: list[dict[str, str]] = []
 
         self._stack: list[tuple[str, str, bool]] = []
         self._node_seq = 0
         self._region_item_counts: dict[str, int] = defaultdict(int)
         self._region_tags: dict[str, str] = {"root": "body"}
+        self._region_summaries: dict[str, str] = {"root": "body"}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._on_start(tag, attrs)
@@ -102,11 +105,19 @@ class _VisualHTMLParser(HTMLParser):
         self._stack.append((tag, node_id, is_region))
         if is_region:
             self._region_tags[node_id] = tag
+            self._region_summaries[node_id] = self._tag_summary(tag, attrs)
 
         if self.start_tag_count <= FIRST_VIEWPORT_TAG_WINDOW and (
             tag in FOCUS_TAGS or self._contains_any(attrs_text, ITEM_HINT_KEYWORDS)
         ):
             self.focus_elements_count += 1
+            if len(self.focus_element_locations) < 12:
+                self.focus_element_locations.append(
+                    {
+                        "tag": tag,
+                        "summary": self._tag_summary(tag, attrs),
+                    }
+                )
 
         if tag in ITEM_TAGS or self._contains_any(attrs_text, ITEM_HINT_KEYWORDS):
             region_id = self._nearest_region_id()
@@ -120,6 +131,13 @@ class _VisualHTMLParser(HTMLParser):
         if is_sidebar_banner:
             self.sidebar_banner_count += 1
             self.detected_sidebar_banner_keywords.update(matched_keywords)
+            if len(self.sidebar_banner_locations) < 8:
+                self.sidebar_banner_locations.append(
+                    {
+                        "tag": tag,
+                        "summary": self._tag_summary(tag, attrs),
+                    }
+                )
 
     def _nearest_region_id(self) -> str:
         for _tag, node_id, is_region in reversed(self._stack[:-1]):
@@ -165,14 +183,30 @@ class _VisualHTMLParser(HTMLParser):
                 matched.add(keyword)
         return matched
 
-    def max_items_in_region(self) -> tuple[int, str]:
+    def max_items_in_region(self) -> tuple[int, str, str]:
         if not self._region_item_counts:
-            return 0, "body"
+            return 0, "body", "body"
         region_id, max_count = max(
             self._region_item_counts.items(),
             key=lambda item: item[1],
         )
-        return max_count, self._region_tags.get(region_id, "body")
+        return (
+            max_count,
+            self._region_tags.get(region_id, "body"),
+            self._region_summaries.get(region_id, self._region_tags.get(region_id, "body")),
+        )
+
+    @staticmethod
+    def _tag_summary(tag: str, attrs: list[tuple[str, str | None]]) -> str:
+        element_id = ""
+        classes: list[str] = []
+        for key, value in attrs:
+            if key == "id" and value:
+                element_id = f"#{value}"
+            if key == "class" and value:
+                classes.extend(value.split())
+        class_text = "." + ".".join(classes) if classes else ""
+        return f"{tag}{element_id}{class_text}"
 
 
 def _severity_from_excess(excess: int) -> Severity:
@@ -192,6 +226,7 @@ def _build_issue(
     description: str,
     suggestion: str,
     evidence: dict[str, object],
+    locations: list[dict[str, object]] | None = None,
 ) -> Issue:
     return Issue(
         rule_id=rule_id,
@@ -202,7 +237,7 @@ def _build_issue(
         description=description,
         suggestion=suggestion,
         evidence=evidence,
-        locations=[],
+        locations=locations or [],
     )
 
 
@@ -219,7 +254,7 @@ def analyze_visual(
     parser.close()
     resource_hints = extract_resource_visual_hints(css_sources or [], js_sources or [])
 
-    max_items_in_region, max_items_region_tag = parser.max_items_in_region()
+    max_items_in_region, max_items_region_tag, max_items_region_summary = parser.max_items_in_region()
 
     issues: list[Issue] = []
 
@@ -230,13 +265,14 @@ def analyze_visual(
                 title="Too many elements on the first screen",
                 severity=_severity_from_excess(parser.focus_elements_count - VC1_THRESHOLD),
                 base_penalty=3,
-                description="The number of key elements in the first screen area is excessive, which may increase the burden of visual scanning and selection.",
+                description="Too many first-screen elements fragment attention and make it harder to decide where to look first. This increases visual scanning effort and can delay task start for users who rely on clear hierarchy and focus cues.",
                 suggestion="Reduce the number of elements competing for attention on the first screen simultaneously, and highlight 1 to 2 main task entry points.",
                 evidence={
                     "focus_elements_count": parser.focus_elements_count,
                     "threshold": VC1_THRESHOLD,
                     "first_viewport_tag_window": FIRST_VIEWPORT_TAG_WINDOW,
                 },
+                locations=parser.focus_element_locations[:8],
             )
         )
 
@@ -247,13 +283,20 @@ def analyze_visual(
                 title="Content blocks are too dense",
                 severity=_severity_from_excess(max_items_in_region - VC2_THRESHOLD),
                 base_penalty=3,
-                description="An excessive number of projects within the same region results in high information density, which may reduce scannability.",
+                description="Dense groups of cards or items make information harder to separate into meaningful chunks. Users may need to compare too many options at once, which increases selection effort and reduces scannability.",
                 suggestion="Split the content into multiple partitions, or introduce folding/pagination to reduce the density of a single screen.",
                 evidence={
                     "max_items_in_region": max_items_in_region,
                     "threshold": VC2_THRESHOLD,
                     "region_tag": max_items_region_tag,
+                    "region_summary": max_items_region_summary,
                 },
+                locations=[
+                    {
+                        "tag": max_items_region_tag,
+                        "summary": max_items_region_summary,
+                    }
+                ],
             )
         )
 
@@ -265,7 +308,7 @@ def analyze_visual(
                 title="Excessive interference from sidebars or banners",
                 severity=_severity_from_excess(effective_sidebar_banner_count - VC3_THRESHOLD),
                 base_penalty=4,
-                description="The page contains numerous sidebars, banners, or floating interference areas, which may distract users' attention.",
+                description="Sidebars, banners, and floating elements compete with the main task for attention. This can interrupt focus, make the primary content less obvious, and increase cognitive effort for users sensitive to visual distraction.",
                 suggestion="Merge or remove non-critical sidebars/banners, retaining only auxiliary information that supports the main task.",
                 evidence={
                     "sidebar_banner_count": parser.sidebar_banner_count,
@@ -276,6 +319,7 @@ def analyze_visual(
                         parser.detected_sidebar_banner_keywords | resource_hints["matched_keywords"]
                     ),
                 },
+                locations=parser.sidebar_banner_locations[:5],
             )
         )
 

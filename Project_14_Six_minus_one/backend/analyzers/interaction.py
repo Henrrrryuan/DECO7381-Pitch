@@ -260,7 +260,7 @@ def detect_id1_autoplay_media(
             title="Autoplay media",
             severity=severity,
             base_penalty=SERIOUS_BASE_PENALTY,
-            description="The page contains autoplay media, which can interrupt attention before users understand the page structure and can increase cognitive load.",
+            description="Autoplay media can capture attention before users understand the page structure. Unexpected sound or motion may interrupt comprehension, create sensory distraction, and reduce users' sense of control.",
             suggestion="Disable autoplay by default. Only consider using it when it is directly related to the main task, and prefer a user-initiated trigger instead.",
             evidence={
                 "autoplay_video_count": autoplay_videos,
@@ -346,7 +346,7 @@ def detect_id2_too_many_animated_elements(
             title="Too many animated elements",
             severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
-            description="The page has regions where animated elements exceed the threshold, so multiple moving objects compete for attention and weaken focus on the main task.",
+            description="Multiple moving elements compete for sustained attention and can repeatedly pull focus away from the main task. This increases task-switching effort and may be especially disruptive for users with attention regulation difficulties.",
             suggestion="Reduce non-essential motion, limit auto-rotating or continuously moving components, and try to keep each main region to 1 or 2 animated elements.",
             evidence={
                 "threshold": ANIMATION_THRESHOLD,
@@ -447,7 +447,7 @@ def detect_id3_cta_competition(
             title="Competing CTAs",
             severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
-            description="The page has regions with more than 2 primary action buttons, which can increase decision load and make the next step harder to identify.",
+            description="Several primary-looking actions in the same region weaken decision hierarchy. Users must spend more effort deciding what to do next, which can increase decision load and reduce confidence.",
             suggestion="Keep 1 primary CTA in each main region where possible, and convert the others into secondary buttons or text links to clarify action hierarchy.",
             evidence={
                 "threshold": CTA_THRESHOLD,

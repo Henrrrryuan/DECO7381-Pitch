@@ -261,7 +261,7 @@ def detect_rd1_average_sentence_length(text_blocks: list[dict[str, Any]], fallba
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="The page contains text blocks with an average sentence length above 20 words, so users may need to reread them to understand the content.",
+        description="Long average sentence length increases working-memory demand because users have to hold more information before the meaning is clear. This can cause rereading and slower comprehension, especially for users with processing or communication difficulties.",
         suggestion="Split long sentences into shorter, more direct statements, and try to keep each sentence focused on one main idea.",
         evidence={
             "overloaded_block_count": len(overloaded_blocks),
@@ -312,7 +312,7 @@ def detect_rd2_dense_paragraphs(text_blocks: list[dict[str, Any]]) -> Issue | No
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="The page contains long text blocks with more than 4 sentences, which can reduce scannability and increase comprehension effort.",
+        description="Dense paragraphs reduce chunking and scanning cues, so users must search inside a large text block to find the main point. This increases comprehension effort and can make the page feel harder to navigate.",
         suggestion="Break long paragraphs or list items into shorter chunks, and add subheadings, lists, or emphasis where needed.",
         evidence={
             "overloaded_block_count": len(overloaded_blocks),
@@ -355,7 +355,7 @@ def detect_rd3_vague_controls(controls: list[dict[str, Any]]) -> Issue | None:
         severity=severity,
         base_penalty=base_penalty,
         penalty=penalty,
-        description="The page contains vague button or link labels, so users may not understand the next action quickly.",
+        description="Vague controls reduce predictability because the next action is not clear from the label. Users may hesitate, make errors, or lose confidence when they cannot infer what will happen after activation.",
         suggestion="Replace vague labels with specific actions, such as \"View course details\" or \"Submit application form\".",
         evidence={
             "vague_control_count": len(vague_controls),
