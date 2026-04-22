@@ -24,22 +24,6 @@
     </header>
 
     <div class="app-shell">
-      <header class="top-panel">
-        <div>
-          <p class="tool-kicker">Eye Tracking Tool</p>
-          <h1>Gaze Focus Tracker</h1>
-          <p class="sub">
-            Open a target URL below, browse it inside this page, and use gaze heatmaps as a lightweight validation aid alongside CogniLens analysis.
-          </p>
-        </div>
-        <div class="controls">
-          <button id="startBtn">Start Tracking</button>
-          <button id="pauseBtn" disabled>Pause</button>
-          <button id="clearBtn" disabled>Clear Heatmap</button>
-          <button id="previewBtn" disabled>Show Camera Preview</button>
-        </div>
-      </header>
-
       <section class="url-panel" aria-label="Target URL panel">
         <label for="urlInput">Target URL</label>
         <input
@@ -50,6 +34,12 @@
           value="https://example.com"
         />
         <button id="loadUrlBtn">Load URL</button>
+        <div class="controls controls-inline">
+          <button id="startBtn">Start Tracking</button>
+          <button id="pauseBtn" disabled>Pause</button>
+          <button id="clearBtn" disabled>Clear Heatmap</button>
+          <button id="previewBtn" disabled>Show Camera Preview</button>
+        </div>
       </section>
 
       <section id="viewport" aria-label="Gaze tracking area">

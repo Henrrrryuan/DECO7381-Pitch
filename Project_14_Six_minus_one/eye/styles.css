@@ -93,23 +93,10 @@ body {
 .app-shell {
   min-height: calc(100vh - 64px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(260px, 16vw, 300px);
+  grid-template-rows: minmax(0, 1fr);
   gap: 12px;
   padding: 12px;
-}
-
-.top-panel {
-  grid-column: 1 / -1;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 14px;
 }
 
 .url-panel {
@@ -119,7 +106,7 @@ body {
   background: var(--panel);
   backdrop-filter: blur(8px);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -144,36 +131,21 @@ body {
   border-color: var(--accent);
 }
 
-h1 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
 h2 {
   margin: 8px 0;
   font-size: 0.95rem;
   font-weight: 600;
 }
 
-.sub {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.tool-kicker {
-  margin: 0 0 4px;
-  color: #8ec7ff;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.controls-inline {
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 button {
@@ -202,7 +174,7 @@ button:disabled {
   background: #0b1220;
   position: relative;
   overflow: hidden;
-  min-height: 60vh;
+  min-height: calc(100vh - 180px);
 }
 
 #targetFrame {
@@ -301,6 +273,8 @@ body.gaze-preview-hidden #GazeFlowContainer {
   backdrop-filter: blur(8px);
   padding: 12px;
   overflow: auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .status-row {
@@ -333,11 +307,15 @@ body.gaze-preview-hidden #GazeFlowContainer {
 
   .app-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(45vh, 1fr) auto;
+    grid-template-rows: auto minmax(45vh, 1fr) auto;
   }
 
   .url-panel {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .controls-inline {
+    justify-content: flex-start;
   }
 }
