@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens History</title>
-  <link rel="stylesheet" href="./styles.css?v=history-file-search-4">
+  <link rel="stylesheet" href="./styles.css?v=history-eye-sessions-1">
 </head>
 <body class="history-body">
   <header class="app-nav">
@@ -15,7 +15,7 @@
       </a>
 
       <nav class="app-nav-links" aria-label="Primary">
-            <a href="/eye/">Eye Tracking</a>
+        <a href="/eye/">Eye Tracking</a>
         <a class="active-link" href="./history.html">History</a>
         <a href="./docs.html">Docs</a>
         <a class="nav-cta" href="./index.html">New Analysis</a>
@@ -33,17 +33,17 @@
     </section>
 
     <section class="history-toolbar" aria-label="History search">
-      <label class="history-search-label" for="historySearchInput">Search by file name or report ID</label>
+      <label class="history-search-label" for="historySearchInput">Search by file name, report ID, or eye session ID</label>
       <div class="history-search-row">
         <input
           id="historySearchInput"
           class="history-search-input"
           type="search"
-          placeholder="Enter a file name or report ID"
+          placeholder="Enter a file name, report ID, or eye session ID"
           autocomplete="off"
         >
         <button id="historySearchButton" class="history-search-button" type="button" aria-label="Search reports">
-          <span aria-hidden="true">⌕</span>
+          <span aria-hidden="true">&#128269;</span>
         </button>
       </div>
     </section>
@@ -60,8 +60,32 @@
         <p class="history-empty">Loading analysis history...</p>
       </div>
     </section>
+
+    <section class="history-list-shell eye-history-shell">
+      <div class="history-section-header">
+        <div>
+          <p class="upload-kicker">Eye Tracking</p>
+          <h2>Saved Eye Tracking Sessions</h2>
+        </div>
+        <p class="history-section-copy">
+          Review saved gaze sessions, coverage values, and related analysis runs.
+        </p>
+      </div>
+      <div class="history-eye-table-head">
+        <span>Session ID</span>
+        <span>Page</span>
+        <span>Date</span>
+        <span>Coverage</span>
+        <span>Samples</span>
+        <span>Duration</span>
+        <span>Related Run</span>
+      </div>
+      <div id="eyeHistoryList" class="history-table-body">
+        <p class="history-empty">Loading eye tracking history...</p>
+      </div>
+    </section>
   </main>
 
-  <script type="module" src="./history.js?v=history-file-search-4"></script>
+  <script type="module" src="./history.js?v=history-eye-sessions-1"></script>
 </body>
 </html>

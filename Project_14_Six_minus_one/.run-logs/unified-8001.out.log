@@ -29,3 +29,20 @@ INFO:     127.0.0.1:53600 - "GET /history?limit=20 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55642 - "GET /history.html HTTP/1.1" 304 Not Modified
 INFO:     127.0.0.1:55642 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55642 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50302 - "GET /history/3277a350a78a47b8acb2289963fed54d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50302 - "GET /dashboard.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:50302 - "GET /styles.css?v=assistant-floating-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58068 - "GET /app.js?v=assistant-floating-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56115 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56115 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63718 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56115 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56115 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56115 - "GET /eye/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56115 - "GET /eye/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63718 - "GET /eye/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63216 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63216 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61820 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61820 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62726 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK

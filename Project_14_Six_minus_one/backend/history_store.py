@@ -9,6 +9,9 @@ from uuid import uuid4
 from .schemas import (
     AnalysisResult,
     DimensionResult,
+    EyeTrackingSessionDetail,
+    EyeTrackingSessionListResponse,
+    EyeTrackingSessionSummary,
     HistoryListResponse,
     HistoryRunDetail,
     HistoryRunSummary,
@@ -309,6 +312,173 @@ def record_compare_pair(
         )
 
 
+def save_eye_tracking_session(
+    *,
+    run_id: str | None,
+    source_name: str | None,
+    target_url: str | None,
+    html_snapshot: str | None,
+    sample_count: int,
+    duration_ms: int,
+    coverage_percent: float,
+    grid_cols: int,
+    grid_rows: int,
+    cell_counts: list[int],
+    summary: dict[str, object] | None = None,
+    db_path: Path | None = None,
+) -> EyeTrackingSessionSummary:
+    session_id = uuid4().hex
+    created_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    resolved_source_name = (source_name or "").strip() or "Eye Tracking Session"
+    resolved_target_url = (target_url or "").strip()
+    resolved_run_id = (run_id or "").strip() or None
+
+    with _connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO eye_tracking_sessions (
+                id,
+                run_id,
+                created_at,
+                source_name,
+                target_url,
+                html_snapshot,
+                sample_count,
+                duration_ms,
+                coverage_percent,
+                grid_cols,
+                grid_rows,
+                cell_counts_json,
+                summary_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session_id,
+                resolved_run_id,
+                created_at,
+                resolved_source_name,
+                resolved_target_url,
+                html_snapshot or "",
+                sample_count,
+                duration_ms,
+                coverage_percent,
+                grid_cols,
+                grid_rows,
+                _dump_json(cell_counts),
+                _dump_json(summary or {}),
+            ),
+        )
+
+    return EyeTrackingSessionSummary(
+        session_id=session_id,
+        run_id=resolved_run_id,
+        created_at=created_at,
+        source_name=resolved_source_name,
+        target_url=resolved_target_url,
+        sample_count=sample_count,
+        duration_ms=duration_ms,
+        coverage_percent=coverage_percent,
+    )
+
+
+def list_eye_tracking_sessions(
+    limit: int = 20,
+    *,
+    query: str | None = None,
+    run_id: str | None = None,
+    db_path: Path | None = None,
+) -> EyeTrackingSessionListResponse:
+    normalized_query = (query or "").strip()
+    normalized_run_id = (run_id or "").strip()
+
+    with _connect(db_path) as connection:
+        clauses: list[str] = []
+        params: list[object] = []
+
+        if normalized_query:
+            clauses.append(
+                """
+                (
+                    LOWER(source_name) LIKE LOWER(?)
+                    OR LOWER(target_url) LIKE LOWER(?)
+                    OR LOWER(id) LIKE LOWER(?)
+                    OR LOWER(COALESCE(run_id, '')) LIKE LOWER(?)
+                )
+                """
+            )
+            like_query = f"%{normalized_query}%"
+            params.extend([like_query, like_query, like_query, like_query])
+
+        if normalized_run_id:
+            clauses.append("run_id = ?")
+            params.append(normalized_run_id)
+
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        rows = connection.execute(
+            f"""
+            SELECT
+                id,
+                run_id,
+                created_at,
+                source_name,
+                target_url,
+                sample_count,
+                duration_ms,
+                coverage_percent
+            FROM eye_tracking_sessions
+            {where_clause}
+            ORDER BY rowid DESC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+
+    return EyeTrackingSessionListResponse(
+        items=[_row_to_eye_tracking_session_summary(row) for row in rows]
+    )
+
+
+def get_eye_tracking_session(
+    session_id: str,
+    db_path: Path | None = None,
+) -> EyeTrackingSessionDetail | None:
+    with _connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT
+                id,
+                run_id,
+                created_at,
+                source_name,
+                target_url,
+                html_snapshot,
+                sample_count,
+                duration_ms,
+                coverage_percent,
+                grid_cols,
+                grid_rows,
+                cell_counts_json,
+                summary_json
+            FROM eye_tracking_sessions
+            WHERE id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    return EyeTrackingSessionDetail(
+        session=_row_to_eye_tracking_session_summary(row),
+        html_snapshot=row["html_snapshot"],
+        grid_cols=row["grid_cols"],
+        grid_rows=row["grid_rows"],
+        cell_counts=_load_json(row["cell_counts_json"], []),
+        summary=_load_json(row["summary_json"], {}),
+    )
+
+
 def _connect(db_path: Path | None = None) -> sqlite3.Connection:
     resolved_path = Path(db_path or DEFAULT_DB_PATH)
     resolved_path.parent.mkdir(parents=True, exist_ok=True)
@@ -327,6 +497,19 @@ def _row_to_run_summary(row: sqlite3.Row) -> HistoryRunSummary:
         overall_score=row["overall_score"],
         weighted_average=row["weighted_average"],
         min_dimension_score=row["min_dimension_score"],
+    )
+
+
+def _row_to_eye_tracking_session_summary(row: sqlite3.Row) -> EyeTrackingSessionSummary:
+    return EyeTrackingSessionSummary(
+        session_id=row["id"],
+        run_id=row["run_id"],
+        created_at=row["created_at"],
+        source_name=row["source_name"],
+        target_url=row["target_url"],
+        sample_count=row["sample_count"],
+        duration_ms=row["duration_ms"],
+        coverage_percent=row["coverage_percent"],
     )
 
 
@@ -386,6 +569,23 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
             FOREIGN KEY (current_run_id) REFERENCES analysis_runs(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS eye_tracking_sessions (
+            id TEXT PRIMARY KEY,
+            run_id TEXT,
+            created_at TEXT NOT NULL,
+            source_name TEXT NOT NULL,
+            target_url TEXT NOT NULL,
+            html_snapshot TEXT NOT NULL,
+            sample_count INTEGER NOT NULL,
+            duration_ms INTEGER NOT NULL,
+            coverage_percent REAL NOT NULL,
+            grid_cols INTEGER NOT NULL,
+            grid_rows INTEGER NOT NULL,
+            cell_counts_json TEXT NOT NULL,
+            summary_json TEXT NOT NULL,
+            FOREIGN KEY (run_id) REFERENCES analysis_runs(id) ON DELETE SET NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_dimension_results_run_id
         ON dimension_results(run_id);
 
@@ -397,5 +597,8 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_compare_pairs_current_run_id
         ON compare_pairs(current_run_id);
+
+        CREATE INDEX IF NOT EXISTS idx_eye_tracking_sessions_run_id
+        ON eye_tracking_sessions(run_id);
         """
     )

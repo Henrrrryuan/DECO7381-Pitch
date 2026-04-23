@@ -7,6 +7,7 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const clearBtn = document.getElementById("clearBtn");
 const previewBtn = document.getElementById("previewBtn");
+const saveBtn = document.getElementById("saveBtn");
 const urlInput = document.getElementById("urlInput");
 const loadUrlBtn = document.getElementById("loadUrlBtn");
 const targetFrame = document.getElementById("targetFrame");
@@ -19,6 +20,7 @@ const coverageText = document.getElementById("coverageText");
 
 const heatCtx = heatmapCanvas.getContext("2d");
 const coverageCtx = coverageCanvas.getContext("2d");
+const queryParams = new URLSearchParams(window.location.search);
 
 const state = {
   started: false,
@@ -36,7 +38,15 @@ const state = {
   gridRows: 14,
   cellCounts: [],
   visitedCellIds: new Set(),
-  currentTargetUrl: ""
+  currentTargetUrl: "",
+  relatedRunId: queryParams.get("run_id") || "",
+  sourceName: queryParams.get("source_name") || "",
+  sessionStartPerf: 0,
+  sessionStartedAtIso: "",
+  pausedDurationMs: 0,
+  pausedAtPerf: 0,
+  saving: false,
+  lastSavedSessionId: ""
 };
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
@@ -57,6 +67,15 @@ function setTrackingControlsEnabled(enabled) {
   pauseBtn.disabled = !enabled;
   clearBtn.disabled = !enabled;
   previewBtn.disabled = !enabled;
+}
+
+function updateSaveButtonState() {
+  if (!saveBtn) {
+    return;
+  }
+  const canSave = Boolean(state.currentTargetUrl) && state.samples > 0 && !state.saving;
+  saveBtn.disabled = !canSave;
+  saveBtn.textContent = state.saving ? "Saving..." : "Save Session";
 }
 
 function getErrorMessage(error) {
@@ -138,6 +157,129 @@ function getViewportRect() {
   return viewportEl.getBoundingClientRect();
 }
 
+function currentCoveragePercent() {
+  if (!state.gridCols || !state.gridRows) {
+    return 0;
+  }
+  return Number(
+    (
+      (state.visitedCellIds.size / (state.gridCols * state.gridRows)) *
+      100
+    ).toFixed(1)
+  );
+}
+
+function currentDurationMs() {
+  if (!state.sessionStartPerf) {
+    return 0;
+  }
+  const now = state.paused && state.pausedAtPerf ? state.pausedAtPerf : performance.now();
+  return Math.max(0, Math.round(now - state.sessionStartPerf - state.pausedDurationMs));
+}
+
+function getFrameDocument() {
+  if (!targetFrame) {
+    return null;
+  }
+  try {
+    return targetFrame.contentDocument || targetFrame.contentWindow?.document || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function captureHtmlSnapshot() {
+  const doc = getFrameDocument();
+  return doc?.documentElement?.outerHTML || "";
+}
+
+function deriveSessionSourceName() {
+  const explicit = String(state.sourceName || "").trim();
+  if (explicit) {
+    return explicit;
+  }
+  if (state.currentTargetUrl) {
+    try {
+      const parsed = new URL(state.currentTargetUrl);
+      return parsed.hostname || state.currentTargetUrl;
+    } catch (_) {
+      return state.currentTargetUrl;
+    }
+  }
+  return "Eye Tracking Session";
+}
+
+function buildEyeSessionPayload() {
+  return {
+    run_id: state.relatedRunId || null,
+    source_name: deriveSessionSourceName(),
+    target_url: state.currentTargetUrl || "",
+    html_snapshot: captureHtmlSnapshot(),
+    sample_count: state.samples,
+    duration_ms: currentDurationMs(),
+    coverage_percent: currentCoveragePercent(),
+    grid_cols: state.gridCols,
+    grid_rows: state.gridRows,
+    cell_counts: [...state.cellCounts],
+    summary: {
+      saved_at: new Date().toISOString(),
+      session_started_at: state.sessionStartedAtIso || null,
+      visited_cells: state.visitedCellIds.size,
+      last_saved_session_id: state.lastSavedSessionId || null
+    }
+  };
+}
+
+async function saveCurrentSession() {
+  if (state.saving) {
+    return;
+  }
+  if (!state.currentTargetUrl || state.samples <= 0) {
+    setStatus("Track a page first before saving an eye session.");
+    return;
+  }
+
+  state.saving = true;
+  updateSaveButtonState();
+
+  try {
+    const response = await fetch("/eye/sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildEyeSessionPayload())
+    });
+
+    if (!response.ok) {
+      let detail = `Request failed with status ${response.status}`;
+      try {
+        const payload = await response.json();
+        if (payload?.detail) {
+          detail = payload.detail;
+        }
+      } catch (_) {
+        // Keep the fallback status text.
+      }
+      throw new Error(detail);
+    }
+
+    const payload = await response.json();
+    const sessionId = payload?.session?.session_id || "";
+    state.lastSavedSessionId = sessionId;
+    setStatus(
+      sessionId
+        ? `Eye session saved to history (${sessionId.slice(0, 8)}...).`
+        : "Eye session saved to history."
+    );
+  } catch (error) {
+    setStatus(`Failed to save eye session: ${getErrorMessage(error)}`);
+  } finally {
+    state.saving = false;
+    updateSaveButtonState();
+  }
+}
+
 function resizeHeatmapCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = getViewportRect();
@@ -155,6 +297,11 @@ function resetTrackingData() {
   state.lastSampleTime = 0;
   state.lastHeatSampleTime = 0;
   state.lastHeatPoint = null;
+  state.pausedDurationMs = 0;
+  state.pausedAtPerf = 0;
+  state.sessionStartPerf = state.started ? performance.now() : 0;
+  state.sessionStartedAtIso = state.started ? new Date().toISOString() : "";
+  state.lastSavedSessionId = "";
   state.cellCounts.fill(0);
   state.visitedCellIds.clear();
   samplesText.textContent = "0";
@@ -162,6 +309,7 @@ function resetTrackingData() {
   coordsText.textContent = "x: -, y: -";
   gazeDot.style.opacity = "0";
   drawCoverageMap();
+  updateSaveButtonState();
 }
 
 function drawHeatPoint(x, y) {
@@ -234,8 +382,7 @@ function updateCoverage(x, y, width, height) {
   state.visitedCellIds.add(index);
 
   const coveragePercent = (
-    (state.visitedCellIds.size / (state.gridCols * state.gridRows)) *
-    100
+    currentCoveragePercent()
   ).toFixed(1);
   coverageText.textContent = `${coveragePercent}%`;
 }
@@ -258,6 +405,7 @@ function handleTrackerStop(message) {
   setPreviewVisibility(false);
   gazeDot.style.opacity = "0";
   setStatus(message);
+  updateSaveButtonState();
 }
 
 function updateTrackerState(gazeState) {
@@ -418,10 +566,16 @@ function beginTracking() {
   state.paused = false;
   state.calibrated = false;
   state.lastTrackerState = null;
+  state.sessionStartPerf = performance.now();
+  state.sessionStartedAtIso = new Date().toISOString();
+  state.pausedDurationMs = 0;
+  state.pausedAtPerf = 0;
+  state.lastSavedSessionId = "";
   setTrackingControlsEnabled(true);
   pauseBtn.textContent = "Pause";
   setPreviewVisibility(true);
   setStatus("Starting GazeCloudAPI. Allow camera access and follow the calibration overlay.");
+  updateSaveButtonState();
   window.GazeCloudAPI.StartEyeTracking();
 }
 
@@ -445,6 +599,10 @@ pauseBtn.addEventListener("click", () => {
   }
   if (state.paused) {
     state.paused = false;
+    if (state.pausedAtPerf) {
+      state.pausedDurationMs += performance.now() - state.pausedAtPerf;
+      state.pausedAtPerf = 0;
+    }
     state.lastTrackerState = null;
     pauseBtn.textContent = "Pause";
     setStatus(
@@ -454,10 +612,12 @@ pauseBtn.addEventListener("click", () => {
     );
   } else {
     state.paused = true;
+    state.pausedAtPerf = performance.now();
     pauseBtn.textContent = "Resume";
     gazeDot.style.opacity = "0";
     setStatus("Tracking paused locally. GazeCloudAPI is still running.");
   }
+  updateSaveButtonState();
 });
 
 clearBtn.addEventListener("click", () => {
@@ -467,6 +627,12 @@ clearBtn.addEventListener("click", () => {
 
 previewBtn.addEventListener("click", () => {
   setPreviewVisibility(!state.previewVisible);
+});
+
+saveBtn?.addEventListener("click", () => {
+  saveCurrentSession().catch((error) => {
+    setStatus(`Failed to save eye session: ${getErrorMessage(error)}`);
+  });
 });
 
 loadUrlBtn.addEventListener("click", () => {

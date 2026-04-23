@@ -98,6 +98,51 @@ class HistoryListResponse:
 
 
 @dataclass
+class EyeTrackingSessionSummary:
+    session_id: str
+    run_id: str | None
+    created_at: str
+    source_name: str
+    target_url: str
+    sample_count: int
+    duration_ms: int
+    coverage_percent: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class EyeTrackingSessionDetail:
+    session: EyeTrackingSessionSummary
+    html_snapshot: str
+    grid_cols: int
+    grid_rows: int
+    cell_counts: list[int]
+    summary: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "session": self.session.to_dict(),
+            "html_snapshot": self.html_snapshot,
+            "grid_cols": self.grid_cols,
+            "grid_rows": self.grid_rows,
+            "cell_counts": self.cell_counts,
+            "summary": self.summary,
+        }
+
+
+@dataclass
+class EyeTrackingSessionListResponse:
+    items: list[EyeTrackingSessionSummary]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "items": [item.to_dict() for item in self.items],
+        }
+
+
+@dataclass
 class AnalyzeRequest:
     html: str
     source_name: str | None = None
