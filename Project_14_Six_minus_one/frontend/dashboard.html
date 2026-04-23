@@ -51,7 +51,6 @@
               <div id="profileScores" class="profile-scores">
                 <p class="profile-scores-empty">Overall and audience lens scores will appear after analysis.</p>
               </div>
-              <div id="dashboardSummaryText" class="overall-summary"></div>
               <div id="dimensionBars" class="dimension-bars">
                 <div class="dimension-row">
                   <span>Information Overload</span>
@@ -77,38 +76,12 @@
             </div>
           </section>
 
-          <section class="sidebar-section comparison-section">
-            <div class="sidebar-section-header">
-              <h2>Fix Priority</h2>
-              <span id="comparisonMeta" class="sidebar-meta">Decision panel</span>
-            </div>
-            <div id="comparisonSummary" class="comparison-summary empty">
-              Analyze a page to identify the pattern that most increases mental effort and reading overload.
-            </div>
-            <div id="comparisonList" class="comparison-list empty">
-              Mental-effort evidence will appear here after analysis.
-            </div>
-          </section>
-        </div>
-      </aside>
-    </div>
-
-    <div class="tool-workspace-shell">
-      <section class="tool-workspace">
-        <section class="workspace-panels">
-          <article class="workspace-pane explanation-pane">
+          <section class="sidebar-section sidebar-explanation-section">
             <div class="pane-header">
               <h2>Explanation</h2>
-              <div class="pane-header-actions">
-                <button id="websiteViewToggle" class="website-view-toggle" type="button">
-                  Click to view the website
-                </button>
-                <button id="printReportBtn" class="context-print-button" type="button" title="Print current report">
-                  <span aria-hidden="true">Print</span>
-                </button>
-              </div>
             </div>
-            <div id="explanationView" class="workspace-view is-active">
+            <div class="sidebar-explanation-content">
+              <div id="dashboardSummaryText" class="overall-summary"></div>
               <section id="printSummary" class="print-summary" aria-label="Printable summary">
                 <div class="print-summary-top">
                   <div class="print-summary-score">
@@ -125,6 +98,41 @@
               <div id="explanationContent" class="pane-scroll rich-text empty">
                 Analysis explanations will appear here after the current page is processed.
               </div>
+            </div>
+          </section>
+
+        </div>
+      </aside>
+    </div>
+
+    <div class="tool-workspace-shell">
+      <section class="tool-workspace">
+        <section class="workspace-panels">
+          <article class="workspace-pane explanation-pane">
+            <div class="pane-header pane-header-actions-right">
+              <h2 class="visually-hidden">Fix Priority actions</h2>
+              <div class="pane-header-actions">
+                <button id="websiteViewToggle" class="website-view-toggle" type="button">
+                  Click to view the website
+                </button>
+                <button id="printReportBtn" class="context-print-button" type="button" title="Print current report">
+                  <span aria-hidden="true">Print</span>
+                </button>
+              </div>
+            </div>
+            <div id="explanationView" class="workspace-view is-active">
+              <section class="sidebar-section comparison-section comparison-section-inline">
+                <div class="sidebar-section-header">
+                  <h2>Fix Priority</h2>
+                  <span id="comparisonMeta" class="sidebar-meta">Decision panel</span>
+                </div>
+                <div id="comparisonSummary" class="comparison-summary empty">
+                  Analyze a page to identify the pattern that most increases mental effort and reading overload.
+                </div>
+                <div id="comparisonList" class="comparison-list empty">
+                  Mental-effort evidence will appear here after analysis.
+                </div>
+              </section>
             </div>
 
             <div id="websiteView" class="workspace-view website-preview-view" hidden>

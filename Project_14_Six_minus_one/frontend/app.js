@@ -343,8 +343,9 @@ function renderDimensionBars(dimensionEntries) {
   }
 
   dimensionBars.innerHTML = (dimensionEntries || []).map(({ name, className, score, issueCount }) => {
+    const dimensionKey = displayDimensionName(name);
     return `
-      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
+      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
         <span>${escapeHtml(name)}</span>
         <div class="bar-track"><div class="bar-fill ${className}" style="width:${score}%"></div></div>
         <strong>${score}</strong>
@@ -386,6 +387,35 @@ function isInformationOverloadDimension(name) {
 
 function displayDimensionName(name) {
   return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
+}
+
+function normalizedDimensionName(name) {
+  return displayDimensionName(String(name || ""));
+}
+
+function setActiveDimensionBar(dimensionName) {
+  const targetName = normalizedDimensionName(dimensionName);
+  document.querySelectorAll(".dimension-row[data-dimension-key]").forEach((row) => {
+    row.classList.toggle("is-linked-active", row.dataset.dimensionKey === targetName);
+  });
+}
+
+function focusExplanationDimension(dimensionName) {
+  const targetName = normalizedDimensionName(dimensionName);
+  const target = document.querySelector(
+    `.explanation-accordion[data-explanation-dimension="${CSS.escape(targetName)}"]`,
+  );
+  if (!target) {
+    return;
+  }
+  document.querySelectorAll(".explanation-accordion[open]").forEach((accordion) => {
+    if (accordion !== target) {
+      accordion.open = false;
+    }
+  });
+  target.open = true;
+  target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  setActiveDimensionBar(targetName);
 }
 
 const DIMENSION_BARRIER_COPY = {
@@ -639,7 +669,25 @@ function renderExplanation(result) {
     return;
   }
 
-  const blocks = result.dimensions.map((dimension) => {
+  const explanationOrder = [
+    INFORMATION_OVERLOAD_NAME,
+    "Readability",
+    "Interaction & Distraction",
+    "Consistency",
+  ];
+  const orderIndex = (dimensionName) => {
+    const index = explanationOrder.indexOf(displayDimensionName(dimensionName));
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  const orderedDimensions = [...result.dimensions].sort((left, right) => {
+    const orderDelta = orderIndex(left.dimension) - orderIndex(right.dimension);
+    if (orderDelta !== 0) {
+      return orderDelta;
+    }
+    return displayDimensionName(left.dimension).localeCompare(displayDimensionName(right.dimension));
+  });
+
+  const blocks = orderedDimensions.map((dimension) => {
     const issueCount = dimension.issues.length;
     const displayName = displayDimensionName(dimension.dimension);
     const summary = issueCount === 0
@@ -695,16 +743,21 @@ function renderExplanation(result) {
       : "";
 
     return `
-      <section class="explanation-block">
-        <h3>${escapeHtml(displayName)} (Score: ${dimension.score})</h3>
-        <p>${escapeHtml(summary)}</p>
-        ${issues}
-      </section>
+      <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
+        <summary class="explanation-accordion-summary">
+          <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
+        </summary>
+        <div class="explanation-accordion-content">
+          <p>${escapeHtml(summary)}</p>
+          ${issues}
+        </div>
+      </details>
     `;
   });
 
   explanationContent.className = "pane-scroll rich-text";
   explanationContent.innerHTML = blocks.join("");
+  setActiveDimensionBar("");
 }
 
 function isProbablyUrl(value) {
@@ -1628,6 +1681,7 @@ function bindEvents() {
   const websiteViewToggle = document.getElementById("websiteViewToggle");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const dimensionBars = document.getElementById("dimensionBars");
+  const explanationContent = document.getElementById("explanationContent");
   initSidebarResize();
   initAssistantFloating();
   initPreviewMessageBridge();
@@ -1680,8 +1734,28 @@ function bindEvents() {
       const trigger = event.target.closest("[data-highlight-dimension]");
       if (trigger) {
         highlightDimension(trigger.dataset.highlightDimension);
+        focusExplanationDimension(trigger.dataset.dimensionKey || trigger.dataset.highlightDimension);
       }
     });
+  }
+
+  if (explanationContent) {
+    explanationContent.addEventListener("toggle", (event) => {
+      const accordion = event.target;
+      if (!(accordion instanceof HTMLDetailsElement) || !accordion.classList.contains("explanation-accordion")) {
+        return;
+      }
+      if (accordion.open) {
+        explanationContent.querySelectorAll(".explanation-accordion[open]").forEach((item) => {
+          if (item !== accordion) {
+            item.open = false;
+          }
+        });
+        setActiveDimensionBar(accordion.dataset.explanationDimension || "");
+      } else if (!explanationContent.querySelector(".explanation-accordion[open]")) {
+        setActiveDimensionBar("");
+      }
+    }, true);
   }
 
   document.addEventListener("click", (event) => {
