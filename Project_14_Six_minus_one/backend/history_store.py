@@ -6,6 +6,7 @@ from pathlib import Path
 import sqlite3
 from uuid import uuid4
 
+from .scoring import calculate_profile_scores
 from .schemas import (
     AnalysisResult,
     DimensionResult,
@@ -20,6 +21,7 @@ from .schemas import (
 
 DEFAULT_DB_PATH = Path(__file__).with_name("analysis_history.sqlite3")
 DIMENSION_ORDER = {
+    "Information Overload": 0,
     "Visual Complexity": 0,
     "Readability": 1,
     "Interaction & Distraction": 2,
@@ -265,6 +267,7 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
         weighted_average=run_row["weighted_average"],
         min_dimension_score=run_row["min_dimension_score"],
         dimensions=dimensions,
+        profile_scores=calculate_profile_scores(dimensions),
     )
     run = _row_to_run_summary(run_row)
 

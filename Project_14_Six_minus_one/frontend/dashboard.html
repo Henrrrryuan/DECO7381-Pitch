@@ -47,41 +47,32 @@
       <aside id="toolSidebar" class="tool-sidebar">
         <div class="tool-sidebar-inner">
           <section class="overall-panel">
-            <div class="score-ring" id="scoreRing">
-              <div class="score-ring-inner">
-                <span class="score-ring-value" id="leftOverallScore">-</span>
-                <span class="score-ring-risk" id="dashboardRiskLabel">Weak</span>
-                <span class="score-ring-label">Overall</span>
-              </div>
-            </div>
-
             <div class="overall-copy">
+              <div id="profileScores" class="profile-scores">
+                <p class="profile-scores-empty">Overall and audience lens scores will appear after analysis.</p>
+              </div>
               <div id="dashboardSummaryText" class="overall-summary"></div>
-            </div>
-          </section>
-
-          <section class="sidebar-section">
-
-            <div id="dimensionBars" class="dimension-bars">
-              <div class="dimension-row">
-                <span>Visual Complexity</span>
-                <div class="bar-track"><div class="bar-fill visual" style="width:0%"></div></div>
-                <strong>-</strong>
-              </div>
-              <div class="dimension-row">
-                <span>Readability</span>
-                <div class="bar-track"><div class="bar-fill readability" style="width:0%"></div></div>
-                <strong>-</strong>
-              </div>
-              <div class="dimension-row">
-                <span>Interaction &amp; Distraction</span>
-                <div class="bar-track"><div class="bar-fill interaction" style="width:0%"></div></div>
-                <strong>-</strong>
-              </div>
-              <div class="dimension-row">
-                <span>Consistency</span>
-                <div class="bar-track"><div class="bar-fill consistency" style="width:0%"></div></div>
-                <strong>-</strong>
+              <div id="dimensionBars" class="dimension-bars">
+                <div class="dimension-row">
+                  <span>Information Overload</span>
+                  <div class="bar-track"><div class="bar-fill visual" style="width:0%"></div></div>
+                  <strong>-</strong>
+                </div>
+                <div class="dimension-row">
+                  <span>Readability</span>
+                  <div class="bar-track"><div class="bar-fill readability" style="width:0%"></div></div>
+                  <strong>-</strong>
+                </div>
+                <div class="dimension-row">
+                  <span>Interaction &amp; Distraction</span>
+                  <div class="bar-track"><div class="bar-fill interaction" style="width:0%"></div></div>
+                  <strong>-</strong>
+                </div>
+                <div class="dimension-row">
+                  <span>Consistency</span>
+                  <div class="bar-track"><div class="bar-fill consistency" style="width:0%"></div></div>
+                  <strong>-</strong>
+                </div>
               </div>
             </div>
           </section>
@@ -92,10 +83,10 @@
               <span id="comparisonMeta" class="sidebar-meta">Decision panel</span>
             </div>
             <div id="comparisonSummary" class="comparison-summary empty">
-              Analyze a page to identify the first cognitive accessibility issue to fix.
+              Analyze a page to identify the pattern that most increases mental effort and reading overload.
             </div>
             <div id="comparisonList" class="comparison-list empty">
-              Priority evidence will appear here after analysis.
+              Mental-effort evidence will appear here after analysis.
             </div>
           </section>
         </div>
@@ -143,7 +134,7 @@
                   <p id="websitePreviewStatus">Open a dimension to highlight related page areas.</p>
                 </div>
                 <div class="website-highlight-actions" aria-label="Highlight dimensions">
-                  <button type="button" data-highlight-dimension="Visual Complexity">Visual</button>
+                  <button type="button" data-highlight-dimension="Information Overload">Overload</button>
                   <button type="button" data-highlight-dimension="Readability">Readability</button>
                   <button type="button" data-highlight-dimension="Interaction & Distraction">Interaction</button>
                   <button type="button" data-highlight-dimension="Consistency">Consistency</button>
@@ -169,7 +160,7 @@
             </div>
             <div id="assistantMessages" class="assistant-messages" aria-live="polite">
               <article class="assistant-message assistant-message-assistant">
-                <p>Ask me how to improve readability, reduce visual clutter, or fix specific issues.</p>
+                <p>Ask me how to reduce information overload, improve readability, or fix specific issues.</p>
               </article>
             </div>
             <form id="assistantForm" class="assistant-input-area">

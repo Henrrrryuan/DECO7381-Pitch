@@ -6,6 +6,7 @@ from typing import Any, Literal
 Severity = Literal["minor", "major", "critical"]
 DimensionName = Literal[
     "Readability",
+    "Information Overload",
     "Visual Complexity",
     "Interaction & Distraction",
     "Consistency",
@@ -45,11 +46,22 @@ class DimensionResult:
 
 
 @dataclass
+class AudienceLensScore:
+    name: str
+    score: int
+    summary: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class AnalysisResult:
     overall_score: int
     weighted_average: int
     min_dimension_score: int
     dimensions: list[DimensionResult]
+    profile_scores: list[AudienceLensScore] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -57,6 +69,7 @@ class AnalysisResult:
             "weighted_average": self.weighted_average,
             "min_dimension_score": self.min_dimension_score,
             "dimensions": [dimension.to_dict() for dimension in self.dimensions],
+            "profile_scores": [profile.to_dict() for profile in self.profile_scores],
         }
 
 

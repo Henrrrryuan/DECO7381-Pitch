@@ -126,11 +126,17 @@ function buildAnalysisView(payload) {
     weighted_average: payload.weighted_average,
     min_dimension_score: payload.min_dimension_score,
     dimensions: payload.dimensions || [],
+    profile_scores: payload.profile_scores || [],
   };
 }
 
 function findDimension(result, name) {
-  return result?.dimensions?.find((dimension) => dimension.dimension === name);
+  const aliases = {
+    "Information Overload": ["Information Overload", "Visual Complexity"],
+    "Visual Complexity": ["Visual Complexity", "Information Overload"],
+  };
+  const validNames = aliases[name] || [name];
+  return result?.dimensions?.find((dimension) => validNames.includes(dimension.dimension));
 }
 
 export {

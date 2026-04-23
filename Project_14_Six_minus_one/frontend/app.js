@@ -30,15 +30,72 @@ const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 560;
 const ASSISTANT_MARGIN = 16;
 
+const INFORMATION_OVERLOAD_NAME = "Information Overload";
+const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
+const PROFILE_DISPLAY_CONFIG = {
+  "Reading Difficulties Lens": {
+    label: "Dyslexia",
+    subtitle: "Reading load sensitivity",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.35,
+      Readability: 0.40,
+      "Interaction & Distraction": 0.10,
+      Consistency: 0.15,
+    },
+  },
+  "Attention Regulation Lens": {
+    label: "ADHD",
+    subtitle: "Attention and distraction sensitivity",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.35,
+      Readability: 0.10,
+      "Interaction & Distraction": 0.35,
+      Consistency: 0.20,
+    },
+  },
+  "Autistic Support Lens": {
+    label: "Autism",
+    subtitle: "Predictability and sensory stability",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.20,
+      Readability: 0.10,
+      "Interaction & Distraction": 0.25,
+      Consistency: 0.45,
+    },
+  },
+};
+
 const DIMENSION_CONFIG = [
-  { name: "Visual Complexity", className: "visual" },
+  { name: INFORMATION_OVERLOAD_NAME, className: "visual" },
   { name: "Readability", className: "readability" },
   { name: "Interaction & Distraction", className: "interaction" },
   { name: "Consistency", className: "consistency" },
 ];
 
 const HIGHLIGHT_CONFIG = {
-  "Visual Complexity": {
+  [INFORMATION_OVERLOAD_NAME]: {
+    color: "#df3e53",
+    selectors: [
+      "main",
+      "section",
+      "article",
+      "aside",
+      "nav",
+      "header",
+      "h1",
+      "h2",
+      "button",
+      "a",
+      ".card",
+      "[class*='card' i]",
+      "[class*='grid' i]",
+      "[class*='banner' i]",
+      "[class*='sidebar' i]",
+      "[class*='cta' i]",
+      "[class*='hero' i]",
+    ],
+  },
+  [LEGACY_INFORMATION_OVERLOAD_NAME]: {
     color: "#df3e53",
     selectors: [
       "main",
@@ -103,6 +160,60 @@ function scoreStatus(score) {
   return "Weak";
 }
 
+function profileDisplayMeta(name) {
+  const meta = PROFILE_DISPLAY_CONFIG[name];
+  if (meta) {
+    return meta;
+  }
+
+  return {
+    label: name,
+    subtitle: "Audience lens",
+  };
+}
+
+function displayProfileName(name) {
+  return profileDisplayMeta(name).label;
+}
+
+function canonicalDimensionName(name) {
+  return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
+}
+
+function buildOverallDimensionEntries(result) {
+  return DIMENSION_CONFIG.map(({ name, className }) => {
+    const dimension = findDimension(result, name);
+    return {
+      name,
+      className,
+      score: dimension ? dimension.score : 0,
+      issueCount: dimension?.issues?.length || 0,
+    };
+  });
+}
+
+function buildProfileDimensionEntries(result, profileName) {
+  const weights = profileDisplayMeta(profileName).weights || {};
+  return DIMENSION_CONFIG.map(({ name, className }) => {
+    const dimension = findDimension(result, name);
+    const rawScore = dimension ? dimension.score : 0;
+    const issueCount = dimension?.issues?.length || 0;
+    const weight = weights[canonicalDimensionName(name)] ?? 0.25;
+    const sensitivityMultiplier = weight / 0.25;
+    const adjustedScore = Math.max(
+      0,
+      Math.min(100, Math.round(100 - ((100 - rawScore) * sensitivityMultiplier))),
+    );
+
+    return {
+      name,
+      className,
+      score: adjustedScore,
+      issueCount,
+    };
+  });
+}
+
 function deltaMeta(currentScore, previousScore) {
   const delta = currentScore - previousScore;
   return {
@@ -112,26 +223,126 @@ function deltaMeta(currentScore, previousScore) {
   };
 }
 
-function renderScoreRing(score) {
-  const scoreRing = document.getElementById("scoreRing");
-  const overallScore = document.getElementById("leftOverallScore");
-  if (!scoreRing || !overallScore) {
-    return;
-  }
-  overallScore.textContent = score;
-  scoreRing.style.setProperty("--score", `${score}`);
+function buildScoreSlides(result) {
+  const slides = [
+    {
+      label: "Overall",
+      subtitle: "Combined cognitive accessibility score",
+      summary: "Balances all four dimensions to give a single high-level view of the page.",
+      score: result.overall_score,
+      dimensionEntries: buildOverallDimensionEntries(result),
+    },
+  ];
+
+  (result.profile_scores || []).forEach((profile) => {
+    const meta = profileDisplayMeta(profile.name);
+    slides.push({
+      label: meta.label,
+      subtitle: meta.subtitle,
+      summary: profile.summary,
+      score: profile.score,
+      dimensionEntries: buildProfileDimensionEntries(result, profile.name),
+    });
+  });
+
+  return slides;
 }
 
-function renderDimensionBars(result) {
+function renderScoreSlider(result) {
+  const profileNode = document.getElementById("profileScores");
+  if (!profileNode) {
+    return;
+  }
+
+  const slides = buildScoreSlides(result);
+  if (!slides.length) {
+    profileNode.innerHTML = `<p class="profile-scores-empty">Overall and audience lens scores will appear after analysis.</p>`;
+    return;
+  }
+
+  profileNode.innerHTML = `
+    <div class="score-slider-shell">
+      <button type="button" class="score-slider-nav" data-score-nav="prev" aria-label="Show previous score lens">&#8249;</button>
+      <div class="score-slider-viewport">
+        <div class="score-slider-track">
+          ${slides.map((slide, index) => `
+            <article class="score-slide" data-score-slide="${index}">
+              <div class="score-ring score-slide-ring" style="--score:${slide.score}">
+                <div class="score-ring-inner">
+                  <span class="score-ring-value">${slide.score}</span>
+                  <span class="score-ring-risk">${escapeHtml(scoreStatus(slide.score))}</span>
+                  <span class="score-ring-label">${escapeHtml(slide.label)}</span>
+                </div>
+              </div>
+              <div class="score-slide-copy">
+                <span class="score-slide-subtitle">${escapeHtml(slide.subtitle)}</span>
+                <p>${escapeHtml(slide.summary)}</p>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      </div>
+      <button type="button" class="score-slider-nav" data-score-nav="next" aria-label="Show next score lens">&#8250;</button>
+    </div>
+    <div class="score-slider-dots" aria-label="Score lens navigation">
+      ${slides.map((slide, index) => `
+        <button
+          type="button"
+          class="score-slider-dot${index === 0 ? " is-active" : ""}"
+          data-score-dot="${index}"
+          aria-label="Show ${escapeHtml(slide.label)} score"
+          aria-pressed="${index === 0 ? "true" : "false"}"
+        ></button>
+      `).join("")}
+    </div>
+  `;
+
+  const viewport = profileNode.querySelector(".score-slider-viewport");
+  const track = profileNode.querySelector(".score-slider-track");
+  const slideNodes = [...profileNode.querySelectorAll("[data-score-slide]")];
+  const dotNodes = [...profileNode.querySelectorAll("[data-score-dot]")];
+  const prevButton = profileNode.querySelector('[data-score-nav="prev"]');
+  const nextButton = profileNode.querySelector('[data-score-nav="next"]');
+
+  if (!viewport || !track || !slideNodes.length || !dotNodes.length || !prevButton || !nextButton) {
+    return;
+  }
+
+  let currentIndex = 0;
+
+  const updateControls = () => {
+    dotNodes.forEach((dot, index) => {
+      const active = index === currentIndex;
+      dot.classList.toggle("is-active", active);
+      dot.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    prevButton.disabled = currentIndex === 0;
+    nextButton.disabled = currentIndex === slideNodes.length - 1;
+    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    renderDimensionBars(slides[currentIndex]?.dimensionEntries || []);
+  };
+
+  const goToSlide = (targetIndex) => {
+    currentIndex = Math.max(0, Math.min(slideNodes.length - 1, targetIndex));
+    updateControls();
+  };
+
+  prevButton.addEventListener("click", () => goToSlide(currentIndex - 1));
+  nextButton.addEventListener("click", () => goToSlide(currentIndex + 1));
+  dotNodes.forEach((dot) => {
+    dot.addEventListener("click", () => goToSlide(Number(dot.dataset.scoreDot)));
+  });
+
+  updateControls();
+}
+
+function renderDimensionBars(dimensionEntries) {
   const dimensionBars = document.getElementById("dimensionBars");
   if (!dimensionBars) {
     return;
   }
 
-  dimensionBars.innerHTML = DIMENSION_CONFIG.map(({ name, className }) => {
-    const dimension = findDimension(result, name);
-    const score = dimension ? dimension.score : 0;
-    const issueCount = dimension?.issues?.length || 0;
+  dimensionBars.innerHTML = (dimensionEntries || []).map(({ name, className, score, issueCount }) => {
     return `
       <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
         <span>${escapeHtml(name)}</span>
@@ -145,9 +356,8 @@ function renderDimensionBars(result) {
 
 function renderDashboardSummary(result) {
   const summaryNode = document.getElementById("dashboardSummaryText");
-  const riskNode = document.getElementById("dashboardRiskLabel");
 
-  if (!summaryNode || !riskNode) {
+  if (!summaryNode) {
     return;
   }
 
@@ -155,12 +365,12 @@ function renderDashboardSummary(result) {
     (count, dimension) => count + (dimension.issues?.length || 0),
     0,
   );
-
-  const statusLabel = scoreStatus(result.overall_score);
-  riskNode.textContent = statusLabel;
+  const weakestProfile = [...(result.profile_scores || [])]
+    .sort((left, right) => left.score - right.score)[0] || null;
 
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
+    ${weakestProfile ? `<div class="summary-line summary-lowest">Most affected lens: ${escapeHtml(displayProfileName(weakestProfile.name))} (${weakestProfile.score})</div>` : ""}
   `;
 }
 
@@ -170,8 +380,17 @@ const SEVERITY_RANK = {
   minor: 1,
 };
 
+function isInformationOverloadDimension(name) {
+  return name === INFORMATION_OVERLOAD_NAME || name === LEGACY_INFORMATION_OVERLOAD_NAME;
+}
+
+function displayDimensionName(name) {
+  return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
+}
+
 const DIMENSION_BARRIER_COPY = {
-  "Visual Complexity": "Visual clutter is making it harder to identify the main content and decide where to look first.",
+  [INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
+  [LEGACY_INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
   Readability: "Text complexity is increasing reading effort and making the main message harder to process.",
   "Interaction & Distraction": "Interactive or moving elements are competing for attention and making the next action less clear.",
   Consistency: "Structural inconsistency is increasing wayfinding effort and making the page flow harder to predict.",
@@ -184,23 +403,42 @@ function totalIssueCount(result) {
   );
 }
 
-function issuePriority(issue) {
+function issueEvidenceNumber(issue, key) {
+  const value = Number(issue?.evidence?.[key]);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function issuePriority(issue, dimensionName = "") {
+  if (isInformationOverloadDimension(dimensionName)) {
+    return (
+      (issue?.evidence?.blocks_primary_task ? 400 : 0)
+      + (issueEvidenceNumber(issue, "confusion_distraction_level") * 100)
+      + (issueEvidenceNumber(issue, "cumulative_load_level") * 10)
+      + (issue?.penalty || 0)
+    );
+  }
   return (SEVERITY_RANK[issue?.severity] || 0) * 100 + (issue?.penalty || 0);
 }
 
 function primaryIssueForDimension(dimension) {
-  return [...(dimension?.issues || [])].sort((a, b) => issuePriority(b) - issuePriority(a))[0] || null;
+  return [...(dimension?.issues || [])].sort(
+    (a, b) => issuePriority(b, dimension?.dimension) - issuePriority(a, dimension?.dimension),
+  )[0] || null;
+}
+
+function dimensionPriorityScore(dimension) {
+  const primaryIssue = primaryIssueForDimension(dimension);
+  const unresolvedWeight = Math.max(0, 100 - (dimension?.score || 100)) * 100;
+  return unresolvedWeight
+    + issuePriority(primaryIssue, dimension?.dimension)
+    + ((dimension?.issues?.length || 0) * 5);
 }
 
 function priorityDimension(result) {
   return [...(result?.dimensions || [])]
     .filter((dimension) => (dimension.issues?.length || 0) > 0)
     .sort((a, b) => {
-      const scoreDelta = a.score - b.score;
-      if (scoreDelta !== 0) return scoreDelta;
-      const issueDelta = (b.issues?.length || 0) - (a.issues?.length || 0);
-      if (issueDelta !== 0) return issueDelta;
-      return issuePriority(primaryIssueForDimension(b)) - issuePriority(primaryIssueForDimension(a));
+      return dimensionPriorityScore(b) - dimensionPriorityScore(a);
     })[0] || null;
 }
 
@@ -222,6 +460,64 @@ function uniqueSuggestions(issues) {
       return true;
     })
     .slice(0, 3);
+}
+
+function issueImpactLabel(issue, dimensionName) {
+  if (!isInformationOverloadDimension(dimensionName)) {
+    return issue?.severity ? `${issue.severity} issue` : "Priority issue";
+  }
+  const score = issuePriority(issue, dimensionName);
+  if (score >= 700) return "High mental effort";
+  if (score >= 450) return "Moderate mental effort";
+  return "Supportive refinement";
+}
+
+function fixPriorityBand(issue, dimensionName) {
+  if (!isInformationOverloadDimension(dimensionName)) {
+    if (issue?.severity === "critical") return "Fix first";
+    if (issue?.severity === "major") return "Fix next";
+    return "Polish later";
+  }
+
+  const blocksPrimaryTask = Boolean(issue?.evidence?.blocks_primary_task);
+  const confusionLevel = issueEvidenceNumber(issue, "confusion_distraction_level");
+  const cumulativeLevel = issueEvidenceNumber(issue, "cumulative_load_level");
+
+  if (blocksPrimaryTask && confusionLevel >= 3) {
+    return "Reduce first";
+  }
+  if (confusionLevel >= 2 || cumulativeLevel >= 3) {
+    return "Improve next";
+  }
+  return "Polish later";
+}
+
+function fixPriorityReason(issue, dimensionName) {
+  if (!isInformationOverloadDimension(dimensionName)) {
+    return "This issue should be prioritised based on how severe the current rule violation is.";
+  }
+
+  const blocksPrimaryTask = Boolean(issue?.evidence?.blocks_primary_task);
+  const confusionLevel = issueEvidenceNumber(issue, "confusion_distraction_level");
+  const cumulativeLevel = issueEvidenceNumber(issue, "cumulative_load_level");
+
+  if (blocksPrimaryTask && confusionLevel >= 3) {
+    return "This pattern can directly block users from locating the main reading path or the next obvious step.";
+  }
+  if (confusionLevel >= 2 || cumulativeLevel >= 3) {
+    return "This pattern is likely to add repeated comparison, filtering, or distraction while users try to read and decide what matters.";
+  }
+  return "This pattern still contributes to overload, but it is less likely to be the main blocker on the current page.";
+}
+
+function affectedUsersCopy(issue, dimensionName) {
+  if (issue?.evidence?.affected_users) {
+    return issue.evidence.affected_users;
+  }
+  if (isInformationOverloadDimension(dimensionName)) {
+    return "People with reading difficulties or dyslexia may need clearer chunking, calmer layouts, and a more obvious reading path.";
+  }
+  return "Users with cognitive or communication needs may need clearer guidance and lower mental effort.";
 }
 
 function comparisonRow(label, currentScore, previousScore, className = "") {
@@ -277,6 +573,9 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   }
 
   const primaryIssue = primaryIssueForDimension(priority);
+  const priorityLabel = fixPriorityBand(primaryIssue, priority.dimension);
+  const priorityReason = fixPriorityReason(primaryIssue, priority.dimension);
+  const displayPriorityDimension = displayDimensionName(priority.dimension);
   const ruleIds = priority.issues.map((issue) => issue.rule_id).join(", ");
   const fixSteps = uniqueSuggestions(priority.issues);
   const comparisonEvidence = previousResult
@@ -301,27 +600,33 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   comparisonSummary.className = "comparison-summary priority";
   comparisonSummary.innerHTML = `
     <strong>Primary cognitive barrier</strong>
-    <span>${escapeHtml(DIMENSION_BARRIER_COPY[priority.dimension] || firstSentence(primaryIssue?.description))}</span>
+    <span>${escapeHtml(DIMENSION_BARRIER_COPY[displayPriorityDimension] || DIMENSION_BARRIER_COPY[priority.dimension] || firstSentence(primaryIssue?.description))}</span>
   `;
   comparisonList.className = "comparison-list priority-evidence-list";
   comparisonList.innerHTML = `
     <article class="priority-card">
-      <span class="priority-eyebrow">Why it matters</span>
+      <span class="priority-eyebrow">Why it increases mental effort</span>
       <p>${escapeHtml(primaryIssue?.description || "This pattern may increase cognitive load for users with cognitive or communication needs.")}</p>
     </article>
 
     <article class="priority-card">
-      <span class="priority-eyebrow">Fix first</span>
+      <span class="priority-eyebrow">Fix Priority</span>
+      <p><strong>${escapeHtml(priorityLabel)}</strong> ${escapeHtml(priorityReason)}</p>
       <ol class="priority-steps">
         ${fixSteps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
       </ol>
     </article>
 
     <article class="priority-card evidence">
-      <span class="priority-eyebrow">Evidence</span>
+      <span class="priority-eyebrow">Mental effort signals</span>
       <ul class="priority-evidence">
-        <li><strong>Weakest active dimension:</strong> ${escapeHtml(priority.dimension)} (${priority.score})</li>
+        <li><strong>Weakest active dimension:</strong> ${escapeHtml(displayPriorityDimension)} (${priority.score})</li>
         <li><strong>Triggered rules:</strong> ${escapeHtml(ruleIds)}</li>
+        ${isInformationOverloadDimension(priority.dimension) ? `
+          <li><strong>Main-task blockage:</strong> ${primaryIssue?.evidence?.blocks_primary_task ? "Likely" : "Less direct"}</li>
+          <li><strong>Confusion/distraction level:</strong> ${issueEvidenceNumber(primaryIssue, "confusion_distraction_level")}/3</li>
+          <li><strong>Cumulative load level:</strong> ${issueEvidenceNumber(primaryIssue, "cumulative_load_level")}/3</li>
+        ` : ""}
         ${comparisonEvidence}
       </ul>
     </article>
@@ -336,28 +641,62 @@ function renderExplanation(result) {
 
   const blocks = result.dimensions.map((dimension) => {
     const issueCount = dimension.issues.length;
+    const displayName = displayDimensionName(dimension.dimension);
     const summary = issueCount === 0
       ? "No issues were triggered in this dimension for the current analysis."
-      : `${issueCount} issue${issueCount === 1 ? "" : "s"} were triggered in this dimension. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
+      : isInformationOverloadDimension(dimension.dimension)
+        ? `${issueCount} issue${issueCount === 1 ? "" : "s"} were triggered in this dimension. These patterns increase the amount of information users must filter before they can settle into a clear reading path or identify the next step.`
+        : `${issueCount} issue${issueCount === 1 ? "" : "s"} were triggered in this dimension. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
 
     const issues = issueCount
-      ? `<div class="issue-highlight-list">${dimension.issues.map((issue) => `
-          <button
-            class="issue-highlight-button"
-            type="button"
-            data-highlight-issue="${escapeHtml(issue.rule_id)}"
-            data-highlight-dimension="${escapeHtml(dimension.dimension)}"
-            aria-label="Highlight ${escapeHtml(issue.rule_id)} on the website"
-          >
-            <strong>${escapeHtml(issue.rule_id)}</strong>
-            <span>${escapeHtml(issue.description)}</span>
-          </button>
-        `).join("")}</div>`
+      ? isInformationOverloadDimension(dimension.dimension)
+        ? `<div class="issue-highlight-list">${dimension.issues.map((issue) => `
+            <button
+              class="issue-highlight-button information-overload-card"
+              type="button"
+              data-highlight-issue="${escapeHtml(issue.rule_id)}"
+              data-highlight-dimension="${escapeHtml(dimension.dimension)}"
+              aria-label="Highlight ${escapeHtml(issue.rule_id)} on the website"
+            >
+              <div class="issue-highlight-header">
+                <span class="issue-highlight-rule">${escapeHtml(issue.rule_id)}</span>
+                <strong class="issue-highlight-title">${escapeHtml(issue.title)}</strong>
+              </div>
+              <div class="issue-highlight-meta">
+                <span class="issue-highlight-pill impact">${escapeHtml(issueImpactLabel(issue, dimension.dimension))}</span>
+                <span class="issue-highlight-pill priority">${escapeHtml(fixPriorityBand(issue, dimension.dimension))}</span>
+              </div>
+              <div class="issue-highlight-section">
+                <span class="issue-highlight-label">Why it increases mental effort</span>
+                <span class="issue-highlight-copy">${escapeHtml(issue.description)}</span>
+              </div>
+              <div class="issue-highlight-section">
+                <span class="issue-highlight-label">Who may be affected</span>
+                <span class="issue-highlight-copy">${escapeHtml(affectedUsersCopy(issue, dimension.dimension))}</span>
+              </div>
+              <div class="issue-highlight-section">
+                <span class="issue-highlight-label">What to change</span>
+                <span class="issue-highlight-copy">${escapeHtml(issue.suggestion)}</span>
+              </div>
+            </button>
+          `).join("")}</div>`
+        : `<div class="issue-highlight-list">${dimension.issues.map((issue) => `
+            <button
+              class="issue-highlight-button"
+              type="button"
+              data-highlight-issue="${escapeHtml(issue.rule_id)}"
+              data-highlight-dimension="${escapeHtml(dimension.dimension)}"
+              aria-label="Highlight ${escapeHtml(issue.rule_id)} on the website"
+            >
+              <strong>${escapeHtml(issue.rule_id)}</strong>
+              <span>${escapeHtml(issue.description)}</span>
+            </button>
+          `).join("")}</div>`
       : "";
 
     return `
       <section class="explanation-block">
-        <h3>${escapeHtml(dimension.dimension)} (Score: ${dimension.score})</h3>
+        <h3>${escapeHtml(displayName)} (Score: ${dimension.score})</h3>
         <p>${escapeHtml(summary)}</p>
         ${issues}
       </section>
@@ -609,14 +948,20 @@ function findElementsForLocation(doc, location) {
 
 function fallbackSelectorsForIssue(issue, dimensionName) {
   const ruleId = issue?.rule_id || "";
-  if (ruleId === "VC-1") {
-    return ["main *", "body > *", "section", "article", "nav", "button", "a", "img", "p", "li"];
+  if (ruleId === "IO-1") {
+    return ["main > *", "header > *", "section", "article", "nav", "button", "a", "img", "h1", "h2"];
   }
-  if (ruleId === "VC-2") {
+  if (ruleId === "IO-2") {
     return ["section", "article", "ul", "ol", ".card", "[class*='card' i]", "[class*='grid' i]"];
   }
-  if (ruleId === "VC-3") {
+  if (ruleId === "IO-3") {
     return ["aside", "[class*='sidebar' i]", "[class*='banner' i]", "[class*='popup' i]", "[class*='modal' i]", "[class*='sticky' i]"];
+  }
+  if (ruleId === "IO-4") {
+    return ["button", "a", "[role='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='hero' i]", "[class*='btn' i]"];
+  }
+  if (ruleId === "IO-5") {
+    return ["h1", "h2", "button", "a", "[role='button']", "main", "header"];
   }
   if (ruleId === "RD-1" || ruleId === "RD-2") {
     return ["p", "li", "article", "section"];
@@ -810,11 +1155,15 @@ function renderPrintSummary(result) {
 
   overallNode.textContent = String(result.overall_score);
   sourceNode.textContent = state.sourceName || "Uploaded file";
+  const weakestProfile = result.profile_scores?.length
+    ? result.profile_scores.slice().sort((left, right) => left.score - right.score)[0]
+    : null;
   summaryNode.textContent = [
     `Overall score ${result.overall_score}.`,
     `Lowest dimension ${result.min_dimension_score}.`,
+    weakestProfile ? `Lowest audience lens ${displayProfileName(weakestProfile.name)} (${weakestProfile.score}).` : "",
     `${result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0)} issues detected in this report.`,
-  ].join(" ");
+  ].filter(Boolean).join(" ");
 
   dimensionNode.innerHTML = DIMENSION_CONFIG.map(({ name }) => {
     const dimension = findDimension(result, name);
@@ -839,6 +1188,7 @@ function buildAssistantContext() {
     overall_score: result.overall_score,
     weighted_average: result.weighted_average,
     min_dimension_score: result.min_dimension_score,
+    profile_scores: result.profile_scores || [],
     dimensions: result.dimensions.map((dimension) => ({
       dimension: dimension.dimension,
       score: dimension.score,
@@ -858,10 +1208,10 @@ function ensureInitialAssistantMessage() {
     return;
   }
   state.chatMessages = [
-    {
-      role: "assistant",
-      content: "Ask me how to improve readability, reduce visual clutter, or fix specific issues.",
-    },
+      {
+        role: "assistant",
+        content: "Ask me how to reduce information overload, improve readability, or fix specific issues.",
+      },
   ];
 }
 
@@ -954,8 +1304,7 @@ function handleAssistantClear() {
 function renderResult(result, html) {
   state.currentResult = result;
   state.currentHtml = html || "";
-  renderScoreRing(result.overall_score);
-  renderDimensionBars(result);
+  renderScoreSlider(result);
   renderDashboardSummary(result);
   renderPrintSummary(result);
   renderExplanation(result);
