@@ -362,7 +362,6 @@ def eye_proxy(url: str = Query(...)) -> Response:
         media_type=proxied.content_type,
         headers={
             "Cache-Control": "no-store",
-            "X-Frame-Options": "SAMEORIGIN",
             "Access-Control-Allow-Origin": "*",
             "X-Proxy-Final-Url": proxied.final_url,
         },
@@ -493,7 +492,7 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
     payload_dict = build_analysis_response(
         analysis,
         html_content=html_content,
-        source_name=payload.source_name or proxied.final_url,
+        source_name=proxied.final_url or payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
     for dimension in payload_dict.get("dimensions", []):

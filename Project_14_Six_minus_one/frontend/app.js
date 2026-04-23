@@ -961,7 +961,7 @@ function loadWebsitePreview() {
 
   const previewUrl = getPreviewUrl();
   if (previewUrl) {
-    const proxiedUrl = `/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
+    const proxiedUrl = `${API_BASE}/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
     if (frame.dataset.previewUrl !== proxiedUrl) {
       frame.removeAttribute("srcdoc");
       frame.src = proxiedUrl;

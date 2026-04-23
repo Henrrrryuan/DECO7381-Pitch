@@ -88,9 +88,32 @@ function normalizeUrl(rawUrl) {
     throw new Error("Enter a URL or local dev server address first.");
   }
 
-  const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value)
+  const hasHttpProtocol = /^https?:\/\//i.test(value);
+  const hasOtherProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+  if (hasOtherProtocol && !hasHttpProtocol) {
+    throw new Error("Only http:// or https:// URLs are supported.");
+  }
+
+  const candidateForHost = hasHttpProtocol ? value : `http://${value}`;
+  let host = "";
+  try {
+    host = new URL(candidateForHost).hostname.toLowerCase();
+  } catch (error) {
+    throw new Error("Enter a valid URL, for example http://localhost:5173.");
+  }
+
+  const isLocalTarget =
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host.endsWith(".local") ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  const withProtocol = hasHttpProtocol
     ? value
-    : `http://${value}`;
+    : `${isLocalTarget ? "http" : "https"}://${value}`;
 
   let parsed;
   try {
@@ -164,18 +187,19 @@ async function handleUrlSubmit(event) {
     const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
     const payload = await analyzeUrl(normalizedUrl, baselineRunId);
     const html = payload.html_content || "";
+    const resolvedUrl = payload.resource_bundle?.entry_name || payload.run?.source_name || normalizedUrl;
     saveDashboardSession({
       current: {
         payload,
         html,
-        sourceName: normalizedUrl,
+        sourceName: resolvedUrl,
         sourceType: "url",
-        sourceUrl: normalizedUrl,
+        sourceUrl: resolvedUrl,
         savedAt: new Date().toISOString(),
       },
       previous: previousSession?.current || null,
       html,
-      sourceName: normalizedUrl,
+      sourceName: resolvedUrl,
       savedAt: new Date().toISOString(),
     });
     window.location.href = "./dashboard.html";
