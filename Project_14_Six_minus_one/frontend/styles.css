@@ -1028,6 +1028,20 @@ input {
   color: var(--ink);
 }
 
+.nav-print-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-color: rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.nav-print-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
 .sidebar-meta {
   font-size: 12px;
   font-weight: 700;
