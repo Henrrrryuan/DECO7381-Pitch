@@ -29,6 +29,8 @@ const DEFAULT_SIDEBAR_WIDTH = 360;
 const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 560;
 const ASSISTANT_MARGIN = 16;
+const ASSISTANT_LONG_PRESS_MS = 220;
+const ASSISTANT_DRAG_CANCEL_DISTANCE = 8;
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
 const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
@@ -1715,33 +1717,68 @@ function initAssistantFloating() {
     });
   }
 
-  dragHandle.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("button, input, textarea, a")) {
+  assistantWindow.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    if (event.target.closest("button, input, textarea, a, select, option, label")) {
       return;
     }
 
-    event.preventDefault();
     const startRect = assistantWindow.getBoundingClientRect();
     const startX = event.clientX;
     const startY = event.clientY;
-    document.body.classList.add("dragging-assistant");
-    dragHandle.setPointerCapture?.(event.pointerId);
+    let isDragging = false;
+    let longPressTimer = window.setTimeout(() => {
+      isDragging = true;
+      document.body.classList.add("dragging-assistant");
+      assistantWindow.setPointerCapture?.(event.pointerId);
+    }, ASSISTANT_LONG_PRESS_MS);
+
+    const clearLongPress = () => {
+      if (longPressTimer) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
 
     const handleMove = (moveEvent) => {
+      const distanceX = moveEvent.clientX - startX;
+      const distanceY = moveEvent.clientY - startY;
+
+      if (!isDragging) {
+        if (
+          Math.abs(distanceX) > ASSISTANT_DRAG_CANCEL_DISTANCE
+          || Math.abs(distanceY) > ASSISTANT_DRAG_CANCEL_DISTANCE
+        ) {
+          clearLongPress();
+          cleanup();
+        }
+        return;
+      }
+
+      moveEvent.preventDefault();
       setAssistantPosition(
-        startRect.left + moveEvent.clientX - startX,
-        startRect.top + moveEvent.clientY - startY,
+        startRect.left + distanceX,
+        startRect.top + distanceY,
       );
     };
 
     const handleUp = () => {
+      clearLongPress();
+      cleanup();
+    };
+
+    const cleanup = () => {
       document.body.classList.remove("dragging-assistant");
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
     };
 
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
   });
 
   window.addEventListener("resize", () => {

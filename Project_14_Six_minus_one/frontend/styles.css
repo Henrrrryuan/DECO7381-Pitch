@@ -1493,6 +1493,7 @@ button.dimension-row.is-linked-active .bar-track {
   border-radius: 22px;
   overflow: hidden;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  cursor: grab;
 }
 
 .assistant-floating-window[hidden] {
@@ -1500,13 +1501,14 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .assistant-floating-header {
-  cursor: grab;
+  cursor: inherit;
   background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
   border-bottom: 1px solid var(--border-strong);
   user-select: none;
 }
 
 .dashboard-body.dragging-assistant,
+.dashboard-body.dragging-assistant .assistant-floating-window,
 .dashboard-body.dragging-assistant .assistant-floating-header {
   cursor: grabbing;
 }
