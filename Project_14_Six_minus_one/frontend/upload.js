@@ -10,9 +10,12 @@ import {
 const state = {
   file: null,
   url: "",
+  workflow: "url",
   loading: false,
 };
 
+const workflowOptions = Array.from(document.querySelectorAll("[data-workflow-option]"));
+const workflowPanels = Array.from(document.querySelectorAll("[data-workflow-panel]"));
 const urlInput = document.getElementById("urlInput");
 const urlForm = document.getElementById("urlForm");
 const analyzeUrlButton = document.getElementById("analyzeUrlButton");
@@ -26,6 +29,33 @@ const uploadStatus = document.getElementById("uploadStatus");
 function setStatus(message, isError = false) {
   uploadStatus.textContent = message;
   uploadStatus.classList.toggle("error", isError);
+}
+
+function setWorkflow(workflow) {
+  state.workflow = workflow === "file" ? "file" : "url";
+
+  workflowOptions.forEach((option) => {
+    const isActive = option.dataset.workflowOption === state.workflow;
+    option.classList.toggle("is-active", isActive);
+    option.setAttribute("aria-selected", String(isActive));
+  });
+
+  workflowPanels.forEach((panel) => {
+    const isActive = panel.dataset.workflowPanel === state.workflow;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  });
+
+  if (!state.loading) {
+    if (state.workflow === "url") {
+      syncUrl(urlInput.value);
+      setStatus(state.url ? "URL workflow selected. Ready to analyze the running page." : "");
+      urlInput.focus();
+    } else {
+      syncFile(state.file);
+      setStatus(state.file ? `${state.file.name} is ready for analysis.` : "");
+    }
+  }
 }
 
 function syncFile(file) {
@@ -203,6 +233,13 @@ urlInput.addEventListener("input", (event) => {
   syncUrl(event.target.value);
 });
 
+workflowOptions.forEach((option) => {
+  option.addEventListener("click", () => {
+    setWorkflow(option.dataset.workflowOption);
+  });
+});
+
 urlForm.addEventListener("submit", handleUrlSubmit);
 uploadForm.addEventListener("submit", handleSubmit);
 bindDropzone();
+setWorkflow("url");

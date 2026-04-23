@@ -63,6 +63,10 @@ from .history_store import (
 )
 from .scoring import calculate_overall_score
 from .schemas import AnalysisResult
+from .url_input import (
+    UrlInputError,
+    extract_web_bundle_from_url_html,
+)
 from .zip_input import (
     ExtractedWebBundle,
     ZipInputError,
@@ -476,7 +480,16 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
         )
 
     html_content = proxied.body.decode("utf-8", errors="replace")
-    analysis = analyze_html(html_content)
+    try:
+        bundle = extract_web_bundle_from_url_html(html_content, proxied.final_url)
+    except UrlInputError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    analysis = analyze_html(
+        bundle.inlined_html,
+        css_sources=list(bundle.css_files.values()),
+        js_sources=list(bundle.js_files.values()),
+    )
     payload_dict = build_analysis_response(
         analysis,
         html_content=html_content,
@@ -491,6 +504,13 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
         metadata["out_of_scope"] = [
             item for item in metadata.get("out_of_scope", []) if item != "live_url_fetch"
         ]
+    payload_dict["resource_bundle"] = {
+        "entry_name": proxied.final_url,
+        "css_file_count": len(bundle.css_files),
+        "js_file_count": len(bundle.js_files),
+        "css_files": sorted(bundle.css_files.keys()),
+        "js_files": sorted(bundle.js_files.keys()),
+    }
     return payload_dict
 
 

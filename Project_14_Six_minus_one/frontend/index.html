@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Upload</title>
-  <link rel="stylesheet" href="./styles.css?v=website-preview-1">
+  <link rel="stylesheet" href="./styles.css?v=entry-workflow-1">
 </head>
 <body class="upload-body">
   <header class="app-nav">
@@ -27,69 +27,127 @@
     <section class="upload-hero">
       <div class="upload-copy">
         <p class="upload-kicker">CogniLens</p>
-        <h1>Evaluate Cognitive Accessibility</h1>
+        <h1>Inspect cognitive load before users feel it.</h1>
         <p class="upload-description">
-          Analyze a live webpage, local development server, or uploaded static file
-          to inspect readability, information overload, distraction, and structural consistency.
+          Start from the page you are actively building. CogniLens checks readability,
+          information overload, distraction, and structural consistency from a cognitive
+          accessibility perspective.
         </p>
       </div>
 
       <section class="input-workflow" aria-label="CogniLens input workflow">
-        <form id="urlForm" class="primary-input-card" novalidate>
-          <div class="input-card-copy">
-            <span class="input-tier">Primary workflow</span>
-            <h2>URL / Local Dev Server Analysis</h2>
+        <div class="workflow-card">
+          <div class="workflow-card-header">
+            <div>
+              <span class="input-tier">Choose input workflow</span>
+              <h2>How do you want to inspect the page?</h2>
+            </div>
             <p>
-              Best for active development. Enter a running page from Live Server,
-              Vite, React, Vue, or a deployed website.
+              URL analysis is the main developer workflow. Static upload stays available
+              when you only have exported files.
             </p>
           </div>
 
-          <div class="url-input-row">
-            <input
-              id="urlInput"
-              class="url-input"
-              type="url"
-              inputmode="url"
-              placeholder="http://localhost:5173"
-              autocomplete="url"
+          <div class="workflow-options" role="tablist" aria-label="Input method">
+            <button
+              class="workflow-option is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="urlForm"
+              data-workflow-option="url"
             >
-            <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>
-              Analyze URL
+              <span class="workflow-option-tag">Primary</span>
+              <span class="workflow-option-title">URL / Local Dev Server</span>
+              <span class="workflow-option-copy">For Live Server, static/SSR pages, or deployed pages that return real HTML.</span>
+            </button>
+            <button
+              class="workflow-option"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="uploadForm"
+              data-workflow-option="file"
+            >
+              <span class="workflow-option-tag">Fallback</span>
+              <span class="workflow-option-title">Static HTML / ZIP Upload</span>
+              <span class="workflow-option-copy">For offline checks when no running website is available.</span>
             </button>
           </div>
 
-          <p class="url-examples">
-            Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html
-          </p>
-        </form>
+          <div class="workflow-panels">
+            <form id="urlForm" class="workflow-panel primary-input-card is-active" role="tabpanel" data-workflow-panel="url" novalidate>
+              <div class="input-card-copy">
+                <h3>Analyze a running page</h3>
+                <p>
+                  Paste a local dev server or website URL, then re-run the analysis after
+                  each design change without exporting files. Client-rendered React/Vue
+                  pages may still need a rendered-browser snapshot in a later version.
+                </p>
+              </div>
 
-        <form id="uploadForm" class="upload-form secondary-upload-card" novalidate>
-          <div class="input-card-copy">
-            <span class="input-tier">Secondary options</span>
-            <h2>Static File Upload</h2>
-            <p>
-              Use HTML for a quick static check, or ZIP for an offline/static package
-              containing HTML, CSS, and JavaScript.
-            </p>
+              <div class="url-input-row">
+                <input
+                  id="urlInput"
+                  class="url-input"
+                  type="url"
+                  inputmode="url"
+                  placeholder="http://localhost:5173"
+                  autocomplete="url"
+                >
+                <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>
+                  Analyze URL
+                </button>
+              </div>
+
+              <p class="url-examples">
+                Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html
+              </p>
+            </form>
+
+            <form id="uploadForm" class="workflow-panel upload-form secondary-upload-card" role="tabpanel" data-workflow-panel="file" hidden novalidate>
+              <div class="input-card-copy">
+                <h3>Analyze a static package</h3>
+                <p>
+                  Use HTML for a quick static check, or ZIP for an offline package
+                  containing HTML, CSS, and JavaScript.
+                </p>
+              </div>
+
+              <label id="dropzone" class="dropzone" for="uploadInput">
+                <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
+                <span class="dropzone-label">Drag &amp; drop an HTML or ZIP file</span>
+                <span id="selectedFileName" class="dropzone-file">or choose an HTML / ZIP file</span>
+              </label>
+
+              <button id="analyzeButton" class="upload-analyze-button secondary-action" type="submit" disabled>
+                Analyze File
+              </button>
+            </form>
           </div>
+        </div>
 
-          <label id="dropzone" class="dropzone" for="uploadInput">
-            <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip">
-            <span class="dropzone-label">Drag &amp; drop an HTML or ZIP file</span>
-            <span id="selectedFileName" class="dropzone-file">or choose an HTML / ZIP file</span>
-          </label>
-
-          <button id="analyzeButton" class="upload-analyze-button secondary-action" type="submit" disabled>
-            Analyze File
-          </button>
-        </form>
+        <aside class="workflow-support-card" aria-label="What CogniLens checks">
+          <span class="input-tier">Developer loop</span>
+          <h2>Run, inspect, revise, repeat.</h2>
+          <p>
+            Designed for quick iteration: open your working page, analyze cognitive
+            barriers, adjust the design, then refresh the result. The current MVP
+            reads returned HTML plus linked CSS/JS signals.
+          </p>
+          <ul class="workflow-check-list">
+            <li><span>01</span> Language and reading load</li>
+            <li><span>02</span> Visual clutter and hierarchy</li>
+            <li><span>03</span> Motion, autoplay, and competing actions</li>
+            <li><span>04</span> Navigation and structural predictability</li>
+          </ul>
+        </aside>
       </section>
 
       <p id="uploadStatus" class="upload-status" aria-live="polite"></p>
     </section>
   </main>
 
-  <script type="module" src="./upload.js?v=website-preview-1"></script>
+  <script type="module" src="./upload.js?v=entry-workflow-1"></script>
 </body>
 </html>
