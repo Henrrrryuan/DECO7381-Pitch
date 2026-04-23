@@ -1,32 +1,31 @@
-INFO:     127.0.0.1:54917 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54917 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54917 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54919 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54920 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62923 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55305 - "GET /eye/styles.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55457 - "GET /eye/app.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55457 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55457 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:51424 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51424 - "GET /history.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51424 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50518 - "GET /history.js?v=history-file-search-4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50518 - "GET /common.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51424 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51424 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51424 - "GET /styles.css?v=ai-chat-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50518 - "GET /upload.js?v=ai-chat-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50518 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52786 - "GET /eye/ HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:63523 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60242 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60242 - "GET /eye/styles.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60018 - "GET /eye/app.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60242 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62463 - "GET /eye/ HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:51128 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58085 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62474 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56989 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55635 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62824 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62824 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62826 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62825 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56408 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56408 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "GET /common.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49356 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49356 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60184 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60184 - "GET /common.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51313 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51513 - "GET /history.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51513 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53711 - "GET /history.js?v=history-file-search-4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53711 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50444 - "GET /history/3277a350a78a47b8acb2289963fed54d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50444 - "GET /dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50444 - "GET /styles.css?v=assistant-floating-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62464 - "GET /app.js?v=assistant-floating-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /assets/css/styles.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49684 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49684 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49883 - "GET /assets/css/styles.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49883 - "GET /subscriptions-admin.html HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53600 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:53600 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55642 - "GET /history.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55642 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55642 - "GET /history?limit=20 HTTP/1.1" 200 OK

@@ -1488,7 +1488,7 @@ button.dimension-row:hover span {
 .history-table-head,
 .history-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.7fr) 1.3fr 110px 110px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.7fr) minmax(150px, 1.3fr) 90px minmax(200px, 220px);
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -1541,6 +1541,13 @@ button.dimension-row:hover span {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.history-cell.action {
+  min-width: 0;
 }
 
 .history-print-btn {
