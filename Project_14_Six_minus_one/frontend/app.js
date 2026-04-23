@@ -342,14 +342,25 @@ function renderDimensionBars(dimensionEntries) {
     return;
   }
 
-  dimensionBars.innerHTML = (dimensionEntries || []).map(({ name, className, score, issueCount }) => {
+  dimensionBars.innerHTML = (dimensionEntries || []).map(({ name, className, score }) => {
     const dimensionKey = displayDimensionName(name);
+    const tooltipCopy = tooltipCopyForDimension(dimensionKey);
     return `
       <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
-        <span>${escapeHtml(name)}</span>
+        <span class="dimension-label-with-info">
+          <span>${escapeHtml(name)}</span>
+          <span
+            class="dimension-info-icon"
+            tabindex="0"
+            role="button"
+            aria-label="${escapeHtml(`${dimensionKey} info`)}"
+            data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
+            data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
+            data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
+          >i</span>
+        </span>
         <div class="bar-track"><div class="bar-fill ${className}" style="width:${score}%"></div></div>
         <strong>${score}</strong>
-        <em>${issueCount}</em>
       </button>
     `;
   }).join("");
@@ -366,12 +377,9 @@ function renderDashboardSummary(result) {
     (count, dimension) => count + (dimension.issues?.length || 0),
     0,
   );
-  const weakestProfile = [...(result.profile_scores || [])]
-    .sort((left, right) => left.score - right.score)[0] || null;
 
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
-    ${weakestProfile ? `<div class="summary-line summary-lowest">Most affected lens: ${escapeHtml(displayProfileName(weakestProfile.name))} (${weakestProfile.score})</div>` : ""}
   `;
 }
 
@@ -397,6 +405,89 @@ function setActiveDimensionBar(dimensionName) {
   const targetName = normalizedDimensionName(dimensionName);
   document.querySelectorAll(".dimension-row[data-dimension-key]").forEach((row) => {
     row.classList.toggle("is-linked-active", row.dataset.dimensionKey === targetName);
+  });
+}
+
+function tooltipCopyForDimension(dimensionName) {
+  const normalized = normalizedDimensionName(dimensionName);
+  const tooltipMap = {
+    [INFORMATION_OVERLOAD_NAME]: {
+      issue: "Too many competing elements appear at once.",
+      impact: "Users may struggle to identify the primary reading path quickly.",
+      fix: "Reduce first-screen focal points and group secondary content.",
+    },
+    Readability: {
+      issue: "Text density and sentence complexity are too high.",
+      impact: "Users may need to reread content and lose comprehension flow.",
+      fix: "Use shorter sentences and split long paragraphs into chunks.",
+    },
+    "Interaction & Distraction": {
+      issue: "Competing actions or motion divide user attention.",
+      impact: "Users may hesitate or miss the next action.",
+      fix: "Keep one primary CTA and reduce non-essential movement.",
+    },
+    Consistency: {
+      issue: "Layout or control patterns are not consistently applied.",
+      impact: "Users may spend extra effort relearning navigation patterns.",
+      fix: "Reuse consistent labels, spacing, and action placement.",
+    },
+  };
+  return tooltipMap[normalized] || {
+    issue: "This dimension signals cognitive-accessibility risk patterns.",
+    impact: "Users may need more effort to orient and complete key tasks.",
+    fix: "Simplify structure and prioritize the main user path.",
+  };
+}
+
+function initDimensionInfoTooltip() {
+  const existing = document.querySelector(".dimension-info-tooltip");
+  const tooltip = existing || document.createElement("div");
+  if (!existing) {
+    tooltip.className = "dimension-info-tooltip";
+    tooltip.hidden = true;
+    document.body.appendChild(tooltip);
+  }
+
+  const positionTooltip = (event) => {
+    const offset = 10;
+    tooltip.style.left = `${event.clientX + offset}px`;
+    tooltip.style.top = `${event.clientY + offset}px`;
+  };
+
+  const showTooltip = (target, event) => {
+    tooltip.innerHTML = `
+      <p><strong>Issue:</strong> ${escapeHtml(target.dataset.tipIssue || "")}</p>
+      <p><strong>Impact:</strong> ${escapeHtml(target.dataset.tipImpact || "")}</p>
+      <p><strong>Fix:</strong> ${escapeHtml(target.dataset.tipFix || "")}</p>
+    `;
+    tooltip.hidden = false;
+    if (event) positionTooltip(event);
+  };
+
+  const hideTooltip = () => {
+    tooltip.hidden = true;
+  };
+
+  document.addEventListener("pointerenter", (event) => {
+    const target = event.target.closest(".dimension-info-icon");
+    if (target) showTooltip(target, event);
+  }, true);
+
+  document.addEventListener("pointermove", (event) => {
+    if (!tooltip.hidden) positionTooltip(event);
+  }, true);
+
+  document.addEventListener("pointerleave", (event) => {
+    if (event.target.closest(".dimension-info-icon")) hideTooltip();
+  }, true);
+
+  document.addEventListener("focusin", (event) => {
+    const target = event.target.closest(".dimension-info-icon");
+    if (target) showTooltip(target);
+  });
+
+  document.addEventListener("focusout", (event) => {
+    if (event.target.closest(".dimension-info-icon")) hideTooltip();
   });
 }
 
@@ -746,6 +837,10 @@ function renderExplanation(result) {
       <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
         <summary class="explanation-accordion-summary">
           <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
+          <span class="explanation-accordion-meta">
+            <span class="explanation-accordion-issue-count">${issueCount}</span>
+            <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
+          </span>
         </summary>
         <div class="explanation-accordion-content">
           <p>${escapeHtml(summary)}</p>
@@ -1169,7 +1264,8 @@ function updateActiveHighlightButtons() {
   });
 
   document.querySelectorAll("[data-highlight-issue]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.highlightIssue === state.activeHighlightIssueId);
+    const issueId = `${button.dataset.highlightDimension || ""}:${button.dataset.highlightIssue || ""}`;
+    button.classList.toggle("is-active", issueId === state.activeHighlightIssueId);
   });
 }
 
@@ -1231,7 +1327,7 @@ function highlightDimension(dimensionName) {
 
 function highlightIssue(dimensionName, ruleId, force = false) {
   const issueId = `${dimensionName}:${ruleId}`;
-  if (!force && state.workspaceMode === "website" && state.activeHighlightIssueId === issueId) {
+  if (!force && state.activeHighlightIssueId === issueId) {
     clearWebsiteHighlights();
     state.activeHighlightIssueId = "";
     state.activeHighlightDimension = "";
@@ -1298,13 +1394,9 @@ function renderPrintSummary(result) {
 
   overallNode.textContent = String(result.overall_score);
   sourceNode.textContent = state.sourceName || "Uploaded file";
-  const weakestProfile = result.profile_scores?.length
-    ? result.profile_scores.slice().sort((left, right) => left.score - right.score)[0]
-    : null;
   summaryNode.textContent = [
     `Overall score ${result.overall_score}.`,
     `Lowest dimension ${result.min_dimension_score}.`,
-    weakestProfile ? `Lowest audience lens ${displayProfileName(weakestProfile.name)} (${weakestProfile.score}).` : "",
     `${result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0)} issues detected in this report.`,
   ].filter(Boolean).join(" ");
 
@@ -1685,6 +1777,7 @@ function bindEvents() {
   initSidebarResize();
   initAssistantFloating();
   initPreviewMessageBridge();
+  initDimensionInfoTooltip();
 
   if (printButton) {
     printButton.addEventListener("click", () => {
