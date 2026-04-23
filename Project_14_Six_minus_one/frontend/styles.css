@@ -990,14 +990,15 @@ input {
 .context-print-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 0 10px;
+  min-height: 40px;
+  padding: 0 16px;
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 999px;
   background: #fff;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1005,41 +1006,37 @@ input {
 .pane-header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
+.pane-header-actions-right .pane-header-actions {
+  width: auto;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
 .website-view-toggle {
-  border: 0;
-  background: transparent;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid rgba(47, 107, 255, 0.22);
+  border-radius: 999px;
+  background: #eef4ff;
   color: var(--accent);
+  box-shadow: 0 10px 24px rgba(47, 107, 255, 0.08);
   font-weight: 800;
   cursor: pointer;
-  padding: 6px 0;
 }
 
 .website-view-toggle:hover {
-  text-decoration: underline;
+  background: #e4edff;
+  border-color: rgba(47, 107, 255, 0.38);
 }
 
 .context-print-button:hover {
   background: #f4f7fb;
   color: var(--ink);
-}
-
-.nav-print-button {
-  min-height: 40px;
-  padding: 0 16px;
-  border-color: rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.nav-print-button:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
 }
 
 .sidebar-meta {
