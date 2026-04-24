@@ -1,4 +1,5 @@
 import {
+  API_BASE,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
@@ -471,7 +472,9 @@ function initDimensionInfoTooltip() {
   };
 
   document.addEventListener("pointerenter", (event) => {
-    const target = event.target.closest(".dimension-info-icon");
+    const target = event.target instanceof Element
+      ? event.target.closest(".dimension-info-icon")
+      : null;
     if (target) showTooltip(target, event);
   }, true);
 
@@ -480,16 +483,24 @@ function initDimensionInfoTooltip() {
   }, true);
 
   document.addEventListener("pointerleave", (event) => {
-    if (event.target.closest(".dimension-info-icon")) hideTooltip();
+    const target = event.target instanceof Element
+      ? event.target.closest(".dimension-info-icon")
+      : null;
+    if (target) hideTooltip();
   }, true);
 
   document.addEventListener("focusin", (event) => {
-    const target = event.target.closest(".dimension-info-icon");
+    const target = event.target instanceof Element
+      ? event.target.closest(".dimension-info-icon")
+      : null;
     if (target) showTooltip(target);
   });
 
   document.addEventListener("focusout", (event) => {
-    if (event.target.closest(".dimension-info-icon")) hideTooltip();
+    const target = event.target instanceof Element
+      ? event.target.closest(".dimension-info-icon")
+      : null;
+    if (target) hideTooltip();
   });
 }
 

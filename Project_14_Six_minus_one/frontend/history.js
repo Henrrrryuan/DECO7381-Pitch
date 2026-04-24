@@ -15,14 +15,18 @@ let searchRequestToken = 0;
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 
 function buildCurrentSession(detail) {
+  const sourceName = detail.run?.source_name || "history-item";
+  const sourceUrl = /^https?:\/\//i.test(sourceName) ? sourceName : "";
   return {
     current: {
       payload: detail.analysis,
       html: detail.html_content || "",
-      sourceName: detail.run?.source_name || "history-item",
+      sourceName,
+      sourceUrl,
       savedAt: detail.run?.created_at || new Date().toISOString(),
     },
     previous: null,
+    sourceUrl,
   };
 }
 

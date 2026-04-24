@@ -13,6 +13,7 @@ const state = {
   workflow: "url",
   loading: false,
 };
+const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 
 const workflowOptions = Array.from(document.querySelectorAll("[data-workflow-option]"));
 const workflowPanels = Array.from(document.querySelectorAll("[data-workflow-panel]"));
@@ -25,10 +26,21 @@ const dropzone = document.getElementById("dropzone");
 const selectedFileName = document.getElementById("selectedFileName");
 const analyzeButton = document.getElementById("analyzeButton");
 const uploadStatus = document.getElementById("uploadStatus");
+const eyeTrackingLinks = Array.from(document.querySelectorAll('a[href="/eye/"]'));
 
 function setStatus(message, isError = false) {
   uploadStatus.textContent = message;
   uploadStatus.classList.toggle("error", isError);
+}
+
+function updateEyeTrackingLinks(rawValue) {
+  const trimmed = String(rawValue || "").trim();
+  const targetHref = trimmed
+    ? `/eye/?prefill_url=${encodeURIComponent(trimmed)}`
+    : "/eye/";
+  eyeTrackingLinks.forEach((link) => {
+    link.href = targetHref;
+  });
 }
 
 function setWorkflow(workflow) {
@@ -72,6 +84,16 @@ function syncFile(file) {
 function syncUrl(value) {
   state.url = (value || "").trim();
   analyzeUrlButton.disabled = !state.url || state.loading;
+  updateEyeTrackingLinks(state.url);
+  try {
+    if (state.url) {
+      localStorage.setItem(EYE_TARGET_URL_STORAGE_KEY, state.url);
+    } else {
+      localStorage.removeItem(EYE_TARGET_URL_STORAGE_KEY);
+    }
+  } catch (_) {
+    // Ignore localStorage failures and keep the current in-memory URL.
+  }
 }
 
 function setLoading(loading) {
@@ -188,18 +210,24 @@ async function handleUrlSubmit(event) {
     const payload = await analyzeUrl(normalizedUrl, baselineRunId);
     const html = payload.html_content || "";
     const resolvedUrl = payload.resource_bundle?.entry_name || payload.run?.source_name || normalizedUrl;
+    try {
+      localStorage.setItem(EYE_TARGET_URL_STORAGE_KEY, normalizedUrl);
+    } catch (_) {
+      // Ignore localStorage failures and continue saving the dashboard session.
+    }
     saveDashboardSession({
       current: {
         payload,
         html,
         sourceName: resolvedUrl,
         sourceType: "url",
-        sourceUrl: resolvedUrl,
+        sourceUrl: normalizedUrl,
         savedAt: new Date().toISOString(),
       },
       previous: previousSession?.current || null,
       html,
       sourceName: resolvedUrl,
+      sourceUrl: normalizedUrl,
       savedAt: new Date().toISOString(),
     });
     window.location.href = "./dashboard.html";
@@ -266,4 +294,13 @@ workflowOptions.forEach((option) => {
 urlForm.addEventListener("submit", handleUrlSubmit);
 uploadForm.addEventListener("submit", handleSubmit);
 bindDropzone();
+try {
+  const storedEyeTargetUrl = localStorage.getItem(EYE_TARGET_URL_STORAGE_KEY) || "";
+  if (storedEyeTargetUrl && !urlInput.value.trim()) {
+    urlInput.value = storedEyeTargetUrl;
+  }
+} catch (_) {
+  // Ignore localStorage failures and fall back to the empty input state.
+}
+syncUrl(urlInput.value);
 setWorkflow("url");

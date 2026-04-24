@@ -21,6 +21,7 @@ const coverageText = document.getElementById("coverageText");
 const heatCtx = heatmapCanvas.getContext("2d");
 const coverageCtx = coverageCanvas.getContext("2d");
 const queryParams = new URLSearchParams(window.location.search);
+const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 
 const state = {
   started: false,
@@ -105,9 +106,32 @@ function normalizeTargetUrl(rawInput) {
     throw new Error("Please input a URL first.");
   }
 
-  const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value)
+  const hasHttpProtocol = /^https?:\/\//i.test(value);
+  const hasOtherProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+  if (hasOtherProtocol && !hasHttpProtocol) {
+    throw new Error("Only http:// or https:// URLs are supported.");
+  }
+
+  const candidateForHost = hasHttpProtocol ? value : `http://${value}`;
+  let host = "";
+  try {
+    host = new URL(candidateForHost).hostname.toLowerCase();
+  } catch (_) {
+    throw new Error("Invalid URL format.");
+  }
+
+  const isLocalTarget =
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host.endsWith(".local") ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  const withProtocol = hasHttpProtocol
     ? value
-    : `https://${value}`;
+    : `${isLocalTarget ? "http" : "https"}://${value}`;
 
   let parsed;
   try {
@@ -121,6 +145,32 @@ function normalizeTargetUrl(rawInput) {
   }
 
   return parsed.href;
+}
+
+function readPreferredTargetUrl() {
+  const explicitTarget = (queryParams.get("prefill_url") || "").trim();
+  if (explicitTarget) {
+    return explicitTarget;
+  }
+
+  try {
+    return (localStorage.getItem(EYE_TARGET_URL_STORAGE_KEY) || "").trim();
+  } catch (_) {
+    return "";
+  }
+}
+
+function persistPreferredTargetUrl(url) {
+  try {
+    const value = String(url || "").trim();
+    if (value) {
+      localStorage.setItem(EYE_TARGET_URL_STORAGE_KEY, value);
+    } else {
+      localStorage.removeItem(EYE_TARGET_URL_STORAGE_KEY);
+    }
+  } catch (_) {
+    // Ignore localStorage failures and keep the current in-memory target URL.
+  }
 }
 
 function setFrameHint(text) {
@@ -142,6 +192,7 @@ function loadTargetUrl(rawInput) {
     const normalizedUrl = normalizeTargetUrl(rawInput);
     state.currentTargetUrl = normalizedUrl;
     urlInput.value = normalizedUrl;
+    persistPreferredTargetUrl(normalizedUrl);
     targetFrame.src = toProxyUrl(normalizedUrl);
     setFrameHint(
       "Page is loaded through local proxy mode. Some highly dynamic or login-heavy sites may still behave differently."
@@ -688,6 +739,11 @@ resizeHeatmapCanvas();
 drawCoverageMap();
 setPreviewVisibility(false);
 setTrackingControlsEnabled(false);
+
+const preferredTargetUrl = readPreferredTargetUrl();
+if (urlInput && preferredTargetUrl) {
+  urlInput.value = preferredTargetUrl;
+}
 
 if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
