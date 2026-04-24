@@ -33,13 +33,13 @@
     </section>
 
     <section class="history-toolbar" aria-label="History search">
-      <label class="history-search-label" for="historySearchInput">Search by file name, report ID, or eye session ID</label>
+      <label class="history-search-label" for="historySearchInput">Search by file name, report ID, or evidence session ID</label>
       <div class="history-search-row">
         <input
           id="historySearchInput"
           class="history-search-input"
           type="search"
-          placeholder="Enter a file name, report ID, or eye session ID"
+          placeholder="Enter a file name, report ID, or evidence session ID"
           autocomplete="off"
         >
         <button id="historySearchButton" class="history-search-button" type="button" aria-label="Search reports">
@@ -64,28 +64,28 @@
     <section class="history-list-shell eye-history-shell">
       <div class="history-section-header">
         <div>
-          <p class="upload-kicker">Eye Tracking</p>
-          <h2>Saved Eye Tracking Sessions</h2>
+          <p class="upload-kicker">Supporting Evidence</p>
+          <h2>Eye-Tracking Evidence Sessions</h2>
         </div>
         <p class="history-section-copy">
-          Review saved gaze sessions, coverage values, and related analysis runs.
+          Review saved gaze sessions as supporting evidence for attention patterns, information overload, and related analysis runs.
         </p>
       </div>
       <div class="history-eye-table-head">
-        <span>Session ID</span>
+        <span>Evidence ID</span>
         <span>Page</span>
         <span>Date</span>
         <span>Coverage</span>
         <span>Samples</span>
         <span>Duration</span>
-        <span>Related Run</span>
+        <span>Related Analysis</span>
       </div>
       <div id="eyeHistoryList" class="history-table-body">
-        <p class="history-empty">Loading eye tracking history...</p>
+        <p class="history-empty">Loading eye-tracking evidence...</p>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./history.js?v=history-eye-sessions-2"></script>
+  <script type="module" src="./history.js?v=history-eye-sessions-3"></script>
 </body>
 </html>

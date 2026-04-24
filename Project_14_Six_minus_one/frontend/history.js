@@ -66,7 +66,7 @@ function renderHistoryRows(items, emptyMessage = "No analysis history has been s
   `).join("");
 }
 
-function renderEyeHistoryRows(items, emptyMessage = "No eye tracking sessions have been saved yet.") {
+function renderEyeHistoryRows(items, emptyMessage = "No eye-tracking evidence sessions have been saved yet.") {
   const eyeHistoryList = document.getElementById("eyeHistoryList");
   if (!eyeHistoryList) {
     return;
@@ -144,7 +144,7 @@ function applyHistoryFilter() {
   );
 
   renderHistoryRows(filteredItems, "No reports match the current file name or ID search.");
-  renderEyeHistoryRows(filteredEyeItems, "No eye tracking sessions match the current search.");
+    renderEyeHistoryRows(filteredEyeItems, "No eye-tracking evidence sessions match the current search.");
 }
 
 async function runHistorySearch() {
@@ -158,7 +158,7 @@ async function runHistorySearch() {
     historyList.innerHTML = `<p class="history-empty">Searching analysis history...</p>`;
   }
   if (eyeHistoryList) {
-    eyeHistoryList.innerHTML = `<p class="history-empty">Searching eye tracking history...</p>`;
+    eyeHistoryList.innerHTML = `<p class="history-empty">Searching eye-tracking evidence...</p>`;
   }
 
   try {
