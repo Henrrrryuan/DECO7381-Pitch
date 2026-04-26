@@ -1217,6 +1217,8 @@ button.dimension-row.is-linked-active .bar-track {
   border: 0;
   border-radius: 0;
   background: var(--surface);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .comparison-list {
@@ -1461,7 +1463,7 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .pane-header-actions-right {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
 }
 
 .visually-hidden {
