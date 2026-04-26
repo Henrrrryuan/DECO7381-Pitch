@@ -926,56 +926,15 @@ function getPreviewUrl() {
   return isProbablyUrl(runSourceName) ? runSourceName : "";
 }
 
-function buildGuardedPreviewHtml(html) {
-  const guardMarkup = `
+function buildPreviewHtml(html) {
+  const baseMarkup = `
 <base href="about:srcdoc">
-<script>
-(() => {
-  if (window.__cognilensPreviewGuard) return;
-  window.__cognilensPreviewGuard = true;
-
-  const normalize = (value) => String(value || "").replace(/\\s+/g, " ").trim();
-  const describeControl = (control) => {
-    const label = normalize(
-      control.textContent
-      || control.getAttribute("aria-label")
-      || control.getAttribute("title")
-      || control.getAttribute("href")
-      || "interactive element"
-    );
-    return label ? '"' + label.slice(0, 48) + '"' : "this interactive element";
-  };
-  const notify = (message) => {
-    try {
-      window.parent.postMessage({ type: "cognilens-preview-interaction-blocked", message }, "*");
-    } catch (_error) {}
-  };
-
-  document.addEventListener("click", (event) => {
-    const target = event.target && event.target.closest ? event.target : event.target && event.target.parentElement;
-    const control = target && target.closest && target.closest("a[href], button, [role='button'], input[type='button'], input[type='submit']");
-    if (!control) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    notify("Preview interaction blocked: " + describeControl(control) + " is disabled to keep the analyzed page stable.");
-    return false;
-  }, true);
-
-  document.addEventListener("submit", (event) => {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    notify("Preview form submission blocked to keep the analyzed page stable.");
-    return false;
-  }, true);
-})();
-<\/script>
 `;
-
   const source = String(html || "");
   if (/<head[\s>]/i.test(source)) {
-    return source.replace(/<head([^>]*)>/i, `<head$1>${guardMarkup}`);
+    return source.replace(/<head([^>]*)>/i, `<head$1>${baseMarkup}`);
   }
-  return `${guardMarkup}${source}`;
+  return `${baseMarkup}${source}`;
 }
 
 function loadWebsitePreview() {
@@ -997,11 +956,11 @@ function loadWebsitePreview() {
   }
 
   if (state.currentHtml) {
-    if (frame.dataset.previewHtml !== state.currentHtml || frame.dataset.previewGuardVersion !== "2") {
+    if (frame.dataset.previewHtml !== state.currentHtml || frame.dataset.previewGuardVersion !== "3") {
       frame.removeAttribute("src");
-      frame.srcdoc = buildGuardedPreviewHtml(state.currentHtml);
+      frame.srcdoc = buildPreviewHtml(state.currentHtml);
       frame.dataset.previewHtml = state.currentHtml;
-      frame.dataset.previewGuardVersion = "2";
+      frame.dataset.previewGuardVersion = "3";
       setWebsiteStatus("Loaded uploaded HTML preview. Choose a dimension to highlight related areas.");
     }
     return;
@@ -1057,43 +1016,6 @@ function injectHighlightStyles(doc) {
     }
   `;
   doc.head?.appendChild(style);
-}
-
-function installPreviewInteractionGuard(doc) {
-  if (!doc?.documentElement || doc.documentElement.dataset.cognilensInteractionGuard === "true") {
-    return;
-  }
-
-  doc.documentElement.dataset.cognilensInteractionGuard = "true";
-
-  const describeControl = (control) => {
-    const label = normalizeInlineText(
-      control.textContent
-      || control.getAttribute?.("aria-label")
-      || control.getAttribute?.("title")
-      || control.getAttribute?.("href")
-      || "interactive element",
-    );
-    return label ? `"${label.slice(0, 48)}"` : "this interactive element";
-  };
-
-  doc.addEventListener("click", (event) => {
-    const target = event.target?.closest ? event.target : event.target?.parentElement;
-    const control = target?.closest?.("a[href], button, [role='button'], input[type='button'], input[type='submit']");
-    if (!control) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    setWebsiteStatus(`Preview interaction blocked: ${describeControl(control)} is disabled to keep the analyzed page stable.`);
-  }, true);
-
-  doc.addEventListener("submit", (event) => {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    setWebsiteStatus("Preview form submission blocked to keep the analyzed page stable.");
-  }, true);
 }
 
 function clearWebsiteHighlights(doc = getPreviewDocument()) {
@@ -1793,12 +1715,6 @@ function initAssistantFloating() {
 }
 
 function initPreviewMessageBridge() {
-  window.addEventListener("message", (event) => {
-    if (event.data?.type !== "cognilens-preview-interaction-blocked") {
-      return;
-    }
-    setWebsiteStatus(String(event.data.message || "Preview interaction blocked to keep the analyzed page stable."));
-  });
 }
 
 function bindEvents() {
@@ -1904,7 +1820,6 @@ function bindEvents() {
         return;
       }
       injectHighlightStyles(doc);
-      installPreviewInteractionGuard(doc);
       setWebsiteStatus("Website preview loaded. Choose a dimension to highlight related areas.");
       if (state.activeHighlightIssueId) {
         const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
