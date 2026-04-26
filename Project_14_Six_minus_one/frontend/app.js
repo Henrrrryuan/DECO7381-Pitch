@@ -1,10 +1,12 @@
 import {
   API_BASE,
+  analyzeHtmlText,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
   findDimension,
   loadDashboardSession,
+  saveDashboardSession,
 } from "./common.js";
 
 const state = {
@@ -20,6 +22,9 @@ const state = {
   chatPending: false,
   sidebarCollapsed: false,
   assistantFloatingOpen: false,
+  renderedDomAnalysisKey: "",
+  renderedDomAnalysisPending: false,
+  renderedDomAnalysisTimer: null,
 };
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
@@ -1183,6 +1188,36 @@ function collectTextBlocks(doc) {
     .filter((element) => normalizeInlineText(element.textContent).length >= 20);
 }
 
+function countMeaningfulElements(doc) {
+  if (!doc?.body) {
+    return 0;
+  }
+  return doc.body.querySelectorAll("button, a, input, textarea, select, section, article, nav, aside, dialog, [role='dialog'], [role='button'], [class*='card' i], [class*='modal' i], [class*='popup' i]").length;
+}
+
+function isLegacyCtaCompetitionIssue(issue) {
+  if (!issue || issue.rule_id !== "ID-3") {
+    return false;
+  }
+
+  const text = normalizeInlineText([
+    issue.title,
+    issue.description,
+    issue.suggestion,
+  ].filter(Boolean).join(" "));
+
+  return [
+    "primary-looking actions",
+    "decision hierarchy",
+    "what to do next",
+    "next action",
+    "multiple buttons",
+    "competing ctas",
+    "competing actions",
+    "primary action buttons",
+  ].some((keyword) => text.includes(keyword));
+}
+
 function findByText(doc, tag, text) {
   const normalizedText = normalizeInlineText(text);
   if (!normalizedText) {
@@ -1290,6 +1325,9 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
     return ["[style*='animation' i]", "[style*='transition' i]", "marquee", "video", "iframe", "[class*='animate' i]", "[class*='motion' i]"];
   }
   if (ruleId === "ID-3") {
+    if (isLegacyCtaCompetitionIssue(issue)) {
+      return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='btn' i]", "[class*='action' i]"];
+    }
     return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
   }
   if (ruleId === "CS-1") {
@@ -1620,6 +1658,120 @@ function renderResult(result, html) {
   renderPrintSummary(result);
   renderExplanation(result);
   renderAssistantMessages();
+}
+
+function buildRenderedDomAnalysisKey(doc) {
+  if (!doc?.documentElement) {
+    return "";
+  }
+  const title = String(doc.title || "").trim();
+  const textSample = normalizeInlineText(doc.body?.innerText || "").slice(0, 400);
+  const elementCount = countMeaningfulElements(doc);
+  return `${getPreviewUrl()}::${title}::${elementCount}::${textSample}`;
+}
+
+function shouldAnalyzeRenderedPreview(doc) {
+  if (!isProbablyUrl(state.sourceUrl) || !doc?.documentElement || state.renderedDomAnalysisPending) {
+    return false;
+  }
+  const html = doc.documentElement.outerHTML || "";
+  if (!html.trim()) {
+    return false;
+  }
+  const key = buildRenderedDomAnalysisKey(doc);
+  if (!key || key === state.renderedDomAnalysisKey) {
+    return false;
+  }
+  return true;
+}
+
+function saveTransientDashboardState(payload, html) {
+  const existingSession = loadDashboardSession();
+  if (!existingSession?.current) {
+    return;
+  }
+  saveDashboardSession({
+    ...existingSession,
+    current: {
+      ...existingSession.current,
+      payload,
+      html,
+      savedAt: new Date().toISOString(),
+    },
+    html,
+    sourceName: state.sourceName,
+    sourceUrl: state.sourceUrl,
+    savedAt: new Date().toISOString(),
+  });
+}
+
+async function analyzeRenderedPreviewDocument(doc) {
+  if (!shouldAnalyzeRenderedPreview(doc)) {
+    return;
+  }
+
+  const renderedHtml = doc.documentElement.outerHTML || "";
+  const analysisKey = buildRenderedDomAnalysisKey(doc);
+  if (!renderedHtml.trim() || !analysisKey) {
+    return;
+  }
+
+  state.renderedDomAnalysisPending = true;
+  setWebsiteStatus("Preview rendered. Re-analyzing the live DOM for a more accurate localhost result...");
+
+  try {
+    const renderedPayload = await analyzeHtmlText(
+      renderedHtml,
+      state.sourceUrl || state.sourceName || "rendered-preview.html",
+      { persistResult: false },
+    );
+    const mergedPayload = {
+      ...(state.currentPayload || {}),
+      ...renderedPayload,
+      run: state.currentPayload?.run || renderedPayload.run,
+      resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
+      html_content: renderedHtml,
+    };
+
+    state.currentPayload = mergedPayload;
+    state.renderedDomAnalysisKey = analysisKey;
+    saveTransientDashboardState(mergedPayload, renderedHtml);
+    renderResult(buildAnalysisView(mergedPayload), renderedHtml);
+    updateActiveHighlightButtons();
+
+    const frameDoc = getPreviewDocument();
+    if (frameDoc) {
+      injectHighlightStyles(frameDoc);
+      clearWebsiteHighlights(frameDoc);
+      if (state.activeHighlightIssueId) {
+        const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
+        highlightIssue(dimensionName, ruleId, true);
+      } else if (state.activeHighlightDimension) {
+        highlightDimension(state.activeHighlightDimension);
+      } else {
+        setWebsiteStatus("Live DOM analysis updated. Choose a dimension or issue to highlight related areas.");
+      }
+    }
+  } catch (error) {
+    state.renderedDomAnalysisKey = analysisKey;
+    setWebsiteStatus(`Rendered preview analysis failed: ${error.message || String(error)}`, true);
+  } finally {
+    state.renderedDomAnalysisPending = false;
+  }
+}
+
+function queueRenderedDomAnalysis() {
+  const doc = getPreviewDocument();
+  if (!shouldAnalyzeRenderedPreview(doc)) {
+    return;
+  }
+  if (state.renderedDomAnalysisTimer) {
+    window.clearTimeout(state.renderedDomAnalysisTimer);
+  }
+  state.renderedDomAnalysisTimer = window.setTimeout(() => {
+    const latestDoc = getPreviewDocument();
+    analyzeRenderedPreviewDocument(latestDoc);
+  }, 900);
 }
 
 function getStoredSidebarWidth() {
@@ -1956,6 +2108,7 @@ function bindEvents() {
       } else if (state.activeHighlightDimension) {
         highlightDimension(state.activeHighlightDimension);
       }
+      queueRenderedDomAnalysis();
     });
   }
 }

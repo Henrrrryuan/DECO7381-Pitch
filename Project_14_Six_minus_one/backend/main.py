@@ -120,6 +120,7 @@ class AnalyzePayload(BaseModel):
     html: str
     source_name: str | None = None
     baseline_run_id: str | None = None
+    persist_result: bool = True
 
 
 class AnalyzeUrlPayload(BaseModel):
@@ -646,6 +647,11 @@ def save_eye_session(payload: SaveEyeTrackingSessionPayload) -> dict[str, Any]:
 @app.post("/analyze")
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
     analysis = analyze_html(payload.html)
+    if not payload.persist_result:
+        response_payload = analysis.to_dict()
+        response_payload["html_content"] = payload.html
+        response_payload["baseline_run_id"] = None
+        return response_payload
     return build_analysis_response(
         analysis,
         html_content=payload.html,

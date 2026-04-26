@@ -54,13 +54,15 @@ function formatDate(value) {
   return parsed.toLocaleString();
 }
 
-async function analyzeHtmlText(html, sourceName = "uploaded.html") {
+async function analyzeHtmlText(html, sourceName = "uploaded.html", options = {}) {
+  const { persistResult = true } = options;
   return fetchJson(`${API_BASE}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       html,
       source_name: sourceName,
+      persist_result: persistResult,
     }),
   });
 }
