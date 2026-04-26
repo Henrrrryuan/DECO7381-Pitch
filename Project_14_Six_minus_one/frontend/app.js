@@ -75,6 +75,101 @@ const DIMENSION_CONFIG = [
   { name: "Consistency", className: "consistency" },
 ];
 
+const RULE_FRAMEWORK_MAP = {
+  "IO-1": {
+    coga: "COGA: Help users focus on the primary task",
+    iso: "ISO 9241-11: Efficiency and satisfaction",
+    wcag: "WCAG: Understandable content structure",
+  },
+  "IO-2": {
+    coga: "COGA: Reduce cognitive load from dense regions",
+    iso: "ISO 9241-11: Efficiency",
+    wcag: "WCAG: Understandable grouping and chunking",
+  },
+  "IO-3": {
+    coga: "COGA: Minimize competing peripheral content",
+    iso: "ISO 9241-11: Satisfaction and comfort",
+    wcag: "WCAG: Understandable page purpose",
+  },
+  "IO-4": {
+    coga: "COGA: Make the next action obvious",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Predictable operation",
+  },
+  "IO-5": {
+    coga: "COGA: Keep a clear information hierarchy",
+    iso: "ISO 9241-11: Effectiveness and efficiency",
+    wcag: "WCAG: Semantic heading structure",
+  },
+  "RD-1": {
+    coga: "COGA: Use shorter, easier language",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Readable text and comprehension",
+  },
+  "RD-2": {
+    coga: "COGA: Break content into manageable chunks",
+    iso: "ISO 9241-11: Efficiency",
+    wcag: "WCAG: Understandable content blocks",
+  },
+  "RD-3": {
+    coga: "COGA: Use clear action labels",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Input purpose clarity",
+  },
+  "RD-4": {
+    coga: "COGA: Prefer familiar vocabulary",
+    iso: "ISO 9241-11: Effectiveness and satisfaction",
+    wcag: "WCAG: Understandable wording",
+  },
+  "RD-5": {
+    coga: "COGA: Keep instructions explicit and direct",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Understandable instructions",
+  },
+  "RD-6": {
+    coga: "COGA: Support scanning with chunking",
+    iso: "ISO 9241-11: Efficiency",
+    wcag: "WCAG: Understandable content organization",
+  },
+  "ID-1": {
+    coga: "COGA: Avoid unexpected autoplay triggers",
+    iso: "ISO 9241-11: Satisfaction and comfort",
+    wcag: "WCAG: Provide user control over media",
+  },
+  "ID-2": {
+    coga: "COGA: Reduce distracting motion",
+    iso: "ISO 9241-11: Satisfaction",
+    wcag: "WCAG: Animation and motion control",
+  },
+  "ID-3": {
+    coga: "COGA: Avoid interruptive overlays",
+    iso: "ISO 9241-11: Effectiveness and satisfaction",
+    wcag: "WCAG: Predictable interactions",
+  },
+  "CS-1": {
+    coga: "COGA: Keep structure predictable",
+    iso: "ISO 9241-11: Efficiency and confidence",
+    wcag: "WCAG: Consistent heading hierarchy",
+  },
+  "CS-2": {
+    coga: "COGA: Keep users oriented in multi-step tasks",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Location and progress cues",
+  },
+  "CS-3": {
+    coga: "COGA: Use consistent action wording",
+    iso: "ISO 9241-11: Effectiveness and efficiency",
+    wcag: "WCAG: Consistent identification",
+  },
+};
+
+const RULE_BENEFICIARY_TAGS = {
+  IO: ["Reading difficulties", "Attention regulation"],
+  RD: ["Reading difficulties", "Communication differences"],
+  ID: ["Attention regulation", "Autistic users"],
+  CS: ["Autistic users", "Executive function support"],
+};
+
 const HIGHLIGHT_CONFIG = {
   [INFORMATION_OVERLOAD_NAME]: {
     color: "#df3e53",
@@ -666,6 +761,25 @@ function affectedUsersCopy(issue, dimensionName) {
   return "Users with cognitive or communication needs may need clearer guidance and lower mental effort.";
 }
 
+function frameworkMappingCopy(ruleId) {
+  return RULE_FRAMEWORK_MAP[ruleId] || {
+    coga: "COGA: reduce cognitive load in task flow",
+    iso: "ISO 9241-11: effectiveness, efficiency, satisfaction",
+    wcag: "WCAG: understandable and predictable interactions",
+  };
+}
+
+function beneficiaryTags(ruleId, dimensionName) {
+  const prefix = String(ruleId || "").split("-")[0] || "";
+  if (RULE_BENEFICIARY_TAGS[prefix]) {
+    return RULE_BENEFICIARY_TAGS[prefix];
+  }
+  if (dimensionName === "Readability") return RULE_BENEFICIARY_TAGS.RD;
+  if (dimensionName === "Interaction & Distraction") return RULE_BENEFICIARY_TAGS.ID;
+  if (dimensionName === "Consistency") return RULE_BENEFICIARY_TAGS.CS;
+  return RULE_BENEFICIARY_TAGS.IO;
+}
+
 function comparisonRow(label, currentScore, previousScore, className = "") {
   const { direction, label: deltaLabel } = deltaMeta(currentScore, previousScore);
   const previousWidth = Math.max(0, Math.min(100, previousScore));
@@ -776,6 +890,16 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
         ${comparisonEvidence}
       </ul>
     </article>
+
+    <article class="priority-card">
+      <span class="priority-eyebrow">Standards and audience relevance</span>
+      <ul class="priority-evidence">
+        <li><strong>COGA:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").coga)}</li>
+        <li><strong>ISO 9241-11:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").iso)}</li>
+        <li><strong>WCAG mapping:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").wcag)}</li>
+        <li><strong>Priority beneficiary groups:</strong> ${escapeHtml(beneficiaryTags(primaryIssue?.rule_id || "", displayPriorityDimension).join(", "))}</li>
+      </ul>
+    </article>
   `;
 }
 
@@ -839,6 +963,10 @@ function renderExplanation(result) {
                 <span class="issue-highlight-copy">${escapeHtml(affectedUsersCopy(issue, dimension.dimension))}</span>
               </div>
               <div class="issue-highlight-section">
+                <span class="issue-highlight-label">Standards mapping</span>
+                <span class="issue-highlight-copy">${escapeHtml(frameworkMappingCopy(issue.rule_id).coga)} | ${escapeHtml(frameworkMappingCopy(issue.rule_id).iso)} | ${escapeHtml(frameworkMappingCopy(issue.rule_id).wcag)}</span>
+              </div>
+              <div class="issue-highlight-section">
                 <span class="issue-highlight-label">What to change</span>
                 <span class="issue-highlight-copy">${escapeHtml(issue.suggestion)}</span>
               </div>
@@ -854,6 +982,7 @@ function renderExplanation(result) {
             >
               <strong>${escapeHtml(issue.rule_id)}</strong>
               <span>${escapeHtml(issue.description)}</span>
+              <span class="issue-inline-meta">${escapeHtml(beneficiaryTags(issue.rule_id, dimension.dimension).join(" | "))}</span>
             </button>
           `).join("")}</div>`
       : "";

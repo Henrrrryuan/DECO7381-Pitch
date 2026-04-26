@@ -35,11 +35,18 @@ SERIOUS_BASE_PENALTY = 4
 LOCATION_CUE_KEYWORDS = ("breadcrumb", "step", "steps", "stepper", "progress", "wizard", "checkout")
 HEADING_SELECTORS = ("h1", "h2", "h3", "h4", "h5", "h6")
 STRUCTURE_REGION_TAGS = ("nav", "main", "section", "article")
+ACTIONABLE_CONTROL_TAGS = ("a", "button", "input")
+INPUT_ACTION_TYPES = {"button", "submit", "reset"}
 STEP_TEXT_PATTERN = re.compile(
     r"\bstep\s*\d+\b|\b\d+\s*of\s*\d+\b|\b\d+\s*/\s*\d+\b",
     re.IGNORECASE,
 )
 PATH_TEXT_PATTERN = re.compile(r"\b\w+\s*(?:>|/|›|»)\s*\w+")
+ACTION_LABEL_GROUPS: dict[str, set[str]] = {
+    "next_step": {"next", "continue", "proceed"},
+    "previous_step": {"back", "go back", "previous", "prev"},
+    "confirm_submit": {"submit", "confirm", "finish", "complete", "done"},
+}
 
 
 def analyze_consistency(html: str) -> DimensionResult:
@@ -53,8 +60,13 @@ def analyze_consistency(html: str) -> DimensionResult:
     heading_issue = detect_cs1_heading_hierarchy(headings)
     location_cue_metrics = collect_location_cue_metrics(soup, headings, navs)
     location_issue = detect_cs2_missing_location_cue(location_cue_metrics)
+    action_label_issue = detect_cs3_inconsistent_action_labels(soup)
 
-    issues = [issue for issue in (heading_issue, location_issue) if issue is not None]
+    issues = [
+        issue
+        for issue in (heading_issue, location_issue, action_label_issue)
+        if issue is not None
+    ]
     total_penalty = sum(issue.penalty for issue in issues)
     score = calculate_dimension_score(DIMENSION_NAME, total_penalty)
 
@@ -63,7 +75,7 @@ def analyze_consistency(html: str) -> DimensionResult:
         score=score,
         issues=issues,
         metadata={
-            "implemented_rules": ["CS-1", "CS-2"],
+            "implemented_rules": ["CS-1", "CS-2", "CS-3"],
             "pending_rules": [],
             "input_scope": ["html_file", "html_snippet"],
             "out_of_scope": ["pdf", "image", "live_url_fetch", "multi_source_mixed_input"],
@@ -75,7 +87,7 @@ def analyze_consistency(html: str) -> DimensionResult:
             "scoring_model": {
                 "formula": SCORING_FORMULA_TEXT,
                 "penalty_formula": PENALTY_FORMULA_TEXT,
-                "dimension_penalty_cap": 21,
+                "dimension_penalty_cap": 30,
             },
         },
     )
@@ -195,6 +207,76 @@ def detect_cs2_missing_location_cue(metrics: dict[str, Any]) -> Issue | None:
             "nav_count": metrics["nav_count"],
         },
         locations=metrics["locations"][:5],
+    )
+
+
+def detect_cs3_inconsistent_action_labels(soup: BeautifulSoup) -> Issue | None:
+    grouped_labels: dict[str, set[str]] = {group: set() for group in ACTION_LABEL_GROUPS}
+    grouped_locations: dict[str, list[dict[str, Any]]] = {
+        group: [] for group in ACTION_LABEL_GROUPS
+    }
+
+    for tag in soup.find_all(ACTIONABLE_CONTROL_TAGS):
+        if not isinstance(tag, Tag):
+            continue
+
+        label = normalize_control_label(tag)
+        if not label:
+            continue
+
+        group = label_group_for_action(label)
+        if not group:
+            continue
+
+        grouped_labels[group].add(label)
+        grouped_locations[group].append(
+            {
+                "tag": tag.name or "unknown",
+                "label": label,
+                "summary": get_tag_summary(tag),
+            }
+        )
+
+    inconsistent_groups = {
+        group: sorted(labels)
+        for group, labels in grouped_labels.items()
+        if len(labels) >= 2
+    }
+    if not inconsistent_groups:
+        return None
+
+    max_label_variants = max(len(labels) for labels in inconsistent_groups.values())
+    if len(inconsistent_groups) >= 2 or max_label_variants >= 3:
+        severity: Severity = "major"
+    else:
+        severity = "minor"
+
+    locations: list[dict[str, Any]] = []
+    for group in inconsistent_groups:
+        seen_labels: set[str] = set()
+        for item in grouped_locations[group]:
+            if item["label"] in seen_labels:
+                continue
+            seen_labels.add(item["label"])
+            locations.append(item)
+            if len(locations) >= 6:
+                break
+        if len(locations) >= 6:
+            break
+
+    return build_issue(
+        rule_id="CS-3",
+        title="Action labels are inconsistent",
+        severity=severity,
+        base_penalty=REGULAR_BASE_PENALTY,
+        description="Using different labels for the same action pattern can break predictability. Users may pause to reinterpret whether buttons mean the same thing, which increases decision and memory load.",
+        suggestion="Use one consistent label for each repeated action pattern (for example, always use 'Continue' for forward flow and one stable term for submission).",
+        evidence={
+            "inconsistent_groups": inconsistent_groups,
+            "group_count": len(inconsistent_groups),
+            "max_label_variants": max_label_variants,
+        },
+        locations=locations,
     )
 
 
@@ -419,6 +501,44 @@ def get_tag_summary(tag: Tag) -> str:
 
 def normalize_text(text: str) -> str:
     return " ".join(text.split())
+
+
+def normalize_control_label(tag: Tag) -> str:
+    if tag.name == "input":
+        input_type = (tag.get("type") or "").lower()
+        if input_type and input_type not in INPUT_ACTION_TYPES:
+            return ""
+        label = (
+            tag.get("value")
+            or tag.get("aria-label")
+            or tag.get("title")
+            or ""
+        )
+        return normalize_text(label).lower()
+
+    label = (
+        tag.get_text(" ", strip=True)
+        or tag.get("aria-label")
+        or tag.get("title")
+        or ""
+    )
+    return normalize_text(label).lower()
+
+
+def label_group_for_action(label: str) -> str | None:
+    normalized = normalize_text(label).lower()
+    if not normalized:
+        return None
+
+    for group, variants in ACTION_LABEL_GROUPS.items():
+        if normalized in variants:
+            return group
+
+    # Handle short phrases such as "continue to payment".
+    for group, variants in ACTION_LABEL_GROUPS.items():
+        if any(normalized.startswith(f"{variant} ") for variant in variants):
+            return group
+    return None
 
 
 def load_html_from_file(path: str | Path) -> str:

@@ -1857,6 +1857,11 @@ button.dimension-row.is-linked-active .bar-track {
   line-height: 1.55;
 }
 
+.issue-inline-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .information-overload-card {
   grid-template-columns: 1fr;
   gap: 10px;
