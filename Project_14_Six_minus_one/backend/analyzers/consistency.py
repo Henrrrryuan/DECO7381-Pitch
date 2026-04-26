@@ -31,13 +31,20 @@ DIMENSION_NAME = "Consistency"
 
 REGULAR_BASE_PENALTY = 3
 SERIOUS_BASE_PENALTY = 4
-CONSISTENCY_PENALTY_CAP = 48
+CONSISTENCY_PENALTY_CAP = 54
 
 LOCATION_CUE_KEYWORDS = ("breadcrumb", "step", "steps", "stepper", "progress", "wizard", "checkout")
 HEADING_SELECTORS = ("h1", "h2", "h3", "h4", "h5", "h6")
 GENERIC_PAGE_PURPOSE_TEXTS = {"home", "homepage", "welcome", "welcome page", "main", "index", "start"}
 GENERIC_NAV_TEXTS = {"click here", "here", "more", "read more", "learn more", "details", "view", "open", "go"}
 CONTROL_RELATIONSHIP_ROLES = {"", "tab", "button", "switch", "menuitem", "treeitem"}
+ACTIONABLE_CONTROL_TAGS = ("a", "button", "input")
+INPUT_ACTION_TYPES = {"button", "submit", "reset"}
+ACTION_LABEL_GROUPS: dict[str, set[str]] = {
+    "next_step": {"next", "continue", "proceed"},
+    "previous_step": {"back", "go back", "previous", "prev"},
+    "confirm_submit": {"submit", "confirm", "finish", "complete", "done"},
+}
 
 STEP_TEXT_PATTERN = re.compile(r"\bstep\s*\d+\b|\b\d+\s*of\s*\d+\b|\b\d+\s*/\s*\d+\b", re.IGNORECASE)
 PATH_TEXT_PATTERN = re.compile(r"\b\w+\s*(?:>|/|->|»|›)\s*\w+")
@@ -62,6 +69,7 @@ def analyze_consistency(html: str) -> DimensionResult:
             detect_cs5_unclear_navigation_structure(soup, navs, headings),
             detect_cs6_missing_or_unclear_search(soup, headings, navs),
             detect_cs7_unclear_controls(soup),
+            detect_cs8_inconsistent_action_labels(soup),
         )
         if issue is not None
     ]
@@ -74,8 +82,8 @@ def analyze_consistency(html: str) -> DimensionResult:
         score=score,
         issues=issues,
         metadata={
-            "implemented_rules": ["CS-1", "CS-2", "CS-3", "CS-4", "CS-5", "CS-6", "CS-7"],
-            "pending_rules": ["CS-8 cross-page repeated navigation consistency for ZIP input"],
+            "implemented_rules": ["CS-1", "CS-2", "CS-3", "CS-4", "CS-5", "CS-6", "CS-7", "CS-8"],
+            "pending_rules": ["CS-9 cross-page repeated navigation consistency for ZIP input"],
             "input_scope": ["html_file", "html_snippet"],
             "out_of_scope": ["pdf", "image", "live_url_fetch", "cross_page_consistency"],
             "heading_count": len(headings),
@@ -440,6 +448,54 @@ def detect_cs7_unclear_controls(soup: BeautifulSoup) -> Issue | None:
     )
 
 
+def detect_cs8_inconsistent_action_labels(soup: BeautifulSoup) -> Issue | None:
+    grouped_labels: dict[str, set[str]] = {group: set() for group in ACTION_LABEL_GROUPS}
+    grouped_locations: dict[str, list[dict[str, Any]]] = {group: [] for group in ACTION_LABEL_GROUPS}
+
+    for tag in soup.find_all(ACTIONABLE_CONTROL_TAGS):
+        if not isinstance(tag, Tag):
+            continue
+        label = normalize_control_label(tag)
+        if not label:
+            continue
+        group = label_group_for_action(label)
+        if not group:
+            continue
+        grouped_labels[group].add(label)
+        grouped_locations[group].append({"tag": tag.name or "unknown", "label": label, "summary": get_tag_summary(tag)})
+
+    inconsistent_groups = {group: sorted(labels) for group, labels in grouped_labels.items() if len(labels) >= 2}
+    if not inconsistent_groups:
+        return None
+
+    max_label_variants = max(len(labels) for labels in inconsistent_groups.values())
+    severity: Severity = "major" if len(inconsistent_groups) >= 2 or max_label_variants >= 3 else "minor"
+
+    locations: list[dict[str, Any]] = []
+    for group in inconsistent_groups:
+        seen_labels: set[str] = set()
+        for item in grouped_locations[group]:
+            if item["label"] in seen_labels:
+                continue
+            seen_labels.add(item["label"])
+            locations.append(item)
+            if len(locations) >= 6:
+                break
+        if len(locations) >= 6:
+            break
+
+    return build_issue(
+        rule_id="CS-8",
+        title="Action labels are inconsistent",
+        severity=severity,
+        base_penalty=REGULAR_BASE_PENALTY,
+        description="Using different labels for the same action pattern can break predictability. Users may pause to reinterpret whether buttons mean the same thing, which increases decision and memory load.",
+        suggestion="Use one consistent label for each repeated action pattern, such as always using 'Continue' for forward flow and one stable term for submission.",
+        evidence={"inconsistent_groups": inconsistent_groups, "group_count": len(inconsistent_groups), "max_label_variants": max_label_variants},
+        locations=locations,
+    )
+
+
 def collect_location_cue_metrics(soup: BeautifulSoup, headings: list[dict[str, Any]], navs: list[Tag]) -> dict[str, Any]:
     heading_count = len(headings)
     nav_count = len(navs)
@@ -677,6 +733,33 @@ def accessible_name(tag: Tag) -> str:
             return normalize_text(value)
 
     return normalize_text(tag.get_text(" ", strip=True))
+
+
+def normalize_control_label(tag: Tag) -> str:
+    if tag.name == "input":
+        input_type = (tag.get("type") or "").lower()
+        if input_type and input_type not in INPUT_ACTION_TYPES:
+            return ""
+        label = tag.get("value") or tag.get("aria-label") or tag.get("title") or ""
+        return normalize_text(label).lower()
+
+    label = tag.get_text(" ", strip=True) or tag.get("aria-label") or tag.get("title") or ""
+    return normalize_text(label).lower()
+
+
+def label_group_for_action(label: str) -> str | None:
+    normalized = normalize_text(label).lower()
+    if not normalized:
+        return None
+
+    for group, variants in ACTION_LABEL_GROUPS.items():
+        if normalized in variants:
+            return group
+
+    for group, variants in ACTION_LABEL_GROUPS.items():
+        if any(normalized.startswith(f"{variant} ") for variant in variants):
+            return group
+    return None
 
 
 def dedupe_tags(tags: list[Tag]) -> list[Tag]:

@@ -28,7 +28,7 @@ DIMENSION_PENALTY_CAPS: dict[str, int] = {
     "Visual Complexity": 57,
     "Readability": 54,
     "Interaction & Distraction": 30,
-    "Consistency": 48,
+    "Consistency": 54,
 }
 
 PROFILE_LENS_CONFIG: dict[str, dict[str, object]] = {
