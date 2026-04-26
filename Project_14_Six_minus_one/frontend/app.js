@@ -1728,7 +1728,7 @@ function initAssistantFloating() {
     });
   }
 
-  assistantWindow.addEventListener("pointerdown", (event) => {
+  dragHandle.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) {
       return;
     }
@@ -1736,38 +1736,16 @@ function initAssistantFloating() {
       return;
     }
 
+    event.preventDefault();
     const startRect = assistantWindow.getBoundingClientRect();
     const startX = event.clientX;
     const startY = event.clientY;
-    let isDragging = false;
-    let longPressTimer = window.setTimeout(() => {
-      isDragging = true;
-      document.body.classList.add("dragging-assistant");
-      assistantWindow.setPointerCapture?.(event.pointerId);
-    }, ASSISTANT_LONG_PRESS_MS);
-
-    const clearLongPress = () => {
-      if (longPressTimer) {
-        window.clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    };
+    document.body.classList.add("dragging-assistant");
+    dragHandle.setPointerCapture?.(event.pointerId);
 
     const handleMove = (moveEvent) => {
       const distanceX = moveEvent.clientX - startX;
       const distanceY = moveEvent.clientY - startY;
-
-      if (!isDragging) {
-        if (
-          Math.abs(distanceX) > ASSISTANT_DRAG_CANCEL_DISTANCE
-          || Math.abs(distanceY) > ASSISTANT_DRAG_CANCEL_DISTANCE
-        ) {
-          clearLongPress();
-          cleanup();
-        }
-        return;
-      }
-
       moveEvent.preventDefault();
       setAssistantPosition(
         startRect.left + distanceX,
@@ -1776,7 +1754,6 @@ function initAssistantFloating() {
     };
 
     const handleUp = () => {
-      clearLongPress();
       cleanup();
     };
 
