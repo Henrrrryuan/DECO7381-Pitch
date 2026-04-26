@@ -33,25 +33,42 @@ REGULAR_BASE_PENALTY = 3
 SERIOUS_BASE_PENALTY = 4
 
 ANIMATION_THRESHOLD = 2
-CTA_THRESHOLD = 2
-PRIMARY_CTA_SCORE_THRESHOLD = 3
+INTERRUPTION_SCORE_THRESHOLD = 4
 
-CTA_HINTS = (
-    "cta",
-    "primary",
-    "submit",
-    "hero",
-    "checkout",
-    "signup",
+INTERRUPTION_HINTS = (
+    "popup",
+    "modal",
+    "dialog",
+    "overlay",
+    "toast",
+    "notification",
+    "chat",
+    "consent",
+    "cookie",
+    "sticky",
+    "drawer",
+    "interstitial",
 )
-
-CTA_TEXT_HINTS = (
-    "buy now",
-    "get started",
-    "sign up",
-    "download",
-    "create account",
-    "checkout",
+NON_INTERRUPTIVE_HINTS = (
+    "launcher",
+    "bubble",
+    "fab",
+    "chip",
+)
+DISMISS_LABEL_HINTS = (
+    "close",
+    "dismiss",
+    "accept",
+    "allow",
+    "continue",
+    "got it",
+    "ok",
+)
+HIGH_Z_INDEX_PATTERN = re.compile(r"z-index\s*:\s*([1-9][0-9]{2,})", re.IGNORECASE)
+FIXED_STICKY_PATTERN = re.compile(r"position\s*:\s*(fixed|sticky)", re.IGNORECASE)
+FULL_SCREEN_PATTERN = re.compile(
+    r"(inset\s*:\s*0|top\s*:\s*0[^;]*bottom\s*:\s*0|width\s*:\s*100(?:vw|%)|height\s*:\s*100(?:vh|%))",
+    re.IGNORECASE,
 )
 
 ANIMATION_HINTS = (
@@ -67,24 +84,7 @@ ANIMATION_HINTS = (
 )
 
 CANDIDATE_REGION_TAGS = ("header", "main", "section", "article", "form", "nav")
-CTA_PRIMARY_HINTS = CTA_HINTS + ("hero", "main")
-NON_CTA_LABEL_HINTS = (
-    "cancel",
-    "back",
-    "go back",
-    "close",
-    "dismiss",
-    "menu",
-    "previous",
-    "prev",
-    "skip",
-    "upload",
-    "load",
-    "open",
-    "filter",
-    "sort",
-    "preview",
-)
+PRIMARY_REGION_TAGS = ("main", "article", "form")
 
 ANIMATED_CLASS_HINTS = (
     "animate",
@@ -105,8 +105,8 @@ JS_MOTION_PATTERN = re.compile(
     r"new\s+Swiper\s*\(|carousel|slider|marquee|requestAnimationFrame\s*\(|setInterval\s*\(|gsap|anime\s*\(",
     re.IGNORECASE,
 )
-JS_CTA_PATTERN = re.compile(
-    r"createElement\s*\(\s*['\"]button['\"]\s*\)|insertAdjacentHTML\s*\(|innerHTML\s*=|appendChild\s*\(|classList\.add\s*\([^)]*(cta|primary|hero-cta)",
+JS_INTERRUPTION_PATTERN = re.compile(
+    r"showModal\s*\(|modal|popup|toast|notification|cookie|consent|chat|interstitial|overlay|drawer|body\.style\.overflow\s*=\s*['\"]hidden['\"]|classList\.add\s*\([^)]*(modal-open|no-scroll|overflow-hidden)",
     re.IGNORECASE,
 )
 
@@ -136,7 +136,7 @@ def analyze_interaction(html: str, js_sources: list[str] | None = None) -> Dimen
         for issue in (
             detect_id1_autoplay_media(soup, js_hints)
             + detect_id2_too_many_animated_elements(candidate_regions, style_hints, js_hints)
-            + detect_id3_cta_competition(candidate_regions, style_hints, js_hints)
+            + detect_id3_dynamic_interruptions(soup, candidate_regions, style_hints, js_hints)
         )
         if issue is not None
     ]
@@ -157,7 +157,7 @@ def analyze_interaction(html: str, js_sources: list[str] | None = None) -> Dimen
             "js_signal_summary": {
                 "autoplay_signals": js_hints["autoplay_count"],
                 "motion_signals": js_hints["motion_count"],
-                "cta_injection_signals": js_hints["cta_count"],
+                "interruption_signals": js_hints["interruption_count"],
             },
             "total_penalty": total_penalty,
             "scoring_model": {
@@ -374,103 +374,378 @@ def detect_id2_too_many_animated_elements(
     ]
 
 
-def detect_id3_cta_competition(
+def detect_id3_dynamic_interruptions(
+    soup: BeautifulSoup,
     candidate_regions: list[Tag],
     style_hints: dict[str, set[str]],
     js_hints: dict[str, Any],
 ) -> list[Issue]:
-    violating_regions: list[dict[str, Any]] = []
+    primary_region = infer_primary_task_region(soup, candidate_regions)
+    interruption_candidates: list[dict[str, Any]] = []
 
-    for region in candidate_regions:
-        ctas = get_region_primary_ctas(region, candidate_regions, style_hints)
-        cta_count = len(ctas)
-        if cta_count <= CTA_THRESHOLD:
+    for tag in soup.find_all(True):
+        if has_interruption_candidate_ancestor(tag, style_hints):
             continue
+        candidate = describe_interruption_candidate(tag, primary_region, style_hints)
+        if candidate is None:
+            continue
+        if candidate["interrupt_score"] >= INTERRUPTION_SCORE_THRESHOLD:
+            interruption_candidates.append(candidate)
 
-        violating_regions.append(
-            {
-                "region": region,
-                "ctas": ctas,
-                "cta_count": cta_count,
-            }
-        )
-
-    js_cta_count = js_hints["cta_count"]
-    if not violating_regions and js_cta_count == 0:
+    js_interrupt_count = js_hints["interruption_count"]
+    if not interruption_candidates and js_interrupt_count == 0:
         return []
 
-    highest_risk_region = (
-        max(
-            violating_regions,
-            key=lambda item: (
-                SEVERITY_RANK[classify_cta_severity(item["region"], item["ctas"])],
-                item["cta_count"],
-            ),
-        )
-        if violating_regions
-        else None
+    max_interrupt_score = max((item["interrupt_score"] for item in interruption_candidates), default=0)
+    severe_interrupt_present = any(
+        item["blocks_scroll"] and item["covers_primary_region"]
+        for item in interruption_candidates
     )
-    max_cta_count = max((item["cta_count"] for item in violating_regions), default=0)
-    effective_cta_count = max_cta_count + js_cta_count
-    if effective_cta_count >= 5 or len(violating_regions) >= 3 or js_cta_count >= 3:
+
+    if severe_interrupt_present or max_interrupt_score >= 7 or len(interruption_candidates) >= 3 or js_interrupt_count >= 3:
         severity: Severity = "critical"
-    elif effective_cta_count >= 4 or len(violating_regions) >= 2 or js_cta_count >= 2:
+    elif (
+        max_interrupt_score >= 5
+        or len(interruption_candidates) >= 2
+        or js_interrupt_count >= 2
+        or any(item["overlay_like"] and item["initial_load_visible"] for item in interruption_candidates)
+    ):
         severity = "major"
     else:
-        severity = (
-            classify_cta_severity(highest_risk_region["region"], highest_risk_region["ctas"])
-            if highest_risk_region is not None
-            else "minor"
-        )
+        severity = "minor"
 
     locations: list[dict[str, Any]] = []
-    region_summaries: list[dict[str, Any]] = []
-    for item in sorted(violating_regions, key=lambda region: region["cta_count"], reverse=True):
-        region_summaries.append(
+    candidate_summaries: list[dict[str, Any]] = []
+    for item in sorted(interruption_candidates, key=lambda candidate: candidate["interrupt_score"], reverse=True):
+        candidate_summaries.append(
             {
-                "region": get_tag_summary(item["region"]),
-                "cta_count": item["cta_count"],
-                "cta_examples": [get_cta_label(tag) or get_tag_summary(tag) for tag in item["ctas"][:3]],
+                "interrupt_type": item["interrupt_type"],
+                "summary": item["summary"],
+                "interrupt_score": item["interrupt_score"],
+                "initial_load_visible": item["initial_load_visible"],
+                "fixed_or_sticky": item["fixed_or_sticky"],
+                "overlay_like": item["overlay_like"],
+                "blocks_scroll": item["blocks_scroll"],
+                "covers_primary_region": item["covers_primary_region"],
             }
         )
-        for tag in item["ctas"][:3]:
-            locations.append(
-                {
-                    "summary": get_tag_summary(tag),
-                    "label": get_cta_label(tag),
-                    "region": get_tag_summary(item["region"]),
-                }
-            )
-
-    for sample in js_hints["cta_samples"][:2]:
         locations.append(
             {
-                "summary": "script-generated CTA signal",
-                "label": "dynamic button injection",
-                "region": "script",
-                "html_snippet": sample,
+                "summary": item["summary"],
+                "html_snippet": item["html_snippet"],
+                "interrupt_type": item["interrupt_type"],
+                "initial_load_visible": item["initial_load_visible"],
+                "fixed_or_sticky": item["fixed_or_sticky"],
+                "overlay_like": item["overlay_like"],
+                "blocks_scroll": item["blocks_scroll"],
+                "takes_focus": item["takes_focus"],
+                "covers_primary_region": item["covers_primary_region"],
+                "dismiss_required": item["dismiss_required"],
             }
         )
+
+    for sample in js_hints["interruption_samples"][:2]:
+        locations.append(
+            {
+                "summary": "scripted interruption signal",
+                "html_snippet": sample,
+                "interrupt_type": "script",
+            }
+        )
+
+    primary_region_summary = get_tag_summary(primary_region) if primary_region is not None else "body"
 
     return [
         build_issue(
             rule_id="ID-3",
-            title="Competing CTAs",
+            title="Dynamic interruptions shift attention away from the main task",
             severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
-            description="Several primary-looking actions in the same region weaken decision hierarchy. Users must spend more effort deciding what to do next, which can increase decision load and reduce confidence.",
-            suggestion="Keep 1 primary CTA in each main region where possible, and convert the others into secondary buttons or text links to clarify action hierarchy.",
+            description="Popups, sticky prompts, overlays, or similar dynamic layers can interrupt the current reading or task path before users are ready. This sudden attention shift can be especially disruptive when it covers the main content, captures focus, or requires dismissal before the page can be used normally.",
+            suggestion="Reserve popups, sticky prompts, and overlay CTAs for essential moments only. Avoid showing them on initial load when they cover the main task path, and keep optional prompts collapsed until the user asks for them.",
             evidence={
-                "threshold": CTA_THRESHOLD,
-                "violating_region_count": len(violating_regions),
-                "max_cta_count_in_region": max_cta_count,
-                "js_cta_signal_count": js_cta_count,
-                "effective_cta_count": effective_cta_count,
-                "regions": region_summaries[:5],
+                "primary_region": primary_region_summary,
+                "interrupting_element_count": len(interruption_candidates),
+                "max_interrupt_score": max_interrupt_score,
+                "js_interruption_signal_count": js_interrupt_count,
+                "elements": candidate_summaries[:5],
             },
             locations=locations[:5],
         )
     ]
+
+
+def infer_primary_task_region(soup: BeautifulSoup, candidate_regions: list[Tag]) -> Tag | None:
+    for tag_name in PRIMARY_REGION_TAGS:
+        for region in candidate_regions:
+            if region.name == tag_name:
+                return region
+
+    for region in candidate_regions:
+        if region.find(["h1", "h2"]):
+            return region
+
+    if candidate_regions:
+        return candidate_regions[0]
+
+    root = soup.body if soup.body is not None else soup
+    return root if isinstance(root, Tag) else None
+
+
+def has_interruption_candidate_ancestor(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+    current = tag.parent
+    while isinstance(current, Tag):
+        if looks_like_interruption_candidate(current, style_hints):
+            return True
+        current = current.parent
+    return False
+
+
+def describe_interruption_candidate(
+    tag: Tag,
+    primary_region: Tag | None,
+    style_hints: dict[str, set[str]],
+) -> dict[str, Any] | None:
+    if not looks_like_interruption_candidate(tag, style_hints):
+        return None
+
+    initial_load_visible = is_initially_visible(tag)
+    if not initial_load_visible:
+        return None
+
+    if is_non_interruptive_launcher(tag):
+        return None
+
+    fixed_or_sticky = has_fixed_or_sticky(tag, style_hints)
+    overlay_like = is_overlay_like(tag)
+    takes_focus = takes_focus_like(tag)
+    dismiss_required = has_dismiss_control(tag)
+    blocks_scroll = blocks_page_scroll(tag)
+    motion_related = candidate_has_attention_grabbing_motion(tag, style_hints)
+    covers_primary_region = covers_primary_task_proxy(tag, primary_region, fixed_or_sticky, overlay_like)
+
+    interrupt_score = 1
+    if fixed_or_sticky:
+        interrupt_score += 1
+    if overlay_like:
+        interrupt_score += 2
+    if takes_focus:
+        interrupt_score += 1
+    if dismiss_required:
+        interrupt_score += 1
+    if blocks_scroll:
+        interrupt_score += 2
+    if covers_primary_region:
+        interrupt_score += 2
+    if motion_related:
+        interrupt_score += 1
+
+    return {
+        "tag": tag,
+        "summary": get_tag_summary(tag),
+        "html_snippet": get_tag_snippet(tag),
+        "interrupt_type": classify_interrupt_type(tag),
+        "interrupt_score": interrupt_score,
+        "initial_load_visible": initial_load_visible,
+        "fixed_or_sticky": fixed_or_sticky,
+        "overlay_like": overlay_like,
+        "takes_focus": takes_focus,
+        "dismiss_required": dismiss_required,
+        "blocks_scroll": blocks_scroll,
+        "covers_primary_region": covers_primary_region,
+        "motion_related": motion_related,
+    }
+
+
+def looks_like_interruption_candidate(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+    if not isinstance(tag, Tag):
+        return False
+
+    if tag.name == "dialog":
+        return True
+
+    attrs_text = interruption_context_text(tag)
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
+    role = (tag.get("role") or "").lower()
+    aria_live = (tag.get("aria-live") or "").lower()
+
+    if role in {"dialog", "alertdialog"}:
+        return True
+    if tag.get("aria-modal", "").lower() == "true":
+        return True
+    if aria_live in {"assertive", "polite"}:
+        return True
+    if classes & style_hints["fixed_classes"]:
+        return True
+    if element_id and element_id in style_hints["fixed_ids"]:
+        return True
+    if FIXED_STICKY_PATTERN.search(tag.get("style", "")):
+        return True
+    if HIGH_Z_INDEX_PATTERN.search(tag.get("style", "")):
+        return True
+    return any(hint in attrs_text for hint in INTERRUPTION_HINTS)
+
+
+def interruption_context_text(tag: Tag) -> str:
+    return " ".join(
+        [
+            tag.name or "",
+            tag.get("id", ""),
+            " ".join(tag.get("class", [])),
+            tag.get("role", ""),
+            tag.get("style", ""),
+            tag.get("aria-label", ""),
+            tag.get("aria-live", ""),
+            tag.get("aria-modal", ""),
+            tag.get("title", ""),
+        ]
+    ).lower()
+
+
+def is_initially_visible(tag: Tag) -> bool:
+    if tag.has_attr("hidden"):
+        return False
+    if tag.get("aria-hidden", "").lower() == "true":
+        return False
+    if tag.name == "dialog" and not tag.has_attr("open"):
+        return False
+
+    style = tag.get("style", "").lower().replace(" ", "")
+    if any(fragment in style for fragment in ("display:none", "visibility:hidden", "opacity:0")):
+        return False
+
+    attrs_text = interruption_context_text(tag)
+    return not any(keyword in attrs_text for keyword in ("hidden", "collapsed", "is-hidden", "sr-only"))
+
+
+def is_non_interruptive_launcher(tag: Tag) -> bool:
+    attrs_text = interruption_context_text(tag)
+    if tag.get("aria-modal", "").lower() == "true" or (tag.get("role") or "").lower() in {"dialog", "alertdialog"}:
+        return False
+    if tag.get("aria-expanded", "").lower() == "true":
+        return False
+
+    descendant_count = len(tag.find_all(True))
+    text_length = len(normalize_text(tag.get_text(" ", strip=True)))
+    return (
+        any(hint in attrs_text for hint in NON_INTERRUPTIVE_HINTS)
+        and descendant_count <= 3
+        and text_length <= 24
+    )
+
+
+def has_fixed_or_sticky(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+    classes = {item.lower() for item in tag.get("class", [])}
+    element_id = (tag.get("id") or "").lower()
+    if classes & style_hints["fixed_classes"]:
+        return True
+    if element_id and element_id in style_hints["fixed_ids"]:
+        return True
+    return bool(FIXED_STICKY_PATTERN.search(tag.get("style", "")))
+
+
+def is_overlay_like(tag: Tag) -> bool:
+    attrs_text = interruption_context_text(tag)
+    style = tag.get("style", "")
+    return (
+        tag.name == "dialog"
+        or (tag.get("role") or "").lower() in {"dialog", "alertdialog"}
+        or tag.get("aria-modal", "").lower() == "true"
+        or any(hint in attrs_text for hint in ("overlay", "modal", "popup", "dialog", "interstitial", "lightbox"))
+        or bool(FULL_SCREEN_PATTERN.search(style))
+    )
+
+
+def takes_focus_like(tag: Tag) -> bool:
+    role = (tag.get("role") or "").lower()
+    tabindex = tag.get("tabindex")
+    return (
+        role in {"dialog", "alertdialog"}
+        or tag.get("aria-modal", "").lower() == "true"
+        or tag.has_attr("autofocus")
+        or (tabindex is not None and str(tabindex).strip() not in {"", "-1"})
+    )
+
+
+def has_dismiss_control(tag: Tag) -> bool:
+    for control in tag.find_all(["button", "a", "input"]):
+        label = normalize_text(
+            control.get_text(" ", strip=True)
+            or control.get("aria-label", "")
+            or control.get("title", "")
+            or control.get("value", "")
+        ).lower()
+        if any(hint in label for hint in DISMISS_LABEL_HINTS):
+            return True
+    return tag.name == "dialog"
+
+
+def blocks_page_scroll(tag: Tag) -> bool:
+    if tag.get("aria-modal", "").lower() == "true":
+        return True
+
+    body = tag.find_parent("body")
+    if body is not None:
+        body_context = " ".join([body.get("style", ""), " ".join(body.get("class", []))]).lower().replace(" ", "")
+        if any(fragment in body_context for fragment in ("overflow:hidden", "modal-open", "no-scroll", "overflow-hidden")):
+            return True
+
+    attrs_text = interruption_context_text(tag)
+    return any(hint in attrs_text for hint in ("scroll-lock", "lock-scroll", "modal-open", "overflow-hidden"))
+
+
+def candidate_has_attention_grabbing_motion(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
+    if looks_distracting_animation(tag, style_hints):
+        return True
+    return any(
+        has_autoplay_media(descendant) or looks_distracting_animation(descendant, style_hints)
+        for descendant in tag.find_all(True)
+    )
+
+
+def covers_primary_task_proxy(
+    tag: Tag,
+    primary_region: Tag | None,
+    fixed_or_sticky: bool,
+    overlay_like: bool,
+) -> bool:
+    if overlay_like:
+        return True
+
+    if primary_region is None:
+        return fixed_or_sticky
+
+    if tag is primary_region or primary_region in tag.find_all(True):
+        return False
+
+    if primary_region in tag.parents:
+        return False
+
+    attrs_text = interruption_context_text(tag)
+    content_size = len(normalize_text(tag.get_text(" ", strip=True)))
+    descendant_count = len(tag.find_all(True))
+
+    return fixed_or_sticky and (
+        content_size >= 60
+        or descendant_count >= 4
+        or any(hint in attrs_text for hint in ("consent", "cookie", "chat", "subscribe", "promo"))
+    )
+
+
+def classify_interrupt_type(tag: Tag) -> str:
+    attrs_text = interruption_context_text(tag)
+    if any(hint in attrs_text for hint in ("cookie", "consent")):
+        return "consent"
+    if "chat" in attrs_text:
+        return "chat"
+    if any(hint in attrs_text for hint in ("toast", "notification", "alert")):
+        return "notification"
+    if any(hint in attrs_text for hint in ("modal", "dialog", "popup", "interstitial", "lightbox")):
+        return "modal"
+    if any(hint in attrs_text for hint in ("sticky", "drawer", "overlay")):
+        return "sticky-overlay"
+    return "interruptive-layer"
 
 
 def looks_animated(tag: Tag) -> bool:
@@ -551,93 +826,6 @@ def has_autoplay_media(tag: Tag) -> bool:
     return False
 
 
-def looks_like_cta(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
-    if not isinstance(tag, Tag):
-        return False
-
-    if tag.name not in {"button", "a", "input"}:
-        return False
-
-    if tag.name == "input" and tag.get("type", "").lower() not in {"submit", "button"}:
-        return False
-
-    combined = " ".join(
-        [
-            tag.get("id", ""),
-            " ".join(tag.get("class", [])),
-            tag.get("role", ""),
-            tag.get("style", ""),
-        ]
-    ).lower()
-    label = get_cta_label(tag).lower()
-
-    if any(hint in label for hint in NON_CTA_LABEL_HINTS):
-        return False
-
-    classes = {item.lower() for item in tag.get("class", [])}
-    element_id = (tag.get("id") or "").lower()
-    score = 0
-    if any(keyword in combined for keyword in CTA_PRIMARY_HINTS):
-        score += 2
-    if any(phrase in label for phrase in CTA_TEXT_HINTS):
-        score += 2
-    if classes & style_hints["primary_cta_classes"]:
-        score += 2
-    if element_id and element_id in style_hints["primary_cta_ids"]:
-        score += 2
-    if any(class_name in {"btn-primary", "primary-btn", "hero-cta"} for class_name in classes):
-        score += 2
-
-    style = tag.get("style", "").lower()
-    if "background" in style or "font-weight:bold" in style or "font-weight: bold" in style:
-        score += 1
-
-    is_button_like = tag.get("role", "").lower() == "button"
-    is_submit_input = tag.name == "input" and tag.get("type", "").lower() == "submit"
-    is_submit_button = tag.name == "button" and tag.get("type", "").lower() == "submit"
-    if is_button_like:
-        score += 1
-    if is_submit_input or is_submit_button:
-        score += 2
-
-    if tag.name == "button":
-        score += 1
-
-    return score >= PRIMARY_CTA_SCORE_THRESHOLD
-
-
-def classify_cta_severity(region: Tag, ctas: list[Tag]) -> Severity:
-    cta_count = len(ctas)
-    region_summary = get_tag_summary(region).lower()
-
-    prominent_cta_count = 0
-    for cta in ctas:
-        combined = " ".join(
-            [
-                cta.get("id", ""),
-                " ".join(cta.get("class", [])),
-                cta.get("style", ""),
-            ]
-        ).lower()
-        classes = {item.lower() for item in cta.get("class", [])}
-        if any(hint in combined for hint in CTA_PRIMARY_HINTS) or any(
-            class_name in {"btn-primary", "primary-btn", "hero-cta"}
-            for class_name in classes
-        ):
-            prominent_cta_count += 1
-
-    if cta_count >= 5:
-        return "critical"
-
-    if cta_count >= 4 or prominent_cta_count >= 2:
-        return "major"
-
-    if any(tag_name in region_summary for tag_name in ("header", "hero", "main")):
-        return "major"
-
-    return "minor"
-
-
 def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
     root = soup.body if soup.body is not None else soup
 
@@ -656,25 +844,6 @@ def get_candidate_regions(soup: BeautifulSoup) -> list[Tag]:
         return [root]
 
     return []
-
-
-def get_region_primary_ctas(
-    region: Tag,
-    candidate_regions: list[Tag],
-    style_hints: dict[str, set[str]],
-) -> list[Tag]:
-    ctas: list[Tag] = []
-    for tag in region.find_all(["button", "a", "input"]):
-        if not looks_like_cta(tag, style_hints):
-            continue
-
-        nearest_region = get_nearest_candidate_region(tag, candidate_regions)
-        if nearest_region is region:
-            ctas.append(tag)
-
-    return ctas
-
-
 def get_region_scoped_tags(
     region: Tag,
     candidate_regions: list[Tag],
@@ -702,12 +871,6 @@ def get_nearest_candidate_region(tag: Tag, candidate_regions: list[Tag]) -> Tag 
     return None
 
 
-def get_cta_label(tag: Tag) -> str:
-    if tag.name == "input":
-        return normalize_text(tag.get("value", "") or tag.get("aria-label", "") or tag.get("name", ""))
-    return normalize_text(tag.get_text(" ", strip=True) or tag.get("aria-label", "") or tag.get("title", ""))
-
-
 def get_tag_summary(tag: Tag) -> str:
     tag_name = tag.name or "unknown"
     element_id = f"#{tag.get('id')}" if tag.get("id") else ""
@@ -729,8 +892,8 @@ def normalize_text(text: str) -> str:
 def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
     animated_classes: set[str] = set()
     animated_ids: set[str] = set()
-    primary_cta_classes: set[str] = set()
-    primary_cta_ids: set[str] = set()
+    fixed_classes: set[str] = set()
+    fixed_ids: set[str] = set()
 
     for style_tag in soup.find_all("style"):
         css = style_tag.get_text(" ", strip=True)
@@ -743,27 +906,26 @@ def extract_style_hints(soup: BeautifulSoup) -> dict[str, set[str]]:
                 animated_classes.update(selector_classes)
                 animated_ids.update(selector_ids)
 
-            if "background" in normalized_declarations or "font-weight" in normalized_declarations:
-                if any(hint in selector_group.lower() for hint in ("cta", "primary", "hero", "submit", "btn")):
-                    primary_cta_classes.update(selector_classes)
-                    primary_cta_ids.update(selector_ids)
+            if FIXED_STICKY_PATTERN.search(normalized_declarations) or HIGH_Z_INDEX_PATTERN.search(normalized_declarations):
+                fixed_classes.update(selector_classes)
+                fixed_ids.update(selector_ids)
 
     return {
         "animated_classes": animated_classes,
         "animated_ids": animated_ids,
-        "primary_cta_classes": primary_cta_classes,
-        "primary_cta_ids": primary_cta_ids,
+        "fixed_classes": fixed_classes,
+        "fixed_ids": fixed_ids,
     }
 
 
 def extract_js_hints(js_sources: list[str]) -> dict[str, Any]:
     autoplay_samples: list[str] = []
     motion_samples: list[str] = []
-    cta_samples: list[str] = []
+    interruption_samples: list[str] = []
 
     autoplay_count = 0
     motion_count = 0
-    cta_count = 0
+    interruption_count = 0
 
     for source in js_sources:
         normalized = normalize_text(source)
@@ -772,26 +934,26 @@ def extract_js_hints(js_sources: list[str]) -> dict[str, Any]:
 
         autoplay_matches = JS_AUTOPLAY_PATTERN.findall(source)
         motion_matches = JS_MOTION_PATTERN.findall(source)
-        cta_matches = JS_CTA_PATTERN.findall(source)
+        interruption_matches = JS_INTERRUPTION_PATTERN.findall(source)
 
         autoplay_count += len(autoplay_matches)
         motion_count += len(motion_matches)
-        cta_count += len(cta_matches)
+        interruption_count += len(interruption_matches)
 
         if autoplay_matches and len(autoplay_samples) < 3:
             autoplay_samples.append(source[:180].strip())
         if motion_matches and len(motion_samples) < 3:
             motion_samples.append(source[:180].strip())
-        if cta_matches and len(cta_samples) < 3:
-            cta_samples.append(source[:180].strip())
+        if interruption_matches and len(interruption_samples) < 3:
+            interruption_samples.append(source[:180].strip())
 
     return {
         "autoplay_count": autoplay_count,
         "motion_count": motion_count,
-        "cta_count": cta_count,
+        "interruption_count": interruption_count,
         "autoplay_samples": autoplay_samples,
         "motion_samples": motion_samples,
-        "cta_samples": cta_samples,
+        "interruption_samples": interruption_samples,
     }
 
 

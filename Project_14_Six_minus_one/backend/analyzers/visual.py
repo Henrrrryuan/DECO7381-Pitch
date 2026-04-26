@@ -83,12 +83,7 @@ SIDEBAR_BANNER_KEYWORDS = (
     "advert",
     "ads",
     "ad-banner",
-    "floating",
-    "sticky",
-    "popup",
-    "modal",
 )
-FIXED_POSITION_PATTERN = re.compile(r"position\s*:\s*(fixed|sticky)", re.IGNORECASE)
 
 
 class _VisualHTMLParser(HTMLParser):
@@ -425,8 +420,8 @@ def analyze_visual(
                 title="Peripheral content competes with the reading path",
                 severity=_severity_from_excess(effective_sidebar_banner_count - IO3_THRESHOLD),
                 base_penalty=4,
-                description="Sidebars, banners, and floating elements interrupt the reading path and pull attention away from the main content. This can raise confusion and distraction, especially for users who need a calmer, more predictable page structure to stay oriented.",
-                suggestion="Remove or demote non-essential sidebars, banners, or floating panels so the core reading path and main task stay visually dominant.",
+                description="Sidebars, banners, and other non-essential panels can compete with the main reading path and make users filter more information before they reach the core content. This adds comparison burden and can make the main task feel less obvious.",
+                suggestion="Demote or remove non-essential side panels and promotional blocks so the main reading path stays clearer than supporting content.",
                 evidence={
                     "sidebar_banner_count": parser.sidebar_banner_count,
                     "resource_sidebar_banner_signal_count": resource_hints["sidebar_banner_signal_count"],
@@ -453,8 +448,8 @@ def analyze_visual(
                 title="Too many competing actions are shown at once",
                 severity=_severity_from_excess(parser.competing_action_count - IO4_THRESHOLD),
                 base_penalty=4,
-                description="Showing too many actions at the same level makes it harder to know what to do next. For people with reading difficulties, this can create extra decision load because they must interpret and compare several possible paths before acting.",
-                suggestion="Keep one primary call to action visually dominant, group secondary actions together, and delay low-priority choices until after the main task is clear.",
+                description="Showing too many same-level actions at once makes it harder to know what to do next. When buttons, links, and nearby content blocks all compete for attention together, users may have to compare several possible paths before acting.",
+                suggestion="Keep one primary call to action visually dominant, group secondary actions together, and reduce same-level choices until the main path is clear.",
                 evidence={
                     "competing_action_count": parser.competing_action_count,
                     "threshold": IO4_THRESHOLD,
@@ -537,8 +532,6 @@ def extract_resource_visual_hints(
         matched_keywords.update(keyword_hits)
         if keyword_hits:
             sidebar_banner_signal_count += len(keyword_hits)
-        if FIXED_POSITION_PATTERN.search(css_text):
-            sidebar_banner_signal_count += 1
 
     for js_text in js_sources:
         lowered = js_text.lower()

@@ -48,7 +48,7 @@ PROFILE_LENS_CONFIG: dict[str, dict[str, object]] = {
             "Interaction & Distraction": 0.35,
             "Consistency": 0.20,
         },
-        "summary": "Emphasises competing actions, distraction, and attention fragmentation across the page.",
+        "summary": "Emphasises interruption, distraction, and attention fragmentation across the page.",
     },
     "Autistic Support Lens": {
         "weights": {

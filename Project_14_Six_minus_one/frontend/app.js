@@ -128,15 +128,27 @@ const HIGHLIGHT_CONFIG = {
   "Interaction & Distraction": {
     color: "#f0c400",
     selectors: [
-      "button",
-      "a",
-      "[role='button']",
+      "dialog",
+      "[role='dialog']",
+      "[role='alertdialog']",
+      "[aria-modal='true']",
+      "[aria-live]",
       "video",
       "audio",
       "iframe",
       "[autoplay]",
-      "[class*='cta' i]",
-      "[class*='button' i]",
+      "[class*='modal' i]",
+      "[class*='popup' i]",
+      "[class*='overlay' i]",
+      "[class*='toast' i]",
+      "[class*='notification' i]",
+      "[class*='sticky' i]",
+      "[class*='chat' i]",
+      "[class*='cookie' i]",
+      "[class*='consent' i]",
+      "[class*='carousel' i]",
+      "[class*='slider' i]",
+      "[class*='marquee' i]",
     ],
   },
   Consistency: {
@@ -425,9 +437,9 @@ function tooltipCopyForDimension(dimensionName) {
       fix: "Use shorter sentences and split long paragraphs into chunks.",
     },
     "Interaction & Distraction": {
-      issue: "Competing actions or motion divide user attention.",
-      impact: "Users may hesitate or miss the next action.",
-      fix: "Keep one primary CTA and reduce non-essential movement.",
+      issue: "Motion, autoplay, or interruption layers pull attention away from the current task.",
+      impact: "Users may lose concentration when overlays, sticky prompts, or moving regions interrupt the reading flow.",
+      fix: "Reduce autoplay and motion, and keep popups or sticky prompts collapsed unless they are essential.",
     },
     Consistency: {
       issue: "Layout or control patterns are not consistently applied.",
@@ -526,7 +538,7 @@ const DIMENSION_BARRIER_COPY = {
   [INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
   [LEGACY_INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
   Readability: "Text complexity is increasing reading effort and making the main message harder to process.",
-  "Interaction & Distraction": "Interactive or moving elements are competing for attention and making the next action less clear.",
+  "Interaction & Distraction": "Motion, autoplay, or interruption layers are shifting attention away from the current reading or task path.",
   Consistency: "Structural inconsistency is increasing wayfinding effort and making the page flow harder to predict.",
 };
 
@@ -1206,7 +1218,7 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
     return ["section", "article", "ul", "ol", ".card", "[class*='card' i]", "[class*='grid' i]"];
   }
   if (ruleId === "IO-3") {
-    return ["aside", "[class*='sidebar' i]", "[class*='banner' i]", "[class*='popup' i]", "[class*='modal' i]", "[class*='sticky' i]"];
+    return ["aside", "[class*='sidebar' i]", "[class*='banner' i]", "[class*='promo' i]", "[class*='support' i]"];
   }
   if (ruleId === "IO-4") {
     return ["button", "a", "[role='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='hero' i]", "[class*='btn' i]"];
@@ -1227,7 +1239,7 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
     return ["[style*='animation' i]", "[style*='transition' i]", "marquee", "video", "iframe", "[class*='animate' i]", "[class*='motion' i]"];
   }
   if (ruleId === "ID-3") {
-    return ["button", "a", "[role='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='btn' i]"];
+    return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
   }
   if (ruleId === "CS-1") {
     return ["h1", "h2", "h3", "h4", "h5", "h6"];
