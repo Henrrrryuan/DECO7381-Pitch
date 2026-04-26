@@ -26,7 +26,7 @@ DIMENSION_WEIGHTS: dict[str, float] = {
 DIMENSION_PENALTY_CAPS: dict[str, int] = {
     "Information Overload": 57,
     "Visual Complexity": 57,
-    "Readability": 27,
+    "Readability": 54,
     "Interaction & Distraction": 30,
     "Consistency": 21,
 }

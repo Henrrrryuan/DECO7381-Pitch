@@ -432,9 +432,9 @@ function tooltipCopyForDimension(dimensionName) {
       fix: "Reduce first-screen focal points and group secondary content.",
     },
     Readability: {
-      issue: "Text density and sentence complexity are too high.",
-      impact: "Users may need to reread content and lose comprehension flow.",
-      fix: "Use shorter sentences and split long paragraphs into chunks.",
+      issue: "Sentence structure, wording, or chunking are increasing reading effort.",
+      impact: "Users may need to reread text, decode complex wording, or hold too many instruction details in memory.",
+      fix: "Use simpler words, direct instructions, and shorter grouped chunks that are easier to scan.",
     },
     "Interaction & Distraction": {
       issue: "Motion, autoplay, or interruption layers pull attention away from the current task.",
@@ -537,7 +537,7 @@ function focusExplanationDimension(dimensionName) {
 const DIMENSION_BARRIER_COPY = {
   [INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
   [LEGACY_INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
-  Readability: "Text complexity is increasing reading effort and making the main message harder to process.",
+  Readability: "Sentence length, wording, instruction complexity, or missing chunking are increasing reading effort and making the main message harder to process.",
   "Interaction & Distraction": "Motion, autoplay, or interruption layers are shifting attention away from the current reading or task path.",
   Consistency: "Structural inconsistency is increasing wayfinding effort and making the page flow harder to predict.",
 };
@@ -1148,11 +1148,11 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
   if (ruleId === "IO-5") {
     return ["h1", "h2", "button", "a", "[role='button']", "main", "header"];
   }
-  if (ruleId === "RD-1" || ruleId === "RD-2") {
-    return ["p", "li", "article", "section"];
+  if (ruleId === "RD-1" || ruleId === "RD-2" || ruleId === "RD-4" || ruleId === "RD-5" || ruleId === "RD-6") {
+    return ["p", "li", "article", "section", "label", "legend", "small"];
   }
   if (ruleId === "RD-3") {
-    return ["button", "a", "[role='button']"];
+    return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "input[type='reset']"];
   }
   if (ruleId === "ID-1") {
     return ["video[autoplay]", "audio[autoplay]", "iframe"];
