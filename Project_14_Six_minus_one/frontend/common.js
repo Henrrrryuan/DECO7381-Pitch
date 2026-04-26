@@ -1,5 +1,10 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
-const API_BASE = `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8001`;
+const isHttpPage = window.location.protocol === "http:" || window.location.protocol === "https:";
+const host = window.location.hostname || "127.0.0.1";
+const API_BASE = isHttpPage
+  ? `${window.location.protocol}//${host}:8001`
+  : "http://127.0.0.1:8001";
+const FALLBACK_API_BASE = "http://127.0.0.1:8001";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => {
@@ -15,7 +20,17 @@ function escapeHtml(value) {
 }
 
 async function fetchJson(url, options) {
-  const response = await fetch(url, options);
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    const canRetryWithLocalBackend = url.startsWith(API_BASE) && API_BASE !== FALLBACK_API_BASE;
+    if (!canRetryWithLocalBackend) {
+      throw error;
+    }
+    const fallbackUrl = `${FALLBACK_API_BASE}${url.slice(API_BASE.length)}`;
+    response = await fetch(fallbackUrl, options);
+  }
   if (!response.ok) {
     let detail = `Request failed with status ${response.status}`;
     try {
