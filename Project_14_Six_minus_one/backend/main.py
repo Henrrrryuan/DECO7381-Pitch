@@ -782,5 +782,6 @@ async def analyze_zip(
     return payload
 
 
+app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
