@@ -215,9 +215,19 @@ Typical high-risk patterns:
 
 ## 7. Scoring Model
 
-### 7.1 Dimension Weights
+### 7.1 Scoring Principles
 
-The recommended weights are:
+For this MVP, the scoring model should satisfy 3 conditions:
+
+1. **Explainable**: developers should be able to understand how a score was produced from triggered rules
+2. **Comparable across dimensions**: one dimension should not appear artificially safer or harsher simply because it contains fewer or more rules
+3. **Sensitive to weakest-link risk**: one severe cognitive barrier should still be able to meaningfully lower the overall result
+
+This is important because the project brief is not asking for a generic compliance score. It is asking for a decision-support score that reflects likely cognitive burden.
+
+### 7.2 Dimension Weights
+
+The recommended weights remain:
 
 | Dimension | Weight |
 | --- | --- |
@@ -226,7 +236,53 @@ The recommended weights are:
 | Interaction & Distraction | 25% |
 | Consistency | 20% |
 
-### 7.2 Weighted Average Score
+Rationale:
+
+- `Visual Complexity` receives a slightly higher weight because clutter, overload, and weak hierarchy often block users before reading can even begin
+- `Readability` and `Interaction & Distraction` remain central because they directly affect comprehension, focus, and task flow
+- `Consistency` is still important, but in the current MVP it has fewer implemented rules, so a slightly lower weight is safer and easier to justify
+
+### 7.3 Raw Penalty Sum
+
+Each dimension first calculates a raw penalty sum:
+
+```text
+Raw Penalty Sum = Sum(Base Penalty * Severity Multiplier)
+```
+
+This keeps the model transparent at rule level.
+
+### 7.4 Normalized Dimension Score
+
+The project should **not** directly use `100 - total_penalty` as the final dimension score, because different dimensions currently contain different numbers of rules and different base-penalty structures.
+
+If raw deductions are used without normalization:
+
+- a dimension with more rules can become artificially harsh
+- a dimension with fewer rules can remain artificially high
+- cross-dimension comparison becomes less defensible
+
+Therefore, each dimension should be normalized against its own current penalty cap:
+
+```text
+Dimension Score
+= max(0, round(100 * (1 - Raw Penalty Sum / Dimension Penalty Cap)))
+```
+
+Where:
+
+- `Raw Penalty Sum` = the sum of all triggered rule penalties in that dimension
+- `Dimension Penalty Cap` = the maximum meaningful penalty range defined for the currently implemented rules in that dimension
+
+Important note:
+
+> The penalty cap must be derived from the **active MVP rule set**, and should be updated if rules are added, removed, or reweighted.
+
+This approach is more defensible for the current project stage because it keeps the dashboard interpretable while making the 4 dimension scores more comparable.
+
+### 7.5 Weighted Average Score
+
+After normalization, the weighted average is calculated as:
 
 ```text
 Weighted Average Score
@@ -236,29 +292,41 @@ Weighted Average Score
 + Consistency * 0.20
 ```
 
-### 7.3 Final Overall Score
+### 7.6 Final Overall Score
+
+The recommended overall score formula is:
 
 ```text
 Final Score
-= 0.5 * min_dimension_score
-+ 0.5 * weighted_average
+= 0.4 * min_dimension_score
++ 0.6 * weighted_average
 ```
 
 Rationale:
 
-- A plain average can hide severe weaknesses
-- Cognitive accessibility has a strong weakest-link effect
-- If one dimension performs very poorly, the overall experience can still be poor even when the others score well
+- A plain weighted average can hide serious weaknesses
+- Cognitive accessibility has a real weakest-link effect
+- However, in an MVP with a relatively small rule set, a `0.5 / 0.5` split can make the overall score too sensitive to a single sparse dimension
+- A `0.4 / 0.6` split still allows the weakest dimension to matter, while keeping the total result more stable and easier to defend in the report
 
-For example:
+Example:
 
 - Visual Complexity = 90
 - Readability = 88
 - Interaction & Distraction = 85
 - Consistency = 42
 
-If we only use an average, the system may still appear acceptable. In practice, however, users may remain disoriented because of unstable navigation or structure.  
-Therefore, the final score must allow the weakest dimension to meaningfully affect the result.
+```text
+Weighted average
+= 90 * 0.30 + 88 * 0.25 + 85 * 0.25 + 42 * 0.20
+= 78.65
+
+Final score
+= 0.4 * 42 + 0.6 * 78.65
+= 64.0
+```
+
+This result is lower than a plain average, but does not collapse too aggressively. That better reflects the brief's concern with meaningful cognitive barriers while remaining practical for MVP reporting.
 
 ---
 
@@ -325,17 +393,18 @@ Recommended process:
 1. Detect whether each rule is triggered
 2. Determine the severity of each triggered rule
 3. Calculate the deduction using `Penalty = Base * Severity`
-4. Sum all deductions for the dimension
-5. Use `100 - total_penalty` to get the dimension score
+4. Sum all deductions for the dimension to get the raw penalty sum
+5. Normalize that raw penalty sum against the current dimension penalty cap
 6. Clamp the lowest score at 0
 
 ```text
-Dimension Score = max(0, 100 - Sum(Penalties))
+Dimension Score
+= max(0, round(100 * (1 - Raw Penalty Sum / Dimension Penalty Cap)))
 ```
 
 At the MVP stage, a complex de-duplication model is not required, but the documentation should state:
 
-> The current version uses a simplified penalty model. More advanced rule overlap handling and normalization remain future optimisation directions.
+> The current version uses a simplified penalty model. Overlap handling is still limited, but dimension normalization is included so that scores remain more comparable across dimensions with different rule densities.
 
 ---
 
