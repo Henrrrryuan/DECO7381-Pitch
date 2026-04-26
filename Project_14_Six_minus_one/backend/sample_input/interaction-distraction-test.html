@@ -14,6 +14,10 @@
     body {
       margin: 0;
       background: linear-gradient(180deg, #f7faff 0%, #eef4ff 100%);
+      overflow-x: hidden;
+    }
+
+    body.modal-open {
       overflow: hidden;
     }
 
@@ -208,6 +212,10 @@
       background: rgba(9, 19, 37, 0.74);
     }
 
+    .is-hidden {
+      display: none !important;
+    }
+
     .welcome-dialog {
       width: min(92vw, 520px);
       border: none;
@@ -319,7 +327,7 @@
 
   <section class="cookie-consent sticky-consent" aria-live="assertive">
     <span>We use cookies, behavioural prompts, and campaign reminders. This sticky consent bar is visible from the first screen and competes with the main task.</span>
-    <button type="button">Accept cookies</button>
+    <button type="button" class="dismiss-consent" aria-label="Dismiss cookie consent">Accept cookies</button>
   </section>
 
   <div class="welcome-modal overlay-interruption" role="dialog" aria-modal="true" aria-label="Welcome offer">
@@ -336,5 +344,39 @@
       </div>
     </dialog>
   </div>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const modal = document.querySelector(".welcome-modal");
+      const dialog = document.querySelector(".welcome-dialog");
+      const closeButton = document.querySelector(".dismiss");
+      const offerLink = document.querySelector(".allow");
+      const consentBar = document.querySelector(".cookie-consent");
+      const consentButton = document.querySelector(".dismiss-consent");
+
+      const closeModal = () => {
+        if (dialog) {
+          dialog.removeAttribute("open");
+        }
+        if (modal) {
+          modal.classList.add("is-hidden");
+        }
+        body.classList.remove("modal-open");
+      };
+
+      closeButton?.addEventListener("click", closeModal);
+      offerLink?.addEventListener("click", closeModal);
+      consentButton?.addEventListener("click", () => {
+        consentBar?.classList.add("is-hidden");
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal?.classList.contains("is-hidden")) {
+          closeModal();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
