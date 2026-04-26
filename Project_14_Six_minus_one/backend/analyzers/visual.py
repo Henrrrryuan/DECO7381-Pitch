@@ -6,7 +6,14 @@ import re
 from typing import Iterable
 
 from ..schemas import DimensionResult, Issue, Severity
-from ..scoring import calculate_dimension_score, calculate_penalty
+from ..scoring import (
+    PENALTY_FORMULA_TEXT,
+    SCORING_FORMULA_TEXT,
+    calculate_dimension_score,
+    calculate_penalty,
+)
+
+DIMENSION_NAME = "Information Overload"
 
 FIRST_VIEWPORT_TAG_WINDOW = 120
 IO1_THRESHOLD = 10
@@ -488,10 +495,10 @@ def analyze_visual(
         )
 
     total_penalty = sum(issue.penalty for issue in issues)
-    score = calculate_dimension_score(total_penalty)
+    score = calculate_dimension_score(DIMENSION_NAME, total_penalty)
 
     return DimensionResult(
-        dimension="Information Overload",
+        dimension=DIMENSION_NAME,
         score=score,
         issues=issues,
         metadata={
@@ -506,6 +513,12 @@ def analyze_visual(
                 "competing_action_count": parser.competing_action_count,
                 "prominent_heading_count": parser.prominent_heading_count,
                 "primary_task_conflict_score": primary_task_conflict_score,
+            },
+            "total_penalty": total_penalty,
+            "scoring_model": {
+                "formula": SCORING_FORMULA_TEXT,
+                "penalty_formula": PENALTY_FORMULA_TEXT,
+                "dimension_penalty_cap": 57,
             },
         },
     )

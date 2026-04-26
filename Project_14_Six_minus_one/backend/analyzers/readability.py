@@ -6,7 +6,12 @@ from math import ceil
 from typing import Any
 
 from ..schemas import DimensionResult, Issue, Severity
-from ..scoring import calculate_dimension_score, calculate_penalty
+from ..scoring import (
+    PENALTY_FORMULA_TEXT,
+    SCORING_FORMULA_TEXT,
+    calculate_dimension_score,
+    calculate_penalty,
+)
 
 AVERAGE_SENTENCE_THRESHOLD = 20
 PARAGRAPH_SENTENCE_THRESHOLD = 4
@@ -391,7 +396,7 @@ def analyze_readability(html: str) -> DimensionResult:
     ]
 
     total_penalty = sum(issue.penalty for issue in issues)
-    score = calculate_dimension_score(total_penalty)
+    score = calculate_dimension_score("Readability", total_penalty)
 
     return DimensionResult(
         dimension="Readability",
@@ -408,8 +413,9 @@ def analyze_readability(html: str) -> DimensionResult:
                 "visible_text_length": len(visible_text),
             },
             "scoring_model": {
-                "formula": "Dimension Score = max(0, 100 - Sum(Penalties))",
-                "penalty_formula": "Penalty = Base Penalty * Severity",
+                "formula": SCORING_FORMULA_TEXT,
+                "penalty_formula": PENALTY_FORMULA_TEXT,
+                "dimension_penalty_cap": 27,
             },
         },
     )

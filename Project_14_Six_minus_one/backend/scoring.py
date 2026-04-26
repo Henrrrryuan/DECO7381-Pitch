@@ -10,12 +10,25 @@ SEVERITY_MULTIPLIERS: dict[Severity, int] = {
     "critical": 3,
 }
 
+SCORING_FORMULA_TEXT = (
+    "Dimension Score = max(0, round(100 * (1 - Raw Penalty Sum / Dimension Penalty Cap)))"
+)
+PENALTY_FORMULA_TEXT = "Penalty = Base Penalty * Severity"
+
 DIMENSION_WEIGHTS: dict[str, float] = {
     "Information Overload": 0.30,
     "Visual Complexity": 0.30,
     "Readability": 0.25,
     "Interaction & Distraction": 0.25,
     "Consistency": 0.20,
+}
+
+DIMENSION_PENALTY_CAPS: dict[str, int] = {
+    "Information Overload": 57,
+    "Visual Complexity": 57,
+    "Readability": 27,
+    "Interaction & Distraction": 30,
+    "Consistency": 21,
 }
 
 PROFILE_LENS_CONFIG: dict[str, dict[str, object]] = {
@@ -57,8 +70,10 @@ def clamp_score(score: float) -> int:
     return max(0, min(100, round(score)))
 
 
-def calculate_dimension_score(total_penalty: int) -> int:
-    return clamp_score(100 - total_penalty)
+def calculate_dimension_score(dimension_name: str, total_penalty: int) -> int:
+    penalty_cap = DIMENSION_PENALTY_CAPS[dimension_name]
+    normalized_score = 100 * (1 - (total_penalty / penalty_cap))
+    return clamp_score(normalized_score)
 
 
 def resolve_dimension_score(dimensions: Iterable[DimensionResult], dimension_name: str) -> int:
@@ -100,7 +115,7 @@ def calculate_profile_scores(dimensions: list[DimensionResult]) -> list[Audience
 def calculate_overall_score(dimensions: list[DimensionResult]) -> AnalysisResult:
     weighted_average = calculate_weighted_average(dimensions)
     min_dimension_score = min((dimension.score for dimension in dimensions), default=0)
-    overall_score = clamp_score((0.5 * min_dimension_score) + (0.5 * weighted_average))
+    overall_score = clamp_score((0.4 * min_dimension_score) + (0.6 * weighted_average))
     profile_scores = calculate_profile_scores(dimensions)
 
     return AnalysisResult(

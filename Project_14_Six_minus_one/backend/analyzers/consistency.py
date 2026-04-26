@@ -12,10 +12,20 @@ if __package__ in {None, ""}:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     from backend.schemas import DimensionResult, Issue, Severity
-    from backend.scoring import calculate_dimension_score, calculate_penalty
+    from backend.scoring import (
+        PENALTY_FORMULA_TEXT,
+        SCORING_FORMULA_TEXT,
+        calculate_dimension_score,
+        calculate_penalty,
+    )
 else:
     from ..schemas import DimensionResult, Issue, Severity
-    from ..scoring import calculate_dimension_score, calculate_penalty
+    from ..scoring import (
+        PENALTY_FORMULA_TEXT,
+        SCORING_FORMULA_TEXT,
+        calculate_dimension_score,
+        calculate_penalty,
+    )
 
 DIMENSION_NAME = "Consistency"
 
@@ -46,7 +56,7 @@ def analyze_consistency(html: str) -> DimensionResult:
 
     issues = [issue for issue in (heading_issue, location_issue) if issue is not None]
     total_penalty = sum(issue.penalty for issue in issues)
-    score = calculate_dimension_score(total_penalty)
+    score = calculate_dimension_score(DIMENSION_NAME, total_penalty)
 
     return DimensionResult(
         dimension=DIMENSION_NAME,
@@ -63,8 +73,9 @@ def analyze_consistency(html: str) -> DimensionResult:
             "has_progress_indicator": location_cue_metrics["has_progress"],
             "total_penalty": total_penalty,
             "scoring_model": {
-                "formula": "Dimension Score = max(0, 100 - Sum(Penalties))",
-                "penalty_formula": "Penalty = Base Penalty * Severity",
+                "formula": SCORING_FORMULA_TEXT,
+                "penalty_formula": PENALTY_FORMULA_TEXT,
+                "dimension_penalty_cap": 21,
             },
         },
     )
