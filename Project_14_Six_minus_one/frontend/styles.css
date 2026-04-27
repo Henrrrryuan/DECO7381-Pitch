@@ -1017,6 +1017,39 @@ input {
   justify-content: flex-end;
 }
 
+.report-id-chip {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid #d7deeb;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #4b5565;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.report-id-chip span {
+  flex: 0 0 auto;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.report-id-chip strong {
+  min-width: 0;
+  max-width: 240px;
+  overflow: hidden;
+  color: #172033;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .website-view-toggle {
   min-height: 40px;
   padding: 0 18px;

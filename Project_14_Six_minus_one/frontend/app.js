@@ -539,6 +539,14 @@ function renderDashboardSummary(result) {
   `;
 }
 
+function renderReportId() {
+  const reportIdNode = document.getElementById("reportIdValue");
+  if (!reportIdNode) {
+    return;
+  }
+  reportIdNode.textContent = state.currentPayload?.run?.run_id || "-";
+}
+
 const SEVERITY_RANK = {
   critical: 3,
   major: 2,
@@ -1694,6 +1702,7 @@ function handleAssistantClear() {
 function renderResult(result, html) {
   state.currentResult = result;
   state.currentHtml = html || "";
+  renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
   renderPrintSummary(result);
