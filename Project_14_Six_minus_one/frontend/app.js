@@ -1152,6 +1152,13 @@ function loadWebsitePreview() {
   setWebsiteStatus("No website preview is available for this analysis.", true);
 }
 
+function startBackgroundRenderedAnalysis() {
+  if (!isProbablyUrl(state.sourceUrl)) {
+    return;
+  }
+  loadWebsitePreview();
+}
+
 function getPreviewDocument() {
   const frame = document.getElementById("websitePreviewFrame");
   if (!frame) {
@@ -2196,6 +2203,7 @@ async function init() {
     currentSession.html || currentSession.payload.html_content || "",
   );
   renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
+  startBackgroundRenderedAnalysis();
 
   if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
     sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
