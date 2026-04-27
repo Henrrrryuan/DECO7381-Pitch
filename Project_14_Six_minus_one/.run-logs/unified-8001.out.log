@@ -1,48 +1,33 @@
-INFO:     127.0.0.1:62824 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62824 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62826 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62825 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56408 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56408 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60748 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60748 - "GET /common.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49356 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49356 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60184 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60184 - "GET /common.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51313 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:51513 - "GET /history.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51513 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53711 - "GET /history.js?v=history-file-search-4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53711 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50444 - "GET /history/3277a350a78a47b8acb2289963fed54d HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50444 - "GET /dashboard.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50444 - "GET /styles.css?v=assistant-floating-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62464 - "GET /app.js?v=assistant-floating-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60092 - "GET /assets/css/styles.css HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:49684 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:49684 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49883 - "GET /assets/css/styles.css HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:49883 - "GET /subscriptions-admin.html HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:53600 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:53600 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55642 - "GET /history.html HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:55642 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55642 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50302 - "GET /history/3277a350a78a47b8acb2289963fed54d HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50302 - "GET /dashboard.html HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:50302 - "GET /styles.css?v=assistant-floating-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58068 - "GET /app.js?v=assistant-floating-1 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:56115 - "GET /index.html HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56115 - "GET /styles.css?v=website-preview-1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63718 - "GET /upload.js?v=website-preview-1 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:56115 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:56115 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56115 - "GET /eye/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56115 - "GET /eye/styles.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63718 - "GET /eye/app.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63216 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63216 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61820 - "GET /styles.css?v=history-file-search-4 HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:61820 - "GET /history?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62726 - "GET /eye/proxy?url=https%3A%2F%2Fexample.com%2F HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63266 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63267 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63268 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63269 - "GET /eye/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55942 - "GET /index.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55942 - "GET /styles.css?v=entry-workflow-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56041 - "GET /upload.js?v=url-workflow-3 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56041 - "GET /common.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56041 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54541 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54540 - "POST /analyze-url HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54540 - "GET /dashboard.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54540 - "GET /styles.css?v=print-workspace-right-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54317 - "GET /app.js?v=readability-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54317 - "GET /eye/ HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54540 - "GET /eye/styles.css?v=eye-prefill-2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51528 - "GET /eye/app.js?v=eye-prefill-2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51529 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51528 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61164 - "GET /eye/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54191 - "GET /eye/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54191 - "GET /eye/styles.css?v=eye-scroll-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62696 - "GET /eye/app.js?v=eye-scroll-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62697 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62696 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60485 - "POST /eye/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60485 - "POST /eye/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58267 - "GET /common.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58267 - "GET /history.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58267 - "GET /styles.css?v=history-eye-sessions-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59908 - "GET /history.js?v=history-eye-sessions-3 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59908 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58267 - "GET /eye/sessions?limit=20 HTTP/1.1" 200 OK
