@@ -43,7 +43,9 @@ from .analyzers import (
     analyze_consistency,
     analyze_interaction,
     analyze_readability,
+    analyze_rendered_visual_complexity,
     analyze_visual,
+    analyze_visual_complexity,
 )
 from .eye_proxy import (
     EyeProxyBadRequest,
@@ -63,6 +65,7 @@ from .history_store import (
 )
 from .scoring import calculate_overall_score
 from .schemas import AnalysisResult
+from .snapshot_input import SnapshotInputError, capture_rendered_snapshot
 from .url_input import (
     UrlInputError,
     extract_web_bundle_from_url_html,
@@ -530,6 +533,8 @@ def api_root() -> dict[str, Any]:
             "/analyze",
             "/analyze-url",
             "/analyze-zip",
+            "/visual-complexity",
+            "/visual-complexity-url",
             "/history",
             "/history/{run_id}",
             "/eye/",
@@ -657,6 +662,29 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         html_content=payload.html,
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
+    )
+
+
+@app.post("/visual-complexity")
+def visual_complexity(payload: AnalyzePayload) -> dict[str, Any]:
+    return analyze_visual_complexity(payload.html)
+
+
+@app.post("/visual-complexity-url")
+def visual_complexity_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
+    try:
+        snapshot = capture_rendered_snapshot(payload.url)
+    except SnapshotInputError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return analyze_rendered_visual_complexity(
+        {
+            "final_url": snapshot.final_url,
+            "title": snapshot.title,
+            "html": snapshot.html,
+            "viewport": snapshot.viewport,
+            "elements": snapshot.elements,
+        }
     )
 
 

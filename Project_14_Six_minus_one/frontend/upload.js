@@ -1,11 +1,13 @@
 import {
   analyzeUrl,
+  analyzeVisualComplexityHtml,
+  analyzeVisualComplexityUrl,
   analyzeUploadFile,
   isHtmlFile,
   isZipFile,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js";
+} from "./common.js?v=visual-complexity-score-1";
 
 const state = {
   file: null,
@@ -167,6 +169,11 @@ async function handleSubmit(event) {
     const html = isHtmlFile(state.file)
       ? await state.file.text()
       : payload.html_content || "";
+    try {
+      payload.visual_complexity = await analyzeVisualComplexityHtml(html);
+    } catch (error) {
+      payload.visual_complexity_error = error.message || String(error);
+    }
     saveDashboardSession({
       current: {
         payload,
@@ -210,6 +217,16 @@ async function handleUrlSubmit(event) {
     const payload = await analyzeUrl(normalizedUrl, baselineRunId);
     const html = payload.html_content || "";
     const resolvedUrl = payload.resource_bundle?.entry_name || payload.run?.source_name || normalizedUrl;
+    try {
+      payload.visual_complexity = await analyzeVisualComplexityUrl(normalizedUrl);
+    } catch (error) {
+      payload.visual_complexity_error = error.message || String(error);
+      try {
+        payload.visual_complexity = await analyzeVisualComplexityHtml(html);
+      } catch (fallbackError) {
+        payload.visual_complexity_error = fallbackError.message || String(fallbackError);
+      }
+    }
     try {
       localStorage.setItem(EYE_TARGET_URL_STORAGE_KEY, normalizedUrl);
     } catch (_) {

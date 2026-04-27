@@ -73,7 +73,85 @@ Both `POST /analyze` and `POST /analyze-zip` return the analysis result plus per
 }
 ```
 
-## 4. History List
+## 4. Visual Complexity Score
+
+`POST /visual-complexity`
+
+Request body:
+
+```json
+{
+  "html": "<html>...</html>"
+}
+```
+
+This endpoint estimates page visual complexity from static HTML. It follows the paper-inspired VCS model using:
+
+```text
+raw = 1.743 + 0.097*TLC + 0.053*words + 0.003*images
+vcs_0_to_10 = min(10, raw / 10)
+score = max(0, round(100 - vcs_0_to_10 * 10))
+```
+
+Response shape:
+
+```json
+{
+  "model": "DOM-based Visual Complexity Score inspired by ViCRAM",
+  "vcs_raw": 8.52,
+  "vcs_0_to_10": 0.85,
+  "score": 91,
+  "complexity_level": "very low",
+  "metrics": {
+    "tlc_count": 24,
+    "word_count": 83,
+    "image_count": 1,
+    "grid_rows": 10,
+    "grid_cols": 10
+  },
+  "formula": {
+    "raw": "1.743 + 0.097*TLC + 0.053*words + 0.003*images",
+    "vcs_0_to_10": "min(10, raw / 10)",
+    "score": "max(0, round(100 - vcs_0_to_10 * 10))"
+  },
+  "heatmap": [
+    {
+      "row": 0,
+      "col": 0,
+      "tlc_count": 1,
+      "word_count": 8,
+      "image_count": 0,
+      "vcs_raw": 2.264,
+      "relative_intensity": 0.54,
+      "color": "yellow"
+    }
+  ],
+  "notes": []
+}
+```
+
+`POST /visual-complexity-url`
+
+Request body:
+
+```json
+{
+  "url": "https://example.com"
+}
+```
+
+This endpoint captures a Playwright-rendered snapshot, then calculates visual complexity using real element bounding boxes. TLCs and images are assigned to the grid cell containing the element's top-left coordinate; words are distributed across the cells covered by their rendered text box.
+
+Runtime requirement:
+
+```text
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+```
+
+If Playwright or Chromium is unavailable, the endpoint returns `503` with setup guidance.
+
+## 5. History List
 
 `GET /history?limit=8`
 
@@ -99,7 +177,7 @@ Notes:
 - Results are returned newest first.
 - `limit` is clamped to `1..50`.
 
-## 5. History Detail
+## 6. History Detail
 
 `GET /history/{run_id}`
 
@@ -138,7 +216,7 @@ This endpoint is used by the frontend `History` card for:
 - setting a history item as the comparison baseline
 - restoring the original HTML into the preview/editor
 
-## 6. Dimension Result Shape
+## 7. Dimension Result Shape
 
 Each analyzer returns:
 
@@ -165,7 +243,7 @@ Each analyzer returns:
 }
 ```
 
-## 7. Severity and Penalty
+## 8. Severity and Penalty
 
 Allowed severity values:
 
@@ -185,7 +263,7 @@ Severity multipliers:
 - `major = 2`
 - `critical = 3`
 
-## 8. Final Score
+## 9. Final Score
 
 ```text
 Weighted Average
@@ -199,7 +277,7 @@ Final Score
 + 0.5 * weighted_average
 ```
 
-## 9. Module Responsibilities
+## 10. Module Responsibilities
 
 - `analyzers/*.py`: detect issues for a single dimension
 - `scoring.py`: calculate penalties and overall scores

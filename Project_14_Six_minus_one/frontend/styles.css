@@ -1090,6 +1090,55 @@ input {
   text-align: right;
 }
 
+.visual-complexity-card {
+  display: grid;
+  gap: 7px;
+  padding: 10px 11px;
+  border: 1px solid #cfd8ea;
+  border-radius: 8px;
+  background: #f7faff;
+  color: #172033;
+}
+
+.visual-complexity-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.visual-complexity-card-top strong,
+.visual-complexity-card > strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.visual-complexity-meter {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe6f2;
+}
+
+.visual-complexity-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #31c48d;
+}
+
+.visual-complexity-card small {
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.visual-complexity-card-muted {
+  background: #fbfcff;
+  color: #667085;
+}
+
 .dimension-label-with-info {
   position: relative;
   display: inline-flex;

@@ -1,4 +1,5 @@
 beautifulsoup4
 fastapi
+playwright
 python-multipart
 uvicorn

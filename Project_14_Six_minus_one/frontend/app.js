@@ -1,13 +1,14 @@
 import {
   API_BASE,
   analyzeHtmlText,
+  analyzeVisualComplexityHtml,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
   findDimension,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js";
+} from "./common.js?v=visual-complexity-score-1";
 
 const state = {
   currentHtml: "",
@@ -457,7 +458,7 @@ function renderDimensionBars(dimensionEntries) {
     return;
   }
 
-  dimensionBars.innerHTML = (dimensionEntries || []).map(({ name, className, score }) => {
+  const dimensionRows = (dimensionEntries || []).map(({ name, className, score }) => {
     const dimensionKey = displayDimensionName(name);
     const tooltipCopy = tooltipCopyForDimension(dimensionKey);
     return `
@@ -479,6 +480,46 @@ function renderDimensionBars(dimensionEntries) {
       </button>
     `;
   }).join("");
+
+  dimensionBars.innerHTML = `${dimensionRows}${visualComplexityScoreMarkup()}`;
+}
+
+function visualComplexityScoreMarkup() {
+  const visualComplexity = state.currentPayload?.visual_complexity;
+  const error = state.currentPayload?.visual_complexity_error;
+  if (!visualComplexity && !error) {
+    return "";
+  }
+
+  if (!visualComplexity) {
+    return `
+      <div class="visual-complexity-card visual-complexity-card-muted">
+        <span>Snapshot Visual Complexity</span>
+        <strong>-</strong>
+        <small>${escapeHtml(error || "Unavailable")}</small>
+      </div>
+    `;
+  }
+
+  const score = Math.max(0, Math.min(100, Number(visualComplexity.score) || 0));
+  const metrics = visualComplexity.metrics || {};
+  const level = visualComplexity.complexity_level || "unknown";
+  const model = String(visualComplexity.model || "").toLowerCase().includes("rendered")
+    ? "Rendered snapshot"
+    : "Static snapshot";
+
+  return `
+    <div class="visual-complexity-card" title="Paper-inspired VCS from TLC, words, and images">
+      <div class="visual-complexity-card-top">
+        <span>Snapshot Visual Complexity</span>
+        <strong>${score}</strong>
+      </div>
+      <div class="visual-complexity-meter" aria-hidden="true">
+        <div class="visual-complexity-meter-fill" style="width:${score}%"></div>
+      </div>
+      <small>${escapeHtml(model)} | ${escapeHtml(level)} | TLC ${Number(metrics.tlc_count) || 0} | Words ${Number(metrics.word_count) || 0} | Images ${Number(metrics.image_count) || 0}</small>
+    </div>
+  `;
 }
 
 function renderDashboardSummary(result) {
@@ -1732,6 +1773,12 @@ async function analyzeRenderedPreviewDocument(doc) {
       resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
       html_content: renderedHtml,
     };
+    try {
+      mergedPayload.visual_complexity = await analyzeVisualComplexityHtml(renderedHtml);
+      delete mergedPayload.visual_complexity_error;
+    } catch (error) {
+      mergedPayload.visual_complexity_error = error.message || String(error);
+    }
 
     state.currentPayload = mergedPayload;
     state.renderedDomAnalysisKey = analysisKey;

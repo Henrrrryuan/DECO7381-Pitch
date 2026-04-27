@@ -79,6 +79,22 @@ async function analyzeUrl(url, baselineRunId = null) {
   });
 }
 
+async function analyzeVisualComplexityHtml(html) {
+  return fetchJson(`${API_BASE}/visual-complexity`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html }),
+  });
+}
+
+async function analyzeVisualComplexityUrl(url) {
+  return fetchJson(`${API_BASE}/visual-complexity-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+}
+
 async function chatWithAssistant(payload) {
   return fetchJson(`${API_BASE}/assistant/chat`, {
     method: "POST",
@@ -144,6 +160,7 @@ function buildAnalysisView(payload) {
     min_dimension_score: payload.min_dimension_score,
     dimensions: payload.dimensions || [],
     profile_scores: payload.profile_scores || [],
+    visual_complexity: payload.visual_complexity || null,
   };
 }
 
@@ -161,6 +178,8 @@ export {
   STORAGE_KEY,
   analyzeHtmlText,
   analyzeUrl,
+  analyzeVisualComplexityHtml,
+  analyzeVisualComplexityUrl,
   analyzeUploadFile,
   buildAnalysisView,
   chatWithAssistant,
