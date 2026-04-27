@@ -39,6 +39,7 @@ const state = {
   gridRows: 14,
   cellCounts: [],
   visitedCellIds: new Set(),
+  heatSamples: [],
   currentTargetUrl: "",
   relatedRunId: queryParams.get("run_id") || "",
   sourceName: queryParams.get("source_name") || "",
@@ -49,6 +50,8 @@ const state = {
   saving: false,
   lastSavedSessionId: ""
 };
+
+let detachFrameScrollListener = null;
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
 const HEAT_SAMPLE_INTERVAL_MS = 45;
@@ -189,6 +192,10 @@ function loadTargetUrl(rawInput) {
   }
 
   try {
+    if (detachFrameScrollListener) {
+      detachFrameScrollListener();
+      detachFrameScrollListener = null;
+    }
     const normalizedUrl = normalizeTargetUrl(rawInput);
     state.currentTargetUrl = normalizedUrl;
     urlInput.value = normalizedUrl;
@@ -237,6 +244,149 @@ function getFrameDocument() {
   } catch (_) {
     return null;
   }
+}
+
+function getFrameWindow() {
+  if (!targetFrame) {
+    return null;
+  }
+  try {
+    return targetFrame.contentWindow || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getFrameScrollOffsets() {
+  const frameWindow = getFrameWindow();
+  const frameDocument = getFrameDocument();
+  const root = frameDocument?.documentElement;
+  const body = frameDocument?.body;
+
+  return {
+    x: Math.max(0, frameWindow?.scrollX ?? root?.scrollLeft ?? body?.scrollLeft ?? 0),
+    y: Math.max(0, frameWindow?.scrollY ?? root?.scrollTop ?? body?.scrollTop ?? 0)
+  };
+}
+
+function getFrameDocumentSize() {
+  const rect = getViewportRect();
+  const frameDocument = getFrameDocument();
+  const root = frameDocument?.documentElement;
+  const body = frameDocument?.body;
+
+  return {
+    width: Math.max(
+      rect.width,
+      root?.scrollWidth ?? 0,
+      root?.clientWidth ?? 0,
+      body?.scrollWidth ?? 0,
+      body?.clientWidth ?? 0
+    ),
+    height: Math.max(
+      rect.height,
+      root?.scrollHeight ?? 0,
+      root?.clientHeight ?? 0,
+      body?.scrollHeight ?? 0,
+      body?.clientHeight ?? 0
+    )
+  };
+}
+
+function getPointInsideFrame(clientPoint) {
+  if (!targetFrame || !clientPoint) {
+    return null;
+  }
+
+  const frameRect = targetFrame.getBoundingClientRect();
+  return {
+    x: clientPoint.x - frameRect.left,
+    y: clientPoint.y - frameRect.top
+  };
+}
+
+function isViewportAnchoredElement(clientPoint) {
+  const frameDocument = getFrameDocument();
+  const frameWindow = getFrameWindow();
+  const framePoint = getPointInsideFrame(clientPoint);
+
+  if (!frameDocument || !frameWindow || !framePoint) {
+    return false;
+  }
+
+  if (
+    framePoint.x < 0 ||
+    framePoint.y < 0 ||
+    framePoint.x > targetFrame.clientWidth ||
+    framePoint.y > targetFrame.clientHeight
+  ) {
+    return false;
+  }
+
+  const element = frameDocument.elementFromPoint(framePoint.x, framePoint.y);
+  if (!element) {
+    return false;
+  }
+
+  let current = element;
+  while (current && current.nodeType === 1) {
+    const style = frameWindow.getComputedStyle(current);
+    if (style.position === "fixed" || style.position === "sticky") {
+      return true;
+    }
+    current = current.parentElement;
+  }
+
+  return false;
+}
+
+function renderHeatmap() {
+  const rect = getViewportRect();
+  const scrollOffsets = getFrameScrollOffsets();
+  heatCtx.clearRect(0, 0, rect.width, rect.height);
+
+  for (const sample of state.heatSamples) {
+    const x = sample.anchorToViewport ? sample.docX : sample.docX - scrollOffsets.x;
+    const y = sample.anchorToViewport ? sample.docY : sample.docY - scrollOffsets.y;
+
+    if (x < -80 || x > rect.width + 80 || y < -80 || y > rect.height + 80) {
+      continue;
+    }
+
+    drawHeatPoint(x, y);
+  }
+}
+
+function attachFrameScrollTracking() {
+  if (detachFrameScrollListener) {
+    detachFrameScrollListener();
+    detachFrameScrollListener = null;
+  }
+
+  const frameWindow = getFrameWindow();
+  if (!frameWindow) {
+    return;
+  }
+
+  let rafId = 0;
+  const onScroll = () => {
+    if (rafId) {
+      return;
+    }
+    rafId = window.requestAnimationFrame(() => {
+      rafId = 0;
+      renderHeatmap();
+    });
+  };
+
+  frameWindow.addEventListener("scroll", onScroll, { passive: true });
+  detachFrameScrollListener = () => {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    frameWindow.removeEventListener("scroll", onScroll);
+  };
 }
 
 function captureHtmlSnapshot() {
@@ -348,6 +498,7 @@ function resetTrackingData() {
   state.lastSampleTime = 0;
   state.lastHeatSampleTime = 0;
   state.lastHeatPoint = null;
+  state.heatSamples = [];
   state.pausedDurationMs = 0;
   state.pausedAtPerf = 0;
   state.sessionStartPerf = state.started ? performance.now() : 0;
@@ -426,6 +577,9 @@ function drawCoverageMap() {
 }
 
 function updateCoverage(x, y, width, height) {
+  if (!width || !height) {
+    return;
+  }
   const col = clamp(Math.floor((x / width) * state.gridCols), 0, state.gridCols - 1);
   const row = clamp(Math.floor((y / height) * state.gridRows), 0, state.gridRows - 1);
   const index = row * state.gridCols + col;
@@ -563,6 +717,12 @@ function handleGaze(data) {
 
   const x = state.filteredPoint.x;
   const y = state.filteredPoint.y;
+  const scrollOffsets = getFrameScrollOffsets();
+  const anchorToViewport = isViewportAnchoredElement(point);
+  const documentPoint = {
+    x: anchorToViewport ? x : x + scrollOffsets.x,
+    y: anchorToViewport ? y : y + scrollOffsets.y
+  };
 
   gazeDot.style.opacity = "1";
   gazeDot.style.left = `${x}px`;
@@ -571,14 +731,34 @@ function handleGaze(data) {
   const needHeatSampleByTime = now - state.lastHeatSampleTime >= HEAT_SAMPLE_INTERVAL_MS;
   const needHeatSampleByMove =
     !state.lastHeatPoint ||
-    distance(state.lastHeatPoint, { x, y }) >= HEAT_MIN_DISTANCE_PX;
+    distance(state.lastHeatPoint, documentPoint) >= HEAT_MIN_DISTANCE_PX;
 
   if (needHeatSampleByTime && needHeatSampleByMove) {
-    drawHeatPoint(x, y);
-    updateCoverage(x, y, rect.width, rect.height);
+    state.heatSamples.push({
+      docX: documentPoint.x,
+      docY: documentPoint.y,
+      anchorToViewport
+    });
+    if (state.heatSamples.length > 6000) {
+      state.heatSamples.shift();
+    }
+
+    const documentSize = getFrameDocumentSize();
+    const coveragePoint = {
+      x: x + scrollOffsets.x,
+      y: y + scrollOffsets.y
+    };
+
+    renderHeatmap();
+    updateCoverage(
+      coveragePoint.x,
+      coveragePoint.y,
+      documentSize.width,
+      documentSize.height
+    );
     drawCoverageMap();
     state.lastHeatSampleTime = now;
-    state.lastHeatPoint = { x, y };
+    state.lastHeatPoint = documentPoint;
   }
 
   state.samples += 1;
@@ -700,6 +880,8 @@ urlInput.addEventListener("keydown", (event) => {
 
 if (targetFrame) {
   targetFrame.addEventListener("load", () => {
+    attachFrameScrollTracking();
+    renderHeatmap();
     if (!state.currentTargetUrl) {
       return;
     }
@@ -726,10 +908,15 @@ if (targetFrame) {
 
 window.addEventListener("resize", () => {
   resizeHeatmapCanvas();
+  renderHeatmap();
   drawCoverageMap();
 });
 
 window.addEventListener("beforeunload", () => {
+  if (detachFrameScrollListener) {
+    detachFrameScrollListener();
+    detachFrameScrollListener = null;
+  }
   if (window.GazeCloudAPI && typeof window.GazeCloudAPI.StopEyeTracking === "function") {
     window.GazeCloudAPI.StopEyeTracking();
   }
