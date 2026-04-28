@@ -934,31 +934,39 @@ input {
   cursor: default;
 }
 
-.score-slider-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+.score-slider-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.score-slider-dot {
-  width: 9px;
-  height: 9px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #cdd7e8;
+.score-slider-tab {
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid #c9dcff;
+  border-radius: 12px;
+  background: #fff;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, width 0.2s ease;
+  box-shadow: 0 4px 10px rgba(31, 61, 122, 0.05);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.score-slider-dot.is-active {
-  width: 26px;
-  background: var(--accent);
+.score-slider-tab.is-active {
+  border-color: #1a73e8;
+  background: linear-gradient(180deg, #1777ff 0%, #1670ef 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(26, 115, 232, 0.28);
 }
 
-.score-slider-dot:hover {
-  transform: scale(1.05);
+.score-slider-tab:hover:not(.is-active) {
+  background: #eef5ff;
+  border-color: #9ec3ff;
+  transform: translateY(-1px);
 }
 
 .overall-text {

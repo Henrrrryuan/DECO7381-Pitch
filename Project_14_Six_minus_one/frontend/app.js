@@ -400,15 +400,15 @@ function renderScoreSlider(result) {
       </div>
       <button type="button" class="score-slider-nav" data-score-nav="next" aria-label="Show next score lens">&#8250;</button>
     </div>
-    <div class="score-slider-dots" aria-label="Score lens navigation">
+    <div class="score-slider-tabs" aria-label="Score lens navigation">
       ${slides.map((slide, index) => `
         <button
           type="button"
-          class="score-slider-dot${index === 0 ? " is-active" : ""}"
+          class="score-slider-tab${index === 0 ? " is-active" : ""}"
           data-score-dot="${index}"
           aria-label="Show ${escapeHtml(slide.label)} score"
           aria-pressed="${index === 0 ? "true" : "false"}"
-        ></button>
+        >${escapeHtml(slide.label)}</button>
       `).join("")}
     </div>
   `;
