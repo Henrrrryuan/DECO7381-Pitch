@@ -1119,17 +1119,28 @@ input {
 
 .dimension-row {
   display: grid;
-  grid-template-columns: 160px minmax(80px, 1fr) 20px;
-  align-items: center;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  grid-template-areas:
+    "label score"
+    "bar bar";
+  align-items: start;
+  gap: 6px 10px;
   font-size: 14px;
 }
 
 .dimension-row strong {
+  grid-area: score;
   justify-self: end;
   font-variant-numeric: tabular-nums;
-  min-width: 0;
+  min-width: 32px;
   text-align: right;
+  line-height: 1.25;
+}
+
+.dimension-row > span:first-child {
+  grid-area: label;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .visual-complexity-card {
@@ -1182,12 +1193,15 @@ input {
 }
 
 .dimension-label-with-info {
+  grid-area: label;
   position: relative;
   display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding-right: 14px;
-  white-space: nowrap;
+  align-items: flex-start;
+  min-width: 0;
+  width: 100%;
+  padding-right: 18px;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .dimension-info-icon {
@@ -1269,6 +1283,7 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .bar-track {
+  grid-area: bar;
   height: 8px;
   border-radius: 999px;
   background: #e5e9f0;
@@ -2528,6 +2543,10 @@ button.dimension-row.is-linked-active .bar-track {
   .overall-panel,
   .dimension-row {
     grid-template-columns: 1fr;
+  }
+
+  .dimension-row {
+    grid-template-columns: minmax(0, 1fr) 36px;
   }
 
   .workspace-panels {

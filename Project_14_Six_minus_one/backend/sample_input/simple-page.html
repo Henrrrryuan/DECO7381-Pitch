@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cognitive Accessibility Test - RD, VC, and ID Dimensions</title>
+    <title>Cognitive Accessibility Test - Issue Categories</title>
     <style>
         body { font-family: "Segoe UI", system-ui, sans-serif; line-height: 1.6; color: #333; padding: 20px; background-color: #f5f5f5; }
         .test-wrapper { max-width: 1000px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -12,11 +12,11 @@
         section { margin-bottom: 30px; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; }
         .rule-tag { background: #607d8b; color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 
-        /* VC-1: Too many key elements on the first screen */
+        /* Information Overload Issues: too many key elements on the first screen */
         .hero-section { display: flex; flex-wrap: wrap; gap: 10px; padding: 15px; background: #fafafa; }
         .hero-item { width: 100px; height: 50px; background: #34495e; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 12px; }
 
-        /* VC-2: Dense content block test */
+        /* Information Overload Issues: dense content block test */
         .dense-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -30,7 +30,7 @@
             text-align: center; border-radius: 5px; font-size: 14px;
         }
 
-        /* VC-3 & ID-2: Sidebars and animation */
+        /* Information Overload Issues and Interaction & Distraction Issues: sidebars and animation */
         .sidebar-mock { width: 120px; background: #ffecb3; padding: 10px; margin-bottom: 10px; font-size: 12px; }
         .moving-box {
             width: 60px; height: 60px; background: #e67e22; margin: 10px;
@@ -39,7 +39,7 @@
         }
         @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-        /* ID-3: Competing CTAs */
+        /* Interaction & Distraction Issues: competing calls to action */
         .action-area { text-align: center; padding: 20px; background: #eceff1; }
         .btn-main {
             background: #d32f2f; color: white; padding: 12px 24px;
@@ -53,10 +53,10 @@
     <h1>Cognitive Accessibility Automated Test Page</h1>
 
     <section>
-        <h2>5.1 Readability</h2>
-        <p><span class="rule-tag">RD-1 & RD-2</span> <strong>Test long sentences (over 20 words) and long paragraphs (over 4 sentences):</strong></p>
+        <h2>5.1 Readability Issues</h2>
+        <p><span class="rule-tag">Readability Issues</span> <strong>Test long sentences (over 20 words) and long paragraphs (over 4 sentences):</strong></p>
 
-        <!-- RD-1: All sentences are intentionally too long -->
+        <!-- Readability Issues: all sentences are intentionally too long -->
         <p>
             This is an extremely long sentence that is intentionally designed to exceed the average sentence length threshold and it continues to go on and on without any meaningful pause or structure so that it becomes very difficult to read and understand for users who may struggle with processing long and complex text structures in web content environments.
         </p>
@@ -72,7 +72,7 @@
             This is the fifth sentence, which should now trigger a "Paragraph Too Long" error.
         </p>
 
-        <p><span class="rule-tag">RD-3</span> <strong>Vague button label test:</strong></p>
+        <p><span class="rule-tag">Readability Issues</span> <strong>Vague button label test:</strong></p>
         <button>Next</button>
         <button>Click here</button>
         <a href=" ">Learn More</a>
@@ -80,9 +80,9 @@
     </section>
 
     <section>
-        <h2>5.2 Visual Complexity</h2>
+        <h2>5.2 Information Overload Issues</h2>
 
-        <p><span class="rule-tag">VC-1</span> <strong>Too many key elements on the first screen (more than 12):</strong></p>
+        <p><span class="rule-tag">Information Overload Issues</span> <strong>Too many key elements on the first screen (more than 12):</strong></p>
         <div class="hero-section">
             <div class="hero-item">Menu 1</div><div class="hero-item">Menu 2</div><div class="hero-item">Menu 3</div>
             <div class="hero-item">Menu 4</div><div class="hero-item">Menu 5</div><div class="hero-item">Menu 6</div>
@@ -91,7 +91,7 @@
             <div class="hero-item">Menu 13</div><div class="hero-item">Menu 14</div>
         </div>
 
-        <p><span class="rule-tag">VC-2</span> <strong>Content blocks are too dense (more than 6 cards in the same region):</strong></p>
+        <p><span class="rule-tag">Information Overload Issues</span> <strong>Content blocks are too dense (more than 6 cards in the same region):</strong></p>
         <div class="dense-container">
             <div class="item-card">Card Item A</div><div class="item-card">Card Item B</div>
             <div class="item-card">Card Item C</div><div class="item-card">Card Item D</div>
@@ -99,25 +99,25 @@
             <div class="item-card">Card Item G</div><div class="item-card">Card Item H</div>
         </div>
 
-        <p><span class="rule-tag">VC-3</span> <strong>Sidebar and banner distraction:</strong></p>
+        <p><span class="rule-tag">Information Overload Issues</span> <strong>Sidebar and banner distraction:</strong></p>
         <div class="sidebar-mock">AD: Sidebar 1</div>
         <div class="sidebar-mock">AD: Sidebar 2</div>
         <div style="width: 100%; height: 50px; background: #cfd8dc; text-align: center;">Banner Ad</div>
     </section>
 
     <section>
-        <h2>5.3 Interaction & Distraction</h2>
+        <h2>5.3 Interaction & Distraction Issues</h2>
 
-        <p><span class="rule-tag">ID-1</span> <strong>Autoplay media:</strong></p>
+        <p><span class="rule-tag">Interaction & Distraction Issues</span> <strong>Autoplay media:</strong></p>
         <video width="200" autoplay muted loop><source src="https://www.w3schools.com/html/mov_bbb.mp4"></video>
         <audio autoplay loop><source src="https://www.w3schools.com/html/horse.ogg"></audio>
 
-        <p><span class="rule-tag">ID-2</span> <strong>Too many animated elements in the same viewport (more than 2):</strong></p>
+        <p><span class="rule-tag">Interaction & Distraction Issues</span> <strong>Too many animated elements in the same viewport (more than 2):</strong></p>
         <div class="moving-box">Anim 1</div>
         <div class="moving-box" style="animation-delay: 0.5s;">Anim 2</div>
         <div class="moving-box" style="animation-delay: 1s;">Anim 3</div>
 
-        <p><span class="rule-tag">ID-3</span> <strong>Competing CTAs (more than 2 primary actions in the same region):</strong></p>
+        <p><span class="rule-tag">Interaction & Distraction Issues</span> <strong>Competing calls to action (more than 2 primary actions in the same region):</strong></p>
         <div class="action-area">
             <button class="btn-main">Register Now</button>
             <button class="btn-main">Confirm Payment</button>
@@ -126,13 +126,13 @@
     </section>
 
     <section>
-        <h2>5.4 Consistency</h2>
+        <h2>5.4 Consistency & Predictability Issues</h2>
 
-        <p><span class="rule-tag">CS-1</span> <strong>Heading structure gap:</strong></p>
+        <p><span class="rule-tag">Consistency & Predictability Issues</span> <strong>Heading structure gap:</strong></p>
         <h4>Explanation block jumping to a deeper heading level</h4>
         <p>This block intentionally jumps from h2 directly to h4 to test whether the heading hierarchy is continuous.</p>
 
-        <p><span class="rule-tag">CS-2</span> <strong>Multi-step flow missing current location cue:</strong></p>
+        <p><span class="rule-tag">Consistency & Predictability Issues</span> <strong>Multi-step flow missing current location cue:</strong></p>
         <form class="checkout-flow">
             <h3>Checkout Flow</h3>
             <section class="step-card">
