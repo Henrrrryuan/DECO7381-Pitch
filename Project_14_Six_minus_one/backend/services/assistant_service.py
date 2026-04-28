@@ -9,6 +9,7 @@ from urllib import error as urllib_error
 from urllib import request as urllib_request
 
 from ..app.core import AssistantChatPayload
+from ..schemas import issue_category_label_for_dimension
 
 
 def format_analysis_context(context: dict[str, Any] | None) -> str:
@@ -23,13 +24,19 @@ def format_analysis_context(context: dict[str, Any] | None) -> str:
 
     for dimension in context.get("dimensions", []):
         issue_count = len(dimension.get("issues", []))
+        issue_category = (
+            dimension.get("issue_category_label")
+            or dimension.get("display_name")
+            or issue_category_label_for_dimension(dimension.get("dimension", ""))
+        )
         lines.append(
-            f"- {dimension.get('dimension', 'Unknown dimension')}: score {dimension.get('score', 'n/a')}, issues {issue_count}"
+            f"- {issue_category}: score {dimension.get('score', 'n/a')}, issues {issue_count}"
         )
         for issue in dimension.get("issues", [])[:2]:
+            issue_label = issue.get("issue_category_label") or issue_category
             lines.append(
                 "  "
-                + f"* {issue.get('rule_id', 'rule')}: {issue.get('description', '')}"
+                + f"* {issue_label}: {issue.get('description', '')}"
             )
 
     return "\n".join(lines)
@@ -136,16 +143,22 @@ def build_fallback_assistant_reply(payload: AssistantChatPayload) -> str:
         )
 
     first_dimension = risky_dimensions[0]
+    first_category = (
+        first_dimension.get("issue_category_label")
+        or first_dimension.get("display_name")
+        or issue_category_label_for_dimension(first_dimension.get("dimension", ""))
+    )
     bullets = []
     for issue in first_dimension.get("issues", [])[:3]:
+        issue_label = issue.get("issue_category_label") or first_category
         bullets.append(
-            f"- {issue.get('rule_id', 'Issue')}: {issue.get('suggestion', 'Review this issue and simplify the interaction.')}"
+            f"- {issue_label}: {issue.get('suggestion', 'Review this issue and simplify the interaction.')}"
         )
 
     return (
         f"{opening}\n\n"
         f"Based on your question: \"{payload.message}\", the most urgent area is "
-        f"{first_dimension.get('dimension', 'the current dimension')} "
+        f"{first_category} "
         f"(score {first_dimension.get('score', 'n/a')}).\n\n"
         "Recommended first fixes:\n"
         + "\n".join(bullets)
@@ -163,6 +176,7 @@ def call_openai_assistant(payload: AssistantChatPayload) -> str:
         "You are an AI accessibility assistant inside CogniLens. "
         "Answer briefly and concretely for a developer. Focus on cognitive accessibility, readability, "
         "visual clutter, interaction distraction, and consistency. Prioritize the most important fix first. "
+        "Use issue category names such as Readability Issues and Information Overload Issues; do not expose internal rule IDs like RD-1 or IO-1 unless the user explicitly asks for implementation details. "
         "If the user asks for multiple points, cover every point in order (do not omit items). "
         "Keep each point short and avoid markdown tables."
     )
@@ -250,6 +264,7 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
         "You are an AI accessibility assistant inside CogniLens. "
         "Answer briefly and concretely for a developer. Focus on cognitive accessibility, readability, "
         "visual clutter, interaction distraction, and consistency. Prioritize the most important fix first. "
+        "Use issue category names such as Readability Issues and Information Overload Issues; do not expose internal rule IDs like RD-1 or IO-1 unless the user explicitly asks for implementation details. "
         "If the user asks for multiple points, cover every point in order (do not omit items). "
         "Keep each point short and avoid markdown tables."
     )
@@ -341,4 +356,3 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
             return combined
 
     return ""
-

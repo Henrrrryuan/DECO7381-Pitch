@@ -41,6 +41,31 @@ const ASSISTANT_DRAG_CANCEL_DISTANCE = 8;
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
 const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
+const ISSUE_CATEGORY_CONFIG = {
+  IO: {
+    displayName: "Information Overload Issues",
+    cognitiveDimension: "Information Filtering / Visual Prioritisation",
+  },
+  RD: {
+    displayName: "Readability Issues",
+    cognitiveDimension: "Reading Load / Comprehension",
+  },
+  ID: {
+    displayName: "Interaction & Distraction Issues",
+    cognitiveDimension: "Attention Regulation / Task Continuity",
+  },
+  CS: {
+    displayName: "Consistency & Predictability Issues",
+    cognitiveDimension: "Predictability / Wayfinding",
+  },
+};
+const DIMENSION_CATEGORY_KEYS = {
+  [INFORMATION_OVERLOAD_NAME]: "IO",
+  [LEGACY_INFORMATION_OVERLOAD_NAME]: "IO",
+  Readability: "RD",
+  "Interaction & Distraction": "ID",
+  Consistency: "CS",
+};
 const PROFILE_DISPLAY_CONFIG = {
   "Reading Difficulties Lens": {
     label: "Dyslexia",
@@ -495,6 +520,40 @@ function displayDimensionName(name) {
   return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
 }
 
+function issueCategoryKeyForRule(ruleId) {
+  const prefix = String(ruleId || "").split("-")[0];
+  return ISSUE_CATEGORY_CONFIG[prefix] ? prefix : "IO";
+}
+
+function issueCategoryKeyForDimension(dimensionName) {
+  return DIMENSION_CATEGORY_KEYS[displayDimensionName(dimensionName)] || "IO";
+}
+
+function issueCategoryMetaForDimension(dimensionName) {
+  return ISSUE_CATEGORY_CONFIG[issueCategoryKeyForDimension(dimensionName)] || ISSUE_CATEGORY_CONFIG.IO;
+}
+
+function issueCategoryMetaForIssue(issue, dimensionName) {
+  const key = issue?.issue_category_key
+    || issue?.issue_category?.key
+    || issueCategoryKeyForRule(issue?.rule_id);
+  return ISSUE_CATEGORY_CONFIG[key] || issueCategoryMetaForDimension(dimensionName);
+}
+
+function displayIssueCategoryName(dimensionName) {
+  return issueCategoryMetaForDimension(dimensionName).displayName;
+}
+
+function displayIssueCategoryNameForIssue(issue, dimensionName) {
+  return issue?.issue_category_label
+    || issue?.issue_category?.label
+    || issueCategoryMetaForIssue(issue, dimensionName).displayName;
+}
+
+function cognitiveDimensionLabel(dimensionName) {
+  return issueCategoryMetaForDimension(dimensionName).cognitiveDimension;
+}
+
 function normalizedDimensionName(name) {
   return displayDimensionName(String(name || ""));
 }
@@ -824,7 +883,8 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   const priorityLabel = fixPriorityBand(primaryIssue, priority.dimension);
   const priorityReason = fixPriorityReason(primaryIssue, priority.dimension);
   const displayPriorityDimension = displayDimensionName(priority.dimension);
-  const ruleIds = priority.issues.map((issue) => issue.rule_id).join(", ");
+  const priorityIssueCategory = displayIssueCategoryName(priority.dimension);
+  const priorityCognitiveDimension = cognitiveDimensionLabel(priority.dimension);
   const fixSteps = uniqueSuggestions(priority.issues);
   const comparisonEvidence = previousResult
     ? (() => {
@@ -844,7 +904,7 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
         <li><strong>Comparison:</strong> No baseline yet. Re-analyze a revised version to check whether cognitive load indicators improve.</li>
       `;
 
-  comparisonMeta.textContent = primaryIssue ? primaryIssue.rule_id : priority.dimension;
+  comparisonMeta.textContent = primaryIssue ? "Priority issue" : priorityIssueCategory;
   comparisonSummary.className = "comparison-summary priority";
   comparisonSummary.innerHTML = `
     <strong>Primary cognitive barrier</strong>
@@ -868,8 +928,10 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
     <article class="priority-card evidence">
       <span class="priority-eyebrow">Mental effort signals</span>
       <ul class="priority-evidence">
-        <li><strong>Weakest active dimension:</strong> ${escapeHtml(displayPriorityDimension)} (${priority.score})</li>
-        <li><strong>Triggered rules:</strong> ${escapeHtml(ruleIds)}</li>
+        <li><strong>Issue category:</strong> ${escapeHtml(priorityIssueCategory)}</li>
+        <li><strong>Cognitive dimension:</strong> ${escapeHtml(priorityCognitiveDimension)}</li>
+        <li><strong>Weakest active category score:</strong> ${priority.score}</li>
+        <li><strong>Triggered issues:</strong> ${priority.issues.length}</li>
         ${isInformationOverloadDimension(priority.dimension) ? `
           <li><strong>Main-task blockage:</strong> ${primaryIssue?.evidence?.blocks_primary_task ? "Likely" : "Less direct"}</li>
           <li><strong>Confusion/distraction level:</strong> ${issueEvidenceNumber(primaryIssue, "confusion_distraction_level")}/3</li>
@@ -918,25 +980,35 @@ function renderExplanation(result) {
   const blocks = orderedDimensions.map((dimension) => {
     const issueCount = dimension.issues.length;
     const displayName = displayDimensionName(dimension.dimension);
+    const issueCategoryName = displayIssueCategoryName(dimension.dimension);
+    const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
     const summary = issueCount === 0
-      ? "No issues were triggered in this dimension for the current analysis."
+      ? "No issues were triggered in this issue category for the current analysis."
       : isInformationOverloadDimension(dimension.dimension)
-        ? `${issueCount} issue${issueCount === 1 ? "" : "s"} were triggered in this dimension. These patterns increase the amount of information users must filter before they can settle into a clear reading path or identify the next step.`
-        : `${issueCount} issue${issueCount === 1 ? "" : "s"} were triggered in this dimension. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
+        ? `${issueCount} issue${issueCount === 1 ? "" : "s"} found. These patterns increase the amount of information users must filter before they can settle into a clear reading path or identify the next step.`
+        : `${issueCount} issue${issueCount === 1 ? "" : "s"} found. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
 
     const issues = issueCount
       ? isInformationOverloadDimension(dimension.dimension)
-        ? `<div class="issue-highlight-list">${dimension.issues.map((issue) => `
+        ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => `
             <button
               class="issue-highlight-button information-overload-card"
               type="button"
               data-highlight-issue="${escapeHtml(issue.rule_id)}"
               data-highlight-dimension="${escapeHtml(dimension.dimension)}"
-              aria-label="Highlight ${escapeHtml(issue.rule_id)} on the website"
+              aria-label="Highlight issue ${issueIndex + 1}: ${escapeHtml(issue.title)} on the website"
             >
               <div class="issue-highlight-header">
-                <span class="issue-highlight-rule">${escapeHtml(issue.rule_id)}</span>
+                <span class="issue-highlight-rule">Issue ${issueIndex + 1}</span>
                 <strong class="issue-highlight-title">${escapeHtml(issue.title)}</strong>
+              </div>
+              <div class="issue-highlight-section">
+                <span class="issue-highlight-label">Issue category</span>
+                <span class="issue-highlight-copy">${escapeHtml(displayIssueCategoryNameForIssue(issue, dimension.dimension))}</span>
+              </div>
+              <div class="issue-highlight-section">
+                <span class="issue-highlight-label">Cognitive dimension</span>
+                <span class="issue-highlight-copy">${escapeHtml(cognitiveDimension)}</span>
               </div>
               <div class="issue-highlight-meta">
                 <span class="issue-highlight-pill impact">${escapeHtml(issueImpactLabel(issue, dimension.dimension))}</span>
@@ -960,16 +1032,18 @@ function renderExplanation(result) {
               </div>
             </button>
           `).join("")}</div>`
-        : `<div class="issue-highlight-list">${dimension.issues.map((issue) => `
+        : `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => `
             <button
               class="issue-highlight-button"
               type="button"
               data-highlight-issue="${escapeHtml(issue.rule_id)}"
               data-highlight-dimension="${escapeHtml(dimension.dimension)}"
-              aria-label="Highlight ${escapeHtml(issue.rule_id)} on the website"
+              aria-label="Highlight issue ${issueIndex + 1}: ${escapeHtml(issue.title || issue.description)} on the website"
             >
-              <strong>${escapeHtml(issue.rule_id)}</strong>
+              <strong>Issue ${issueIndex + 1}: ${escapeHtml(issue.title || "Review this issue")}</strong>
               <span>${escapeHtml(issue.description)}</span>
+              <span class="issue-inline-meta">Issue Category: ${escapeHtml(displayIssueCategoryNameForIssue(issue, dimension.dimension))}</span>
+              <span class="issue-inline-meta">Cognitive Dimension: ${escapeHtml(cognitiveDimension)}</span>
               <span class="issue-inline-meta">${escapeHtml(beneficiaryTags(issue.rule_id, dimension.dimension).join(" | "))}</span>
             </button>
           `).join("")}</div>`
@@ -978,13 +1052,15 @@ function renderExplanation(result) {
     return `
       <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
         <summary class="explanation-accordion-summary">
-          <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
+          <span class="explanation-accordion-title">${escapeHtml(issueCategoryName)}</span>
           <span class="explanation-accordion-meta">
             <span class="explanation-accordion-issue-count">${issueCount}</span>
             <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
           </span>
         </summary>
         <div class="explanation-accordion-content">
+          <p><strong>Issue Category:</strong> ${escapeHtml(issueCategoryName)}</p>
+          <p><strong>Cognitive Dimension:</strong> ${escapeHtml(cognitiveDimension)}</p>
           <p>${escapeHtml(summary)}</p>
           ${issues}
         </div>
@@ -1374,6 +1450,7 @@ function updateActiveHighlightButtons() {
 }
 
 function highlightDimension(dimensionName) {
+  const issueCategoryName = displayIssueCategoryName(dimensionName);
   if (
     state.workspaceMode === "website"
     && state.activeHighlightDimension === dimensionName
@@ -1407,7 +1484,7 @@ function highlightDimension(dimensionName) {
   clearWebsiteHighlights(frameDoc);
 
   if (!dimension?.issues?.length) {
-    setWebsiteStatus(`${dimensionName} has no triggered issues in this analysis.`);
+    setWebsiteStatus(`${issueCategoryName} has no triggered issues in this analysis.`);
     return;
   }
 
@@ -1417,15 +1494,15 @@ function highlightDimension(dimensionName) {
       candidateElements.push(element);
     });
   });
-  const highlighted = applyHighlights(candidateElements, config.color, dimensionName);
+  const highlighted = applyHighlights(candidateElements, config.color, issueCategoryName);
 
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
-    setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${dimensionName}.`);
+    setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueCategoryName}.`);
   } else {
-    setWebsiteStatus(`No directly highlightable elements were found for ${dimensionName}; this issue may describe a missing or page-level pattern.`, true);
+    setWebsiteStatus(`No directly highlightable elements were found for ${issueCategoryName}; this issue may describe a missing or page-level pattern.`, true);
   }
 }
 
@@ -1452,6 +1529,7 @@ function highlightIssue(dimensionName, ruleId, force = false) {
   const dimension = findDimension(state.currentResult, dimensionName);
   const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
   const config = HIGHLIGHT_CONFIG[dimensionName];
+  const issueLabel = issue?.title || displayIssueCategoryNameForIssue(issue, dimensionName);
   if (!frameDoc || !issue || !config) {
     setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
     return;
@@ -1475,14 +1553,14 @@ function highlightIssue(dimensionName, ruleId, force = false) {
     });
   }
 
-  const highlighted = applyHighlights(elements, config.color, ruleId);
+  const highlighted = applyHighlights(elements, config.color, "Issue highlight");
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
-    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${ruleId}.`);
+    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.`);
   } else {
-    setWebsiteStatus(`No directly highlightable element was found for ${ruleId}. This may be a page-level or missing-element issue.`, true);
+    setWebsiteStatus(`No directly highlightable element was found for ${issueLabel}. This may be a page-level or missing-element issue.`, true);
   }
 }
 
@@ -1509,7 +1587,7 @@ function renderPrintSummary(result) {
     const score = dimension ? dimension.score : 0;
     return `
       <article class="print-dimension-card">
-        <span>${escapeHtml(name)}</span>
+        <span>${escapeHtml(displayIssueCategoryName(name))}</span>
         <strong>${score}</strong>
       </article>
     `;
@@ -1530,9 +1608,12 @@ function buildAssistantContext() {
     profile_scores: result.profile_scores || [],
     dimensions: result.dimensions.map((dimension) => ({
       dimension: dimension.dimension,
+      issue_category_label: displayIssueCategoryName(dimension.dimension),
+      cognitive_dimension: cognitiveDimensionLabel(dimension.dimension),
       score: dimension.score,
       issues: dimension.issues.map((issue) => ({
         rule_id: issue.rule_id,
+        issue_category_label: displayIssueCategoryNameForIssue(issue, dimension.dimension),
         title: issue.title,
         description: issue.description,
         suggestion: issue.suggestion,
