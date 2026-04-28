@@ -936,7 +936,7 @@ input {
 
 .score-slider-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -1280,20 +1280,16 @@ button.dimension-row.is-linked-active .bar-track {
   border-radius: inherit;
 }
 
-.bar-fill.visual {
-  background: var(--visual);
+.bar-fill.score-low {
+  background: #e5484d;
 }
 
-.bar-fill.readability {
-  background: var(--readability);
+.bar-fill.score-mid {
+  background: #f5c400;
 }
 
-.bar-fill.interaction {
-  background: var(--interaction);
-}
-
-.bar-fill.consistency {
-  background: var(--consistency);
+.bar-fill.score-high {
+  background: #22c55e;
 }
 
 .comparison-section {

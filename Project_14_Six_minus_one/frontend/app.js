@@ -340,16 +340,13 @@ function deltaMeta(currentScore, previousScore) {
 }
 
 function buildScoreSlides(result) {
-  const slides = [
-    {
-      label: "Overall",
-    },
-  ];
+  const slides = [];
 
   (result.profile_scores || []).forEach((profile) => {
     const meta = profileDisplayMeta(profile.name);
     slides.push({
       label: meta.label,
+      dimensionEntries: buildProfileDimensionEntries(result, profile.name),
     });
   });
 
@@ -396,6 +393,7 @@ function renderScoreSlider(result) {
       dot.classList.toggle("is-active", active);
       dot.setAttribute("aria-pressed", active ? "true" : "false");
     });
+    renderDimensionBars(slides[currentIndex]?.dimensionEntries || []);
   };
 
   const goToSlide = (targetIndex) => {
@@ -408,6 +406,54 @@ function renderScoreSlider(result) {
   });
 
   updateControls();
+}
+
+function normalizedScore(score) {
+  return Math.max(0, Math.min(100, Number(score) || 0));
+}
+
+function scoreBandClass(score) {
+  const value = normalizedScore(score);
+  if (value <= 33) {
+    return "score-low";
+  }
+  if (value <= 66) {
+    return "score-mid";
+  }
+  return "score-high";
+}
+
+function renderDimensionBars(dimensionEntries) {
+  const dimensionBars = document.getElementById("dimensionBars");
+  if (!dimensionBars) {
+    return;
+  }
+
+  const dimensionRows = (dimensionEntries || []).map(({ name, score }) => {
+    const value = normalizedScore(score);
+    const dimensionKey = displayDimensionName(name);
+    const tooltipCopy = tooltipCopyForDimension(dimensionKey);
+    return `
+      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
+        <span class="dimension-label-with-info">
+          <span>${escapeHtml(name)}</span>
+          <span
+            class="dimension-info-icon"
+            tabindex="0"
+            role="button"
+            aria-label="${escapeHtml(`${dimensionKey} info`)}"
+            data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
+            data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
+            data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
+          >i</span>
+        </span>
+        <div class="bar-track"><div class="bar-fill ${scoreBandClass(value)}" style="width:${value}%"></div></div>
+        <strong>${value}</strong>
+      </button>
+    `;
+  }).join("");
+
+  dimensionBars.innerHTML = dimensionRows;
 }
 
 function renderDashboardSummary(result) {
@@ -1957,6 +2003,7 @@ function bindEvents() {
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websiteViewToggle = document.getElementById("websiteViewToggle");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
+  const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
   initSidebarResize();
   initAssistantFloating();
@@ -2005,6 +2052,16 @@ function bindEvents() {
       }
     });
   });
+
+  if (dimensionBars) {
+    dimensionBars.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-highlight-dimension]");
+      if (trigger) {
+        highlightDimension(trigger.dataset.highlightDimension);
+        focusExplanationDimension(trigger.dataset.dimensionKey || trigger.dataset.highlightDimension);
+      }
+    });
+  }
 
   if (explanationContent) {
     explanationContent.addEventListener("toggle", (event) => {
