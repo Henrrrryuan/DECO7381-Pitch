@@ -343,10 +343,6 @@ function buildScoreSlides(result) {
   const slides = [
     {
       label: "Overall",
-      subtitle: "Combined cognitive accessibility score",
-      summary: "Balances all four dimensions to give a single high-level view of the page.",
-      score: result.overall_score,
-      dimensionEntries: buildOverallDimensionEntries(result),
     },
   ];
 
@@ -354,10 +350,6 @@ function buildScoreSlides(result) {
     const meta = profileDisplayMeta(profile.name);
     slides.push({
       label: meta.label,
-      subtitle: meta.subtitle,
-      summary: profile.summary,
-      score: profile.score,
-      dimensionEntries: buildProfileDimensionEntries(result, profile.name),
     });
   });
 
@@ -372,55 +364,27 @@ function renderScoreSlider(result) {
 
   const slides = buildScoreSlides(result);
   if (!slides.length) {
-    profileNode.innerHTML = `<p class="profile-scores-empty">Overall and audience lens scores will appear after analysis.</p>`;
+    profileNode.innerHTML = `<p class="profile-scores-empty">Score lenses will appear after analysis.</p>`;
     return;
   }
 
   profileNode.innerHTML = `
-    <div class="score-slider-shell">
-      <button type="button" class="score-slider-nav" data-score-nav="prev" aria-label="Show previous score lens">&#8249;</button>
-      <div class="score-slider-viewport">
-        <div class="score-slider-track">
-          ${slides.map((slide, index) => `
-            <article class="score-slide" data-score-slide="${index}">
-              <div class="score-ring score-slide-ring" style="--score:${slide.score}">
-                <div class="score-ring-inner">
-                  <span class="score-ring-value">${slide.score}</span>
-                  <span class="score-ring-risk">${escapeHtml(scoreStatus(slide.score))}</span>
-                  <span class="score-ring-label">${escapeHtml(slide.label)}</span>
-                </div>
-              </div>
-              <div class="score-slide-copy">
-                <span class="score-slide-subtitle">${escapeHtml(slide.subtitle)}</span>
-                <p>${escapeHtml(slide.summary)}</p>
-              </div>
-            </article>
-          `).join("")}
-        </div>
-      </div>
-      <button type="button" class="score-slider-nav" data-score-nav="next" aria-label="Show next score lens">&#8250;</button>
-    </div>
     <div class="score-slider-tabs" aria-label="Score lens navigation">
       ${slides.map((slide, index) => `
         <button
           type="button"
           class="score-slider-tab${index === 0 ? " is-active" : ""}"
           data-score-dot="${index}"
-          aria-label="Show ${escapeHtml(slide.label)} score"
+          aria-label="Select ${escapeHtml(slide.label)} lens"
           aria-pressed="${index === 0 ? "true" : "false"}"
         >${escapeHtml(slide.label)}</button>
       `).join("")}
     </div>
   `;
 
-  const viewport = profileNode.querySelector(".score-slider-viewport");
-  const track = profileNode.querySelector(".score-slider-track");
-  const slideNodes = [...profileNode.querySelectorAll("[data-score-slide]")];
   const dotNodes = [...profileNode.querySelectorAll("[data-score-dot]")];
-  const prevButton = profileNode.querySelector('[data-score-nav="prev"]');
-  const nextButton = profileNode.querySelector('[data-score-nav="next"]');
 
-  if (!viewport || !track || !slideNodes.length || !dotNodes.length || !prevButton || !nextButton) {
+  if (!dotNodes.length) {
     return;
   }
 
@@ -432,94 +396,18 @@ function renderScoreSlider(result) {
       dot.classList.toggle("is-active", active);
       dot.setAttribute("aria-pressed", active ? "true" : "false");
     });
-    prevButton.disabled = currentIndex === 0;
-    nextButton.disabled = currentIndex === slideNodes.length - 1;
-    track.style.transform = `translateX(-${currentIndex * 100}%)`;
-    renderDimensionBars(slides[currentIndex]?.dimensionEntries || []);
   };
 
   const goToSlide = (targetIndex) => {
-    currentIndex = Math.max(0, Math.min(slideNodes.length - 1, targetIndex));
+    currentIndex = Math.max(0, Math.min(dotNodes.length - 1, targetIndex));
     updateControls();
   };
 
-  prevButton.addEventListener("click", () => goToSlide(currentIndex - 1));
-  nextButton.addEventListener("click", () => goToSlide(currentIndex + 1));
   dotNodes.forEach((dot) => {
     dot.addEventListener("click", () => goToSlide(Number(dot.dataset.scoreDot)));
   });
 
   updateControls();
-}
-
-function renderDimensionBars(dimensionEntries) {
-  const dimensionBars = document.getElementById("dimensionBars");
-  if (!dimensionBars) {
-    return;
-  }
-
-  const dimensionRows = (dimensionEntries || []).map(({ name, className, score }) => {
-    const dimensionKey = displayDimensionName(name);
-    const tooltipCopy = tooltipCopyForDimension(dimensionKey);
-    return `
-      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
-        <span class="dimension-label-with-info">
-          <span>${escapeHtml(name)}</span>
-          <span
-            class="dimension-info-icon"
-            tabindex="0"
-            role="button"
-            aria-label="${escapeHtml(`${dimensionKey} info`)}"
-            data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
-            data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
-            data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
-          >i</span>
-        </span>
-        <div class="bar-track"><div class="bar-fill ${className}" style="width:${score}%"></div></div>
-        <strong>${score}</strong>
-      </button>
-    `;
-  }).join("");
-
-  dimensionBars.innerHTML = `${dimensionRows}${visualComplexityScoreMarkup()}`;
-}
-
-function visualComplexityScoreMarkup() {
-  const visualComplexity = state.currentPayload?.visual_complexity;
-  const error = state.currentPayload?.visual_complexity_error;
-  if (!visualComplexity && !error) {
-    return "";
-  }
-
-  if (!visualComplexity) {
-    return `
-      <div class="visual-complexity-card visual-complexity-card-muted">
-        <span>Snapshot Visual Complexity</span>
-        <strong>-</strong>
-        <small>${escapeHtml(error || "Unavailable")}</small>
-      </div>
-    `;
-  }
-
-  const score = Math.max(0, Math.min(100, Number(visualComplexity.score) || 0));
-  const metrics = visualComplexity.metrics || {};
-  const level = visualComplexity.complexity_level || "unknown";
-  const model = String(visualComplexity.model || "").toLowerCase().includes("rendered")
-    ? "Rendered snapshot"
-    : "Static snapshot";
-
-  return `
-    <div class="visual-complexity-card" title="Paper-inspired VCS from TLC, words, and images">
-      <div class="visual-complexity-card-top">
-        <span>Snapshot Visual Complexity</span>
-        <strong>${score}</strong>
-      </div>
-      <div class="visual-complexity-meter" aria-hidden="true">
-        <div class="visual-complexity-meter-fill" style="width:${score}%"></div>
-      </div>
-      <small>${escapeHtml(model)} | ${escapeHtml(level)} | TLC ${Number(metrics.tlc_count) || 0} | Words ${Number(metrics.word_count) || 0} | Images ${Number(metrics.image_count) || 0}</small>
-    </div>
-  `;
 }
 
 function renderDashboardSummary(result) {
@@ -2069,7 +1957,6 @@ function bindEvents() {
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websiteViewToggle = document.getElementById("websiteViewToggle");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
-  const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
   initSidebarResize();
   initAssistantFloating();
@@ -2118,16 +2005,6 @@ function bindEvents() {
       }
     });
   });
-
-  if (dimensionBars) {
-    dimensionBars.addEventListener("click", (event) => {
-      const trigger = event.target.closest("[data-highlight-dimension]");
-      if (trigger) {
-        highlightDimension(trigger.dataset.highlightDimension);
-        focusExplanationDimension(trigger.dataset.dimensionKey || trigger.dataset.highlightDimension);
-      }
-    });
-  }
 
   if (explanationContent) {
     explanationContent.addEventListener("toggle", (event) => {
