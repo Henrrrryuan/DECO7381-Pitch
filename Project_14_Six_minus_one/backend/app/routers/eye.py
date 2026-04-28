@@ -39,11 +39,17 @@ def eye_proxy(url: str = Query(...)) -> Response:
 
 @router.get("/eye/sessions")
 def eye_sessions(
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     query: str | None = Query(default=None),
     run_id: str | None = Query(default=None),
 ) -> dict[str, Any]:
-    return list_eye_tracking_sessions(limit=limit, query=query, run_id=run_id).to_dict()
+    return list_eye_tracking_sessions(
+        limit=limit,
+        offset=offset,
+        query=query,
+        run_id=run_id,
+    ).to_dict()
 
 
 @router.get("/eye/sessions/{session_id}")

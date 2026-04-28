@@ -166,10 +166,16 @@ class HistoryRunDetail:
 @dataclass
 class HistoryListResponse:
     items: list[HistoryRunSummary]
+    total: int = 0
+    limit: int = 10
+    offset: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "items": [item.to_dict() for item in self.items],
+            "total": self.total,
+            "limit": self.limit,
+            "offset": self.offset,
         }
 
 
@@ -211,10 +217,16 @@ class EyeTrackingSessionDetail:
 @dataclass
 class EyeTrackingSessionListResponse:
     items: list[EyeTrackingSessionSummary]
+    total: int = 0
+    limit: int = 20
+    offset: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "items": [item.to_dict() for item in self.items],
+            "total": self.total,
+            "limit": self.limit,
+            "offset": self.offset,
         }
 
 

@@ -9,9 +9,15 @@ import {
 const state = {
   items: [],
   eyeItems: [],
+  historyTotal: 0,
+  eyeTotal: 0,
+  historyPage: 1,
+  eyePage: 1,
+  query: "",
 };
 
 let searchRequestToken = 0;
+const PAGE_SIZE = 25;
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 
 function buildCurrentSession(detail) {
@@ -43,6 +49,61 @@ function formatShortId(id, prefix = "") {
     return "—";
   }
   return `${prefix}${value.slice(0, 6).toUpperCase()}`;
+}
+
+function getTotalPages(total) {
+  return Math.max(1, Math.ceil((Number(total) || 0) / PAGE_SIZE));
+}
+
+function getPageOffset(page) {
+  return (Math.max(1, Number(page) || 1) - 1) * PAGE_SIZE;
+}
+
+function buildPagedUrl(path, page) {
+  const params = new URLSearchParams({
+    limit: String(PAGE_SIZE),
+    offset: String(getPageOffset(page)),
+  });
+
+  if (state.query) {
+    params.set("query", state.query);
+  }
+
+  return `${API_BASE}${path}?${params.toString()}`;
+}
+
+function renderPagination({
+  containerId,
+  page,
+  total,
+  kind,
+  itemLabel,
+}) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  const totalPages = getTotalPages(total);
+  const safePage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const startItem = total ? getPageOffset(safePage) + 1 : 0;
+  const endItem = Math.min(getPageOffset(safePage) + PAGE_SIZE, total);
+
+  container.innerHTML = `
+    <div class="history-pagination-summary">
+      <strong>Page ${safePage} of ${totalPages}</strong>
+      <span>${startItem}-${endItem} of ${total} ${escapeHtml(itemLabel)}</span>
+    </div>
+    <div class="history-pagination-controls" data-pagination-kind="${kind}">
+      <button class="history-page-btn" type="button" data-page-action="previous" ${safePage <= 1 ? "disabled" : ""}>Previous</button>
+      <label class="history-page-jump">
+        <span>Go to</span>
+        <input class="history-page-input" type="number" min="1" max="${totalPages}" value="${safePage}" inputmode="numeric">
+      </label>
+      <button class="history-page-btn" type="button" data-page-action="jump">Go</button>
+      <button class="history-page-btn" type="button" data-page-action="next" ${safePage >= totalPages ? "disabled" : ""}>Next</button>
+    </div>
+  `;
 }
 
 function renderHistoryRows(items, emptyMessage = "No analysis history has been saved yet.") {
@@ -88,7 +149,7 @@ function renderEyeHistoryRows(items, emptyMessage = "No eye-tracking evidence se
   eyeHistoryList.innerHTML = items.map((item) => {
     const coverage = Number(item.coverage_percent ?? 0).toFixed(1);
     const relatedRun = item.run_id ? escapeHtml(formatShortId(item.run_id, "R-")) : "&mdash;";
-    const sessionMeta = `${escapeHtml(formatDate(item.created_at))} · ${item.sample_count} samples · ${escapeHtml(formatDuration(item.duration_ms))}`;
+    const sessionMeta = `${escapeHtml(formatDate(item.created_at))} / ${item.sample_count} samples / ${escapeHtml(formatDuration(item.duration_ms))}`;
     const targetUrl = item.target_url
       ? `<small title="${escapeHtml(item.target_url)}">${escapeHtml(item.target_url)}</small>`
       : `<small>No target URL saved</small>`;
@@ -129,59 +190,39 @@ async function handleHistoryClick(event) {
   window.location.href = "./dashboard.html";
 }
 
-function applyHistoryFilter() {
-  const searchInput = document.getElementById("historySearchInput");
-  const query = (searchInput?.value || "").trim().toLowerCase();
-  if (!query) {
-    renderHistoryRows(state.items);
-    renderEyeHistoryRows(state.eyeItems);
-    return;
-  }
-
-  const filteredItems = state.items.filter((item) =>
-    (item.source_name || "").toLowerCase().includes(query)
-    || (item.run_id || "").toLowerCase().includes(query)
-  );
-
-  const filteredEyeItems = state.eyeItems.filter((item) =>
-    (item.source_name || "").toLowerCase().includes(query)
-    || (item.session_id || "").toLowerCase().includes(query)
-    || (item.run_id || "").toLowerCase().includes(query)
-    || (item.target_url || "").toLowerCase().includes(query)
-  );
-
-  renderHistoryRows(filteredItems, "No reports match the current file name or ID search.");
-    renderEyeHistoryRows(filteredEyeItems, "No eye-tracking evidence sessions match the current search.");
-}
-
-async function runHistorySearch() {
-  const searchInput = document.getElementById("historySearchInput");
-  const rawQuery = (searchInput?.value || "").trim();
-  const nextToken = ++searchRequestToken;
+async function loadReportHistory(nextToken = searchRequestToken) {
   const historyList = document.getElementById("historyList");
-  const eyeHistoryList = document.getElementById("eyeHistoryList");
-
   if (historyList) {
-    historyList.innerHTML = `<p class="history-empty">Searching analysis history...</p>`;
-  }
-  if (eyeHistoryList) {
-    eyeHistoryList.innerHTML = `<p class="history-empty">Searching eye-tracking evidence...</p>`;
+    historyList.innerHTML = `<p class="history-empty">Loading analysis history...</p>`;
   }
 
   try {
-    const queryParam = rawQuery ? `&query=${encodeURIComponent(rawQuery)}` : "";
-    const [historyPayload, eyePayload] = await Promise.all([
-      fetchJson(`${API_BASE}/history?limit=20${queryParam}`),
-      fetchJson(`${API_BASE}/eye/sessions?limit=20${queryParam}`),
-    ]);
-
+    const payload = await fetchJson(buildPagedUrl("/history", state.historyPage));
     if (nextToken !== searchRequestToken) {
       return;
     }
 
-    state.items = historyPayload.items || [];
-    state.eyeItems = eyePayload.items || [];
-    applyHistoryFilter();
+    state.items = payload.items || [];
+    state.historyTotal = Number(payload.total ?? state.items.length) || 0;
+
+    const totalPages = getTotalPages(state.historyTotal);
+    if (state.historyPage > totalPages) {
+      state.historyPage = totalPages;
+      await loadReportHistory(nextToken);
+      return;
+    }
+
+    renderHistoryRows(
+      state.items,
+      state.query ? "No reports match the current file name or ID search." : "No analysis history has been saved yet.",
+    );
+    renderPagination({
+      containerId: "historyPagination",
+      page: state.historyPage,
+      total: state.historyTotal,
+      kind: "history",
+      itemLabel: "reports",
+    });
   } catch (error) {
     if (nextToken !== searchRequestToken) {
       return;
@@ -189,10 +230,68 @@ async function runHistorySearch() {
     if (historyList) {
       historyList.innerHTML = `<p class="history-empty">${escapeHtml(error.message)}</p>`;
     }
+  }
+}
+
+async function loadEyeHistory(nextToken = searchRequestToken) {
+  const eyeHistoryList = document.getElementById("eyeHistoryList");
+  if (eyeHistoryList) {
+    eyeHistoryList.innerHTML = `<p class="history-empty">Loading eye-tracking evidence...</p>`;
+  }
+
+  try {
+    const payload = await fetchJson(buildPagedUrl("/eye/sessions", state.eyePage));
+    if (nextToken !== searchRequestToken) {
+      return;
+    }
+
+    state.eyeItems = payload.items || [];
+    state.eyeTotal = Number(payload.total ?? state.eyeItems.length) || 0;
+
+    const totalPages = getTotalPages(state.eyeTotal);
+    if (state.eyePage > totalPages) {
+      state.eyePage = totalPages;
+      await loadEyeHistory(nextToken);
+      return;
+    }
+
+    renderEyeHistoryRows(
+      state.eyeItems,
+      state.query
+        ? "No eye-tracking evidence sessions match the current search."
+        : "No eye-tracking evidence sessions have been saved yet.",
+    );
+    renderPagination({
+      containerId: "eyeHistoryPagination",
+      page: state.eyePage,
+      total: state.eyeTotal,
+      kind: "eye",
+      itemLabel: "sessions",
+    });
+  } catch (error) {
+    if (nextToken !== searchRequestToken) {
+      return;
+    }
     if (eyeHistoryList) {
       eyeHistoryList.innerHTML = `<p class="history-empty">${escapeHtml(error.message)}</p>`;
     }
   }
+}
+
+async function loadHistoryPages() {
+  const nextToken = ++searchRequestToken;
+  await Promise.all([
+    loadReportHistory(nextToken),
+    loadEyeHistory(nextToken),
+  ]);
+}
+
+async function runHistorySearch() {
+  const searchInput = document.getElementById("historySearchInput");
+  state.query = (searchInput?.value || "").trim();
+  state.historyPage = 1;
+  state.eyePage = 1;
+  await loadHistoryPages();
 }
 
 function bindHistorySearch() {
@@ -212,6 +311,76 @@ function bindHistorySearch() {
   searchInput.dataset.bound = "true";
 }
 
+function bindPaginationControls() {
+  const paginationContainers = [
+    document.getElementById("historyPagination"),
+    document.getElementById("eyeHistoryPagination"),
+  ];
+
+  paginationContainers.forEach((container) => {
+    if (!container || container.dataset.bound === "true") {
+      return;
+    }
+
+    container.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-page-action]");
+      if (!button || button.disabled) {
+        return;
+      }
+
+      const controls = button.closest("[data-pagination-kind]");
+      const kind = controls?.dataset.paginationKind;
+      if (!kind) {
+        return;
+      }
+
+      const total = kind === "history" ? state.historyTotal : state.eyeTotal;
+      const totalPages = getTotalPages(total);
+      const currentPage = kind === "history" ? state.historyPage : state.eyePage;
+      let nextPage = currentPage;
+
+      if (button.dataset.pageAction === "previous") {
+        nextPage = Math.max(1, currentPage - 1);
+      } else if (button.dataset.pageAction === "next") {
+        nextPage = Math.min(totalPages, currentPage + 1);
+      } else if (button.dataset.pageAction === "jump") {
+        const input = controls.querySelector(".history-page-input");
+        nextPage = Math.min(Math.max(1, Number(input?.value) || currentPage), totalPages);
+      }
+
+      if (nextPage === currentPage) {
+        return;
+      }
+
+      const nextToken = ++searchRequestToken;
+      if (kind === "history") {
+        state.historyPage = nextPage;
+        await loadReportHistory(nextToken);
+      } else {
+        state.eyePage = nextPage;
+        await loadEyeHistory(nextToken);
+      }
+    });
+
+    container.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      const input = event.target.closest(".history-page-input");
+      if (!input) {
+        return;
+      }
+
+      event.preventDefault();
+      const controls = input.closest("[data-pagination-kind]");
+      controls?.querySelector('[data-page-action="jump"]')?.click();
+    });
+
+    container.dataset.bound = "true";
+  });
+}
+
 async function loadHistory() {
   const historyList = document.getElementById("historyList");
   const eyeHistoryList = document.getElementById("eyeHistoryList");
@@ -219,27 +388,15 @@ async function loadHistory() {
     return;
   }
 
-  try {
-    const [historyPayload, eyePayload] = await Promise.all([
-      fetchJson(`${API_BASE}/history?limit=20`),
-      fetchJson(`${API_BASE}/eye/sessions?limit=20`),
-    ]);
+  bindHistorySearch();
+  bindPaginationControls();
 
-    state.items = historyPayload.items || [];
-    state.eyeItems = eyePayload.items || [];
-    bindHistorySearch();
-
-    renderHistoryRows(state.items);
-    renderEyeHistoryRows(state.eyeItems);
-
-    if (historyList.dataset.bound !== "true") {
-      historyList.addEventListener("click", handleHistoryClick);
-      historyList.dataset.bound = "true";
-    }
-  } catch (error) {
-    historyList.innerHTML = `<p class="history-empty">${escapeHtml(error.message)}</p>`;
-    eyeHistoryList.innerHTML = `<p class="history-empty">${escapeHtml(error.message)}</p>`;
+  if (historyList.dataset.bound !== "true") {
+    historyList.addEventListener("click", handleHistoryClick);
+    historyList.dataset.bound = "true";
   }
+
+  await loadHistoryPages();
 }
 
 loadHistory().catch((error) => {

@@ -134,3 +134,60 @@ INFO:     127.0.0.1:64712 - "GET /sample-input/interaction-distraction-test.html
 INFO:     127.0.0.1:60156 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60156 - "POST /analyze HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60156 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51472 - "GET /dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51472 - "GET /styles.css?v=score-lens-row-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "GET /app.js?v=score-lens-row-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "GET /common.js?v=visual-complexity-score-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56292 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "GET /dashboard.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51918 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56291 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60083 - "GET /dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60083 - "GET /styles.css?v=profile-tabs-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55708 - "GET /app.js?v=profile-tabs-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55709 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55708 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55708 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55708 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61035 - "GET /dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51873 - "GET /styles.css?v=profile-tabs-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62539 - "GET /app.js?v=profile-tabs-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55799 - "GET /index.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55799 - "GET /styles.css?v=report-id-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55799 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49404 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49403 - "POST /analyze-url HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49403 - "POST /visual-complexity-url HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:49403 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64640 - "GET /sample-input/interaction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49403 - "GET /eye/proxy?url=http%3A%2F%2F127.0.0.1%3A8001%2Fsample-input%2Finteraction-distraction-test.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63980 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63980 - "POST /visual-complexity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63980 - "GET /history.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63980 - "GET /styles.css?v=history-side-by-side-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62652 - "GET /history.js?v=history-side-by-side-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62652 - "GET /common.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63980 - "GET /eye/sessions?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62652 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51539 - "GET /history.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51539 - "GET /styles.css?v=history-side-by-side-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52146 - "GET /history.js?v=history-side-by-side-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51539 - "GET /common.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52146 - "GET /eye/sessions?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51539 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62573 - "GET /history.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58364 - "GET /styles.css?v=history-pagination-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49671 - "GET /history.js?v=history-pagination-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58364 - "GET /eye/sessions?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49671 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58337 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54284 - "GET /history.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54284 - "GET /history.js?v=history-pagination-1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52083 - "GET /eye/sessions?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54284 - "GET /history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53880 - "GET /history?limit=25&offset=0 HTTP/1.1" 200 OK

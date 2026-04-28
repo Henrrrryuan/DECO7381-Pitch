@@ -137,48 +137,58 @@ def save_analysis_run(
 def list_history_runs(
     limit: int = 10,
     *,
+    offset: int = 0,
     query: str | None = None,
     db_path: Path | None = None,
 ) -> HistoryListResponse:
     normalized_query = (query or "").strip()
+    safe_limit = max(1, limit)
+    safe_offset = max(0, offset)
 
     with _connect(db_path) as connection:
+        where_clause = ""
+        params: list[object] = []
         if normalized_query:
-            rows = connection.execute(
-                """
-                SELECT
-                    id,
-                    created_at,
-                    source_name,
-                    overall_score,
-                    weighted_average,
-                    min_dimension_score
-                FROM analysis_runs
-                WHERE LOWER(source_name) LIKE LOWER(?)
-                   OR LOWER(id) LIKE LOWER(?)
-                ORDER BY rowid DESC
-                LIMIT ?
-                """,
-                (f"%{normalized_query}%", f"%{normalized_query}%", limit),
-            ).fetchall()
-        else:
-            rows = connection.execute(
-                """
-                SELECT
-                    id,
-                    created_at,
-                    source_name,
-                    overall_score,
-                    weighted_average,
-                    min_dimension_score
-                FROM analysis_runs
-                ORDER BY rowid DESC
-                LIMIT ?
-                """,
-                (limit,),
-            ).fetchall()
+            where_clause = """
+            WHERE LOWER(source_name) LIKE LOWER(?)
+               OR LOWER(id) LIKE LOWER(?)
+            """
+            like_query = f"%{normalized_query}%"
+            params.extend([like_query, like_query])
 
-    return HistoryListResponse(items=[_row_to_run_summary(row) for row in rows])
+        total = connection.execute(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM analysis_runs
+            {where_clause}
+            """,
+            params,
+        ).fetchone()["total"]
+
+        rows = connection.execute(
+            f"""
+            SELECT
+                id,
+                created_at,
+                source_name,
+                overall_score,
+                weighted_average,
+                min_dimension_score
+            FROM analysis_runs
+            {where_clause}
+            ORDER BY rowid DESC
+            LIMIT ?
+            OFFSET ?
+            """,
+            (*params, safe_limit, safe_offset),
+        ).fetchall()
+
+    return HistoryListResponse(
+        items=[_row_to_run_summary(row) for row in rows],
+        total=int(total),
+        limit=safe_limit,
+        offset=safe_offset,
+    )
 
 
 def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetail | None:
@@ -388,12 +398,15 @@ def save_eye_tracking_session(
 def list_eye_tracking_sessions(
     limit: int = 20,
     *,
+    offset: int = 0,
     query: str | None = None,
     run_id: str | None = None,
     db_path: Path | None = None,
 ) -> EyeTrackingSessionListResponse:
     normalized_query = (query or "").strip()
     normalized_run_id = (run_id or "").strip()
+    safe_limit = max(1, limit)
+    safe_offset = max(0, offset)
 
     with _connect(db_path) as connection:
         clauses: list[str] = []
@@ -418,6 +431,15 @@ def list_eye_tracking_sessions(
             params.append(normalized_run_id)
 
         where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        total = connection.execute(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM eye_tracking_sessions
+            {where_clause}
+            """,
+            params,
+        ).fetchone()["total"]
+
         rows = connection.execute(
             f"""
             SELECT
@@ -433,12 +455,16 @@ def list_eye_tracking_sessions(
             {where_clause}
             ORDER BY rowid DESC
             LIMIT ?
+            OFFSET ?
             """,
-            (*params, limit),
+            (*params, safe_limit, safe_offset),
         ).fetchall()
 
     return EyeTrackingSessionListResponse(
-        items=[_row_to_eye_tracking_session_summary(row) for row in rows]
+        items=[_row_to_eye_tracking_session_summary(row) for row in rows],
+        total=int(total),
+        limit=safe_limit,
+        offset=safe_offset,
     )
 
 

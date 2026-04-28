@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens History</title>
-  <link rel="stylesheet" href="./styles.css?v=history-side-by-side-1">
+  <link rel="stylesheet" href="./styles.css?v=history-pagination-2">
 </head>
 <body class="history-body">
   <header class="app-nav">
@@ -60,6 +60,7 @@
         <div id="historyList" class="history-table-body">
           <p class="history-empty">Loading analysis history...</p>
         </div>
+        <div id="historyPagination" class="history-pagination" aria-label="Report history pagination"></div>
       </section>
 
       <section class="history-list-shell eye-history-shell">
@@ -81,10 +82,11 @@
         <div id="eyeHistoryList" class="history-table-body">
           <p class="history-empty">Loading eye-tracking evidence...</p>
         </div>
+        <div id="eyeHistoryPagination" class="history-pagination" aria-label="Eye-tracking evidence pagination"></div>
       </section>
     </div>
   </main>
 
-  <script type="module" src="./history.js?v=history-side-by-side-1"></script>
+  <script type="module" src="./history.js?v=history-pagination-2"></script>
 </body>
 </html>
