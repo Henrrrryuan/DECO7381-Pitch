@@ -37,6 +37,14 @@ function formatDuration(ms) {
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
+function formatShortId(id, prefix = "") {
+  const value = String(id || "").trim();
+  if (!value) {
+    return "—";
+  }
+  return `${prefix}${value.slice(0, 6).toUpperCase()}`;
+}
+
 function renderHistoryRows(items, emptyMessage = "No analysis history has been saved yet.") {
   const historyList = document.getElementById("historyList");
   if (!historyList) {
@@ -50,7 +58,7 @@ function renderHistoryRows(items, emptyMessage = "No analysis history has been s
 
   historyList.innerHTML = items.map((item) => `
     <article class="history-row">
-      <span class="history-cell history-id" title="${escapeHtml(item.run_id)}">${escapeHtml(item.run_id)}</span>
+      <span class="history-cell history-id" title="${escapeHtml(item.run_id)}">${escapeHtml(formatShortId(item.run_id, "R-"))}</span>
       <span class="history-cell title" title="${escapeHtml(item.source_name)}">${escapeHtml(item.source_name)}</span>
       <span class="history-cell">${escapeHtml(formatDate(item.created_at))}</span>
       <span class="history-cell score">${item.overall_score}</span>
@@ -79,22 +87,21 @@ function renderEyeHistoryRows(items, emptyMessage = "No eye-tracking evidence se
 
   eyeHistoryList.innerHTML = items.map((item) => {
     const coverage = Number(item.coverage_percent ?? 0).toFixed(1);
-    const relatedRun = item.run_id ? escapeHtml(item.run_id) : "&mdash;";
+    const relatedRun = item.run_id ? escapeHtml(formatShortId(item.run_id, "R-")) : "&mdash;";
+    const sessionMeta = `${escapeHtml(formatDate(item.created_at))} · ${item.sample_count} samples · ${escapeHtml(formatDuration(item.duration_ms))}`;
     const targetUrl = item.target_url
       ? `<small title="${escapeHtml(item.target_url)}">${escapeHtml(item.target_url)}</small>`
       : `<small>No target URL saved</small>`;
 
     return `
       <article class="history-eye-row">
-        <span class="history-cell history-id" title="${escapeHtml(item.session_id)}">${escapeHtml(item.session_id)}</span>
+        <span class="history-cell history-id" title="${escapeHtml(item.session_id)}">${escapeHtml(formatShortId(item.session_id, "E-"))}</span>
         <span class="history-cell history-eye-target">
           <strong title="${escapeHtml(item.source_name)}">${escapeHtml(item.source_name)}</strong>
           ${targetUrl}
+          <small>${sessionMeta}</small>
         </span>
-        <span class="history-cell">${escapeHtml(formatDate(item.created_at))}</span>
         <span class="history-cell score">${coverage}%</span>
-        <span class="history-cell">${item.sample_count}</span>
-        <span class="history-cell">${escapeHtml(formatDuration(item.duration_ms))}</span>
         <span class="history-cell history-id" title="${item.run_id ? escapeHtml(item.run_id) : ""}">${relatedRun}</span>
       </article>
     `;

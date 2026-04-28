@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens History</title>
-  <link rel="stylesheet" href="./styles.css?v=history-eye-sessions-1">
+  <link rel="stylesheet" href="./styles.css?v=history-side-by-side-1">
 </head>
 <body class="history-body">
   <header class="app-nav">
@@ -48,44 +48,43 @@
       </div>
     </section>
 
-    <section class="history-list-shell">
-      <div class="history-table-head">
-        <span>Report ID</span>
-        <span>File</span>
-        <span>Date</span>
-        <span>Overall</span>
-        <span>Actions</span>
-      </div>
-      <div id="historyList" class="history-table-body">
-        <p class="history-empty">Loading analysis history...</p>
-      </div>
-    </section>
-
-    <section class="history-list-shell eye-history-shell">
-      <div class="history-section-header">
-        <div>
-          <p class="upload-kicker">Supporting Evidence</p>
-          <h2>Eye-Tracking Evidence Sessions</h2>
+    <div class="history-grid">
+      <section class="history-list-shell">
+        <div class="history-table-head">
+          <span>Report ID</span>
+          <span>File</span>
+          <span>Date</span>
+          <span>Overall</span>
+          <span>Actions</span>
         </div>
-        <p class="history-section-copy">
-          Review saved gaze sessions as supporting evidence for attention patterns, information overload, and related analysis runs.
-        </p>
-      </div>
-      <div class="history-eye-table-head">
-        <span>Evidence ID</span>
-        <span>Page</span>
-        <span>Date</span>
-        <span>Coverage</span>
-        <span>Samples</span>
-        <span>Duration</span>
-        <span>Related Analysis</span>
-      </div>
-      <div id="eyeHistoryList" class="history-table-body">
-        <p class="history-empty">Loading eye-tracking evidence...</p>
-      </div>
-    </section>
+        <div id="historyList" class="history-table-body">
+          <p class="history-empty">Loading analysis history...</p>
+        </div>
+      </section>
+
+      <section class="history-list-shell eye-history-shell">
+        <div class="history-section-header">
+          <div>
+            <p class="upload-kicker">Supporting Evidence</p>
+            <h2>Eye-Tracking Evidence Sessions</h2>
+          </div>
+          <p class="history-section-copy">
+            Review saved gaze sessions as supporting evidence for attention patterns, information overload, and related analysis runs.
+          </p>
+        </div>
+        <div class="history-eye-table-head">
+          <span>Evidence ID</span>
+          <span>Page</span>
+          <span>Coverage</span>
+          <span>Related</span>
+        </div>
+        <div id="eyeHistoryList" class="history-table-body">
+          <p class="history-empty">Loading eye-tracking evidence...</p>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <script type="module" src="./history.js?v=history-eye-sessions-3"></script>
+  <script type="module" src="./history.js?v=history-side-by-side-1"></script>
 </body>
 </html>

@@ -2144,7 +2144,12 @@ button.dimension-row.is-linked-active .bar-track {
   background: linear-gradient(180deg, #f7f8fb 0%, #eef1f7 100%);
 }
 
-.history-page,
+.history-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
 .docs-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -2218,8 +2223,19 @@ button.dimension-row.is-linked-active .bar-track {
   background: var(--surface);
 }
 
+.history-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.history-grid .history-list-shell {
+  min-width: 0;
+}
+
 .eye-history-shell {
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .history-section-header {
@@ -2273,7 +2289,7 @@ button.dimension-row.is-linked-active .bar-track {
 .history-eye-table-head,
 .history-eye-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr) minmax(150px, 1.2fr) 110px 90px 100px minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.8fr) 92px minmax(0, 1.05fr);
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -2311,6 +2327,43 @@ button.dimension-row.is-linked-active .bar-track {
 
 .history-eye-target small {
   color: var(--muted);
+}
+
+.history-grid .history-table-head,
+.history-grid .history-row {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.25fr) minmax(94px, 0.8fr) 64px minmax(112px, 0.9fr);
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.history-grid .history-eye-table-head,
+.history-grid .history-eye-row {
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.history-grid .history-section-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.history-grid .history-section-header h2 {
+  font-size: 20px;
+}
+
+.history-grid .history-section-copy {
+  max-width: none;
+  font-size: 13px;
+}
+
+.history-grid .history-actions {
+  gap: 6px;
+}
+
+.history-grid .history-open-btn,
+.history-grid .history-print-btn {
+  padding: 7px 9px;
 }
 
 .history-cell.title {
@@ -2410,6 +2463,14 @@ button.dimension-row.is-linked-active .bar-track {
   .history-section-header {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .eye-history-shell {
+    margin-top: 24px;
   }
 }
 
