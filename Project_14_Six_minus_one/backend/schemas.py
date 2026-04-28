@@ -12,6 +12,46 @@ DimensionName = Literal[
     "Consistency",
 ]
 
+ISSUE_CATEGORY_LABELS = {
+    "RD": "Readability Issues",
+    "IO": "Information Overload Issues",
+    "ID": "Interaction & Distraction Issues",
+    "CS": "Consistency & Predictability Issues",
+}
+
+DIMENSION_ISSUE_CATEGORY_KEYS = {
+    "Readability": "RD",
+    "Information Overload": "IO",
+    "Visual Complexity": "IO",
+    "Interaction & Distraction": "ID",
+    "Consistency": "CS",
+}
+
+COGNITIVE_DIMENSION_LABELS = {
+    "Readability": "Reading Load / Comprehension",
+    "Information Overload": "Information Filtering / Visual Prioritisation",
+    "Visual Complexity": "Information Filtering / Visual Prioritisation",
+    "Interaction & Distraction": "Attention Regulation / Task Continuity",
+    "Consistency": "Predictability / Wayfinding",
+}
+
+
+def issue_category_key_for_rule(rule_id: str) -> str:
+    prefix = str(rule_id or "").split("-")[0]
+    return prefix if prefix in ISSUE_CATEGORY_LABELS else "IO"
+
+
+def issue_category_key_for_dimension(dimension: str) -> str:
+    return DIMENSION_ISSUE_CATEGORY_KEYS.get(dimension, "IO")
+
+
+def issue_category_label(category_key: str) -> str:
+    return ISSUE_CATEGORY_LABELS.get(category_key, "Information Overload Issues")
+
+
+def issue_category_label_for_dimension(dimension: str) -> str:
+    return issue_category_label(issue_category_key_for_dimension(dimension))
+
 
 @dataclass
 class Issue:
@@ -26,7 +66,16 @@ class Issue:
     locations: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        category_key = issue_category_key_for_rule(self.rule_id)
+        category_label = issue_category_label(category_key)
+        payload["issue_category_key"] = category_key
+        payload["issue_category_label"] = category_label
+        payload["issue_category"] = {
+            "key": category_key,
+            "label": category_label,
+        }
+        return payload
 
 
 @dataclass
@@ -37,8 +86,22 @@ class DimensionResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        category_key = issue_category_key_for_dimension(self.dimension)
+        category_label = issue_category_label(category_key)
         return {
             "dimension": self.dimension,
+            "display_name": category_label,
+            "label": category_label,
+            "issue_category_key": category_key,
+            "issue_category_label": category_label,
+            "issue_category": {
+                "key": category_key,
+                "label": category_label,
+            },
+            "cognitive_dimension": COGNITIVE_DIMENSION_LABELS.get(
+                self.dimension,
+                "Cognitive Accessibility",
+            ),
             "score": self.score,
             "issues": [issue.to_dict() for issue in self.issues],
             "metadata": self.metadata,
