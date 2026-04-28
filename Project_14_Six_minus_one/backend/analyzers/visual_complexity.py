@@ -56,13 +56,7 @@ class ComplexityElement:
 
 
 def analyze_visual_complexity(html: str) -> dict[str, Any]:
-    """Estimate visual complexity from HTML using the VCS model.
-
-    This follows the paper's core logic: count TLCs, words, and images,
-    calculate VCS, and produce a 10x10 heatmap. Because this variant only
-    receives HTML, the heatmap uses DOM order as a proxy for rendered position.
-    """
-
+    """Estimate visual complexity from HTML using the VCS model."""
     soup = BeautifulSoup(html or "", "html.parser")
     remove_ignored_nodes(soup)
 
@@ -101,7 +95,6 @@ def analyze_visual_complexity(html: str) -> dict[str, Any]:
 
 def analyze_rendered_visual_complexity(snapshot: dict[str, Any]) -> dict[str, Any]:
     """Estimate visual complexity from a Playwright-rendered DOM snapshot."""
-
     viewport = snapshot.get("viewport") or {}
     viewport_width = int(viewport.get("width") or 1260)
     viewport_height = int(viewport.get("height") or 885)

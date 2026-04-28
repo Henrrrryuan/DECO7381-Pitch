@@ -46,8 +46,12 @@ def extract_web_bundle_from_zip_bytes(zip_bytes: bytes) -> ExtractedWebBundle:
             entry_name = _pick_entry_html(html_candidates)
             raw_html = _read_member_bytes(archive, entry_name)
             html = _decode_text(raw_html)
-            css_files = _extract_linked_resources(archive, safe_members, entry_name, html, resource_type="css")
-            js_files = _extract_linked_resources(archive, safe_members, entry_name, html, resource_type="js")
+            css_files = _extract_linked_resources(
+                archive, safe_members, entry_name, html, resource_type="css"
+            )
+            js_files = _extract_linked_resources(
+                archive, safe_members, entry_name, html, resource_type="js"
+            )
     except BadZipFile as exc:
         raise ZipInputError("The uploaded file is not a valid ZIP archive.") from exc
 
@@ -160,7 +164,7 @@ def _resolve_member_name(
     if candidate_path.is_absolute():
         joined = candidate_path.relative_to("/")
     else:
-        joined = (entry_dir / candidate_path)
+        joined = entry_dir / candidate_path
 
     normalized_parts: list[str] = []
     for part in joined.parts:
@@ -185,7 +189,6 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
         return html
 
     soup = BeautifulSoup(html or "", "html.parser")
-    css_iter = iter(css_files.items())
     replaced = False
 
     for link_tag in soup.find_all("link"):
@@ -221,3 +224,4 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
             container.append(style_tag)
 
     return str(soup)
+

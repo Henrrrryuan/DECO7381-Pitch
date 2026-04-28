@@ -5,21 +5,46 @@ CogniLens is a working MVP for reviewing webpages through a cognitive accessibil
 ## Current MVP Features
 
 - HTML and ZIP upload for webpage analysis
-- Four analysis dimensions: Visual Complexity, Readability, Interaction & Distraction, and Consistency
+- Four analysis dimensions: Information Overload, Readability, Interaction & Distraction, and Consistency
 - Overall score, dimension scores, issue explanations, and recommendations
 - Dashboard comparison between current and previous submissions
 - History storage with reopen support
 - AI-assisted follow-up guidance
 - Eye Tracking as a separate validation layer under the same FastAPI app
+- Additional Visual Complexity analysis endpoints for HTML and rendered URL snapshots
 
 ## Directory Structure
 
 ```text
 backend/
+  adapters/
+    http/
+      eye_proxy.py
+    input/
+      snapshot_input.py
+      url_input.py
+      zip_input.py
+    persistence/
+      history_store.py
   analyzers/
-  eye_proxy.py
-  history_store.py
+    information_overload.py
+    readability.py
+    interaction.py
+    consistency.py
+    visual_complexity.py
+  app/
+    main.py
+    core.py
+    routers/
+      analysis.py
+      assistant.py
+      eye.py
+      history.py
+      system.py
   main.py
+  services/
+    analysis_service.py
+    assistant_service.py
   schemas.py
   scoring.py
   sample_input/
@@ -37,6 +62,30 @@ eye/
 docs/
   api-contract.md
 ```
+
+## Backend Refactor Summary (Apr 2026)
+
+The backend was restructured to make ownership and interview storytelling clearer while keeping API behavior unchanged.
+
+### What changed
+
+- Introduced a layered backend structure:
+  - `backend/app/routers`: FastAPI route handlers grouped by domain
+  - `backend/services`: analysis and assistant orchestration logic
+  - `backend/adapters`: external IO and persistence adapters
+  - `backend/analyzers`: dimension algorithms only
+- Renamed the former `visual` dimension implementation to `information_overload.py`.
+- Consolidated duplicate analyzer wrappers:
+  - merged `visual_complexity_score.py` into `visual_complexity.py`
+  - removed obsolete compatibility wrapper files
+- Removed unused/empty backend files and dead code segments.
+
+### Why this refactor
+
+- Reduce large-file coupling and make module boundaries explicit.
+- Align file names with actual domain language (especially Information Overload).
+- Make future frontend migration (to React) easier by stabilizing backend contracts.
+- Improve maintainability and code interview readability without changing endpoint contracts.
 
 ## Runtime Dependencies
 

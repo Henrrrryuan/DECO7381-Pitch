@@ -6,8 +6,8 @@ from pathlib import Path
 import sqlite3
 from uuid import uuid4
 
-from .scoring import calculate_profile_scores
-from .schemas import (
+from ...scoring import calculate_profile_scores
+from ...schemas import (
     AnalysisResult,
     DimensionResult,
     EyeTrackingSessionDetail,
@@ -19,7 +19,7 @@ from .schemas import (
     Issue,
 )
 
-DEFAULT_DB_PATH = Path(__file__).with_name("analysis_history.sqlite3")
+DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "analysis_history.sqlite3"
 DIMENSION_ORDER = {
     "Information Overload": 0,
     "Visual Complexity": 0,
@@ -605,3 +605,4 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
         ON eye_tracking_sessions(run_id);
         """
     )
+

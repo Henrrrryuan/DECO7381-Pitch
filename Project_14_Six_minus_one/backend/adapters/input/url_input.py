@@ -8,7 +8,6 @@ from urllib import request as urllib_request
 
 from bs4 import BeautifulSoup
 
-
 MAX_LINKED_RESOURCES_PER_TYPE = 12
 MAX_LINKED_RESOURCE_BYTES = 512 * 1024
 URL_TEXT_ENCODINGS = ("utf-8-sig", "utf-8", "gb18030", "latin-1")
@@ -50,8 +49,7 @@ def looks_like_error_page(html: str) -> bool:
     soup = BeautifulSoup(html or "", "html.parser")
     title = soup.title.get_text(" ", strip=True) if soup.title else ""
     heading_text = " ".join(
-        heading.get_text(" ", strip=True)
-        for heading in soup.find_all(["h1", "h2"], limit=4)
+        heading.get_text(" ", strip=True) for heading in soup.find_all(["h1", "h2"], limit=4)
     )
     combined = f"{title} {heading_text}".lower()
     return bool(
@@ -140,7 +138,9 @@ def _fetch_text_resource(
             content_type = response.headers.get("Content-Type", "")
             lowered_type = content_type.lower()
             path = urllib_parse.urlparse(response.geturl()).path.lower()
-            if not any(item in lowered_type for item in accepted_types) and not path.endswith(accepted_extensions):
+            if not any(item in lowered_type for item in accepted_types) and not path.endswith(
+                accepted_extensions
+            ):
                 return None
             raw = response.read(MAX_LINKED_RESOURCE_BYTES + 1)
     except (urllib_error.HTTPError, urllib_error.URLError, TimeoutError, OSError):
@@ -178,11 +178,7 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
             continue
         raw_href = (link_tag.get("href", "") or "").split("?", 1)[0].split("#", 1)[0]
         css_entry = next(
-            (
-                (name, css_text)
-                for name, css_text in css_files.items()
-                if name.endswith(raw_href)
-            ),
+            ((name, css_text) for name, css_text in css_files.items() if name.endswith(raw_href)),
             None,
         )
         if css_entry is None:
@@ -203,3 +199,4 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
             container.append(style_tag)
 
     return str(soup)
+

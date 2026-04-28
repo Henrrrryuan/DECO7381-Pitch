@@ -7,7 +7,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-
 HOP_BY_HOP_HEADERS = {
     "connection",
     "keep-alive",
@@ -158,3 +157,4 @@ def fetch_proxied_response(raw_url: str) -> ProxiedResponse:
         content_type=content_type or "application/octet-stream",
         final_url=final_url,
     )
+

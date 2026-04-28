@@ -38,7 +38,6 @@ FOCUS_TAGS = {
 }
 
 PROMINENT_HEADING_TAGS = {"h1", "h2"}
-CTA_TAGS = {"a", "button", "input"}
 ACTIONABLE_INPUT_TYPES = {"button", "submit", "image", "reset"}
 
 REGION_TAGS = {
@@ -340,7 +339,7 @@ def _build_issue(
     )
 
 
-def analyze_visual(
+def analyze_information_overload(
     html: str,
     *,
     css_sources: list[str] | None = None,
@@ -544,3 +543,7 @@ def extract_resource_visual_hints(
         "sidebar_banner_signal_count": sidebar_banner_signal_count,
         "matched_keywords": matched_keywords,
     }
+
+
+__all__ = ["analyze_information_overload", "extract_resource_visual_hints"]
+
