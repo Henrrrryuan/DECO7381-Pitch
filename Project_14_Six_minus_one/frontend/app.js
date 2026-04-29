@@ -18,8 +18,10 @@ const state = {
   sourceName: "",
   sourceUrl: "",
   workspaceMode: "explanation",
+  rightPanelMode: "summary",
   activeHighlightDimension: "",
   activeHighlightIssueId: "",
+  selectedIssueId: "",
   chatMessages: [],
   chatPending: false,
   sidebarCollapsed: false,
@@ -27,6 +29,8 @@ const state = {
   renderedDomAnalysisKey: "",
   renderedDomAnalysisPending: false,
   renderedDomAnalysisTimer: null,
+  previousResult: null,
+  previousSourceName: "",
 };
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
@@ -44,19 +48,19 @@ const INFORMATION_OVERLOAD_NAME = "Information Overload";
 const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
 const ISSUE_CATEGORY_CONFIG = {
   IO: {
-    displayName: "Information Overload Issues",
+    displayName: "Information Overload Issue",
     cognitiveDimension: "Information Filtering / Visual Prioritisation",
   },
   RD: {
-    displayName: "Readability Issues",
+    displayName: "Readability Issue",
     cognitiveDimension: "Reading Load / Comprehension",
   },
   ID: {
-    displayName: "Interaction & Distraction Issues",
+    displayName: "Interaction & Distraction Issue",
     cognitiveDimension: "Attention Regulation / Task Continuity",
   },
   CS: {
-    displayName: "Consistency & Predictability Issues",
+    displayName: "Consistency & Predictability Issue",
     cognitiveDimension: "Predictability / Wayfinding",
   },
 };
@@ -458,16 +462,17 @@ function renderDimensionBars(dimensionEntries) {
   const dimensionRows = (dimensionEntries || []).map(({ name, score }) => {
     const value = normalizedScore(score);
     const dimensionKey = displayDimensionName(name);
+    const issueCategoryName = displayIssueCategoryName(name);
     const tooltipCopy = tooltipCopyForDimension(dimensionKey);
     return `
-      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(name)} issues on the website">
+      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(issueCategoryName)} on the website">
         <span class="dimension-label-with-info">
-          <span>${escapeHtml(name)}</span>
+          <span>${escapeHtml(issueCategoryName)}</span>
           <span
             class="dimension-info-icon"
             tabindex="0"
             role="button"
-            aria-label="${escapeHtml(`${dimensionKey} info`)}"
+            aria-label="${escapeHtml(`${issueCategoryName} info`)}"
             data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
             data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
             data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
@@ -811,6 +816,85 @@ function affectedUsersCopy(issue, dimensionName) {
   return "Users with cognitive or communication needs may need clearer guidance and lower mental effort.";
 }
 
+function displayIssueCategorySingular(issue, dimensionName) {
+  return displayIssueCategoryNameForIssue(issue, dimensionName).replace(/ Issues$/, " Issue");
+}
+
+function conciseText(text, fallback = "", maxLength = 150) {
+  const value = firstSentence(text || fallback).trim();
+  if (value.length <= maxLength) {
+    return value;
+  }
+  return `${value.slice(0, maxLength - 1).trim()}…`;
+}
+
+function issueDomId(dimensionName, ruleId) {
+  return `${dimensionName || ""}:${ruleId || ""}`;
+}
+
+function issueAffectedGroups(issue, dimensionName) {
+  const groups = beneficiaryTags(issue?.rule_id || "", dimensionName);
+  if (Array.isArray(groups) && groups.length) {
+    const labelMap = {
+      "Reading difficulties": "Dyslexia users",
+      "Attention regulation": "ADHD users",
+      "Communication differences": "Dyslexia users",
+      "Executive function support": "Executive function support users",
+      "Autistic users": "Autistic users",
+    };
+    return [...new Set(groups.map((group) => labelMap[group] || (/user/i.test(group) ? group : `${group} users`)))];
+  }
+  return [affectedUsersCopy(issue, dimensionName)];
+}
+
+function detectedEvidenceCopy(issue) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const firstLocation = locations[0];
+  if (firstLocation?.summary) {
+    return `Detected near ${firstLocation.summary}.`;
+  }
+  if (firstLocation?.selector) {
+    return `Detected element matching ${firstLocation.selector}.`;
+  }
+  if (firstLocation?.text || firstLocation?.preview || firstLocation?.sentence_preview) {
+    return firstLocation.text || firstLocation.preview || firstLocation.sentence_preview;
+  }
+
+  const evidence = issue?.evidence || {};
+  const evidencePairs = Object.entries(evidence)
+    .filter(([, value]) => value !== null && value !== undefined && value !== false && value !== "")
+    .slice(0, 3)
+    .map(([key, value]) => `${key.replaceAll("_", " ")}: ${Array.isArray(value) ? value.join(", ") : String(value)}`);
+
+  return evidencePairs.length
+    ? evidencePairs.join("; ")
+    : "This issue was detected by the current cognitive accessibility rule set.";
+}
+
+function userSpecificRecommendations(issue, dimensionName) {
+  const suggestion = conciseText(issue?.suggestion, "Review this issue and simplify the interaction.", 180);
+  const category = issueCategoryKeyForDimension(dimensionName);
+  const recommendations = {
+    ADHD: "Reduce interruptions, competing actions, and unexpected changes so attention can stay on the current task.",
+    Dyslexia: "Use short, direct wording and preserve a clear reading path so users do not need to reread or relocate content.",
+    Autism: "Keep structure and interaction cues predictable, and avoid sudden overlays or unclear state changes.",
+  };
+
+  if (category === "RD") {
+    recommendations.Dyslexia = suggestion;
+  } else if (category === "ID") {
+    recommendations.ADHD = suggestion;
+    recommendations.Autism = "Avoid sudden or automatic interruptions and make the interaction user-triggered where possible.";
+  } else if (category === "CS") {
+    recommendations.Autism = suggestion;
+  } else {
+    recommendations.ADHD = suggestion;
+    recommendations.Dyslexia = "Reduce competing content and make the primary reading path visually obvious.";
+  }
+
+  return recommendations;
+}
+
 function frameworkMappingCopy(ruleId) {
   return RULE_FRAMEWORK_MAP[ruleId] || {
     coga: "COGA: reduce cognitive load in task flow",
@@ -858,6 +942,9 @@ function comparisonRow(label, currentScore, previousScore, className = "") {
 }
 
 function renderComparison(currentResult, previousResult, previousSourceName) {
+  state.previousResult = previousResult || null;
+  state.previousSourceName = previousSourceName || "";
+  state.rightPanelMode = "summary";
   const comparisonList = document.getElementById("comparisonList");
   const comparisonMeta = document.getElementById("comparisonMeta");
   const comparisonSummary = document.getElementById("comparisonSummary");
@@ -867,91 +954,297 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
 
   const priority = priorityDimension(currentResult);
   const currentIssues = totalIssueCount(currentResult);
+  const primaryIssue = primaryIssueForDimension(priority);
+  const topCategory = priority ? displayIssueCategoryName(priority.dimension) : "";
 
-  if (!priority) {
-    comparisonMeta.textContent = previousResult ? "Evidence" : "No active issue";
-    comparisonSummary.className = "comparison-summary up";
-    comparisonSummary.innerHTML = `
-      <strong>No urgent cognitive barrier</strong>
-      <span>The current page does not trigger the active MVP rules. Keep checking with users if the page still feels difficult to understand or navigate.</span>
-    `;
-    comparisonList.className = "comparison-list priority-evidence-list empty";
-    comparisonList.textContent = previousResult
-      ? "No triggered issues remain in the current rule set. Use history to review earlier evidence if needed."
-      : "Analyze a denser or revised page to collect priority evidence.";
+  comparisonMeta.textContent = "Summary";
+  comparisonSummary.className = "comparison-summary empty issue-workspace-summary";
+  comparisonSummary.innerHTML = `
+    <strong>Select an issue to inspect it</strong>
+    <span>Use <strong>View on page</strong> to locate the issue in the website preview, or <strong>View details</strong> to read the evidence and recommendations.</span>
+  `;
+  comparisonList.className = "comparison-list priority-evidence-list issue-workspace-empty";
+  comparisonList.innerHTML = `
+    <article class="priority-card evidence">
+      <span class="priority-eyebrow">Current analysis</span>
+      <ul class="priority-evidence">
+        <li><strong>Total issues:</strong> ${currentIssues}</li>
+        <li><strong>Top priority issue:</strong> ${escapeHtml(primaryIssue?.title || "No active issue")}</li>
+        ${topCategory ? `<li><strong>Top issue category:</strong> ${escapeHtml(topCategory)}</li>` : ""}
+      </ul>
+    </article>
+  `;
+}
+
+function findIssueById(issueId) {
+  if (!issueId || !state.currentResult) {
+    return null;
+  }
+  for (const dimension of state.currentResult.dimensions || []) {
+    const issue = (dimension.issues || []).find((item) => (
+      issueDomId(dimension.dimension, item.rule_id) === issueId
+    ));
+    if (issue) {
+      return { dimension, issue };
+    }
+  }
+  return null;
+}
+
+function selectIssue(dimensionName, ruleId) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  const selected = findIssueById(issueId);
+  if (!selected) {
+    return null;
+  }
+  state.selectedIssueId = issueId;
+  updateActiveHighlightButtons();
+  return selected;
+}
+
+function selectedIssueRecord() {
+  return findIssueById(state.selectedIssueId);
+}
+
+function issueDisplayModel(issue, dimensionName) {
+  const standards = frameworkMappingCopy(issue?.rule_id || "");
+  return {
+    id: issueDomId(dimensionName, issue?.rule_id),
+    issueTitle: issue?.title || "Review this issue",
+    issueCategory: displayIssueCategorySingular(issue, dimensionName),
+    detectedProblem: issue?.title || "Review this issue",
+    affectedUsers: issueAffectedGroups(issue, dimensionName),
+    cognitiveImpact: issue?.description || "This issue may increase cognitive load for users.",
+    firstFix: issue?.suggestion || "Review this issue and simplify the interaction.",
+    evidence: detectedEvidenceCopy(issue),
+    whyItMatters: issue?.description || "This pattern can increase mental effort and make the page harder to use.",
+    userRecommendations: userSpecificRecommendations(issue, dimensionName),
+    standards: [standards.wcag, standards.coga, standards.iso],
+    highlightTargets: issue?.locations || [],
+  };
+}
+
+function updatePreviewIssueHeader() {
+  const titleNode = document.getElementById("previewIssueTitle");
+  const detailsButton = document.getElementById("previewDetailsButton");
+  const selected = selectedIssueRecord();
+  if (!titleNode || !detailsButton) {
     return;
   }
 
-  const primaryIssue = primaryIssueForDimension(priority);
-  const priorityLabel = fixPriorityBand(primaryIssue, priority.dimension);
-  const priorityReason = fixPriorityReason(primaryIssue, priority.dimension);
-  const displayPriorityDimension = displayDimensionName(priority.dimension);
-  const priorityIssueCategory = displayIssueCategoryName(priority.dimension);
-  const priorityCognitiveDimension = cognitiveDimensionLabel(priority.dimension);
-  const fixSteps = uniqueSuggestions(priority.issues);
-  const comparisonEvidence = previousResult
-    ? (() => {
-        const overallMeta = deltaMeta(currentResult.overall_score, previousResult.overall_score);
-        const previousIssues = totalIssueCount(previousResult);
-        const issueDelta = currentIssues - previousIssues;
-        const issueDeltaLabel = issueDelta === 0
-          ? "No issue-count change"
-          : `${Math.abs(issueDelta)} ${issueDelta < 0 ? "fewer" : "more"} issue${Math.abs(issueDelta) === 1 ? "" : "s"}`;
-        return `
-          <li><strong>Compared with:</strong> ${escapeHtml(previousSourceName || "previous run")}</li>
-          <li><strong>Overall movement:</strong> ${previousResult.overall_score} → ${currentResult.overall_score} (${overallMeta.label})</li>
-          <li><strong>Issue movement:</strong> ${previousIssues} → ${currentIssues} (${issueDeltaLabel})</li>
-        `;
-      })()
-    : `
-        <li><strong>Comparison:</strong> No baseline yet. Re-analyze a revised version to check whether cognitive load indicators improve.</li>
-      `;
+  if (!selected) {
+    titleNode.textContent = "No issue selected";
+    detailsButton.hidden = true;
+    setWebsiteStatus("Select an issue and choose View on page to highlight it in the preview.");
+    return;
+  }
 
-  comparisonMeta.textContent = primaryIssue ? "Priority issue" : priorityIssueCategory;
-  comparisonSummary.className = "comparison-summary priority";
+  const model = issueDisplayModel(selected.issue, selected.dimension.dimension);
+  titleNode.textContent = `Highlighted issue: ${model.issueTitle}`;
+  detailsButton.hidden = false;
+}
+
+function issueHighlightElements(frameDoc, issue, dimensionName) {
+  const locationElements = (issue.locations || []).flatMap((location) => (
+    findElementsForLocation(frameDoc, location)
+  ));
+  if (locationElements.length) {
+    return { elements: locationElements, exact: true };
+  }
+
+  const fallbackElements = fallbackSelectorsForIssue(issue, dimensionName).flatMap((selector) => {
+    try {
+      return Array.from(frameDoc.querySelectorAll(selector));
+    } catch (error) {
+      return [];
+    }
+  });
+
+  return { elements: fallbackElements, exact: false };
+}
+
+function highlightIssueInLoadedPreview(dimensionName, ruleId) {
+  const frameDoc = getPreviewDocument();
+  const dimension = findDimension(state.currentResult, dimensionName);
+  const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
+  const config = HIGHLIGHT_CONFIG[dimensionName];
+  if (!frameDoc || !issue || !config) {
+    return;
+  }
+
+  injectHighlightStyles(frameDoc);
+  clearWebsiteHighlights(frameDoc);
+
+  const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
+  const highlighted = applyHighlights(elements, config.color, "Issue highlight");
+  const firstElement = highlighted.values().next().value;
+  firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+
+  if (highlighted.size) {
+    const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
+    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issue.title || "this issue"}.${fallbackNotice}`);
+  } else {
+    setWebsiteStatus("No exact page element is linked to this issue yet.", true);
+  }
+}
+
+function highlightSelectedIssueInPreview() {
+  const selected = selectedIssueRecord();
+  if (!selected) {
+    clearWebsiteHighlights();
+    updatePreviewIssueHeader();
+    return;
+  }
+  updatePreviewIssueHeader();
+  highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
+}
+
+function renderIssueDetailPanel(dimensionName, ruleId) {
+  const comparisonList = document.getElementById("comparisonList");
+  const comparisonMeta = document.getElementById("comparisonMeta");
+  const comparisonSummary = document.getElementById("comparisonSummary");
+  if (!comparisonList || !comparisonMeta || !comparisonSummary) {
+    return;
+  }
+
+  const selected = selectIssue(dimensionName, ruleId);
+  if (!selected) {
+    return;
+  }
+
+  const { dimension, issue } = selected;
+  const model = issueDisplayModel(issue, dimension.dimension);
+  state.rightPanelMode = "detail";
+  setWorkspaceMode("explanation");
+  updateActiveHighlightButtons();
+
+  comparisonMeta.textContent = "Issue detail";
+  comparisonSummary.className = "comparison-summary priority issue-detail-summary";
   comparisonSummary.innerHTML = `
-    <strong>Primary cognitive barrier</strong>
-    <span>${escapeHtml(DIMENSION_BARRIER_COPY[displayPriorityDimension] || DIMENSION_BARRIER_COPY[priority.dimension] || firstSentence(primaryIssue?.description))}</span>
+    <div class="issue-detail-heading">
+      <button class="back-to-summary-button" type="button" data-back-to-summary>Back to Summary</button>
+      <span>${escapeHtml(model.issueCategory)}</span>
+    </div>
+    <strong>Issue Detail: ${escapeHtml(model.issueTitle)}</strong>
+    <span>${escapeHtml(conciseText(model.cognitiveImpact, "This issue may increase cognitive load for users.", 220))}</span>
   `;
-  comparisonList.className = "comparison-list priority-evidence-list";
+
+  comparisonList.className = "comparison-list issue-detail-panel";
   comparisonList.innerHTML = `
+    <button
+      class="view-on-page-button"
+      type="button"
+      data-view-on-page="${escapeHtml(issue.rule_id)}"
+      data-view-dimension="${escapeHtml(dimension.dimension)}"
+    >View on page</button>
+
     <article class="priority-card">
-      <span class="priority-eyebrow">Why it increases mental effort</span>
-      <p>${escapeHtml(primaryIssue?.description || "This pattern may increase cognitive load for users with cognitive or communication needs.")}</p>
+      <span class="priority-eyebrow">Detected evidence</span>
+      <p>${escapeHtml(model.evidence)}</p>
     </article>
 
     <article class="priority-card">
-      <span class="priority-eyebrow">Fix Priority</span>
-      <p><strong>${escapeHtml(priorityLabel)}</strong> ${escapeHtml(priorityReason)}</p>
-      <ol class="priority-steps">
-        ${fixSteps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
-      </ol>
+      <span class="priority-eyebrow">Why it matters</span>
+      <p>${escapeHtml(model.whyItMatters)}</p>
     </article>
 
-    <article class="priority-card evidence">
-      <span class="priority-eyebrow">Mental effort signals</span>
+    <article class="priority-card">
+      <span class="priority-eyebrow">Affected user groups</span>
+      <p>${escapeHtml(model.affectedUsers.join(", "))}</p>
+    </article>
+
+    <article class="priority-card">
+      <span class="priority-eyebrow">User-specific recommendations</span>
+      <div class="recommendation-stack">
+        <p><strong>ADHD users:</strong> ${escapeHtml(model.userRecommendations.ADHD)}</p>
+        <p><strong>Dyslexia users:</strong> ${escapeHtml(model.userRecommendations.Dyslexia)}</p>
+        <p><strong>Autistic users:</strong> ${escapeHtml(model.userRecommendations.Autism)}</p>
+      </div>
+    </article>
+
+    <article class="priority-card">
+      <span class="priority-eyebrow">Standards / framework mapping</span>
       <ul class="priority-evidence">
-        <li><strong>Issue category:</strong> ${escapeHtml(priorityIssueCategory)}</li>
-        <li><strong>Cognitive dimension:</strong> ${escapeHtml(priorityCognitiveDimension)}</li>
-        <li><strong>Weakest active category score:</strong> ${priority.score}</li>
-        <li><strong>Triggered issues:</strong> ${priority.issues.length}</li>
-        ${isInformationOverloadDimension(priority.dimension) ? `
-          <li><strong>Main-task blockage:</strong> ${primaryIssue?.evidence?.blocks_primary_task ? "Likely" : "Less direct"}</li>
-          <li><strong>Confusion/distraction level:</strong> ${issueEvidenceNumber(primaryIssue, "confusion_distraction_level")}/3</li>
-          <li><strong>Cumulative load level:</strong> ${issueEvidenceNumber(primaryIssue, "cumulative_load_level")}/3</li>
-        ` : ""}
-        ${comparisonEvidence}
+        ${model.standards.map((standard) => `<li>${escapeHtml(standard)}</li>`).join("")}
       </ul>
     </article>
 
-    <article class="priority-card">
-      <span class="priority-eyebrow">Standards and audience relevance</span>
-      <ul class="priority-evidence">
-        <li><strong>COGA:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").coga)}</li>
-        <li><strong>ISO 9241-11:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").iso)}</li>
-        <li><strong>WCAG mapping:</strong> ${escapeHtml(frameworkMappingCopy(primaryIssue?.rule_id || "").wcag)}</li>
-        <li><strong>Priority beneficiary groups:</strong> ${escapeHtml(beneficiaryTags(primaryIssue?.rule_id || "", displayPriorityDimension).join(", "))}</li>
-      </ul>
+    <button class="back-to-summary-button secondary" type="button" data-back-to-summary>Back to Summary</button>
+  `;
+}
+
+function backToSummaryPanel() {
+  state.selectedIssueId = "";
+  state.rightPanelMode = "summary";
+  state.activeHighlightIssueId = "";
+  state.activeHighlightDimension = "";
+  clearWebsiteHighlights();
+  updateActiveHighlightButtons();
+  setWorkspaceMode("explanation");
+  renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+}
+
+function renderIssuePreviewPanel(dimensionName, ruleId) {
+  const selected = selectIssue(dimensionName, ruleId);
+  if (!selected) {
+    return;
+  }
+  state.rightPanelMode = "preview";
+  state.activeHighlightDimension = selected.dimension.dimension;
+  state.activeHighlightIssueId = issueDomId(selected.dimension.dimension, selected.issue.rule_id);
+  setWorkspaceMode("website");
+  updateActiveHighlightButtons();
+  highlightSelectedIssueInPreview();
+}
+
+function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
+  const issueId = issueDomId(dimensionName, issue.rule_id);
+  const isSelected = issueId === state.selectedIssueId;
+  const isPreviewActive = isSelected && state.rightPanelMode === "preview";
+  const isDetailActive = isSelected && state.rightPanelMode === "detail";
+  const selectedClass = isSelected ? " is-selected is-active" : "";
+  const affectedGroups = issueAffectedGroups(issue, dimensionName).join(", ");
+  const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 135);
+
+  return `
+    <article
+      class="issue-highlight-button issue-summary-card${selectedClass}"
+      data-highlight-issue="${escapeHtml(issue.rule_id)}"
+      data-highlight-dimension="${escapeHtml(dimensionName)}"
+    >
+      <div class="issue-summary-topline">
+        <span class="issue-highlight-rule">Issue ${issueIndex + 1}</span>
+      </div>
+      <div class="issue-summary-row">
+        <span class="issue-highlight-label">Detected</span>
+        <span class="issue-highlight-copy">${escapeHtml(issue.title || "Review this issue")}</span>
+      </div>
+      <div class="issue-summary-row">
+        <span class="issue-highlight-label">Most affected</span>
+        <span class="issue-highlight-copy">${escapeHtml(affectedGroups)}</span>
+      </div>
+      <div class="issue-summary-row">
+        <span class="issue-highlight-label">First fix</span>
+        <span class="issue-highlight-copy">${escapeHtml(firstFix)}</span>
+      </div>
+      <div class="issue-summary-actions">
+        <button
+          class="view-on-page-button${isPreviewActive ? " is-active" : ""}"
+          type="button"
+          data-view-on-page="${escapeHtml(issue.rule_id)}"
+          data-view-dimension="${escapeHtml(dimensionName)}"
+          aria-label="View this issue on the analysed page"
+          aria-pressed="${isPreviewActive ? "true" : "false"}"
+        >View on page</button>
+        <button
+          class="view-details-button${isDetailActive ? " is-active" : ""}"
+          type="button"
+          data-view-issue="${escapeHtml(issue.rule_id)}"
+          data-view-dimension="${escapeHtml(dimensionName)}"
+          aria-label="View details and recommendations for this issue"
+          aria-pressed="${isDetailActive ? "true" : "false"}"
+        >View details</button>
+      </div>
     </article>
   `;
 }
@@ -992,64 +1285,9 @@ function renderExplanation(result) {
         : `${issueCount} issue${issueCount === 1 ? "" : "s"} found. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
 
     const issues = issueCount
-      ? isInformationOverloadDimension(dimension.dimension)
-        ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => `
-            <button
-              class="issue-highlight-button information-overload-card"
-              type="button"
-              data-highlight-issue="${escapeHtml(issue.rule_id)}"
-              data-highlight-dimension="${escapeHtml(dimension.dimension)}"
-              aria-label="Highlight issue ${issueIndex + 1}: ${escapeHtml(issue.title)} on the website"
-            >
-              <div class="issue-highlight-header">
-                <span class="issue-highlight-rule">Issue ${issueIndex + 1}</span>
-                <strong class="issue-highlight-title">${escapeHtml(issue.title)}</strong>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">Issue category</span>
-                <span class="issue-highlight-copy">${escapeHtml(displayIssueCategoryNameForIssue(issue, dimension.dimension))}</span>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">Cognitive dimension</span>
-                <span class="issue-highlight-copy">${escapeHtml(cognitiveDimension)}</span>
-              </div>
-              <div class="issue-highlight-meta">
-                <span class="issue-highlight-pill impact">${escapeHtml(issueImpactLabel(issue, dimension.dimension))}</span>
-                <span class="issue-highlight-pill priority">${escapeHtml(fixPriorityBand(issue, dimension.dimension))}</span>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">Why it increases mental effort</span>
-                <span class="issue-highlight-copy">${escapeHtml(issue.description)}</span>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">Who may be affected</span>
-                <span class="issue-highlight-copy">${escapeHtml(affectedUsersCopy(issue, dimension.dimension))}</span>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">Standards mapping</span>
-                <span class="issue-highlight-copy">${escapeHtml(frameworkMappingCopy(issue.rule_id).coga)} | ${escapeHtml(frameworkMappingCopy(issue.rule_id).iso)} | ${escapeHtml(frameworkMappingCopy(issue.rule_id).wcag)}</span>
-              </div>
-              <div class="issue-highlight-section">
-                <span class="issue-highlight-label">What to change</span>
-                <span class="issue-highlight-copy">${escapeHtml(issue.suggestion)}</span>
-              </div>
-            </button>
-          `).join("")}</div>`
-        : `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => `
-            <button
-              class="issue-highlight-button"
-              type="button"
-              data-highlight-issue="${escapeHtml(issue.rule_id)}"
-              data-highlight-dimension="${escapeHtml(dimension.dimension)}"
-              aria-label="Highlight issue ${issueIndex + 1}: ${escapeHtml(issue.title || issue.description)} on the website"
-            >
-              <strong>Issue ${issueIndex + 1}: ${escapeHtml(issue.title || "Review this issue")}</strong>
-              <span>${escapeHtml(issue.description)}</span>
-              <span class="issue-inline-meta">Issue Category: ${escapeHtml(displayIssueCategoryNameForIssue(issue, dimension.dimension))}</span>
-              <span class="issue-inline-meta">Cognitive Dimension: ${escapeHtml(cognitiveDimension)}</span>
-              <span class="issue-inline-meta">${escapeHtml(beneficiaryTags(issue.rule_id, dimension.dimension).join(" | "))}</span>
-            </button>
-          `).join("")}</div>`
+      ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => (
+          issueSummaryCardMarkup(issue, dimension.dimension, issueIndex)
+        )).join("")}</div>`
       : "";
 
     return `
@@ -1104,9 +1342,12 @@ function setWorkspaceMode(mode) {
   websiteView.hidden = !isWebsite;
   explanationView.classList.toggle("is-active", !isWebsite);
   websiteView.classList.toggle("is-active", isWebsite);
-  toggle.textContent = isWebsite ? "Back to explanation" : "Click to view the website";
+  toggle.textContent = isWebsite
+    ? (state.selectedIssueId ? "Back to issue details" : "Back to summary")
+    : (state.selectedIssueId ? "View selected issue on page" : "Click to view the website");
 
   if (isWebsite) {
+    updatePreviewIssueHeader();
     loadWebsitePreview();
   }
 }
@@ -1448,7 +1689,22 @@ function updateActiveHighlightButtons() {
 
   document.querySelectorAll("[data-highlight-issue]").forEach((button) => {
     const issueId = `${button.dataset.highlightDimension || ""}:${button.dataset.highlightIssue || ""}`;
-    button.classList.toggle("is-active", issueId === state.activeHighlightIssueId);
+    button.classList.toggle("is-active", issueId === state.activeHighlightIssueId || issueId === state.selectedIssueId);
+    button.classList.toggle("is-selected", issueId === state.selectedIssueId);
+  });
+
+  document.querySelectorAll("[data-view-on-page]").forEach((button) => {
+    const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewOnPage);
+    const isActive = issueId === state.selectedIssueId && state.rightPanelMode === "preview";
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  document.querySelectorAll("[data-view-issue]").forEach((button) => {
+    const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewIssue);
+    const isActive = issueId === state.selectedIssueId && state.rightPanelMode === "detail";
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
 
@@ -1541,29 +1797,17 @@ function highlightIssue(dimensionName, ruleId, force = false) {
   injectHighlightStyles(frameDoc);
   clearWebsiteHighlights(frameDoc);
 
-  const locationElements = (issue.locations || []).flatMap((location) => (
-    findElementsForLocation(frameDoc, location)
-  ));
-
-  let elements = locationElements;
-  if (!elements.length) {
-    elements = fallbackSelectorsForIssue(issue, dimensionName).flatMap((selector) => {
-      try {
-        return Array.from(frameDoc.querySelectorAll(selector));
-      } catch (error) {
-        return [];
-      }
-    });
-  }
+  const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
 
   const highlighted = applyHighlights(elements, config.color, "Issue highlight");
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
-    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.`);
+    const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
+    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.${fallbackNotice}`);
   } else {
-    setWebsiteStatus(`No directly highlightable element was found for ${issueLabel}. This may be a page-level or missing-element issue.`, true);
+    setWebsiteStatus("No exact page element is linked to this issue yet.", true);
   }
 }
 
@@ -1724,9 +1968,16 @@ function handleAssistantClear() {
   renderAssistantMessages();
 }
 
-function renderResult(result, html) {
+function renderResult(result, html, options = {}) {
+  const previousSelectedIssueId = state.selectedIssueId;
   state.currentResult = result;
   state.currentHtml = html || "";
+  if (options.preserveSelectedIssue && findIssueById(previousSelectedIssueId)) {
+    state.selectedIssueId = previousSelectedIssueId;
+  } else {
+    state.selectedIssueId = "";
+    state.rightPanelMode = "summary";
+  }
   renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
@@ -1817,14 +2068,20 @@ async function analyzeRenderedPreviewDocument(doc) {
     state.currentPayload = mergedPayload;
     state.renderedDomAnalysisKey = analysisKey;
     saveTransientDashboardState(mergedPayload, renderedHtml);
-    renderResult(buildAnalysisView(mergedPayload), renderedHtml);
+    renderResult(buildAnalysisView(mergedPayload), renderedHtml, { preserveSelectedIssue: true });
     updateActiveHighlightButtons();
+    const selectedAfterRender = selectedIssueRecord();
+    if (state.rightPanelMode === "detail" && selectedAfterRender) {
+      renderIssueDetailPanel(selectedAfterRender.dimension.dimension, selectedAfterRender.issue.rule_id);
+    }
 
     const frameDoc = getPreviewDocument();
     if (frameDoc) {
       injectHighlightStyles(frameDoc);
       clearWebsiteHighlights(frameDoc);
-      if (state.activeHighlightIssueId) {
+      if (state.rightPanelMode === "preview" && state.selectedIssueId) {
+        highlightSelectedIssueInPreview();
+      } else if (state.activeHighlightIssueId) {
         const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
         highlightIssue(dimensionName, ruleId, true);
       } else if (state.activeHighlightDimension) {
@@ -2123,7 +2380,24 @@ function bindEvents() {
 
   if (websiteViewToggle) {
     websiteViewToggle.addEventListener("click", () => {
-      setWorkspaceMode(state.workspaceMode === "website" ? "explanation" : "website");
+      if (state.workspaceMode === "website") {
+        setWorkspaceMode("explanation");
+        if (state.selectedIssueId && state.rightPanelMode === "preview") {
+          const selected = selectedIssueRecord();
+          if (selected) {
+            renderIssueDetailPanel(selected.dimension.dimension, selected.issue.rule_id);
+          }
+        } else {
+          renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+        }
+        return;
+      }
+
+      state.rightPanelMode = "preview";
+      setWorkspaceMode("website");
+      if (state.selectedIssueId) {
+        highlightSelectedIssueInPreview();
+      }
     });
   }
 
@@ -2167,8 +2441,44 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
+    const pageTrigger = event.target.closest("[data-view-on-page]");
+    if (pageTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      renderIssuePreviewPanel(pageTrigger.dataset.viewDimension, pageTrigger.dataset.viewOnPage);
+      return;
+    }
+
+    const detailTrigger = event.target.closest("[data-view-issue]");
+    if (detailTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      renderIssueDetailPanel(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
+      return;
+    }
+
+    const selectedDetailsTrigger = event.target.closest("[data-view-selected-details]");
+    if (selectedDetailsTrigger) {
+      event.preventDefault();
+      const selected = selectedIssueRecord();
+      if (selected) {
+        renderIssueDetailPanel(selected.dimension.dimension, selected.issue.rule_id);
+      }
+      return;
+    }
+
+    const backTrigger = event.target.closest("[data-back-to-summary]");
+    if (backTrigger) {
+      event.preventDefault();
+      backToSummaryPanel();
+      return;
+    }
+
     const trigger = event.target.closest("[data-highlight-issue]");
     if (!trigger) {
+      return;
+    }
+    if (trigger.classList.contains("issue-summary-card")) {
       return;
     }
     highlightIssue(trigger.dataset.highlightDimension, trigger.dataset.highlightIssue);
@@ -2182,10 +2492,17 @@ function bindEvents() {
         return;
       }
       injectHighlightStyles(doc);
-      setWebsiteStatus("Website preview loaded. Choose a dimension to highlight related areas.");
-      if (state.activeHighlightIssueId) {
+      updatePreviewIssueHeader();
+      if (state.rightPanelMode === "preview" && state.selectedIssueId) {
+        highlightSelectedIssueInPreview();
+      } else if (state.activeHighlightIssueId) {
         const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
         highlightIssue(dimensionName, ruleId, true);
+      } else if (state.selectedIssueId) {
+        const selected = findIssueById(state.selectedIssueId);
+        if (selected) {
+          highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
+        }
       } else if (state.activeHighlightDimension) {
         highlightDimension(state.activeHighlightDimension);
       }

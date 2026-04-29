@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Dashboard</title>
-  <link rel="stylesheet" href="./styles.css?v=profile-tabs-1">
+  <link rel="stylesheet" href="./styles.css?v=issue-workspace-1">
 </head>
 <body class="dashboard-body">
   <header class="app-nav">
@@ -57,7 +57,7 @@
 
           <section class="sidebar-section sidebar-explanation-section">
             <div class="pane-header">
-              <h2>Explanation</h2>
+              <h2>Top Issue Cards</h2>
             </div>
             <div class="sidebar-explanation-content">
               <div id="dashboardSummaryText" class="overall-summary"></div>
@@ -89,7 +89,7 @@
         <section class="workspace-panels">
           <article class="workspace-pane explanation-pane">
             <div class="pane-header pane-header-actions-right">
-              <h2 class="visually-hidden">Fix Priority actions</h2>
+              <h2 class="visually-hidden">Issue workspace actions</h2>
               <div class="report-id-chip" aria-label="Report ID">
                 <span>Report ID</span>
                 <strong id="reportIdValue">-</strong>
@@ -106,19 +106,31 @@
             <div id="explanationView" class="workspace-view is-active">
               <section class="sidebar-section comparison-section comparison-section-inline">
                 <div class="sidebar-section-header">
-                  <h2>Fix Priority</h2>
+                  <h2>Issue Workspace</h2>
                   <span id="comparisonMeta" class="sidebar-meta">Decision panel</span>
                 </div>
                 <div id="comparisonSummary" class="comparison-summary empty">
-                  Analyze a page to identify the pattern that most increases mental effort and reading overload.
+                  Select an issue to view its location on the page or read detailed recommendations.
                 </div>
                 <div id="comparisonList" class="comparison-list empty">
-                  Mental-effort evidence will appear here after analysis.
+                  Issue guidance will appear here after analysis.
                 </div>
               </section>
             </div>
 
             <div id="websiteView" class="workspace-view website-preview-view" hidden>
+              <div class="website-preview-toolbar">
+                <div>
+                  <span class="priority-eyebrow">Website preview</span>
+                  <strong id="previewIssueTitle">No issue selected</strong>
+                  <p id="websitePreviewStatus">Select an issue and choose View on page to highlight it in the preview.</p>
+                </div>
+                <div class="website-highlight-actions">
+                  <button id="previewDetailsButton" type="button" data-view-selected-details hidden>
+                    View details for this issue
+                  </button>
+                </div>
+              </div>
               <iframe id="websitePreviewFrame" class="website-preview-frame" title="Analyzed website preview"></iframe>
             </div>
           </article>
@@ -168,6 +180,6 @@
     <strong>Assistant</strong>
   </button>
 
-    <script type="module" src="./app.js?v=id-sync-1"></script>
+    <script type="module" src="./app.js?v=issue-workspace-1"></script>
 </body>
 </html>
