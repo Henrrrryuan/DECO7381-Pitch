@@ -961,7 +961,7 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   comparisonSummary.className = "comparison-summary empty issue-workspace-summary";
   comparisonSummary.innerHTML = `
     <strong>Select an issue to inspect it</strong>
-    <span>Use <strong>View on page</strong> to locate the issue in the website preview, or <strong>View details</strong> to read the evidence and recommendations.</span>
+    <span>Use <strong>Show on page</strong> to locate the issue in the website preview, or <strong>Fix guidance</strong> to read the evidence and recommendations.</span>
   `;
   comparisonList.className = "comparison-list priority-evidence-list issue-workspace-empty";
   comparisonList.innerHTML = `
@@ -1035,7 +1035,7 @@ function updatePreviewIssueHeader() {
   if (!selected) {
     titleNode.textContent = "No issue selected";
     detailsButton.hidden = true;
-    setWebsiteStatus("Select an issue and choose View on page to highlight it in the preview.");
+    setWebsiteStatus("Select an issue and choose Show on page to highlight it in the preview.");
     return;
   }
 
@@ -1185,6 +1185,24 @@ function backToSummaryPanel() {
 }
 
 function renderIssuePreviewPanel(dimensionName, ruleId) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  const isSamePreviewIssue = (
+    state.workspaceMode === "website"
+    && state.rightPanelMode === "preview"
+    && state.selectedIssueId === issueId
+  );
+
+  if (isSamePreviewIssue) {
+    state.selectedIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeHighlightIssueId = "";
+    clearWebsiteHighlights();
+    updatePreviewIssueHeader();
+    updateActiveHighlightButtons();
+    setWebsiteStatus("Highlight cleared. Select an issue to highlight it on the page again.");
+    return;
+  }
+
   const selected = selectIssue(dimensionName, ruleId);
   if (!selected) {
     return;
@@ -1215,12 +1233,9 @@ function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
       <div class="issue-summary-topline">
         <span class="issue-highlight-rule">Issue ${issueIndex + 1}</span>
       </div>
+      <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       <div class="issue-summary-row">
-        <span class="issue-highlight-label">Detected</span>
-        <span class="issue-highlight-copy">${escapeHtml(issue.title || "Review this issue")}</span>
-      </div>
-      <div class="issue-summary-row">
-        <span class="issue-highlight-label">Most affected</span>
+        <span class="issue-highlight-label">Likely affected users</span>
         <span class="issue-highlight-copy">${escapeHtml(affectedGroups)}</span>
       </div>
       <div class="issue-summary-row">
@@ -1233,17 +1248,17 @@ function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
           type="button"
           data-view-on-page="${escapeHtml(issue.rule_id)}"
           data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="View this issue on the analysed page"
+          aria-label="Show this issue on the analysed page"
           aria-pressed="${isPreviewActive ? "true" : "false"}"
-        >View on page</button>
+        >Show on page</button>
         <button
           class="view-details-button${isDetailActive ? " is-active" : ""}"
           type="button"
           data-view-issue="${escapeHtml(issue.rule_id)}"
           data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="View details and recommendations for this issue"
+          aria-label="View fix guidance and recommendations for this issue"
           aria-pressed="${isDetailActive ? "true" : "false"}"
-        >View details</button>
+        >Fix guidance</button>
       </div>
     </article>
   `;
@@ -1279,10 +1294,8 @@ function renderExplanation(result) {
     const issueCategoryName = displayIssueCategoryName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
     const summary = issueCount === 0
-      ? "No issues were triggered in this issue category for the current analysis."
-      : isInformationOverloadDimension(dimension.dimension)
-        ? `${issueCount} issue${issueCount === 1 ? "" : "s"} found. These patterns increase the amount of information users must filter before they can settle into a clear reading path or identify the next step.`
-        : `${issueCount} issue${issueCount === 1 ? "" : "s"} found. These patterns may affect attention, working memory, comprehension, wayfinding, or decision confidence for users with cognitive or communication needs.`;
+      ? "No triggered issues in this category."
+      : `${issueCount} issue${issueCount === 1 ? "" : "s"} found · ${cognitiveDimension}`;
 
     const issues = issueCount
       ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => (
@@ -1300,9 +1313,7 @@ function renderExplanation(result) {
           </span>
         </summary>
         <div class="explanation-accordion-content">
-          <p><strong>Issue Category:</strong> ${escapeHtml(issueCategoryName)}</p>
-          <p><strong>Cognitive Dimension:</strong> ${escapeHtml(cognitiveDimension)}</p>
-          <p>${escapeHtml(summary)}</p>
+          <p class="category-helper">${escapeHtml(summary)}</p>
           ${issues}
         </div>
       </details>
