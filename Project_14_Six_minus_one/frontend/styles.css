@@ -1193,20 +1193,20 @@ input {
 }
 
 .dimension-label-with-info {
-  grid-area: label;
   position: relative;
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
-  width: 100%;
-  padding-right: 18px;
-  white-space: normal;
+  width: fit-content;
+  padding-right: 0;
+  white-space: nowrap;
   line-height: 1.25;
+  gap: 6px;
 }
 
 .dimension-info-icon {
-  position: absolute;
-  right: 2px;
+  position: relative;
+  right: auto;
   top: -4px;
   width: 12px;
   height: 12px;
