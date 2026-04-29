@@ -1118,10 +1118,11 @@ input {
 }
 
 .risk-level-hint {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: left;
 }
 
 .dimension-row {
@@ -1161,9 +1162,9 @@ input {
 }
 
 .risk-badge.risk-medium {
-  border-color: rgba(146, 64, 14, 0.18);
+  border-color: rgba(120, 53, 15, 0.22);
   background: #fff7d6;
-  color: #92400e;
+  color: #78350f;
 }
 
 .risk-badge.risk-high {
