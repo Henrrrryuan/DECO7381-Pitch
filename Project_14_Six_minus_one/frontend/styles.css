@@ -1477,7 +1477,7 @@ button.dimension-row.is-linked-active .bar-track {
 .standards-issue-header,
 .standards-issue-summary {
   display: grid;
-  grid-template-columns: 34px minmax(250px, 1.65fr) minmax(132px, 0.7fr) minmax(150px, 0.74fr) minmax(210px, 1fr) minmax(150px, 0.76fr);
+  grid-template-columns: 34px minmax(340px, 2.2fr) minmax(132px, 0.75fr) minmax(150px, 0.8fr) minmax(210px, 1fr) minmax(150px, 0.8fr);
   align-items: center;
   gap: 14px;
 }
@@ -1530,10 +1530,7 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .standards-issue-title {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: center;
-  gap: 11px;
+  display: block;
   color: #172033;
   font-size: 14px;
   line-height: 1.45;

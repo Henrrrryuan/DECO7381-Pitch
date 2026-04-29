@@ -31,6 +31,7 @@ const state = {
   renderedDomAnalysisTimer: null,
   previousResult: null,
   previousSourceName: "",
+  activeProfile: "Dyslexia",
 };
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
@@ -397,6 +398,19 @@ function displayProfileName(name) {
   return profileDisplayMeta(name).label;
 }
 
+function normalizeProfileLabel(label) {
+  if (label === "ADHD" || label === "Autism") {
+    return label;
+  }
+  return "Dyslexia";
+}
+
+function issueMatchesActiveProfile(issue, activeProfile) {
+  const profile = normalizeProfileLabel(activeProfile);
+  const affectedProfiles = RULE_AFFECTED_USERS[issue?.rule_id] || ["Dyslexia", "ADHD", "Autism"];
+  return affectedProfiles.includes(profile);
+}
+
 function canonicalDimensionName(name) {
   return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
 }
@@ -493,12 +507,21 @@ function renderScoreSlider(result) {
   let currentIndex = 0;
 
   const updateControls = () => {
+    const currentSlide = slides[currentIndex] || null;
+    state.activeProfile = normalizeProfileLabel(currentSlide?.label);
     dotNodes.forEach((dot, index) => {
       const active = index === currentIndex;
       dot.classList.toggle("is-active", active);
       dot.setAttribute("aria-pressed", active ? "true" : "false");
     });
-    renderDimensionBars(slides[currentIndex]?.dimensionEntries || []);
+    renderDimensionBars(currentSlide?.dimensionEntries || []);
+    if (state.currentResult) {
+      renderExplanation(state.currentResult);
+      renderDashboardSummary(state.currentResult);
+      if (state.rightPanelMode === "summary") {
+        renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+      }
+    }
   };
 
   const goToSlide = (targetIndex) => {
@@ -569,10 +592,12 @@ function renderDashboardSummary(result) {
     return;
   }
 
-  const totalIssues = result.dimensions.reduce(
-    (count, dimension) => count + (dimension.issues?.length || 0),
-    0,
-  );
+  const totalIssues = result.dimensions.reduce((count, dimension) => {
+    const filteredIssues = (dimension.issues || []).filter((issue) => (
+      issueMatchesActiveProfile(issue, state.activeProfile)
+    ));
+    return count + filteredIssues.length;
+  }, 0);
 
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
@@ -1038,24 +1063,9 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   state.previousSourceName = previousSourceName || "";
   state.rightPanelMode = "summary";
   const comparisonList = document.getElementById("comparisonList");
-  const comparisonMeta = document.getElementById("comparisonMeta");
-  const comparisonSummary = document.getElementById("comparisonSummary");
-  if (!comparisonList || !comparisonMeta || !comparisonSummary) {
+  if (!comparisonList) {
     return;
   }
-
-  const issueCount = allIssueRecords(currentResult).length;
-  const activeCategoryCount = (currentResult?.dimensions || [])
-    .filter((dimension) => (dimension.issues || []).length > 0)
-    .length;
-
-  comparisonMeta.textContent = "Summary";
-  comparisonSummary.className = "comparison-summary priority issue-workspace-summary";
-  comparisonSummary.innerHTML = `
-    <span class="summary-kicker">Detected issues</span>
-    <strong>${issueCount} issue${issueCount === 1 ? "" : "s"} found across ${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}</strong>
-    <span>Expand an issue to review the failing page elements, affected users, matched rules, and meaning.</span>
-  `;
   comparisonList.className = "comparison-list standards-workspace-list";
   comparisonList.innerHTML = `
     ${standardsIssueTableMarkup(currentResult)}
@@ -1063,13 +1073,34 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
 }
 
 function allIssueRecords(result) {
-  const records = (result?.dimensions || []).flatMap((dimension) => (
-    (dimension.issues || []).map((issue) => ({ dimension, issue }))
-  ));
-  return records.sort((left, right) => (
-    issuePriority(right.issue, right.dimension.dimension)
-    - issuePriority(left.issue, left.dimension.dimension)
-  ));
+  const dimensionOrder = [
+    INFORMATION_OVERLOAD_NAME,
+    "Readability",
+    "Interaction & Distraction",
+    "Consistency",
+  ];
+  const orderIndex = (dimensionName) => {
+    const index = dimensionOrder.indexOf(displayDimensionName(dimensionName));
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+
+  const orderedDimensions = [...(result?.dimensions || [])].sort((left, right) => {
+    const orderDelta = orderIndex(left.dimension) - orderIndex(right.dimension);
+    if (orderDelta !== 0) {
+      return orderDelta;
+    }
+    return displayDimensionName(left.dimension).localeCompare(displayDimensionName(right.dimension));
+  });
+
+  const records = [];
+  orderedDimensions.forEach((dimension) => {
+    (dimension.issues || [])
+      .filter((issue) => issueMatchesActiveProfile(issue, state.activeProfile))
+      .forEach((issue) => {
+        records.push({ dimension, issue });
+      });
+  });
+  return records;
 }
 
 function issueFailingElementCount(issue) {
@@ -1188,12 +1219,18 @@ function standardsIssueTableMarkup(result) {
     const isoClauses = issueIsoClauseTags(ruleId);
     const users = issueAffectedUserTags(ruleId);
     const rowNumber = index + 1;
+    const issueId = issueDomId(dimension.dimension, issue.rule_id);
+    const model = issueDisplayModel(issue, dimension.dimension);
+    const meaningCopy = model.whyItMatters || model.cognitiveImpact || "This issue may increase cognitive load for users.";
+    const firstFixCopy = model.firstFix || "Review this issue and simplify the interaction.";
+    const activeProfile = normalizeProfileLabel(state.activeProfile);
+    const activeProfileLabel = activeProfile === "Autism" ? "Autistic users" : `${activeProfile} users`;
+    const activeProfileGuidance = model.userRecommendations?.[activeProfile] || firstFixCopy;
     return `
-      <details class="standards-issue-row">
+      <details class="standards-issue-row" data-summary-issue-id="${escapeHtml(issueId)}">
         <summary class="standards-issue-summary">
           <span class="standards-cell standards-number">${rowNumber}</span>
           <span class="standards-cell standards-issue-title">
-            <span class="standards-alert-icon" aria-hidden="true">!</span>
             <span>
               <strong>${escapeHtml(issue.title || "Review this issue")}</strong>
               <small>${escapeHtml(displayIssueCategoryName(dimension.dimension))}</small>
@@ -1218,11 +1255,16 @@ function standardsIssueTableMarkup(result) {
           </section>
           <section class="standards-detail-section">
             <h4><span>2.</span> What does this mean?</h4>
-            <div class="standards-empty-detail" aria-label="What this means content pending"></div>
+            <div class="standards-empty-detail" aria-label="What this means for the selected user profile">
+              ${escapeHtml(meaningCopy)}
+            </div>
           </section>
           <section class="standards-detail-section">
             <h4><span>3.</span> How to solve it:</h4>
-            <div class="standards-empty-detail large" aria-label="How to solve it content pending"></div>
+            <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
+              <p><strong>First redesign move:</strong> ${escapeHtml(firstFixCopy)}</p>
+              <p><strong>${escapeHtml(activeProfileLabel)}:</strong> ${escapeHtml(activeProfileGuidance)}</p>
+            </div>
           </section>
         </div>
       </details>
@@ -1366,11 +1408,21 @@ function highlightSelectedIssueInPreview() {
   highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
 }
 
-function renderIssueDetailPanel(dimensionName, ruleId) {
-  const comparisonList = document.getElementById("comparisonList");
-  const comparisonMeta = document.getElementById("comparisonMeta");
-  const comparisonSummary = document.getElementById("comparisonSummary");
-  if (!comparisonList || !comparisonMeta || !comparisonSummary) {
+function openIssueInSummary(dimensionName, ruleId) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  const isSameIssueOpen = (
+    state.selectedIssueId === issueId
+    && state.rightPanelMode === "summary"
+    && state.workspaceMode === "explanation"
+  );
+
+  state.rightPanelMode = "summary";
+  setWorkspaceMode("explanation");
+
+  if (isSameIssueOpen) {
+    state.selectedIssueId = "";
+    renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+    updateActiveHighlightButtons();
     return;
   }
 
@@ -1379,73 +1431,17 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
     return;
   }
 
-  const { dimension, issue } = selected;
-  const model = issueDisplayModel(issue, dimension.dimension);
-  const affectedUserPills = model.affectedUsers
-    .map((group) => `<span class="user-group-chip">${escapeHtml(group)}</span>`)
-    .join("");
-  const userGuidanceCards = [
-    ["ADHD users", model.userRecommendations.ADHD],
-    ["Dyslexia users", model.userRecommendations.Dyslexia],
-    ["Autistic users", model.userRecommendations.Autism],
-  ].map(([group, guidance]) => `
-    <div class="user-guidance-card">
-      <strong>${escapeHtml(group)}</strong>
-      <p>${escapeHtml(guidance)}</p>
-    </div>
-  `).join("");
-  state.rightPanelMode = "detail";
-  setWorkspaceMode("explanation");
+  renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
   updateActiveHighlightButtons();
 
-  comparisonMeta.textContent = "Issue detail";
-  comparisonSummary.className = "comparison-summary priority issue-detail-summary";
-  comparisonSummary.innerHTML = `
-    <div class="issue-detail-heading">
-      <span>${escapeHtml(model.issueCategory)}</span>
-    </div>
-    <section class="issue-detail-problem" aria-label="Issue problem">
-      <span class="issue-detail-label">Problem</span>
-      <h3>${escapeHtml(model.issueTitle)}</h3>
-      <p>${escapeHtml(conciseText(model.cognitiveImpact, "This issue may increase cognitive load for users.", 220))}</p>
-    </section>
-    <div class="issue-detail-meta-grid">
-      <div class="issue-detail-meta-card">
-        <span>Location</span>
-        <strong>${escapeHtml(model.evidence)}</strong>
-      </div>
-      <div class="issue-detail-meta-card">
-        <span>Most affected</span>
-        <div class="user-group-chip-list">${affectedUserPills}</div>
-      </div>
-    </div>
-    <div class="recommended-fix-callout redesign-move">
-      <span>First redesign move</span>
-      <p>${escapeHtml(model.firstFix)}</p>
-    </div>
-  `;
-
-  comparisonList.className = "comparison-list issue-detail-panel";
-  comparisonList.innerHTML = `
-    <article class="priority-card explanation-card">
-      <span class="priority-eyebrow">Why this matters</span>
-      <p>${escapeHtml(model.whyItMatters)}</p>
-    </article>
-
-    <article class="priority-card guidance-card">
-      <span class="priority-eyebrow">Guidance by user group</span>
-      <div class="recommendation-grid">
-        ${userGuidanceCards}
-      </div>
-    </article>
-
-    <details class="supporting-standards">
-      <summary>Standards / framework mapping</summary>
-      <ul class="priority-evidence">
-        ${model.standards.map((standard) => `<li>${escapeHtml(standard)}</li>`).join("")}
-      </ul>
-    </details>
-  `;
+  const target = document.querySelector(
+    `.standards-issue-row[data-summary-issue-id="${CSS.escape(issueId)}"]`,
+  );
+  if (!target) {
+    return;
+  }
+  target.open = true;
+  target.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function renderIssuePreviewPanel(dimensionName, ruleId) {
@@ -1479,13 +1475,14 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   highlightSelectedIssueInPreview();
 }
 
-function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
+function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const issueId = issueDomId(dimensionName, issue.rule_id);
   const isSelected = issueId === state.selectedIssueId;
   const isPreviewActive = isSelected && state.rightPanelMode === "preview";
-  const isDetailActive = isSelected && state.rightPanelMode === "detail";
+  const isDetailActive = isSelected
+    && state.rightPanelMode === "summary"
+    && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
-  const affectedGroups = issueAffectedGroups(issue, dimensionName).join(", ");
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 135);
 
   return `
@@ -1495,13 +1492,9 @@ function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
       data-highlight-dimension="${escapeHtml(dimensionName)}"
     >
       <div class="issue-summary-topline">
-        <span class="issue-highlight-rule">Issue ${issueIndex + 1}</span>
+        <span class="issue-highlight-rule">Issue ${issueNumber}</span>
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
-      <div class="issue-summary-row">
-        <span class="issue-highlight-label">Likely affected users</span>
-        <span class="issue-highlight-copy">${escapeHtml(affectedGroups)}</span>
-      </div>
       <div class="issue-summary-row">
         <span class="issue-highlight-label">First fix</span>
         <span class="issue-highlight-copy">${escapeHtml(firstFix)}</span>
@@ -1520,7 +1513,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
           type="button"
           data-view-issue="${escapeHtml(issue.rule_id)}"
           data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="View fix guidance and recommendations for this issue"
+          aria-label="Open this issue guidance in summary"
           aria-pressed="${isDetailActive ? "true" : "false"}"
         >Read guidance</button>
       </div>
@@ -1552,8 +1545,12 @@ function renderExplanation(result) {
     return displayDimensionName(left.dimension).localeCompare(displayDimensionName(right.dimension));
   });
 
+  let globalIssueIndex = 0;
   const blocks = orderedDimensions.map((dimension) => {
-    const issueCount = dimension.issues.length;
+    const filteredIssues = (dimension.issues || []).filter((issue) => (
+      issueMatchesActiveProfile(issue, state.activeProfile)
+    ));
+    const issueCount = filteredIssues.length;
     const displayName = displayDimensionName(dimension.dimension);
     const issueCategoryName = displayIssueCategoryName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
@@ -1562,10 +1559,11 @@ function renderExplanation(result) {
       : cognitiveDimension;
 
     const issues = issueCount
-      ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => (
-          issueSummaryCardMarkup(issue, dimension.dimension, issueIndex)
+      ? `<div class="issue-highlight-list">${filteredIssues.map((issue, issueIndex) => (
+          issueSummaryCardMarkup(issue, dimension.dimension, globalIssueIndex + issueIndex + 1)
         )).join("")}</div>`
       : "";
+    globalIssueIndex += issueCount;
 
     return `
       <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
@@ -1606,9 +1604,8 @@ function setWorkspaceMode(mode) {
   state.workspaceMode = mode;
   const explanationView = document.getElementById("explanationView");
   const websiteView = document.getElementById("websiteView");
-  const toggle = document.getElementById("websiteViewToggle");
 
-  if (!explanationView || !websiteView || !toggle) {
+  if (!explanationView || !websiteView) {
     return;
   }
 
@@ -1617,9 +1614,6 @@ function setWorkspaceMode(mode) {
   websiteView.hidden = !isWebsite;
   explanationView.classList.toggle("is-active", !isWebsite);
   websiteView.classList.toggle("is-active", isWebsite);
-  toggle.textContent = isWebsite
-    ? "Back to summary"
-    : "Show selected issue on page";
 
   if (isWebsite) {
     updatePreviewIssueHeader();
@@ -1972,7 +1966,7 @@ function updateActiveHighlightButtons() {
     const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewOnPage);
     const isActive = (
       issueId === state.selectedIssueId
-      && state.rightPanelMode !== "detail"
+      && state.rightPanelMode === "preview"
     );
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
@@ -1980,7 +1974,9 @@ function updateActiveHighlightButtons() {
 
   document.querySelectorAll("[data-view-issue]").forEach((button) => {
     const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewIssue);
-    const isActive = issueId === state.selectedIssueId && state.rightPanelMode === "detail";
+    const isActive = issueId === state.selectedIssueId
+      && state.rightPanelMode === "summary"
+      && state.workspaceMode === "explanation";
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
@@ -2348,10 +2344,7 @@ async function analyzeRenderedPreviewDocument(doc) {
     saveTransientDashboardState(mergedPayload, renderedHtml);
     renderResult(buildAnalysisView(mergedPayload), renderedHtml, { preserveSelectedIssue: true });
     updateActiveHighlightButtons();
-    const selectedAfterRender = selectedIssueRecord();
-    if (state.rightPanelMode === "detail" && selectedAfterRender) {
-      renderIssueDetailPanel(selectedAfterRender.dimension.dimension, selectedAfterRender.issue.rule_id);
-    } else if (state.rightPanelMode === "summary") {
+    if (state.rightPanelMode === "summary") {
       renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
     }
 
@@ -2622,7 +2615,6 @@ function bindEvents() {
   const assistantInput = document.getElementById("assistantInput");
   const clearButton = document.getElementById("clearAssistantButton");
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
-  const websiteViewToggle = document.getElementById("websiteViewToggle");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
@@ -2656,26 +2648,6 @@ function bindEvents() {
 
   if (sidebarToggleButton) {
     sidebarToggleButton.addEventListener("click", handleSidebarToggle);
-  }
-
-  if (websiteViewToggle) {
-    websiteViewToggle.addEventListener("click", () => {
-      if (state.workspaceMode === "website") {
-        state.rightPanelMode = "summary";
-        state.activeHighlightIssueId = "";
-        state.activeHighlightDimension = "";
-        clearWebsiteHighlights();
-        updateActiveHighlightButtons();
-        setWorkspaceMode("explanation");
-        renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
-        return;
-      }
-
-      setWorkspaceMode("website");
-      if (state.selectedIssueId) {
-        highlightSelectedIssueInPreview();
-      }
-    });
   }
 
   document.querySelectorAll("[data-highlight-dimension]").forEach((button) => {
@@ -2723,7 +2695,7 @@ function bindEvents() {
       const dimensionName = topIssueTrigger.dataset.openTopDimension;
       const ruleId = topIssueTrigger.dataset.openTopIssue;
       focusIssueCard(dimensionName, ruleId);
-      renderIssueDetailPanel(dimensionName, ruleId);
+      openIssueInSummary(dimensionName, ruleId);
       return;
     }
 
@@ -2739,20 +2711,7 @@ function bindEvents() {
     if (detailTrigger) {
       event.preventDefault();
       event.stopPropagation();
-      const issueId = issueDomId(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
-      const isSameIssueDetail = (
-        state.selectedIssueId === issueId
-        && state.rightPanelMode === "detail"
-        && state.workspaceMode !== "website"
-      );
-      if (isSameIssueDetail) {
-        state.rightPanelMode = "preview";
-        setWorkspaceMode("website");
-        highlightSelectedIssueInPreview();
-        updateActiveHighlightButtons();
-        return;
-      }
-      renderIssueDetailPanel(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
+      openIssueInSummary(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
       return;
     }
 
