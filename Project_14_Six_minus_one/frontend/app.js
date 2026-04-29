@@ -963,13 +963,8 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   }
 
   const priority = priorityDimension(currentResult);
-  const currentIssues = totalIssueCount(currentResult);
   const primaryIssue = primaryIssueForDimension(priority);
   const topCategory = priority ? displayIssueCategoryName(priority.dimension) : "";
-  const lowestDimension = [...(currentResult?.dimensions || [])].sort((a, b) => (a.score || 0) - (b.score || 0))[0];
-  const activeCategoryCount = (currentResult?.dimensions || []).filter((dimension) => (
-    (dimension.issues?.length || 0) > 0
-  )).length;
   const topIssueLabel = primaryIssue?.title || "No active issue";
   const topIssueReason = primaryIssue?.description
     ? firstSentence(primaryIssue.description)
@@ -1009,22 +1004,6 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
         <li><strong>Show on page</strong> to see where the problem appears.</li>
         <li><strong>Fix guidance</strong> to read the evidence and redesign advice.</li>
       </ol>
-    </article>
-
-    <article class="summary-stat-grid" aria-label="Analysis snapshot">
-      <div class="summary-stat-card">
-        <span>Total issues</span>
-        <strong>${currentIssues}</strong>
-      </div>
-      <div class="summary-stat-card">
-        <span>Active categories</span>
-        <strong>${activeCategoryCount}</strong>
-      </div>
-      <div class="summary-stat-card">
-        <span>Lowest score</span>
-        <strong>${lowestDimension ? `${lowestDimension.score}` : "-"}</strong>
-        <small>${escapeHtml(lowestDimension ? displayIssueCategoryName(lowestDimension.dimension) : "No score")}</small>
-      </div>
     </article>
   `;
 }

@@ -1442,37 +1442,6 @@ button.dimension-row.is-linked-active .bar-track {
   color: var(--ink);
 }
 
-.summary-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.summary-stat-card {
-  display: grid;
-  gap: 4px;
-  min-height: 88px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #fff;
-}
-
-.summary-stat-card span,
-.summary-stat-card small {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.summary-stat-card strong {
-  color: var(--ink);
-  font-size: 24px;
-  line-height: 1;
-}
-
 .comparison-list.empty,
 .comparison-summary.empty,
 .rich-text.empty,
