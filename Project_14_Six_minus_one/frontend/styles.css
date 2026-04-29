@@ -1367,6 +1367,112 @@ button.dimension-row.is-linked-active .bar-track {
   background: linear-gradient(135deg, #eef4ff, #f8fbff);
 }
 
+.issue-workspace-summary {
+  max-width: 860px;
+}
+
+.summary-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.issue-workspace-start {
+  max-width: 860px;
+  align-content: start;
+}
+
+.summary-priority-card {
+  display: grid;
+  gap: 8px;
+  border-color: rgba(47, 111, 235, 0.22);
+  background: #fff;
+}
+
+.summary-priority-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.summary-muted {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  font-weight: 800;
+}
+
+.open-top-issue-button {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+  box-shadow: 0 8px 18px rgba(47, 111, 235, 0.16);
+}
+
+.open-top-issue-button:hover,
+.open-top-issue-button:focus-visible {
+  background: #255fc9;
+  outline: none;
+}
+
+.summary-next-steps {
+  background: #fbfcff;
+}
+
+.summary-step-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.summary-step-list strong {
+  color: var(--ink);
+}
+
+.summary-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-stat-card {
+  display: grid;
+  gap: 4px;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.summary-stat-card span,
+.summary-stat-card small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary-stat-card strong {
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
 .comparison-list.empty,
 .comparison-summary.empty,
 .rich-text.empty,
@@ -1394,10 +1500,10 @@ button.dimension-row.is-linked-active .bar-track {
 .priority-eyebrow {
   display: block;
   margin-bottom: 8px;
-  color: var(--accent);
-  font-size: 12px;
+  color: #536071;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
@@ -2109,6 +2215,11 @@ button.dimension-row.is-linked-active .bar-track {
   color: var(--accent);
 }
 
+.view-on-page-button.compact {
+  min-height: 34px;
+  margin-left: auto;
+}
+
 .issue-summary-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2144,7 +2255,7 @@ button.dimension-row.is-linked-active .bar-track {
 .issue-detail-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 8px;
 }
@@ -2161,6 +2272,37 @@ button.dimension-row.is-linked-active .bar-track {
   gap: 12px;
 }
 
+.recommended-fix-callout {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(47, 111, 235, 0.18);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.recommended-fix-callout span,
+.supporting-label {
+  color: #536071;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recommended-fix-callout p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.supporting-label {
+  display: block;
+  margin: 12px 0 6px;
+}
+
 .recommendation-stack {
   display: grid;
   gap: 10px;
@@ -2168,6 +2310,26 @@ button.dimension-row.is-linked-active .bar-track {
 
 .recommendation-stack p {
   margin: 0;
+}
+
+.supporting-standards {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfcff;
+}
+
+.supporting-standards summary {
+  cursor: pointer;
+  color: #536071;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.supporting-standards .priority-evidence {
+  margin-top: 10px;
 }
 
 .placeholder-tag {

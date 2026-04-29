@@ -684,6 +684,16 @@ function focusExplanationDimension(dimensionName) {
   setActiveDimensionBar(targetName);
 }
 
+function focusIssueCard(dimensionName, ruleId) {
+  focusExplanationDimension(dimensionName);
+  const issueSelector = [
+    `.issue-summary-card[data-highlight-dimension="${CSS.escape(dimensionName)}"]`,
+    `[data-highlight-issue="${CSS.escape(ruleId)}"]`,
+  ].join("");
+  const card = document.querySelector(issueSelector);
+  card?.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
 const DIMENSION_BARRIER_COPY = {
   [INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
   [LEGACY_INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
@@ -956,22 +966,65 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   const currentIssues = totalIssueCount(currentResult);
   const primaryIssue = primaryIssueForDimension(priority);
   const topCategory = priority ? displayIssueCategoryName(priority.dimension) : "";
+  const lowestDimension = [...(currentResult?.dimensions || [])].sort((a, b) => (a.score || 0) - (b.score || 0))[0];
+  const activeCategoryCount = (currentResult?.dimensions || []).filter((dimension) => (
+    (dimension.issues?.length || 0) > 0
+  )).length;
+  const topIssueLabel = primaryIssue?.title || "No active issue";
+  const topIssueReason = primaryIssue?.description
+    ? firstSentence(primaryIssue.description)
+    : "No triggered issue needs immediate attention in the current rule set.";
+  const topIssueAction = priority && primaryIssue
+    ? `
+      <button
+        class="open-top-issue-button"
+        type="button"
+        data-open-top-issue="${escapeHtml(primaryIssue.rule_id)}"
+        data-open-top-dimension="${escapeHtml(priority.dimension)}"
+      >Open top issue</button>
+    `
+    : "";
 
   comparisonMeta.textContent = "Summary";
-  comparisonSummary.className = "comparison-summary empty issue-workspace-summary";
+  comparisonSummary.className = "comparison-summary priority issue-workspace-summary";
   comparisonSummary.innerHTML = `
-    <strong>Select an issue to inspect it</strong>
-    <span>Use <strong>Show on page</strong> to locate the issue in the website preview, or <strong>Fix guidance</strong> to read the evidence and recommendations.</span>
+    <span class="summary-kicker">Start here</span>
+    <strong>Start with the highest-impact issue</strong>
+    <span>Use the issue cards on the left to locate the problem on the page, then open the fix guidance when you are ready to redesign it.</span>
   `;
-  comparisonList.className = "comparison-list priority-evidence-list issue-workspace-empty";
+  comparisonList.className = "comparison-list priority-evidence-list issue-workspace-start";
   comparisonList.innerHTML = `
-    <article class="priority-card evidence">
-      <span class="priority-eyebrow">Current analysis</span>
-      <ul class="priority-evidence">
-        <li><strong>Total issues:</strong> ${currentIssues}</li>
-        <li><strong>Top priority issue:</strong> ${escapeHtml(primaryIssue?.title || "No active issue")}</li>
-        ${topCategory ? `<li><strong>Top issue category:</strong> ${escapeHtml(topCategory)}</li>` : ""}
-      </ul>
+    <article class="priority-card summary-priority-card">
+      <span class="priority-eyebrow">Top priority</span>
+      <h3>${escapeHtml(topIssueLabel)}</h3>
+      ${topCategory ? `<p class="summary-muted">${escapeHtml(topCategory)}</p>` : ""}
+      <p>${escapeHtml(topIssueReason)}</p>
+      ${topIssueAction}
+    </article>
+
+    <article class="priority-card summary-next-steps">
+      <span class="priority-eyebrow">Next steps</span>
+      <ol class="summary-step-list">
+        <li><strong>Open</strong> the matching issue card on the left.</li>
+        <li><strong>Show on page</strong> to see where the problem appears.</li>
+        <li><strong>Fix guidance</strong> to read the evidence and redesign advice.</li>
+      </ol>
+    </article>
+
+    <article class="summary-stat-grid" aria-label="Analysis snapshot">
+      <div class="summary-stat-card">
+        <span>Total issues</span>
+        <strong>${currentIssues}</strong>
+      </div>
+      <div class="summary-stat-card">
+        <span>Active categories</span>
+        <strong>${activeCategoryCount}</strong>
+      </div>
+      <div class="summary-stat-card">
+        <span>Lowest score</span>
+        <strong>${lowestDimension ? `${lowestDimension.score}` : "-"}</strong>
+        <small>${escapeHtml(lowestDimension ? displayIssueCategoryName(lowestDimension.dimension) : "No score")}</small>
+      </div>
     </article>
   `;
 }
@@ -1124,27 +1177,27 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
     <div class="issue-detail-heading">
       <button class="back-to-summary-button" type="button" data-back-to-summary>Back to Summary</button>
       <span>${escapeHtml(model.issueCategory)}</span>
+      <button
+        class="view-on-page-button compact"
+        type="button"
+        data-view-on-page="${escapeHtml(issue.rule_id)}"
+        data-view-dimension="${escapeHtml(dimension.dimension)}"
+      >View on page</button>
     </div>
     <strong>Issue Detail: ${escapeHtml(model.issueTitle)}</strong>
     <span>${escapeHtml(conciseText(model.cognitiveImpact, "This issue may increase cognitive load for users.", 220))}</span>
+    <div class="recommended-fix-callout">
+      <span>Recommended first change</span>
+      <p>${escapeHtml(model.firstFix)}</p>
+    </div>
   `;
 
   comparisonList.className = "comparison-list issue-detail-panel";
   comparisonList.innerHTML = `
-    <button
-      class="view-on-page-button"
-      type="button"
-      data-view-on-page="${escapeHtml(issue.rule_id)}"
-      data-view-dimension="${escapeHtml(dimension.dimension)}"
-    >View on page</button>
-
     <article class="priority-card">
-      <span class="priority-eyebrow">Detected evidence</span>
+      <span class="priority-eyebrow">Evidence</span>
       <p>${escapeHtml(model.evidence)}</p>
-    </article>
-
-    <article class="priority-card">
-      <span class="priority-eyebrow">Why it matters</span>
+      <span class="supporting-label">Why it matters</span>
       <p>${escapeHtml(model.whyItMatters)}</p>
     </article>
 
@@ -1162,14 +1215,12 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
       </div>
     </article>
 
-    <article class="priority-card">
-      <span class="priority-eyebrow">Standards / framework mapping</span>
+    <details class="supporting-standards">
+      <summary>Standards / framework mapping</summary>
       <ul class="priority-evidence">
         ${model.standards.map((standard) => `<li>${escapeHtml(standard)}</li>`).join("")}
       </ul>
-    </article>
-
-    <button class="back-to-summary-button secondary" type="button" data-back-to-summary>Back to Summary</button>
+    </details>
   `;
 }
 
@@ -2452,6 +2503,16 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
+    const topIssueTrigger = event.target.closest("[data-open-top-issue]");
+    if (topIssueTrigger) {
+      event.preventDefault();
+      const dimensionName = topIssueTrigger.dataset.openTopDimension;
+      const ruleId = topIssueTrigger.dataset.openTopIssue;
+      focusIssueCard(dimensionName, ruleId);
+      renderIssueDetailPanel(dimensionName, ruleId);
+      return;
+    }
+
     const pageTrigger = event.target.closest("[data-view-on-page]");
     if (pageTrigger) {
       event.preventDefault();
