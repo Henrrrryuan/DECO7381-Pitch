@@ -7,6 +7,7 @@ import sqlite3
 from uuid import uuid4
 
 from ...scoring import calculate_profile_scores
+from ...services.eye_evidence_service import calculate_eye_evidence_for_sessions
 from ...schemas import (
     AnalysisResult,
     DimensionResult,
@@ -272,12 +273,32 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 )
             )
 
+        eye_session_rows = connection.execute(
+            """
+            SELECT
+                id,
+                sample_count,
+                duration_ms,
+                coverage_percent,
+                grid_cols,
+                grid_rows,
+                cell_counts_json
+            FROM eye_tracking_sessions
+            WHERE run_id = ?
+            ORDER BY rowid DESC
+            """,
+            (run_id,),
+        ).fetchall()
+
+    eye_evidence = calculate_eye_evidence_for_sessions(
+        [_row_to_eye_evidence_input(row) for row in eye_session_rows]
+    )
     analysis = AnalysisResult(
         overall_score=run_row["overall_score"],
         weighted_average=run_row["weighted_average"],
         min_dimension_score=run_row["min_dimension_score"],
         dimensions=dimensions,
-        profile_scores=calculate_profile_scores(dimensions),
+        profile_scores=calculate_profile_scores(dimensions, eye_evidence=eye_evidence),
     )
     run = _row_to_run_summary(run_row)
 
@@ -540,6 +561,18 @@ def _row_to_eye_tracking_session_summary(row: sqlite3.Row) -> EyeTrackingSession
         duration_ms=row["duration_ms"],
         coverage_percent=row["coverage_percent"],
     )
+
+
+def _row_to_eye_evidence_input(row: sqlite3.Row) -> dict[str, object]:
+    return {
+        "session_id": row["id"],
+        "sample_count": row["sample_count"],
+        "duration_ms": row["duration_ms"],
+        "coverage_percent": row["coverage_percent"],
+        "grid_cols": row["grid_cols"],
+        "grid_rows": row["grid_rows"],
+        "cell_counts": _load_json(row["cell_counts_json"], []),
+    }
 
 
 def _dump_json(value: object) -> str:

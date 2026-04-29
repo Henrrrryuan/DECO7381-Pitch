@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from .schemas import AnalysisResult, AudienceLensScore, DimensionResult, Severity
 
@@ -95,28 +95,56 @@ def calculate_weighted_average(dimensions: Iterable[DimensionResult]) -> int:
     return clamp_score(weighted_total)
 
 
-def calculate_profile_scores(dimensions: list[DimensionResult]) -> list[AudienceLensScore]:
+def calculate_profile_scores(
+    dimensions: list[DimensionResult],
+    eye_evidence: Mapping[str, object] | None = None,
+) -> list[AudienceLensScore]:
     profiles: list[AudienceLensScore] = []
     for name, config in PROFILE_LENS_CONFIG.items():
         weights = config["weights"]
         weighted_total = 0.0
         for dimension_name, weight in weights.items():
             weighted_total += resolve_dimension_score(dimensions, str(dimension_name)) * float(weight)
+        profile_score = clamp_score(weighted_total)
         profiles.append(
             AudienceLensScore(
                 name=name,
-                score=clamp_score(weighted_total),
+                score=apply_eye_evidence_adjustment(profile_score, eye_evidence),
                 summary=str(config["summary"]),
             )
         )
     return profiles
 
 
-def calculate_overall_score(dimensions: list[DimensionResult]) -> AnalysisResult:
+def apply_eye_evidence_adjustment(
+    heuristic_score: int,
+    eye_evidence: Mapping[str, object] | None,
+) -> int:
+    if not eye_evidence:
+        return heuristic_score
+
+    try:
+        eye_score = float(eye_evidence.get("score", heuristic_score))
+        adjustment_weight = float(eye_evidence.get("adjustment_weight", 0))
+    except (TypeError, ValueError):
+        return heuristic_score
+
+    if adjustment_weight <= 0:
+        return heuristic_score
+
+    bounded_weight = min(0.10, max(0.0, adjustment_weight))
+    adjusted_score = ((1 - bounded_weight) * heuristic_score) + (bounded_weight * eye_score)
+    return clamp_score(adjusted_score)
+
+
+def calculate_overall_score(
+    dimensions: list[DimensionResult],
+    eye_evidence: Mapping[str, object] | None = None,
+) -> AnalysisResult:
     weighted_average = calculate_weighted_average(dimensions)
     min_dimension_score = min((dimension.score for dimension in dimensions), default=0)
     overall_score = clamp_score((0.4 * min_dimension_score) + (0.6 * weighted_average))
-    profile_scores = calculate_profile_scores(dimensions)
+    profile_scores = calculate_profile_scores(dimensions, eye_evidence=eye_evidence)
 
     return AnalysisResult(
         overall_score=overall_score,
