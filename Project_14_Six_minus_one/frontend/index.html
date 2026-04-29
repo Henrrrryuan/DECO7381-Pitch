@@ -28,9 +28,8 @@
       <div class="upload-copy">
         <h1>Cognitive Accessibility Evaluation</h1>
         <p class="upload-description">
-          Start from the page you are actively building. CogniLens checks readability,
-          information overload, distraction, and structural consistency from a cognitive
-          accessibility perspective.
+          Check a live page or uploaded file for readability, clutter, distraction,
+          and navigation issues.
         </p>
       </div>
 
@@ -45,8 +44,8 @@
               aria-controls="urlForm"
               data-workflow-option="url"
             >
-              <span class="workflow-option-title">URL / Local Dev Server</span>
-              <span class="workflow-option-copy">For Live Server, static/SSR pages, or deployed pages that return real HTML.</span>
+              <span class="workflow-option-title">Website URL</span>
+              <span class="workflow-option-copy">Check a page from localhost or a public website.</span>
             </button>
             <button
               class="workflow-option"
@@ -56,19 +55,18 @@
               aria-controls="uploadForm"
               data-workflow-option="file"
             >
-              <span class="workflow-option-title">Static HTML / ZIP Upload</span>
-              <span class="workflow-option-copy">For offline checks when no running website is available.</span>
+              <span class="workflow-option-title">Upload File</span>
+              <span class="workflow-option-copy">Check an HTML file or ZIP package from your computer.</span>
             </button>
           </div>
 
           <div class="workflow-panels">
             <form id="urlForm" class="workflow-panel primary-input-card is-active" role="tabpanel" data-workflow-panel="url" novalidate>
               <div class="input-card-copy">
-                <h3>Analyze a running page</h3>
+                <h3>Check a website</h3>
                 <p>
-                  Paste a local dev server or website URL, then re-run the analysis after
-                  each design change without exporting files. Client-rendered React/Vue
-                  pages may still need a rendered-browser snapshot in a later version.
+                  Paste the page link you want to review. Localhost and public URLs are
+                  both supported.
                 </p>
               </div>
 
@@ -81,22 +79,21 @@
                   placeholder="http://localhost:5173"
                   autocomplete="url"
                 >
-                <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>
-                  Analyze URL
-                </button>
+                <p class="url-examples">
+                  （Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html）
+                </p>
               </div>
 
-              <p class="url-examples">
-                Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html
-              </p>
+              <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>
+                Analyze
+              </button>
             </form>
 
             <form id="uploadForm" class="workflow-panel upload-form secondary-upload-card" role="tabpanel" data-workflow-panel="file" hidden novalidate>
               <div class="input-card-copy">
-                <h3>Analyze a static package</h3>
+                <h3>Check a file</h3>
                 <p>
-                  Use HTML for a quick static check, or ZIP for an offline package
-                  containing HTML, CSS, and JavaScript.
+                  Upload an HTML file or a ZIP package when you do not have a live page.
                 </p>
               </div>
 
@@ -107,7 +104,7 @@
               </label>
 
               <button id="analyzeButton" class="upload-analyze-button secondary-action" type="submit" disabled>
-                Analyze File
+                Analyze
               </button>
             </form>
           </div>

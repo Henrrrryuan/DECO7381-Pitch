@@ -59,7 +59,7 @@ function setWorkflow(workflow) {
   if (!state.loading) {
     if (state.workflow === "url") {
       syncUrl(urlInput.value);
-      setStatus(state.url ? "URL workflow selected. Ready to analyze the running page." : "");
+      setStatus("");
       urlInput.focus();
     } else {
       syncFile(state.file);
@@ -98,8 +98,8 @@ function setLoading(loading) {
   state.loading = loading;
   analyzeButton.disabled = loading || !state.file;
   analyzeUrlButton.disabled = loading || !state.url;
-  analyzeButton.textContent = loading ? "Analyzing..." : "Analyze File";
-  analyzeUrlButton.textContent = loading ? "Analyzing..." : "Analyze URL";
+  analyzeButton.textContent = loading ? "Analyzing..." : "Analyze";
+  analyzeUrlButton.textContent = loading ? "Analyzing..." : "Analyze";
 }
 
 function normalizeUrl(rawUrl) {
