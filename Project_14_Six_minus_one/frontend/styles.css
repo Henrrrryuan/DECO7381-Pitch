@@ -1333,18 +1333,20 @@ button.dimension-row.is-linked-active .bar-track {
 
 .comparison-summary {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--surface-alt);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
 .comparison-summary strong {
-  font-size: 15px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.35;
 }
 
 .comparison-summary.up {
@@ -1363,8 +1365,8 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .comparison-summary.priority {
-  border-color: rgba(47, 111, 235, 0.22);
-  background: linear-gradient(135deg, #eef4ff, #f8fbff);
+  border-color: rgba(47, 111, 235, 0.18);
+  background: linear-gradient(135deg, #f3f7ff, #fbfdff);
 }
 
 .issue-workspace-summary {
@@ -1372,10 +1374,10 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .summary-kicker {
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  color: #4f5e72;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -1387,14 +1389,16 @@ button.dimension-row.is-linked-active .bar-track {
 .summary-priority-card {
   display: grid;
   gap: 8px;
-  border-color: rgba(47, 111, 235, 0.22);
+  border-left: 4px solid var(--accent);
+  border-color: rgba(47, 111, 235, 0.2);
   background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
 }
 
 .summary-priority-card h3 {
   margin: 0;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.3;
 }
 
@@ -1406,10 +1410,10 @@ button.dimension-row.is-linked-active .bar-track {
 
 .open-top-issue-button {
   width: fit-content;
-  min-height: 36px;
-  padding: 0 13px;
+  min-height: 38px;
+  padding: 0 14px;
   border: 1px solid var(--accent);
-  border-radius: 10px;
+  border-radius: 11px;
   background: var(--accent);
   color: #fff;
   cursor: pointer;
@@ -1425,15 +1429,16 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .summary-next-steps {
+  border-color: rgba(203, 213, 225, 0.72);
   background: #fbfcff;
 }
 
 .summary-step-list {
   display: grid;
-  gap: 8px;
+  gap: 7px;
   margin: 0;
   padding-left: 20px;
-  color: var(--text);
+  color: #39465a;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -2034,17 +2039,17 @@ button.dimension-row.is-linked-active .bar-track {
 .issue-highlight-button:hover,
 .issue-highlight-button.is-active,
 .issue-highlight-button.is-selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: rgba(47, 111, 235, 0.45);
+  background: #f6f9ff;
 }
 
 .issue-highlight-button.is-selected {
   border-left: 4px solid var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(47, 111, 235, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(47, 111, 235, 0.1);
 }
 
 .issue-highlight-button strong {
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .issue-highlight-button span {
@@ -2068,8 +2073,8 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .issue-highlight-rule {
-  color: var(--accent);
-  font-size: 12px;
+  color: #607086;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2126,7 +2131,7 @@ button.dimension-row.is-linked-active .bar-track {
 
 .issue-summary-card {
   grid-template-columns: 1fr;
-  gap: 9px;
+  gap: 10px;
   padding: 14px 16px;
   cursor: default;
 }
@@ -2145,9 +2150,9 @@ button.dimension-row.is-linked-active .bar-track {
 }
 
 .issue-summary-title {
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 800;
+  color: var(--ink) !important;
+  font-size: 15px;
+  font-weight: 850;
   line-height: 1.35;
 }
 
@@ -2160,13 +2165,13 @@ button.dimension-row.is-linked-active .bar-track {
 .view-on-page-button,
 .back-to-summary-button {
   width: fit-content;
-  border: 1px solid var(--accent);
-  border-radius: 10px;
+  border: 1px solid rgba(47, 111, 235, 0.55);
+  border-radius: 11px;
   background: #fff;
   color: var(--accent);
   font-weight: 800;
   min-height: 34px;
-  padding: 0 11px;
+  padding: 0 12px;
   cursor: pointer;
   font-size: 13px;
 }
@@ -2182,6 +2187,7 @@ button.dimension-row.is-linked-active .bar-track {
 .view-on-page-button:not(.is-active) {
   background: #fff;
   color: var(--accent);
+  box-shadow: none;
 }
 
 .view-on-page-button.compact {
@@ -2202,9 +2208,18 @@ button.dimension-row.is-linked-active .bar-track {
 .view-details-button:focus-visible,
 .back-to-summary-button:hover,
 .back-to-summary-button:focus-visible {
-  background: var(--accent);
-  color: #fff;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
   outline: none;
+}
+
+.view-on-page-button.is-active:hover,
+.view-on-page-button.is-active:focus-visible,
+.view-details-button.is-active:hover,
+.view-details-button.is-active:focus-visible {
+  background: #255fc9;
+  color: #fff;
 }
 
 .issue-summary-row .issue-highlight-copy {

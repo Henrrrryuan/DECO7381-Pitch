@@ -976,7 +976,7 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
         type="button"
         data-open-top-issue="${escapeHtml(primaryIssue.rule_id)}"
         data-open-top-dimension="${escapeHtml(priority.dimension)}"
-      >Open top issue</button>
+      >Open fix guidance</button>
     `
     : "";
 
@@ -984,8 +984,8 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   comparisonSummary.className = "comparison-summary priority issue-workspace-summary";
   comparisonSummary.innerHTML = `
     <span class="summary-kicker">Start here</span>
-    <strong>Start with the highest-impact issue</strong>
-    <span>Use the issue cards on the left to locate the problem on the page, then open the fix guidance when you are ready to redesign it.</span>
+    <strong>Work through one issue at a time</strong>
+    <span>Use the left issue cards to locate the problem first, then read the fix guidance before redesigning that section.</span>
   `;
   comparisonList.className = "comparison-list priority-evidence-list issue-workspace-start";
   comparisonList.innerHTML = `
@@ -1002,7 +1002,7 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
       <ol class="summary-step-list">
         <li><strong>Open</strong> the matching issue card on the left.</li>
         <li><strong>Show on page</strong> to see where the problem appears.</li>
-        <li><strong>Fix guidance</strong> to read the evidence and redesign advice.</li>
+        <li><strong>Read guidance</strong> to review the evidence and redesign advice.</li>
       </ol>
     </article>
   `;
@@ -1288,7 +1288,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueIndex) {
           data-view-dimension="${escapeHtml(dimensionName)}"
           aria-label="View fix guidance and recommendations for this issue"
           aria-pressed="${isDetailActive ? "true" : "false"}"
-        >Fix guidance</button>
+        >Read guidance</button>
       </div>
     </article>
   `;
