@@ -1,12 +1,7 @@
 import {
-  analyzeUrl,
-  analyzeVisualComplexityHtml,
-  analyzeVisualComplexityUrl,
-  analyzeUploadFile,
   isHtmlFile,
   isZipFile,
   loadDashboardSession,
-  saveDashboardSession,
 } from "./common.js?v=visual-complexity-score-1";
 
 const state = {
@@ -16,6 +11,7 @@ const state = {
   loading: false,
 };
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
+const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 
 const workflowOptions = Array.from(document.querySelectorAll("[data-workflow-option]"));
 const workflowPanels = Array.from(document.querySelectorAll("[data-workflow-panel]"));
@@ -153,6 +149,19 @@ function normalizeUrl(rawUrl) {
   return parsed.href;
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(reader.error || new Error("Could not read the selected file.")));
+    reader.readAsDataURL(file);
+  });
+}
+
+function savePendingAnalysis(payload) {
+  sessionStorage.setItem(PENDING_ANALYSIS_STORAGE_KEY, JSON.stringify(payload));
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
   if (!state.file || state.loading) {
@@ -160,34 +169,28 @@ async function handleSubmit(event) {
   }
 
   setLoading(true);
-  setStatus("Running cognitive accessibility analysis...");
+  setStatus("Preparing the analysis page...");
 
   try {
     const previousSession = loadDashboardSession();
     const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
-    const payload = await analyzeUploadFile(state.file, baselineRunId);
-    const html = isHtmlFile(state.file)
-      ? await state.file.text()
-      : payload.html_content || "";
-    try {
-      payload.visual_complexity = await analyzeVisualComplexityHtml(html);
-    } catch (error) {
-      payload.visual_complexity_error = error.message || String(error);
+    const pendingPayload = {
+      mode: "file",
+      fileName: state.file.name,
+      fileType: state.file.type || "",
+      sourceType: isZipFile(state.file) ? "zip" : "html",
+      baselineRunId,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (isZipFile(state.file)) {
+      pendingPayload.fileDataUrl = await readFileAsDataUrl(state.file);
+    } else {
+      pendingPayload.html = await state.file.text();
     }
-    saveDashboardSession({
-      current: {
-        payload,
-        html,
-        sourceName: state.file.name,
-        sourceType: isZipFile(state.file) ? "zip" : "html",
-        savedAt: new Date().toISOString(),
-      },
-      previous: previousSession?.current || null,
-      html,
-      sourceName: state.file.name,
-      savedAt: new Date().toISOString(),
-    });
-    window.location.href = "./dashboard.html";
+
+    savePendingAnalysis(pendingPayload);
+    window.location.href = "./loading.html";
   } catch (error) {
     setStatus(error.message, true);
     setLoading(false);
@@ -209,45 +212,23 @@ async function handleUrlSubmit(event) {
   }
 
   setLoading(true);
-  setStatus("Fetching the live page and running cognitive accessibility analysis...");
+  setStatus("Opening the analysis progress page...");
 
   try {
     const previousSession = loadDashboardSession();
     const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
-    const payload = await analyzeUrl(normalizedUrl, baselineRunId);
-    const html = payload.html_content || "";
-    const resolvedUrl = payload.resource_bundle?.entry_name || payload.run?.source_name || normalizedUrl;
-    try {
-      payload.visual_complexity = await analyzeVisualComplexityUrl(normalizedUrl);
-    } catch (error) {
-      payload.visual_complexity_error = error.message || String(error);
-      try {
-        payload.visual_complexity = await analyzeVisualComplexityHtml(html);
-      } catch (fallbackError) {
-        payload.visual_complexity_error = fallbackError.message || String(fallbackError);
-      }
-    }
     try {
       localStorage.setItem(EYE_TARGET_URL_STORAGE_KEY, normalizedUrl);
     } catch (_) {
       // Ignore localStorage failures and continue saving the dashboard session.
     }
-    saveDashboardSession({
-      current: {
-        payload,
-        html,
-        sourceName: resolvedUrl,
-        sourceType: "url",
-        sourceUrl: normalizedUrl,
-        savedAt: new Date().toISOString(),
-      },
-      previous: previousSession?.current || null,
-      html,
-      sourceName: resolvedUrl,
-      sourceUrl: normalizedUrl,
-      savedAt: new Date().toISOString(),
+    savePendingAnalysis({
+      mode: "url",
+      url: normalizedUrl,
+      baselineRunId,
+      createdAt: new Date().toISOString(),
     });
-    window.location.href = "./dashboard.html";
+    window.location.href = "./loading.html";
   } catch (error) {
     setStatus(error.message, true);
     setLoading(false);
@@ -310,6 +291,10 @@ workflowOptions.forEach((option) => {
 
 urlForm.addEventListener("submit", handleUrlSubmit);
 uploadForm.addEventListener("submit", handleSubmit);
+window.addEventListener("pageshow", () => {
+  state.loading = false;
+  setLoading(false);
+});
 bindDropzone();
 try {
   const storedEyeTargetUrl = localStorage.getItem(EYE_TARGET_URL_STORAGE_KEY) || "";

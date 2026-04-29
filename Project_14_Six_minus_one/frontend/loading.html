@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniLens Analysis Loading</title>
+  <link rel="stylesheet" href="./styles.css?v=loading-page-1">
+</head>
+<body class="upload-body loading-body">
+  <header class="app-nav">
+    <div class="app-nav-inner">
+      <a class="app-brand" href="./index.html">
+        <span class="app-brand-mark">C</span>
+        <span class="app-brand-name">CogniLens</span>
+      </a>
+
+      <nav class="app-nav-links" aria-label="Primary">
+        <a href="/eye/">Eye Tracking</a>
+        <a href="./history.html">History</a>
+        <a href="./docs.html">Docs</a>
+        <a class="nav-cta" href="./index.html">New Analysis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="analysis-loading-page analysis-loading-page-standalone" aria-live="polite" aria-busy="true">
+    <section class="analysis-loading-card" aria-labelledby="analysisLoadingTitle">
+      <div class="analysis-loading-orbit" aria-hidden="true">
+        <span></span>
+      </div>
+      <h1 id="analysisLoadingTitle">Analyzing<span class="analysis-loading-dots" aria-hidden="true"></span></h1>
+      <div class="analysis-loading-progress-row">
+        <div class="analysis-loading-progress" aria-hidden="true">
+          <span id="analysisLoadingProgressBar"></span>
+        </div>
+        <strong id="analysisLoadingPercent" class="analysis-loading-percent">8%</strong>
+      </div>
+      <p id="analysisLoadingMessage" class="analysis-loading-message">
+        Checking your interface before opening the report<span class="analysis-loading-dots" aria-hidden="true"></span>
+      </p>
+      <p id="analysisLoadingError" class="analysis-loading-error" hidden></p>
+    </section>
+  </main>
+
+  <script type="module" src="./loading.js?v=loading-page-1"></script>
+</body>
+</html>

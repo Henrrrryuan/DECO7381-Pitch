@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CogniLens Upload</title>
-  <link rel="stylesheet" href="./styles.css?v=report-id-1">
+  <link rel="stylesheet" href="./styles.css?v=loading-page-1">
 </head>
 <body class="upload-body">
   <header class="app-nav">
@@ -26,8 +26,7 @@
   <main class="upload-page">
     <section class="upload-hero">
       <div class="upload-copy">
-        <p class="upload-kicker">CogniLens</p>
-        <h1>Inspect cognitive load before users feel it.</h1>
+        <h1>Cognitive Accessibility Evaluation</h1>
         <p class="upload-description">
           Start from the page you are actively building. CogniLens checks readability,
           information overload, distraction, and structural consistency from a cognitive
@@ -37,17 +36,6 @@
 
       <section class="input-workflow" aria-label="CogniLens input workflow">
         <div class="workflow-card">
-          <div class="workflow-card-header">
-            <div>
-              <span class="input-tier">Choose input workflow</span>
-              <h2>How do you want to inspect the page?</h2>
-            </div>
-            <p>
-              URL analysis is the main developer workflow. Static upload stays available
-              when you only have exported files.
-            </p>
-          </div>
-
           <div class="workflow-options" role="tablist" aria-label="Input method">
             <button
               class="workflow-option is-active"
@@ -57,7 +45,6 @@
               aria-controls="urlForm"
               data-workflow-option="url"
             >
-              <span class="workflow-option-tag">Primary</span>
               <span class="workflow-option-title">URL / Local Dev Server</span>
               <span class="workflow-option-copy">For Live Server, static/SSR pages, or deployed pages that return real HTML.</span>
             </button>
@@ -69,7 +56,6 @@
               aria-controls="uploadForm"
               data-workflow-option="file"
             >
-              <span class="workflow-option-tag">Fallback</span>
               <span class="workflow-option-title">Static HTML / ZIP Upload</span>
               <span class="workflow-option-copy">For offline checks when no running website is available.</span>
             </button>
@@ -127,27 +113,12 @@
           </div>
         </div>
 
-        <aside class="workflow-support-card" aria-label="What CogniLens checks">
-          <span class="input-tier">Developer loop</span>
-          <h2>Run, inspect, revise, repeat.</h2>
-          <p>
-            Designed for quick iteration: open your working page, analyze cognitive
-            barriers, adjust the design, then refresh the result. The current MVP
-            reads returned HTML plus linked CSS/JS signals.
-          </p>
-          <ul class="workflow-check-list">
-            <li><span>01</span> Language and reading load</li>
-            <li><span>02</span> Visual clutter and hierarchy</li>
-            <li><span>03</span> Motion, autoplay, and competing actions</li>
-            <li><span>04</span> Navigation and structural predictability</li>
-          </ul>
-        </aside>
       </section>
 
       <p id="uploadStatus" class="upload-status" aria-live="polite"></p>
     </section>
   </main>
 
-  <script type="module" src="./upload.js?v=visual-complexity-score-1"></script>
+  <script type="module" src="./upload.js?v=loading-page-1"></script>
 </body>
 </html>
