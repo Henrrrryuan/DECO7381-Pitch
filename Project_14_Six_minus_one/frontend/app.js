@@ -6,9 +6,10 @@ import {
   chatWithAssistant,
   escapeHtml,
   findDimension,
+  formatShortId,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js?v=visual-complexity-score-1";
+} from "./common.js?v=id-sync-1";
 
 const state = {
   currentHtml: "",
@@ -503,7 +504,9 @@ function renderReportId() {
   if (!reportIdNode) {
     return;
   }
-  reportIdNode.textContent = state.currentPayload?.run?.run_id || "-";
+  const runId = state.currentPayload?.run?.run_id || "";
+  reportIdNode.textContent = formatShortId(runId, "R-");
+  reportIdNode.title = runId || "";
 }
 
 const SEVERITY_RANK = {

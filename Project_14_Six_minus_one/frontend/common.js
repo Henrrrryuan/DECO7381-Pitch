@@ -54,6 +54,14 @@ function formatDate(value) {
   return parsed.toLocaleString();
 }
 
+function formatShortId(id, prefix = "") {
+  const value = String(id || "").trim();
+  if (!value) {
+    return "—";
+  }
+  return `${prefix}${value.slice(0, 6).toUpperCase()}`;
+}
+
 async function analyzeHtmlText(html, sourceName = "uploaded.html", options = {}) {
   const { persistResult = true } = options;
   return fetchJson(`${API_BASE}/analyze`, {
@@ -188,6 +196,7 @@ export {
   fetchJson,
   findDimension,
   formatDate,
+  formatShortId,
   isHtmlFile,
   isZipFile,
   loadDashboardSession,

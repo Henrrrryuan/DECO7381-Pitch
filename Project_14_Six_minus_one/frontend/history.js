@@ -3,6 +3,7 @@ import {
   escapeHtml,
   fetchJson,
   formatDate,
+  formatShortId,
   saveDashboardSession,
 } from "./common.js";
 
@@ -25,7 +26,10 @@ function buildCurrentSession(detail) {
   const sourceUrl = /^https?:\/\//i.test(sourceName) ? sourceName : "";
   return {
     current: {
-      payload: detail.analysis,
+      payload: {
+        ...detail.analysis,
+        run: detail.run,
+      },
       html: detail.html_content || "",
       sourceName,
       sourceUrl,
@@ -41,14 +45,6 @@ function formatDuration(ms) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
-}
-
-function formatShortId(id, prefix = "") {
-  const value = String(id || "").trim();
-  if (!value) {
-    return "—";
-  }
-  return `${prefix}${value.slice(0, 6).toUpperCase()}`;
 }
 
 function getTotalPages(total) {
