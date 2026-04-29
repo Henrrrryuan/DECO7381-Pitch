@@ -206,6 +206,81 @@ const RULE_BENEFICIARY_TAGS = {
   CS: ["Autistic users", "Executive function support"],
 };
 
+const RULE_AFFECTED_USERS = {
+  "IO-1": ["Dyslexia", "ADHD"],
+  "IO-2": ["Dyslexia", "ADHD"],
+  "IO-3": ["ADHD", "Autism"],
+  "IO-4": ["ADHD", "Autism"],
+  "IO-5": ["Dyslexia", "ADHD", "Autism"],
+  "RD-1": ["Dyslexia"],
+  "RD-2": ["Dyslexia", "ADHD"],
+  "RD-3": ["Dyslexia", "ADHD", "Autism"],
+  "RD-4": ["Dyslexia"],
+  "RD-5": ["Dyslexia", "ADHD", "Autism"],
+  "RD-6": ["Dyslexia", "ADHD"],
+  "ID-1": ["ADHD", "Autism"],
+  "ID-2": ["ADHD", "Autism"],
+  "ID-3": ["ADHD", "Autism"],
+  "CS-1": ["Dyslexia", "Autism"],
+  "CS-2": ["ADHD", "Autism"],
+  "CS-3": ["ADHD", "Autism"],
+  "CS-4": ["Dyslexia", "ADHD", "Autism"],
+  "CS-5": ["ADHD", "Autism"],
+  "CS-6": ["ADHD", "Autism"],
+  "CS-7": ["Dyslexia", "ADHD", "Autism"],
+  "CS-8": ["ADHD", "Autism"],
+};
+
+const RULE_COGNITIVE_OBJECTIVES = {
+  "IO-1": "Help Users Focus",
+  "IO-2": "Help Users Focus",
+  "IO-3": "Help Users Focus",
+  "IO-4": "Help Users Focus",
+  "IO-5": "Help Users Find What They Need",
+  "RD-1": "Use Clear and Understandable Content",
+  "RD-2": "Use Clear and Understandable Content",
+  "RD-3": "Help Users Understand What Things are and How to Use Them",
+  "RD-4": "Use Clear and Understandable Content",
+  "RD-5": "Use Clear and Understandable Content",
+  "RD-6": "Use Clear and Understandable Content",
+  "ID-1": "Support Adaptation and Personalization",
+  "ID-2": "Support Adaptation and Personalization",
+  "ID-3": "Help Users Focus",
+  "CS-1": "Help Users Understand What Things are and How to Use Them",
+  "CS-2": "Help Users Find What They Need",
+  "CS-3": "Ensure Processes Do Not Rely on Memory",
+  "CS-4": "Help Users Understand What Things are and How to Use Them",
+  "CS-5": "Help Users Find What They Need",
+  "CS-6": "Help Users Find What They Need",
+  "CS-7": "Help Users Understand What Things are and How to Use Them",
+  "CS-8": "Help Users Understand What Things are and How to Use Them",
+};
+
+const RULE_ISO_CLAUSES = {
+  "IO-1": ["6.3.3 Human effort expended", "6.4.3 Cognitive responses"],
+  "IO-2": ["6.3.3 Human effort expended"],
+  "IO-3": ["6.4.3 Cognitive responses", "6.4.4 Emotional responses"],
+  "IO-4": ["6.2.1 Effectiveness general", "6.3.3 Human effort expended"],
+  "IO-5": ["6.2.2 Accuracy", "6.3.3 Human effort expended"],
+  "RD-1": ["6.2.2 Accuracy"],
+  "RD-2": ["6.3.2 Time used", "6.3.3 Human effort expended"],
+  "RD-3": ["6.2.2 Accuracy"],
+  "RD-4": ["6.2.2 Accuracy", "6.4.3 Cognitive responses"],
+  "RD-5": ["6.2.3 Completeness"],
+  "RD-6": ["6.3.3 Human effort expended"],
+  "ID-1": ["6.4.2 Physical responses", "6.4.4 Emotional responses"],
+  "ID-2": ["6.4.2 Physical responses", "6.4.3 Cognitive responses"],
+  "ID-3": ["6.2.3 Completeness", "6.4.4 Emotional responses"],
+  "CS-1": ["6.3.3 Human effort expended"],
+  "CS-2": ["6.2.2 Accuracy"],
+  "CS-3": ["6.2.3 Completeness", "6.3.3 Human effort expended"],
+  "CS-4": ["6.2.2 Accuracy"],
+  "CS-5": ["6.3.2 Time used", "6.3.3 Human effort expended"],
+  "CS-6": ["6.3.2 Time used"],
+  "CS-7": ["6.2.2 Accuracy"],
+  "CS-8": ["6.2.2 Accuracy", "6.3.3 Human effort expended"],
+};
+
 const HIGHLIGHT_CONFIG = {
   [INFORMATION_OVERLOAD_NAME]: {
     color: "#df3e53",
@@ -906,6 +981,13 @@ function userSpecificRecommendations(issue, dimensionName) {
 }
 
 function frameworkMappingCopy(ruleId) {
+  if (RULE_COGNITIVE_OBJECTIVES[ruleId] || RULE_ISO_CLAUSES[ruleId]) {
+    return {
+      coga: `COGA Objective: ${RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus"}`,
+      iso: `ISO 9241-11: ${(RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"]).join("; ")}`,
+      wcag: `Cognitive Accessibility Guidance: ${RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus"}`,
+    };
+  }
   return RULE_FRAMEWORK_MAP[ruleId] || {
     coga: "COGA: reduce cognitive load in task flow",
     iso: "ISO 9241-11: effectiveness, efficiency, satisfaction",
@@ -962,49 +1044,205 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
     return;
   }
 
-  const priority = priorityDimension(currentResult);
-  const primaryIssue = primaryIssueForDimension(priority);
-  const topCategory = priority ? displayIssueCategoryName(priority.dimension) : "";
-  const topIssueLabel = primaryIssue?.title || "No active issue";
-  const topIssueReason = primaryIssue?.description
-    ? firstSentence(primaryIssue.description)
-    : "No triggered issue needs immediate attention in the current rule set.";
-  const topIssueAction = priority && primaryIssue
-    ? `
-      <button
-        class="open-top-issue-button"
-        type="button"
-        data-open-top-issue="${escapeHtml(primaryIssue.rule_id)}"
-        data-open-top-dimension="${escapeHtml(priority.dimension)}"
-      >Open fix guidance</button>
-    `
-    : "";
+  const issueCount = allIssueRecords(currentResult).length;
+  const activeCategoryCount = (currentResult?.dimensions || [])
+    .filter((dimension) => (dimension.issues || []).length > 0)
+    .length;
 
   comparisonMeta.textContent = "Summary";
   comparisonSummary.className = "comparison-summary priority issue-workspace-summary";
   comparisonSummary.innerHTML = `
-    <span class="summary-kicker">Start here</span>
-    <strong>Work through one issue at a time</strong>
-    <span>Use the left issue cards to locate the problem first, then read the fix guidance before redesigning that section.</span>
+    <span class="summary-kicker">Detected issues</span>
+    <strong>${issueCount} issue${issueCount === 1 ? "" : "s"} found across ${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}</strong>
+    <span>Expand an issue to review the failing page elements, affected users, matched rules, and meaning.</span>
   `;
-  comparisonList.className = "comparison-list priority-evidence-list issue-workspace-start";
+  comparisonList.className = "comparison-list standards-workspace-list";
   comparisonList.innerHTML = `
-    <article class="priority-card summary-priority-card">
-      <span class="priority-eyebrow">Top priority</span>
-      <h3>${escapeHtml(topIssueLabel)}</h3>
-      ${topCategory ? `<p class="summary-muted">${escapeHtml(topCategory)}</p>` : ""}
-      <p>${escapeHtml(topIssueReason)}</p>
-      ${topIssueAction}
-    </article>
+    ${standardsIssueTableMarkup(currentResult)}
+  `;
+}
 
-    <article class="priority-card summary-next-steps">
-      <span class="priority-eyebrow">Next steps</span>
-      <ol class="summary-step-list">
-        <li><strong>Open</strong> the matching issue card on the left.</li>
-        <li><strong>Show on page</strong> to see where the problem appears.</li>
-        <li><strong>Read guidance</strong> to review the evidence and redesign advice.</li>
-      </ol>
-    </article>
+function allIssueRecords(result) {
+  const records = (result?.dimensions || []).flatMap((dimension) => (
+    (dimension.issues || []).map((issue) => ({ dimension, issue }))
+  ));
+  return records.sort((left, right) => (
+    issuePriority(right.issue, right.dimension.dimension)
+    - issuePriority(left.issue, left.dimension.dimension)
+  ));
+}
+
+function issueFailingElementCount(issue) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  return Math.max(1, locations.length || 0);
+}
+
+function issueAffectedUserTags(ruleId) {
+  const labelMap = {
+    Dyslexia: "Dyslexia users",
+    ADHD: "ADHD users",
+    Autism: "Autistic users",
+  };
+  return (RULE_AFFECTED_USERS[ruleId] || ["Dyslexia", "ADHD", "Autism"])
+    .map((label) => labelMap[label] || label);
+}
+
+function issueIsoClauseTags(ruleId) {
+  return RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
+}
+
+function issueCognitiveObjective(ruleId) {
+  return RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus";
+}
+
+function pillListMarkup(items, limit = 2, className = "") {
+  const safeItems = [...new Set(items.filter(Boolean))];
+  const shown = safeItems.slice(0, limit);
+  const hiddenItems = safeItems.slice(limit);
+  const hiddenCount = hiddenItems.length;
+  return `
+    <span class="standards-pill-list ${className}">
+      ${shown.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
+      ${hiddenCount ? `
+        <span class="standards-more-wrap">
+          <button class="standards-pill more" type="button" aria-label="${escapeHtml(`Show ${hiddenCount} more mapped item${hiddenCount === 1 ? "" : "s"}`)}">+${hiddenCount} more</button>
+          <span class="standards-more-popover" role="tooltip">
+            ${hiddenItems.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
+          </span>
+        </span>
+      ` : ""}
+    </span>
+  `;
+}
+
+function locationPrimaryText(location) {
+  if (!location || typeof location !== "object") {
+    return "";
+  }
+  return location.html_snippet
+    || location.selector
+    || location.summary
+    || location.region
+    || location.text
+    || location.preview
+    || location.sentence_preview
+    || location.label
+    || "";
+}
+
+function locationMetaText(location) {
+  if (!location || typeof location !== "object") {
+    return "Detected issue location";
+  }
+  const pieces = [
+    location.selector ? `selector: ${location.selector}` : "",
+    location.summary ? `summary: ${location.summary}` : "",
+    location.tag ? `tag: ${location.tag}` : "",
+    location.region ? `region: ${location.region}` : "",
+  ].filter(Boolean);
+  return pieces[0] || "Detected issue location";
+}
+
+function failingElementsMarkup(issue) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const count = issueFailingElementCount(issue);
+  if (!locations.length) {
+    return `
+      <div class="standards-failing-element">
+        <span class="standards-location-index">1.</span>
+        <div>
+          <code>${escapeHtml(issue?.rule_id || "rule")}</code>
+          <p>${escapeHtml(issue?.title || "This rule was triggered by the current analysis.")}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return locations.slice(0, 8).map((location, index) => `
+    <div class="standards-failing-element">
+      <span class="standards-location-index">${index + 1}.</span>
+      <div>
+        <code>${escapeHtml(locationMetaText(location))}</code>
+        <p>${escapeHtml(locationPrimaryText(location))}</p>
+      </div>
+    </div>
+  `).join("") + (locations.length > 8
+    ? `<p class="standards-extra-note">${escapeHtml(`${locations.length - 8} more detected location${locations.length - 8 === 1 ? "" : "s"} not shown.`)}</p>`
+    : "");
+}
+
+function standardsIssueTableMarkup(result) {
+  const records = allIssueRecords(result);
+  if (!records.length) {
+    return `
+      <section class="standards-issue-panel">
+        <div class="standards-issue-empty">No triggered issues to map to cognitive accessibility guidance.</div>
+      </section>
+    `;
+  }
+
+  const rows = records.map(({ dimension, issue }, index) => {
+    const ruleId = issue.rule_id || "";
+    const count = issueFailingElementCount(issue);
+    const objective = issueCognitiveObjective(ruleId);
+    const isoClauses = issueIsoClauseTags(ruleId);
+    const users = issueAffectedUserTags(ruleId);
+    const rowNumber = index + 1;
+    return `
+      <details class="standards-issue-row">
+        <summary class="standards-issue-summary">
+          <span class="standards-cell standards-number">${rowNumber}</span>
+          <span class="standards-cell standards-issue-title">
+            <span class="standards-alert-icon" aria-hidden="true">!</span>
+            <span>
+              <strong>${escapeHtml(issue.title || "Review this issue")}</strong>
+              <small>${escapeHtml(displayIssueCategoryName(dimension.dimension))}</small>
+            </span>
+          </span>
+          <span class="standards-cell standards-count">
+            <span class="standards-count-pill">${count} element${count === 1 ? "" : "s"}</span>
+          </span>
+          <span class="standards-cell">${pillListMarkup(users, 2)}</span>
+          <span class="standards-cell">${pillListMarkup([objective], 1, "objective")}</span>
+          <span class="standards-cell standards-iso-cell">
+            ${pillListMarkup(isoClauses, 1, "iso")}
+            <span class="standards-expand-icon" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="standards-issue-details">
+          <section class="standards-detail-section">
+            <h4><span>1.</span> Failing elements on your website (${count}):</h4>
+            <div class="standards-failing-list">
+              ${failingElementsMarkup(issue)}
+            </div>
+          </section>
+          <section class="standards-detail-section">
+            <h4><span>2.</span> What does this mean?</h4>
+            <div class="standards-empty-detail" aria-label="What this means content pending"></div>
+          </section>
+          <section class="standards-detail-section">
+            <h4><span>3.</span> How to solve it:</h4>
+            <div class="standards-empty-detail large" aria-label="How to solve it content pending"></div>
+          </section>
+        </div>
+      </details>
+    `;
+  }).join("");
+
+  return `
+    <section class="standards-issue-panel" aria-label="Cognitive accessibility standards mapping">
+      <div class="standards-issue-header">
+        <span>#</span>
+        <span>Issue</span>
+        <span>Total Failing Elements</span>
+        <span>Disabilities Affected</span>
+        <span>WCAG Cognitive Guidance</span>
+        <span>ISO 9241-11</span>
+      </div>
+      <div class="standards-issue-rows">
+        ${rows}
+      </div>
+    </section>
   `;
 }
 
@@ -2114,6 +2352,8 @@ async function analyzeRenderedPreviewDocument(doc) {
     const selectedAfterRender = selectedIssueRecord();
     if (state.rightPanelMode === "detail" && selectedAfterRender) {
       renderIssueDetailPanel(selectedAfterRender.dimension.dimension, selectedAfterRender.issue.rule_id);
+    } else if (state.rightPanelMode === "summary") {
+      renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
     }
 
     const frameDoc = getPreviewDocument();
