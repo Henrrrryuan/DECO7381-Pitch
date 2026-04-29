@@ -540,15 +540,24 @@ function normalizedScore(score) {
   return Math.max(0, Math.min(100, Number(score) || 0));
 }
 
-function scoreBandClass(score) {
-  const value = normalizedScore(score);
-  if (value <= 33) {
-    return "score-low";
+function riskMetaFromScore(score) {
+  const riskIndex = 100 - normalizedScore(score);
+  if (riskIndex <= 25) {
+    return {
+      level: "Low risk",
+      className: "risk-low",
+    };
   }
-  if (value <= 66) {
-    return "score-mid";
+  if (riskIndex <= 60) {
+    return {
+      level: "Medium risk",
+      className: "risk-medium",
+    };
   }
-  return "score-high";
+  return {
+    level: "High risk",
+    className: "risk-high",
+  };
 }
 
 function renderDimensionBars(dimensionEntries) {
@@ -558,12 +567,12 @@ function renderDimensionBars(dimensionEntries) {
   }
 
   const dimensionRows = (dimensionEntries || []).map(({ name, score }) => {
-    const value = normalizedScore(score);
+    const riskMeta = riskMetaFromScore(score);
     const dimensionKey = displayDimensionName(name);
     const issueCategoryName = displayIssueCategoryName(name);
     const tooltipCopy = tooltipCopyForDimension(dimensionKey);
     return `
-      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" aria-label="Highlight ${escapeHtml(issueCategoryName)} on the website">
+      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" data-risk-level="${escapeHtml(riskMeta.level)}" aria-label="${escapeHtml(`${issueCategoryName}: ${riskMeta.level}. Highlight this category on the website.`)}">
         <span class="dimension-label-with-info">
           <span>${escapeHtml(issueCategoryName)}</span>
           <span
@@ -576,8 +585,7 @@ function renderDimensionBars(dimensionEntries) {
             data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
           >i</span>
         </span>
-        <div class="bar-track"><div class="bar-fill ${scoreBandClass(value)}" style="width:${value}%"></div></div>
-        <strong>${value}</strong>
+        <span class="risk-badge ${riskMeta.className}">${riskMeta.level}</span>
       </button>
     `;
   }).join("");
