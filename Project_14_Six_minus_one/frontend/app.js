@@ -1384,6 +1384,19 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
 
   const { dimension, issue } = selected;
   const model = issueDisplayModel(issue, dimension.dimension);
+  const affectedUserPills = model.affectedUsers
+    .map((group) => `<span class="user-group-chip">${escapeHtml(group)}</span>`)
+    .join("");
+  const userGuidanceCards = [
+    ["ADHD users", model.userRecommendations.ADHD],
+    ["Dyslexia users", model.userRecommendations.Dyslexia],
+    ["Autistic users", model.userRecommendations.Autism],
+  ].map(([group, guidance]) => `
+    <div class="user-guidance-card">
+      <strong>${escapeHtml(group)}</strong>
+      <p>${escapeHtml(guidance)}</p>
+    </div>
+  `).join("");
   state.rightPanelMode = "detail";
   setWorkspaceMode("explanation");
   updateActiveHighlightButtons();
@@ -1399,36 +1412,40 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
         type="button"
         data-view-on-page="${escapeHtml(issue.rule_id)}"
         data-view-dimension="${escapeHtml(dimension.dimension)}"
-      >View on page</button>
+      >Show on page</button>
     </div>
-    <strong>Issue Detail: ${escapeHtml(model.issueTitle)}</strong>
-    <span>${escapeHtml(conciseText(model.cognitiveImpact, "This issue may increase cognitive load for users.", 220))}</span>
-    <div class="recommended-fix-callout">
-      <span>Recommended first change</span>
+    <section class="issue-detail-problem" aria-label="Issue problem">
+      <span class="issue-detail-label">Problem</span>
+      <h3>${escapeHtml(model.issueTitle)}</h3>
+      <p>${escapeHtml(conciseText(model.cognitiveImpact, "This issue may increase cognitive load for users.", 220))}</p>
+    </section>
+    <div class="issue-detail-meta-grid">
+      <div class="issue-detail-meta-card">
+        <span>Location</span>
+        <strong>${escapeHtml(model.evidence)}</strong>
+      </div>
+      <div class="issue-detail-meta-card">
+        <span>Most affected</span>
+        <div class="user-group-chip-list">${affectedUserPills}</div>
+      </div>
+    </div>
+    <div class="recommended-fix-callout redesign-move">
+      <span>First redesign move</span>
       <p>${escapeHtml(model.firstFix)}</p>
     </div>
   `;
 
   comparisonList.className = "comparison-list issue-detail-panel";
   comparisonList.innerHTML = `
-    <article class="priority-card">
-      <span class="priority-eyebrow">Evidence</span>
-      <p>${escapeHtml(model.evidence)}</p>
-      <span class="supporting-label">Why it matters</span>
+    <article class="priority-card explanation-card">
+      <span class="priority-eyebrow">Why this matters</span>
       <p>${escapeHtml(model.whyItMatters)}</p>
     </article>
 
-    <article class="priority-card">
-      <span class="priority-eyebrow">Affected user groups</span>
-      <p>${escapeHtml(model.affectedUsers.join(", "))}</p>
-    </article>
-
-    <article class="priority-card">
-      <span class="priority-eyebrow">User-specific recommendations</span>
-      <div class="recommendation-stack">
-        <p><strong>ADHD users:</strong> ${escapeHtml(model.userRecommendations.ADHD)}</p>
-        <p><strong>Dyslexia users:</strong> ${escapeHtml(model.userRecommendations.Dyslexia)}</p>
-        <p><strong>Autistic users:</strong> ${escapeHtml(model.userRecommendations.Autism)}</p>
+    <article class="priority-card guidance-card">
+      <span class="priority-eyebrow">Guidance by user group</span>
+      <div class="recommendation-grid">
+        ${userGuidanceCards}
       </div>
     </article>
 
@@ -1623,7 +1640,7 @@ function setWorkspaceMode(mode) {
   websiteView.classList.toggle("is-active", isWebsite);
   toggle.textContent = isWebsite
     ? (state.selectedIssueId ? "Back to issue details" : "Back to summary")
-    : (state.selectedIssueId ? "View selected issue on page" : "Click to view the website");
+    : (state.selectedIssueId ? "Show selected issue on page" : "Click to view the website");
 
   if (isWebsite) {
     updatePreviewIssueHeader();

@@ -2565,16 +2565,101 @@ button.dimension-row.is-linked-active .bar-track {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .issue-detail-heading span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.issue-detail-summary {
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.issue-detail-problem {
+  display: grid;
+  gap: 6px;
+  max-width: 980px;
+}
+
+.issue-detail-label {
+  color: #526174;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issue-detail-problem h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 21px;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.issue-detail-problem p {
+  max-width: 1000px;
+  margin: 0;
+  color: #243044;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.issue-detail-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1fr);
+  gap: 10px;
+}
+
+.issue-detail-meta-card {
+  display: grid;
+  gap: 7px;
+  min-height: 74px;
+  padding: 12px 14px;
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.issue-detail-meta-card > span {
+  color: #5a687a;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.issue-detail-meta-card strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.user-group-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.user-group-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #263447;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .issue-detail-panel {
@@ -2583,16 +2668,20 @@ button.dimension-row.is-linked-active .bar-track {
 
 .recommended-fix-callout {
   display: grid;
-  gap: 4px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border: 1px solid rgba(47, 111, 235, 0.18);
-  border-radius: 14px;
+  gap: 7px;
+  margin-top: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(47, 111, 235, 0.22);
+  border-left: 4px solid var(--accent);
+  border-radius: 16px;
   background: #fff;
 }
 
-.recommended-fix-callout span,
-.supporting-label {
+.recommended-fix-callout.redesign-move {
+  background: linear-gradient(135deg, #ffffff, #f8fbff);
+}
+
+.recommended-fix-callout span {
   color: #536071;
   font-size: 11px;
   font-weight: 850;
@@ -2603,22 +2692,49 @@ button.dimension-row.is-linked-active .bar-track {
 .recommended-fix-callout p {
   margin: 0;
   color: var(--ink);
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.supporting-label {
-  display: block;
-  margin: 12px 0 6px;
+.explanation-card,
+.guidance-card {
+  background: #fff;
 }
 
-.recommendation-stack {
+.explanation-card p {
+  max-width: 1100px;
+  margin: 0;
+  color: #243044;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.recommendation-grid {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.recommendation-stack p {
+.user-guidance-card {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 14px;
+  background: #fbfcff;
+}
+
+.user-guidance-card strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.user-guidance-card p {
   margin: 0;
+  color: #39465a;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .supporting-standards {
@@ -3179,6 +3295,11 @@ button.dimension-row.is-linked-active .bar-track {
     margin-top: 24px;
   }
 
+  .issue-detail-meta-grid,
+  .recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+
   .history-pagination {
     align-items: flex-start;
     flex-direction: column;
@@ -3247,6 +3368,14 @@ button.dimension-row.is-linked-active .bar-track {
   .workspace-panels {
     display: flex;
     flex-direction: column;
+  }
+
+  .issue-detail-summary {
+    padding: 14px;
+  }
+
+  .issue-detail-problem h3 {
+    font-size: 18px;
   }
 
   .assistant-floating-window {
