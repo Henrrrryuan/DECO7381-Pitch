@@ -1174,10 +1174,11 @@ body.analysis-loading-active {
 }
 
 .risk-level-hint {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: left;
 }
 
 .dimension-row {
@@ -1217,9 +1218,9 @@ body.analysis-loading-active {
 }
 
 .risk-badge.risk-medium {
-  border-color: rgba(146, 64, 14, 0.18);
+  border-color: rgba(120, 53, 15, 0.22);
   background: #fff7d6;
-  color: #92400e;
+  color: #78350f;
 }
 
 .risk-badge.risk-high {
@@ -1538,7 +1539,7 @@ button.dimension-row.is-linked-active {
 .standards-issue-header,
 .standards-issue-summary {
   display: grid;
-  grid-template-columns: 34px minmax(250px, 1.65fr) minmax(132px, 0.7fr) minmax(150px, 0.74fr) minmax(210px, 1fr) minmax(150px, 0.76fr);
+  grid-template-columns: 34px minmax(340px, 2.2fr) minmax(132px, 0.75fr) minmax(150px, 0.8fr) minmax(210px, 1fr) minmax(150px, 0.8fr);
   align-items: center;
   gap: 14px;
 }
@@ -1591,10 +1592,7 @@ button.dimension-row.is-linked-active {
 }
 
 .standards-issue-title {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: center;
-  gap: 11px;
+  display: block;
   color: #172033;
   font-size: 14px;
   line-height: 1.45;
