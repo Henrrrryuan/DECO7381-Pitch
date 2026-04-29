@@ -1296,22 +1296,19 @@ function issueDisplayModel(issue, dimensionName) {
 
 function updatePreviewIssueHeader() {
   const titleNode = document.getElementById("previewIssueTitle");
-  const detailsButton = document.getElementById("previewDetailsButton");
   const selected = selectedIssueRecord();
-  if (!titleNode || !detailsButton) {
+  if (!titleNode) {
     return;
   }
 
   if (!selected) {
     titleNode.textContent = "No issue selected";
-    detailsButton.hidden = true;
     setWebsiteStatus("Select an issue and choose Show on page to highlight it in the preview.");
     return;
   }
 
   const model = issueDisplayModel(selected.issue, selected.dimension.dimension);
   titleNode.textContent = `Highlighted issue: ${model.issueTitle}`;
-  detailsButton.hidden = false;
 }
 
 function issueHighlightElements(frameDoc, issue, dimensionName) {
@@ -1405,14 +1402,7 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
   comparisonSummary.className = "comparison-summary priority issue-detail-summary";
   comparisonSummary.innerHTML = `
     <div class="issue-detail-heading">
-      <button class="back-to-summary-button" type="button" data-back-to-summary>Back to Summary</button>
       <span>${escapeHtml(model.issueCategory)}</span>
-      <button
-        class="view-on-page-button compact"
-        type="button"
-        data-view-on-page="${escapeHtml(issue.rule_id)}"
-        data-view-dimension="${escapeHtml(dimension.dimension)}"
-      >Show on page</button>
     </div>
     <section class="issue-detail-problem" aria-label="Issue problem">
       <span class="issue-detail-label">Problem</span>
@@ -1456,17 +1446,6 @@ function renderIssueDetailPanel(dimensionName, ruleId) {
       </ul>
     </details>
   `;
-}
-
-function backToSummaryPanel() {
-  state.selectedIssueId = "";
-  state.rightPanelMode = "summary";
-  state.activeHighlightIssueId = "";
-  state.activeHighlightDimension = "";
-  clearWebsiteHighlights();
-  updateActiveHighlightButtons();
-  setWorkspaceMode("explanation");
-  renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
 }
 
 function renderIssuePreviewPanel(dimensionName, ruleId) {
@@ -1580,7 +1559,7 @@ function renderExplanation(result) {
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
     const summary = issueCount === 0
       ? "No triggered issues in this category."
-      : `${issueCount} issue${issueCount === 1 ? "" : "s"} found · ${cognitiveDimension}`;
+      : cognitiveDimension;
 
     const issues = issueCount
       ? `<div class="issue-highlight-list">${dimension.issues.map((issue, issueIndex) => (
@@ -1639,8 +1618,8 @@ function setWorkspaceMode(mode) {
   explanationView.classList.toggle("is-active", !isWebsite);
   websiteView.classList.toggle("is-active", isWebsite);
   toggle.textContent = isWebsite
-    ? (state.selectedIssueId ? "Back to issue details" : "Back to summary")
-    : (state.selectedIssueId ? "Show selected issue on page" : "Click to view the website");
+    ? "Back to summary"
+    : "Show selected issue on page";
 
   if (isWebsite) {
     updatePreviewIssueHeader();
@@ -1991,7 +1970,10 @@ function updateActiveHighlightButtons() {
 
   document.querySelectorAll("[data-view-on-page]").forEach((button) => {
     const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewOnPage);
-    const isActive = issueId === state.selectedIssueId && state.rightPanelMode === "preview";
+    const isActive = (
+      issueId === state.selectedIssueId
+      && state.rightPanelMode !== "detail"
+    );
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
@@ -2679,19 +2661,16 @@ function bindEvents() {
   if (websiteViewToggle) {
     websiteViewToggle.addEventListener("click", () => {
       if (state.workspaceMode === "website") {
+        state.rightPanelMode = "summary";
+        state.activeHighlightIssueId = "";
+        state.activeHighlightDimension = "";
+        clearWebsiteHighlights();
+        updateActiveHighlightButtons();
         setWorkspaceMode("explanation");
-        if (state.selectedIssueId && state.rightPanelMode === "preview") {
-          const selected = selectedIssueRecord();
-          if (selected) {
-            renderIssueDetailPanel(selected.dimension.dimension, selected.issue.rule_id);
-          }
-        } else {
-          renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
-        }
+        renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
         return;
       }
 
-      state.rightPanelMode = "preview";
       setWorkspaceMode("website");
       if (state.selectedIssueId) {
         highlightSelectedIssueInPreview();
@@ -2713,7 +2692,6 @@ function bindEvents() {
     dimensionBars.addEventListener("click", (event) => {
       const trigger = event.target.closest("[data-highlight-dimension]");
       if (trigger) {
-        highlightDimension(trigger.dataset.highlightDimension);
         focusExplanationDimension(trigger.dataset.dimensionKey || trigger.dataset.highlightDimension);
       }
     });
@@ -2761,24 +2739,20 @@ function bindEvents() {
     if (detailTrigger) {
       event.preventDefault();
       event.stopPropagation();
-      renderIssueDetailPanel(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
-      return;
-    }
-
-    const selectedDetailsTrigger = event.target.closest("[data-view-selected-details]");
-    if (selectedDetailsTrigger) {
-      event.preventDefault();
-      const selected = selectedIssueRecord();
-      if (selected) {
-        renderIssueDetailPanel(selected.dimension.dimension, selected.issue.rule_id);
+      const issueId = issueDomId(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
+      const isSameIssueDetail = (
+        state.selectedIssueId === issueId
+        && state.rightPanelMode === "detail"
+        && state.workspaceMode !== "website"
+      );
+      if (isSameIssueDetail) {
+        state.rightPanelMode = "preview";
+        setWorkspaceMode("website");
+        highlightSelectedIssueInPreview();
+        updateActiveHighlightButtons();
+        return;
       }
-      return;
-    }
-
-    const backTrigger = event.target.closest("[data-back-to-summary]");
-    if (backTrigger) {
-      event.preventDefault();
-      backToSummaryPanel();
+      renderIssueDetailPanel(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
       return;
     }
 
@@ -2846,6 +2820,8 @@ async function init() {
     currentSession.html || currentSession.payload.html_content || "",
   );
   renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
+  // Default first entry to the raw website preview.
+  setWorkspaceMode("website");
   startBackgroundRenderedAnalysis();
 
   if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {

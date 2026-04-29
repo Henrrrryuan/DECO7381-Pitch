@@ -2113,8 +2113,8 @@ button.dimension-row.is-linked-active .bar-track {
 
 .website-preview-view.is-active {
   height: 100%;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
   margin-top: 12px;
 }
 
