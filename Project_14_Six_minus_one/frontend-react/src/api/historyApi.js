@@ -1,43 +1,64 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
+// This module is the only place where the Vite History page talks to the
+// FastAPI backend. Components call these functions instead of building fetch
+// requests directly, which keeps backend communication separate from UI code.
+const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
 
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
+async function fetchJsonResponse(requestUrl, requestOptions = {}) {
+  const response = await fetch(requestUrl, requestOptions);
   if (!response.ok) {
-    let detail = `Request failed with status ${response.status}`;
+    let errorMessage = `Request failed with status ${response.status}`;
     try {
-      const payload = await response.json();
-      if (payload?.detail) {
-        detail = payload.detail;
+      const responsePayload = await response.json();
+      if (responsePayload?.detail) {
+        errorMessage = responsePayload.detail;
       }
     } catch (error) {
       // Keep the fallback status message when the response body is not JSON.
     }
-    throw new Error(detail);
+    throw new Error(errorMessage);
   }
   return response.json();
 }
 
-export function buildPagedUrl(path, page, query, pageSize) {
-  const params = new URLSearchParams({
+// Build the paginated URL used by both the report history table and the
+// eye-tracking evidence table. The backend uses limit/offset pagination.
+export function buildPagedUrl(endpointPath, pageNumber, searchQuery, pageSize) {
+  const searchParameters = new URLSearchParams({
     limit: String(pageSize),
-    offset: String((Math.max(1, page) - 1) * pageSize),
+    offset: String((Math.max(1, pageNumber) - 1) * pageSize),
   });
 
-  if (query) {
-    params.set("query", query);
+  if (searchQuery) {
+    searchParameters.set("query", searchQuery);
   }
 
-  return `${API_BASE}${path}?${params.toString()}`;
+  return `${BACKEND_API_BASE_URL}${endpointPath}?${searchParameters.toString()}`;
 }
 
-export function fetchReportHistory({ page, query, pageSize, signal }) {
-  return fetchJson(buildPagedUrl("/history", page, query, pageSize), { signal });
+export function fetchReportHistory({
+  pageNumber,
+  searchQuery,
+  pageSize,
+  abortSignal,
+}) {
+  return fetchJsonResponse(
+    buildPagedUrl("/history", pageNumber, searchQuery, pageSize),
+    { signal: abortSignal },
+  );
 }
 
-export function fetchEyeHistory({ page, query, pageSize, signal }) {
-  return fetchJson(buildPagedUrl("/eye/sessions", page, query, pageSize), { signal });
+export function fetchEyeHistory({
+  pageNumber,
+  searchQuery,
+  pageSize,
+  abortSignal,
+}) {
+  return fetchJsonResponse(
+    buildPagedUrl("/eye/sessions", pageNumber, searchQuery, pageSize),
+    { signal: abortSignal },
+  );
 }
 
-export function fetchReportDetail(runId) {
-  return fetchJson(`${API_BASE}/history/${runId}`);
+export function fetchReportDetail(reportRunId) {
+  return fetchJsonResponse(`${BACKEND_API_BASE_URL}/history/${reportRunId}`);
 }

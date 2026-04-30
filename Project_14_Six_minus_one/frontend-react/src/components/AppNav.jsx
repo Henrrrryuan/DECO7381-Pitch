@@ -1,4 +1,6 @@
 export function AppNav() {
+  // Keep the shared product navigation in one component so the Vite page can
+  // match the older static pages while History is migrated first.
   return (
     <header className="app-nav">
       <div className="app-nav-inner">

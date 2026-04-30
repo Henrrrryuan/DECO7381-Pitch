@@ -2,15 +2,17 @@ import { EyeRows } from "./EyeRows.jsx";
 import { Pagination } from "./Pagination.jsx";
 
 export function EyeHistoryPanel({
-  items,
-  total,
-  page,
+  eyeSessionItems,
+  totalEyeSessions,
+  currentPage,
   pageSize,
   status,
-  query,
+  searchQuery,
   onPageChange,
 }) {
-  const emptyMessage = query
+  // Eye-tracking evidence is shown as supporting context beside the main report
+  // history, but it keeps its own pagination because the datasets can differ.
+  const emptyMessage = searchQuery
     ? "No eye-tracking evidence sessions match the current search."
     : "No eye-tracking evidence sessions have been saved yet.";
 
@@ -35,16 +37,20 @@ export function EyeHistoryPanel({
       </div>
 
       <div id="eyeHistoryList" className="history-table-body">
-        <EyeRows items={items} status={status} emptyMessage={emptyMessage} />
+        <EyeRows
+          eyeSessionItems={eyeSessionItems}
+          status={status}
+          emptyMessage={emptyMessage}
+        />
       </div>
 
       <Pagination
-        id="eyeHistoryPagination"
+        containerId="eyeHistoryPagination"
         ariaLabel="Eye-tracking evidence pagination"
-        page={page}
-        total={total}
+        currentPage={currentPage}
+        totalItems={totalEyeSessions}
         pageSize={pageSize}
-        itemLabel="sessions"
+        itemLabelText="sessions"
         onPageChange={onPageChange}
       />
     </section>

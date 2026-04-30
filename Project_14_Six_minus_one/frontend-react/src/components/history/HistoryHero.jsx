@@ -1,4 +1,6 @@
 export function HistoryHero() {
+  // This hero gives the page a clear purpose before the user reaches the two
+  // history tables below it.
   return (
     <section className="history-hero">
       <p className="upload-kicker">History</p>

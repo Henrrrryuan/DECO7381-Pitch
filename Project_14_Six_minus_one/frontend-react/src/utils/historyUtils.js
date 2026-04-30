@@ -1,55 +1,62 @@
 const DASHBOARD_STORAGE_KEY = "cognilens-dashboard-session";
 
+// Convert backend ISO timestamps into the user's local date/time format.
 export function formatDate(value) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
     return value || "";
   }
-  return parsed.toLocaleString();
+  return parsedDate.toLocaleString();
 }
 
-export function formatDuration(ms) {
-  const totalSeconds = Math.max(0, Math.round((Number(ms) || 0) / 1000));
+// Format saved eye-tracking session duration in a compact readable form.
+export function formatDuration(durationMilliseconds) {
+  const totalSeconds = Math.max(0, Math.round((Number(durationMilliseconds) || 0) / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
-export function formatShortId(id, prefix = "") {
-  const value = String(id || "").trim();
-  if (!value) {
+// Show the same short ID format used by the original frontend: prefix plus the
+// first six uppercase characters, while full IDs stay available in title text.
+export function formatShortId(fullIdentifier, prefix = "") {
+  const identifierText = String(fullIdentifier || "").trim();
+  if (!identifierText) {
     return "-";
   }
-  return `${prefix}${value.slice(0, 6).toUpperCase()}`;
+  return `${prefix}${identifierText.slice(0, 6).toUpperCase()}`;
 }
 
+// Shared pagination helpers used by both report history and eye evidence.
 export function getTotalPages(total, pageSize) {
   return Math.max(1, Math.ceil((Number(total) || 0) / pageSize));
 }
 
-export function getPageOffset(page, pageSize) {
-  return (Math.max(1, Number(page) || 1) - 1) * pageSize;
+export function getPageOffset(pageNumber, pageSize) {
+  return (Math.max(1, Number(pageNumber) || 1) - 1) * pageSize;
 }
 
-export function buildCurrentSession(detail) {
-  const sourceName = detail.run?.source_name || "history-item";
+// Convert a full report detail response into the sessionStorage shape expected
+// by the existing vanilla Dashboard page.
+export function buildCurrentSession(reportDetail) {
+  const sourceName = reportDetail.run?.source_name || "history-item";
   const sourceUrl = /^https?:\/\//i.test(sourceName) ? sourceName : "";
   return {
     current: {
       payload: {
-        ...detail.analysis,
-        run: detail.run,
+        ...reportDetail.analysis,
+        run: reportDetail.run,
       },
-      html: detail.html_content || "",
+      html: reportDetail.html_content || "",
       sourceName,
       sourceUrl,
-      savedAt: detail.run?.created_at || new Date().toISOString(),
+      savedAt: reportDetail.run?.created_at || new Date().toISOString(),
     },
     previous: null,
     sourceUrl,
   };
 }
 
-export function saveDashboardSession(payload) {
-  sessionStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(payload));
+export function saveDashboardSession(dashboardSessionPayload) {
+  sessionStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardSessionPayload));
 }

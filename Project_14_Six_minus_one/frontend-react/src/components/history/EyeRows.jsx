@@ -4,7 +4,9 @@ import {
   formatShortId,
 } from "../../utils/historyUtils.js";
 
-export function EyeRows({ items, status, emptyMessage }) {
+export function EyeRows({ eyeSessionItems, status, emptyMessage }) {
+  // This row component converts raw eye-session records into short IDs and
+  // compact evidence metadata for scanning in the history page.
   if (status.loading) {
     return <p className="history-empty">Loading eye-tracking evidence...</p>;
   }
@@ -13,32 +15,32 @@ export function EyeRows({ items, status, emptyMessage }) {
     return <p className="history-empty">{status.error}</p>;
   }
 
-  if (!items.length) {
+  if (!eyeSessionItems.length) {
     return <p className="history-empty">{emptyMessage}</p>;
   }
 
-  return items.map((item) => {
-    const coverage = Number(item.coverage_percent ?? 0).toFixed(1);
-    const relatedRun = item.run_id ? formatShortId(item.run_id, "R-") : "-";
-    const sessionMeta = `${formatDate(item.created_at)} / ${item.sample_count} samples / ${formatDuration(item.duration_ms)}`;
+  return eyeSessionItems.map((eyeSession) => {
+    const coveragePercentText = Number(eyeSession.coverage_percent ?? 0).toFixed(1);
+    const relatedReportId = eyeSession.run_id ? formatShortId(eyeSession.run_id, "R-") : "-";
+    const sessionMetadata = `${formatDate(eyeSession.created_at)} / ${eyeSession.sample_count} samples / ${formatDuration(eyeSession.duration_ms)}`;
 
     return (
-      <article className="history-eye-row" key={item.session_id}>
-        <span className="history-cell history-id" title={item.session_id}>
-          {formatShortId(item.session_id, "E-")}
+      <article className="history-eye-row" key={eyeSession.session_id}>
+        <span className="history-cell history-id" title={eyeSession.session_id}>
+          {formatShortId(eyeSession.session_id, "E-")}
         </span>
         <span className="history-cell history-eye-target">
-          <strong title={item.source_name}>{item.source_name}</strong>
-          {item.target_url ? (
-            <small title={item.target_url}>{item.target_url}</small>
+          <strong title={eyeSession.source_name}>{eyeSession.source_name}</strong>
+          {eyeSession.target_url ? (
+            <small title={eyeSession.target_url}>{eyeSession.target_url}</small>
           ) : (
             <small>No target URL saved</small>
           )}
-          <small>{sessionMeta}</small>
+          <small>{sessionMetadata}</small>
         </span>
-        <span className="history-cell score">{coverage}%</span>
-        <span className="history-cell history-id" title={item.run_id || ""}>
-          {relatedRun}
+        <span className="history-cell score">{coveragePercentText}%</span>
+        <span className="history-cell history-id" title={eyeSession.run_id || ""}>
+          {relatedReportId}
         </span>
       </article>
     );

@@ -1,4 +1,6 @@
 export function HistorySearch({ queryInput, onQueryInputChange, onSearch }) {
+  // The same search term is shared by report history and eye-tracking evidence
+  // so users can look up a file name, Report ID, or Evidence ID from one place.
   return (
     <section className="history-toolbar" aria-label="History search">
       <label className="history-search-label" htmlFor="historySearchInput">
@@ -20,7 +22,7 @@ export function HistorySearch({ queryInput, onQueryInputChange, onSearch }) {
           type="submit"
           aria-label="Search reports"
         >
-          <span aria-hidden="true">🔍</span>
+          <span aria-hidden="true">Search</span>
         </button>
       </form>
     </section>

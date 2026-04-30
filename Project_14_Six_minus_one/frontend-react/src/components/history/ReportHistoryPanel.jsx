@@ -2,16 +2,18 @@ import { Pagination } from "./Pagination.jsx";
 import { ReportRows } from "./ReportRows.jsx";
 
 export function ReportHistoryPanel({
-  items,
-  total,
-  page,
+  reportItems,
+  totalReports,
+  currentPage,
   pageSize,
   status,
-  query,
+  searchQuery,
   onPageChange,
   onOpenReport,
 }) {
-  const emptyMessage = query
+  // This panel owns only the report history table layout. Fetching and search
+  // state stay in HistoryPage so this component remains easy to test and reuse.
+  const emptyMessage = searchQuery
     ? "No reports match the current file name or ID search."
     : "No analysis history has been saved yet.";
 
@@ -27,7 +29,7 @@ export function ReportHistoryPanel({
 
       <div id="historyList" className="history-table-body">
         <ReportRows
-          items={items}
+          reportItems={reportItems}
           status={status}
           emptyMessage={emptyMessage}
           onOpenReport={onOpenReport}
@@ -35,12 +37,12 @@ export function ReportHistoryPanel({
       </div>
 
       <Pagination
-        id="historyPagination"
+        containerId="historyPagination"
         ariaLabel="Report history pagination"
-        page={page}
-        total={total}
+        currentPage={currentPage}
+        totalItems={totalReports}
         pageSize={pageSize}
-        itemLabel="reports"
+        itemLabelText="reports"
         onPageChange={onPageChange}
       />
     </section>

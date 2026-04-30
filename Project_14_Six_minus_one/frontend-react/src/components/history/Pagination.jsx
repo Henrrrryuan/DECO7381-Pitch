@@ -6,42 +6,48 @@ import {
 } from "../../utils/historyUtils.js";
 
 export function Pagination({
-  id,
+  containerId,
   ariaLabel,
-  page,
-  total,
+  currentPage,
+  totalItems,
   pageSize,
-  itemLabel,
+  itemLabelText,
   onPageChange,
 }) {
-  const totalPages = getTotalPages(total, pageSize);
-  const safePage = Math.min(Math.max(1, Number(page) || 1), totalPages);
-  const startItem = total ? getPageOffset(safePage, pageSize) + 1 : 0;
-  const endItem = Math.min(getPageOffset(safePage, pageSize) + pageSize, total);
-  const [jumpPage, setJumpPage] = useState(String(safePage));
+  // Clamp the active page so browser state, API totals, and typed jump values
+  // cannot move the table outside the available page range.
+  const totalPages = getTotalPages(totalItems, pageSize);
+  const visiblePageNumber = Math.min(Math.max(1, Number(currentPage) || 1), totalPages);
+  const firstVisibleItemNumber = totalItems ? getPageOffset(visiblePageNumber, pageSize) + 1 : 0;
+  const lastVisibleItemNumber = Math.min(
+    getPageOffset(visiblePageNumber, pageSize) + pageSize,
+    totalItems,
+  );
+  const [typedPageNumber, setTypedPageNumber] = useState(String(visiblePageNumber));
 
   useEffect(() => {
-    setJumpPage(String(safePage));
-  }, [safePage, totalPages]);
+    setTypedPageNumber(String(visiblePageNumber));
+  }, [visiblePageNumber, totalPages]);
 
-  const jumpToPage = () => {
-    const nextPage = Math.min(Math.max(1, Number(jumpPage) || safePage), totalPages);
-    onPageChange(nextPage);
+  const goToTypedPage = () => {
+    const requestedPageNumber = Number(typedPageNumber) || visiblePageNumber;
+    const nextPageNumber = Math.min(Math.max(1, requestedPageNumber), totalPages);
+    onPageChange(nextPageNumber);
   };
 
   return (
-    <div id={id} className="history-pagination" aria-label={ariaLabel}>
+    <div id={containerId} className="history-pagination" aria-label={ariaLabel}>
       <div className="history-pagination-summary">
-        <strong>{`Page ${safePage} of ${totalPages}`}</strong>
-        <span>{`${startItem}-${endItem} of ${total} ${itemLabel}`}</span>
+        <strong>{`Page ${visiblePageNumber} of ${totalPages}`}</strong>
+        <span>{`${firstVisibleItemNumber}-${lastVisibleItemNumber} of ${totalItems} ${itemLabelText}`}</span>
       </div>
 
       <div className="history-pagination-controls">
         <button
           className="history-page-btn"
           type="button"
-          disabled={safePage <= 1}
-          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          disabled={visiblePageNumber <= 1}
+          onClick={() => onPageChange(Math.max(1, visiblePageNumber - 1))}
         >
           Previous
         </button>
@@ -53,27 +59,27 @@ export function Pagination({
             type="number"
             min="1"
             max={String(totalPages)}
-            value={jumpPage}
+            value={typedPageNumber}
             inputMode="numeric"
-            onChange={(event) => setJumpPage(event.target.value)}
+            onChange={(event) => setTypedPageNumber(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
-                jumpToPage();
+                goToTypedPage();
               }
             }}
           />
         </label>
 
-        <button className="history-page-btn" type="button" onClick={jumpToPage}>
+        <button className="history-page-btn" type="button" onClick={goToTypedPage}>
           Go
         </button>
 
         <button
           className="history-page-btn"
           type="button"
-          disabled={safePage >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          disabled={visiblePageNumber >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, visiblePageNumber + 1))}
         >
           Next
         </button>
