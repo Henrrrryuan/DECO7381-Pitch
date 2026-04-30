@@ -1787,9 +1787,6 @@ button.dimension-row.is-linked-active {
 .guidance-step-list li::before {
   counter-increment: guidance-step;
   content: counter(guidance-step);
-  position: absolute;
-  top: 1px;
-  left: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1800,6 +1797,41 @@ button.dimension-row.is-linked-active {
   color: #2f6feb;
   font-size: 14px;
   font-weight: 900;
+}
+
+.guidance-step-list li p {
+  margin: 0;
+}
+
+.guidance-step-priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 20px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.guidance-step-priority.must {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.guidance-step-priority.should {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.guidance-step-priority.could {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .standards-evidence-intro {

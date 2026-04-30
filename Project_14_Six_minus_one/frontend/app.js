@@ -1299,29 +1299,29 @@ function recommendedFixSteps(issue, dimensionName) {
   const category = displayDimensionName(dimensionName);
   if (ruleId.startsWith("RD") || category === "Readability") {
     return [
-      "Rewrite the affected text into shorter, single-idea sentences.",
-      "Replace dense or specialist wording with familiar terms where possible.",
-      "Use headings, bullets, or spacing so readers can scan before reading in full.",
+      { priority: "Must", text: "Rewrite the affected text into shorter, single-idea sentences." },
+      { priority: "Should", text: "Replace dense or specialist wording with familiar terms where possible." },
+      { priority: "Could", text: "Use headings, bullets, or spacing so readers can scan before reading in full." },
     ];
   }
   if (ruleId.startsWith("ID") || category === "Interaction & Distraction") {
     return [
-      "Remove automatic interruptions, autoplay, or motion that starts before users choose it.",
-      "Make overlays, chat prompts, and secondary actions user-triggered where possible.",
-      "Keep the primary task visible and stable while users are reading or deciding.",
+      { priority: "Must", text: "Remove automatic interruptions, autoplay, or motion that starts before users choose it." },
+      { priority: "Should", text: "Make overlays, chat prompts, and secondary actions user-triggered where possible." },
+      { priority: "Could", text: "Keep the primary task visible and stable while users are reading or deciding." },
     ];
   }
   if (ruleId.startsWith("CS") || category === "Consistency") {
     return [
-      "Use consistent headings, labels, and navigation patterns across related sections.",
-      "Make the next step predictable before asking users to act.",
-      "Avoid sudden layout or wording changes that force users to re-orient.",
+      { priority: "Must", text: "Use consistent headings, labels, and navigation patterns across related sections." },
+      { priority: "Should", text: "Make the next step predictable before asking users to act." },
+      { priority: "Could", text: "Avoid sudden layout or wording changes that force users to re-orient." },
     ];
   }
   return [
-    "Choose one primary reading path or task for this area.",
-    "Demote secondary banners, panels, media, or CTAs that compete with the main path.",
-    "Use Show highlighted location to check the highlighted areas after redesigning the layout.",
+    { priority: "Must", text: "Choose one primary reading path or task for this area." },
+    { priority: "Should", text: "Demote secondary banners, panels, media, or CTAs that compete with the main path." },
+    { priority: "Could", text: "Use Show highlighted location to check the highlighted areas after redesigning the layout." },
   ];
 }
 
@@ -1329,9 +1329,44 @@ function recommendedFixStepsMarkup(issue, dimensionName) {
   const steps = recommendedFixSteps(issue, dimensionName);
   return `
     <ol class="guidance-step-list">
-      ${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
+      ${steps.map((step) => `
+        <li>
+          <p>
+            <span class="guidance-step-priority ${escapeHtml(String(step.priority || "").toLowerCase())}">${escapeHtml(step.priority || "Step")}</span>
+            ${escapeHtml(step.text || "")}
+          </p>
+        </li>
+      `).join("")}
     </ol>
   `;
+}
+
+function issueGoalText(issue, dimensionName) {
+  const category = displayDimensionName(dimensionName);
+  if (category === "Readability") {
+    return "Keep sentences easy to scan, with one clear message per line.";
+  }
+  if (category === "Interaction & Distraction") {
+    return "Keep only essential motion and keep users in control of interruptions.";
+  }
+  if (category === "Consistency") {
+    return "Make navigation and next actions predictable across the page.";
+  }
+  return "Reduce competing focal points and support one dominant task path.";
+}
+
+function issueDoneWhenText(issue, dimensionName) {
+  const category = displayDimensionName(dimensionName);
+  if (category === "Readability") {
+    return "Done when key passages are short, clear, and scannable without re-reading.";
+  }
+  if (category === "Interaction & Distraction") {
+    return "Done when non-essential autoplay or pop-up interruptions are removed.";
+  }
+  if (category === "Consistency") {
+    return "Done when repeated UI patterns use consistent labels and interaction flow.";
+  }
+  return "Done when one clear primary focus is visible above the fold.";
 }
 
 function advancedDetailsMarkup(issue, ruleId, standards, isoClauses) {
@@ -1373,6 +1408,8 @@ function selectedIssueWorkspaceMarkup(record) {
   const isoClauses = issueIsoClauseTags(ruleId);
   const standards = frameworkMappingCopy(ruleId);
   const affectedCount = issueFailingElementCount(issue);
+  const goal = issueGoalText(issue, dimensionName);
+  const doneWhen = issueDoneWhenText(issue, dimensionName);
   return `
     <section class="issue-guidance-panel" aria-label="Selected issue guidance">
       <div class="issue-guidance-hero">
@@ -1382,7 +1419,7 @@ function selectedIssueWorkspaceMarkup(record) {
         <div class="issue-detail-problem">
           <span class="issue-detail-label">Selected issue</span>
           <h3>${escapeHtml(model.issueTitle)}</h3>
-          <p>Use these steps to redesign the selected issue. Exact locations are available from the issue card.</p>
+          <p>Follow the priority steps below, then verify changes with <strong>Show highlighted location</strong>.</p>
         </div>
         <div class="issue-brief-strip" aria-label="Issue summary">
           <div class="issue-brief-item">
@@ -1396,21 +1433,26 @@ function selectedIssueWorkspaceMarkup(record) {
             </div>
           </div>
           <div class="issue-brief-item">
-            <span>Guidance focus</span>
-            <strong>${escapeHtml(objective)}</strong>
+            <span>Redesign goal</span>
+            <strong>${escapeHtml(goal)}</strong>
           </div>
         </div>
       </div>
 
       <div class="issue-guidance-grid">
         <section class="guidance-card guidance-card-primary">
-          <span class="issue-detail-label">Recommended fix steps</span>
+          <span class="issue-detail-label">Recommended fix steps (priority order)</span>
           ${recommendedFixStepsMarkup(issue, dimensionName)}
         </section>
         <div class="issue-guidance-secondary">
           <section class="guidance-card">
             <span class="issue-detail-label">Why this matters</span>
             <p>${escapeHtml(model.whyItMatters)}</p>
+          </section>
+          <section class="guidance-card">
+            <span class="issue-detail-label">Done when</span>
+            <p>${escapeHtml(doneWhen)}</p>
+            <small>Expected impact: ${escapeHtml(objective)}</small>
           </section>
           <section class="guidance-card">
             <span class="issue-detail-label">Page evidence</span>
@@ -1736,7 +1778,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
           data-view-dimension="${escapeHtml(dimensionName)}"
           aria-label="Open this issue guidance in summary"
           aria-pressed="${isDetailActive ? "true" : "false"}"
-        >Read guidance</button>
+        >Open guidance</button>
       </div>
     </article>
   `;
