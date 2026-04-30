@@ -43,9 +43,12 @@ input {
 }
 
 .app-nav {
-  height: 64px;
-  background: linear-gradient(180deg, #101827 0%, #0c1220 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 70px;
+  background:
+    radial-gradient(circle at 15% -120%, rgba(88, 166, 255, 0.34), transparent 55%),
+    linear-gradient(180deg, #0f1728 0%, #0a1120 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.32);
   color: #fff;
 }
 
@@ -53,11 +56,11 @@ input {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 0 12px 0 2px;
+  padding: 0 14px 0 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
 }
 
 .app-brand {
@@ -69,48 +72,91 @@ input {
 }
 
 .app-brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   display: inline-grid;
   place-items: center;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #4cc9ff 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 197, 255, 0.45);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.56), transparent 55%),
+    linear-gradient(140deg, #1d4ed8 0%, #2f75ff 52%, #33b6ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 8px 16px rgba(14, 116, 245, 0.38);
   font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
 }
 
 .app-brand-name {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
+  text-shadow: 0 2px 8px rgba(15, 23, 42, 0.5);
 }
 
 .app-nav-links {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 9px;
   margin-left: auto;
 }
 
-.app-nav-links a {
-  color: rgba(255, 255, 255, 0.84);
+.app-nav-links a,
+.app-nav-links button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: rgba(15, 23, 42, 0.3);
+  color: rgba(241, 245, 249, 0.88);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: all 180ms ease;
 }
 
-.app-nav-links a:hover {
+.app-nav-links a:hover,
+.app-nav-links button:hover {
+  transform: translateY(-1px);
   color: #fff;
+  border-color: rgba(147, 197, 253, 0.5);
+  background: rgba(30, 41, 59, 0.65);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.35);
 }
 
-.app-nav-links a.active-link {
+.app-nav-links a.active-link,
+.app-nav-links a.active,
+.app-nav-links button.active-link,
+.app-nav-links button.active {
   color: #fff;
+  border-color: rgba(125, 211, 252, 0.72);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.66), rgba(56, 189, 248, 0.62));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 22px rgba(30, 64, 175, 0.38);
 }
 
 .nav-cta {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  border-color: rgba(125, 211, 252, 0.72) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 56%, #0ea5e9 100%) !important;
   color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 20px rgba(30, 64, 175, 0.38);
+}
+
+button.nav-cta {
+  border-width: 1px;
+  font: inherit;
+  cursor: pointer;
 }
 
 .upload-body {

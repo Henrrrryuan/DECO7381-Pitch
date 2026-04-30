@@ -10,6 +10,7 @@ import {
 
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const MIN_LOADING_TIME_MS = 2600;
+const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 
 const loadingMessage = document.getElementById("analysisLoadingMessage");
 const loadingPercent = document.getElementById("analysisLoadingPercent");
@@ -17,6 +18,26 @@ const loadingProgressBar = document.getElementById("analysisLoadingProgressBar")
 const loadingError = document.getElementById("analysisLoadingError");
 
 let displayedProgress = 8;
+
+function initBackToAnalysisButton() {
+  const backButton = document.getElementById("backToAnalysisButton");
+  if (!backButton) {
+    return;
+  }
+  let returnUrl = "";
+  try {
+    returnUrl = sessionStorage.getItem(ANALYSIS_RETURN_URL_STORAGE_KEY) || "";
+  } catch (_) {
+    returnUrl = "";
+  }
+  if (!returnUrl) {
+    return;
+  }
+  backButton.hidden = false;
+  backButton.addEventListener("click", () => {
+    window.location.href = returnUrl;
+  });
+}
 
 function setMessage(message) {
   loadingMessage.textContent = "";
@@ -177,4 +198,5 @@ async function runPendingAnalysis() {
   }
 }
 
+initBackToAnalysisButton();
 runPendingAnalysis();

@@ -22,6 +22,7 @@ const heatCtx = heatmapCanvas.getContext("2d");
 const coverageCtx = coverageCanvas.getContext("2d");
 const queryParams = new URLSearchParams(window.location.search);
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
+const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 
 const state = {
   started: false,
@@ -174,6 +175,26 @@ function persistPreferredTargetUrl(url) {
   } catch (_) {
     // Ignore localStorage failures and keep the current in-memory target URL.
   }
+}
+
+function initBackToAnalysisButton() {
+  const backButton = document.getElementById("backToAnalysisButton");
+  if (!backButton) {
+    return;
+  }
+  let returnUrl = "";
+  try {
+    returnUrl = sessionStorage.getItem(ANALYSIS_RETURN_URL_STORAGE_KEY) || "";
+  } catch (_) {
+    returnUrl = "";
+  }
+  if (!returnUrl) {
+    return;
+  }
+  backButton.hidden = false;
+  backButton.addEventListener("click", () => {
+    window.location.href = returnUrl;
+  });
 }
 
 function setFrameHint(text) {
@@ -928,6 +949,7 @@ setPreviewVisibility(false);
 setTrackingControlsEnabled(false);
 
 const preferredTargetUrl = readPreferredTargetUrl();
+initBackToAnalysisButton();
 if (urlInput && preferredTargetUrl) {
   urlInput.value = preferredTargetUrl;
 }

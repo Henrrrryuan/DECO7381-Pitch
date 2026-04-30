@@ -38,6 +38,7 @@ const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
 const SIDEBAR_WIDTH_STORAGE_KEY = "cognilens.sidebar.width";
 const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
+const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 const DEFAULT_SIDEBAR_WIDTH = 360;
 const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 560;
@@ -2705,6 +2706,34 @@ function initAssistantFloating() {
 function initPreviewMessageBridge() {
 }
 
+function rememberAnalysisReturnUrl() {
+  try {
+    sessionStorage.setItem(ANALYSIS_RETURN_URL_STORAGE_KEY, window.location.href);
+  } catch (_) {
+    // Ignore sessionStorage errors.
+  }
+}
+
+function initBackToAnalysisButton() {
+  const backButton = document.getElementById("backToAnalysisButton");
+  if (!backButton) {
+    return;
+  }
+  let returnUrl = "";
+  try {
+    returnUrl = sessionStorage.getItem(ANALYSIS_RETURN_URL_STORAGE_KEY) || "";
+  } catch (_) {
+    returnUrl = "";
+  }
+  if (!returnUrl) {
+    return;
+  }
+  backButton.hidden = false;
+  backButton.addEventListener("click", () => {
+    window.location.href = returnUrl;
+  });
+}
+
 function bindEvents() {
   const printButton = document.getElementById("printReportBtn");
   const assistantForm = document.getElementById("assistantForm");
@@ -2714,10 +2743,12 @@ function bindEvents() {
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
+  const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
   initSidebarResize();
   initAssistantFloating();
   initPreviewMessageBridge();
   initDimensionInfoTooltip();
+  initBackToAnalysisButton();
 
   if (printButton) {
     printButton.addEventListener("click", () => {
@@ -2745,6 +2776,20 @@ function bindEvents() {
   if (sidebarToggleButton) {
     sidebarToggleButton.addEventListener("click", handleSidebarToggle);
   }
+
+  navLinks.forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    if (
+      href === "/eye/" ||
+      href.includes("127.0.0.1:8001/eye/") ||
+      href.endsWith("/history.html") ||
+      href.endsWith("/docs.html") ||
+      href === "./history.html" ||
+      href === "./docs.html"
+    ) {
+      link.addEventListener("click", rememberAnalysisReturnUrl);
+    }
+  });
 
   document.querySelectorAll("[data-highlight-dimension]").forEach((button) => {
     button.addEventListener("click", () => {

@@ -12,6 +12,7 @@ const state = {
 };
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
+const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 
 const workflowOptions = Array.from(document.querySelectorAll("[data-workflow-option]"));
 const workflowPanels = Array.from(document.querySelectorAll("[data-workflow-panel]"));
@@ -24,7 +25,10 @@ const dropzone = document.getElementById("dropzone");
 const selectedFileName = document.getElementById("selectedFileName");
 const analyzeButton = document.getElementById("analyzeButton");
 const uploadStatus = document.getElementById("uploadStatus");
-const eyeTrackingLinks = Array.from(document.querySelectorAll('a[href="/eye/"]'));
+const EYE_TRACKING_BASE_URL = "http://127.0.0.1:8001/eye/";
+const eyeTrackingLinks = Array.from(
+  document.querySelectorAll('a[href="/eye/"], a[href="http://127.0.0.1:8001/eye/"]'),
+);
 
 function setStatus(message, isError = false) {
   uploadStatus.textContent = message;
@@ -34,10 +38,30 @@ function setStatus(message, isError = false) {
 function updateEyeTrackingLinks(rawValue) {
   const trimmed = String(rawValue || "").trim();
   const targetHref = trimmed
-    ? `/eye/?prefill_url=${encodeURIComponent(trimmed)}`
-    : "/eye/";
+    ? `${EYE_TRACKING_BASE_URL}?prefill_url=${encodeURIComponent(trimmed)}`
+    : EYE_TRACKING_BASE_URL;
   eyeTrackingLinks.forEach((link) => {
     link.href = targetHref;
+  });
+}
+
+function initBackToAnalysisButton() {
+  const backButton = document.getElementById("backToAnalysisButton");
+  if (!backButton) {
+    return;
+  }
+  let returnUrl = "";
+  try {
+    returnUrl = sessionStorage.getItem(ANALYSIS_RETURN_URL_STORAGE_KEY) || "";
+  } catch (_) {
+    returnUrl = "";
+  }
+  if (!returnUrl) {
+    return;
+  }
+  backButton.hidden = false;
+  backButton.addEventListener("click", () => {
+    window.location.href = returnUrl;
   });
 }
 
@@ -296,6 +320,7 @@ window.addEventListener("pageshow", () => {
   setLoading(false);
 });
 bindDropzone();
+initBackToAnalysisButton();
 try {
   const storedEyeTargetUrl = localStorage.getItem(EYE_TARGET_URL_STORAGE_KEY) || "";
   if (storedEyeTargetUrl && !urlInput.value.trim()) {

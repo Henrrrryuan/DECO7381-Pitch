@@ -15,9 +15,10 @@
       </a>
 
       <nav class="app-nav-links" aria-label="Primary">
-            <a href="/eye/">Eye Tracking</a>
+            <a href="http://127.0.0.1:8001/eye/">Eye Tracking</a>
         <a href="./history.html">History</a>
         <a class="active-link" href="./docs.html">Docs</a>
+        <button id="backToAnalysisButton" class="nav-cta" type="button" hidden>Back to analysis</button>
         <a class="nav-cta" href="./index.html">New Analysis</a>
       </nav>
     </div>
@@ -35,5 +36,27 @@
       </div>
     </section>
   </main>
+  <script>
+    (() => {
+      const backButton = document.getElementById("backToAnalysisButton");
+      const storageKey = "cognilens.return.analysis-url";
+      if (!backButton) {
+        return;
+      }
+      let returnUrl = "";
+      try {
+        returnUrl = sessionStorage.getItem(storageKey) || "";
+      } catch (_) {
+        returnUrl = "";
+      }
+      if (!returnUrl) {
+        return;
+      }
+      backButton.hidden = false;
+      backButton.addEventListener("click", () => {
+        window.location.href = returnUrl;
+      });
+    })();
+  </script>
 </body>
 </html>
