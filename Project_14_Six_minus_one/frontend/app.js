@@ -1158,28 +1158,34 @@ function locationPrimaryText(location) {
   if (!location || typeof location !== "object") {
     return "";
   }
-  return location.html_snippet
-    || location.selector
-    || location.summary
-    || location.region
-    || location.text
+  return location.text
     || location.preview
     || location.sentence_preview
     || location.label
+    || location.summary
+    || location.region
+    || location.html_snippet
+    || location.selector
     || "";
 }
 
 function locationMetaText(location) {
   if (!location || typeof location !== "object") {
-    return "Detected issue location";
+    return "Location detail";
   }
-  const pieces = [
-    location.selector ? `selector: ${location.selector}` : "",
-    location.summary ? `summary: ${location.summary}` : "",
-    location.tag ? `tag: ${location.tag}` : "",
-    location.region ? `region: ${location.region}` : "",
-  ].filter(Boolean);
-  return pieces[0] || "Detected issue location";
+  if (location.summary) {
+    return `Location: ${location.summary}`;
+  }
+  if (location.region) {
+    return `Region: ${location.region}`;
+  }
+  if (location.tag) {
+    return `Element type: ${location.tag}`;
+  }
+  if (location.selector) {
+    return `Selector: ${location.selector}`;
+  }
+  return "Location detail";
 }
 
 function failingElementsMarkup(issue) {
@@ -1190,7 +1196,7 @@ function failingElementsMarkup(issue) {
       <div class="standards-failing-element">
         <span class="standards-location-index">1.</span>
         <div>
-          <code>${escapeHtml(issue?.rule_id || "rule")}</code>
+          <span class="standards-location-meta">${escapeHtml(issue?.rule_id || "Detected rule")}</span>
           <p>${escapeHtml(issue?.title || "This rule was triggered by the current analysis.")}</p>
         </div>
       </div>
@@ -1201,7 +1207,7 @@ function failingElementsMarkup(issue) {
     <div class="standards-failing-element">
       <span class="standards-location-index">${index + 1}.</span>
       <div>
-        <code>${escapeHtml(locationMetaText(location))}</code>
+        <span class="standards-location-meta">${escapeHtml(locationMetaText(location))}</span>
         <p>${escapeHtml(locationPrimaryText(location))}</p>
       </div>
     </div>
@@ -1234,6 +1240,11 @@ function standardsIssueTableMarkup(result) {
     const activeProfile = normalizeProfileLabel(state.activeProfile);
     const activeProfileLabel = activeProfile === "Autism" ? "Autistic users" : `${activeProfile} users`;
     const activeProfileGuidance = model.userRecommendations?.[activeProfile] || firstFixCopy;
+    const sameGuidance = String(activeProfileGuidance).trim().replace(/\s+/g, " ").toLowerCase()
+      === String(firstFixCopy).trim().replace(/\s+/g, " ").toLowerCase();
+    const profileGuidanceMarkup = sameGuidance ? "" : `
+      <p><strong>For ${escapeHtml(activeProfileLabel)}:</strong> ${escapeHtml(activeProfileGuidance)}</p>
+    `;
     return `
       <details class="standards-issue-row" data-summary-issue-id="${escapeHtml(issueId)}">
         <summary class="standards-issue-summary">
@@ -1271,7 +1282,7 @@ function standardsIssueTableMarkup(result) {
             <h4><span>3.</span> First redesign move</h4>
             <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
               <p>${escapeHtml(firstFixCopy)}</p>
-              <p><strong>${escapeHtml(activeProfileLabel)}:</strong> ${escapeHtml(activeProfileGuidance)}</p>
+              ${profileGuidanceMarkup}
             </div>
           </section>
         </div>

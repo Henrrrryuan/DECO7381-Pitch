@@ -1,1 +1,4 @@
 backend/analysis_history.sqlite3
+node_modules/
+dist/
+.DS_Store
