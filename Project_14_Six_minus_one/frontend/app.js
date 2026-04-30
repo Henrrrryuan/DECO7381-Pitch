@@ -10,7 +10,7 @@ import {
   formatReportTimestamp,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js?v=history-context-2";
+} from "./common.js?v=guidance-ui-1";
 
 const state = {
   currentHtml: "",
