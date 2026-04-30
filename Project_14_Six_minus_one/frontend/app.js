@@ -1256,21 +1256,21 @@ function standardsIssueTableMarkup(result) {
         </summary>
         <div class="standards-issue-details">
           <section class="standards-detail-section">
-            <h4><span>1.</span> Failing elements on your website (${count}):</h4>
+            <h4><span>1.</span> Page evidence (${count}):</h4>
             <div class="standards-failing-list">
               ${failingElementsMarkup(issue)}
             </div>
           </section>
           <section class="standards-detail-section">
-            <h4><span>2.</span> What does this mean?</h4>
+            <h4><span>2.</span> Why this matters</h4>
             <div class="standards-empty-detail" aria-label="What this means for the selected user profile">
               ${escapeHtml(meaningCopy)}
             </div>
           </section>
           <section class="standards-detail-section">
-            <h4><span>3.</span> How to solve it:</h4>
+            <h4><span>3.</span> First redesign move</h4>
             <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
-              <p><strong>First redesign move:</strong> ${escapeHtml(firstFixCopy)}</p>
+              <p>${escapeHtml(firstFixCopy)}</p>
               <p><strong>${escapeHtml(activeProfileLabel)}:</strong> ${escapeHtml(activeProfileGuidance)}</p>
             </div>
           </section>
@@ -1280,14 +1280,14 @@ function standardsIssueTableMarkup(result) {
   }).join("");
 
   return `
-    <section class="standards-issue-panel" aria-label="Cognitive accessibility standards mapping">
+    <section class="standards-issue-panel" aria-label="Full audit overview">
       <div class="standards-issue-header">
         <span>#</span>
         <span>Issue</span>
-        <span>Total Failing Elements</span>
-        <span>Disabilities Affected</span>
-        <span>WCAG Cognitive Guidance</span>
-        <span>ISO 9241-11</span>
+        <span>Affected elements</span>
+        <span>Most affected users</span>
+        <span>Guidance framework</span>
+        <span>Usability standard</span>
       </div>
       <div class="standards-issue-rows">
         ${rows}
