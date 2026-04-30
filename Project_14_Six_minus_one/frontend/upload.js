@@ -303,6 +303,43 @@ function bindDropzone() {
   });
 }
 
+function initMascotEyes() {
+  const pupils = Array.from(document.querySelectorAll("[data-eye-pupil]"));
+  if (!pupils.length) {
+    return;
+  }
+
+  const MAX_OFFSET = 5.5;
+  const updatePupils = (clientX, clientY) => {
+    pupils.forEach((pupil) => {
+      const eye = pupil.parentElement;
+      if (!eye) {
+        return;
+      }
+      const rect = eye.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const angle = Math.atan2(dy, dx);
+      const distance = Math.min(MAX_OFFSET, Math.hypot(dx, dy) * 0.09);
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance;
+      pupil.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    });
+  };
+
+  window.addEventListener("pointermove", (event) => {
+    updatePupils(event.clientX, event.clientY);
+  });
+
+  window.addEventListener("pointerleave", () => {
+    pupils.forEach((pupil) => {
+      pupil.style.transform = "translate3d(0, 0, 0)";
+    });
+  });
+}
+
 uploadInput.addEventListener("change", (event) => {
   const [file] = event.target.files || [];
   if (!file) {
@@ -335,6 +372,7 @@ window.addEventListener("pageshow", () => {
   setLoading(false);
 });
 bindDropzone();
+initMascotEyes();
 initBackToAnalysisButton();
 try {
   const storedEyeTargetUrl = localStorage.getItem(EYE_TARGET_URL_STORAGE_KEY) || "";

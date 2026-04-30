@@ -161,36 +161,234 @@ button.nav-cta {
 
 .upload-body {
   background:
-    radial-gradient(circle at 18% 18%, rgba(73, 145, 255, 0.28), transparent 18rem),
-    radial-gradient(circle at 82% 12%, rgba(91, 211, 255, 0.18), transparent 24rem),
-    linear-gradient(135deg, rgba(12, 32, 65, 0.36) 25%, transparent 25%) 0 0 / 64px 64px,
+    radial-gradient(circle at 18% 18%, rgba(73, 145, 255, 0.16), transparent 20rem),
+    radial-gradient(circle at 82% 12%, rgba(91, 211, 255, 0.1), transparent 26rem),
+    linear-gradient(135deg, rgba(108, 132, 170, 0.08) 25%, transparent 25%) 0 0 / 64px 64px,
     linear-gradient(180deg, #071122 0%, #0d1d36 54%, #08101f 100%);
+  position: relative;
+}
+
+.upload-body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(rgba(168, 194, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 194, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.upload-body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 24% 30%, rgba(159, 196, 255, 0.08), transparent 18rem),
+    radial-gradient(circle at 76% 22%, rgba(125, 163, 255, 0.08), transparent 20rem);
+  filter: blur(2px);
 }
 
 .upload-page {
-  width: min(100%, 1180px);
+  width: min(100%, 1060px);
   min-height: calc(100vh - 64px);
   margin: 0 auto;
-  padding: 116px 32px 56px;
+  padding: 42px 26px;
   display: grid;
-  align-items: start;
+  align-items: center;
+  justify-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .upload-hero {
+  width: min(100%, 860px);
   display: grid;
-  gap: 30px;
+  gap: 24px;
+}
+
+.upload-copy {
   text-align: center;
+}
+
+.input-workflow {
   width: 100%;
+  text-align: left;
+}
+
+.upload-character-panel {
+  position: absolute;
+  top: -48px;
+  left: 22px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.character-stage {
+  width: 126px;
+  height: 98px;
+  position: relative;
+  transform: scale(0.3);
+  transform-origin: top left;
+}
+
+.character-stage::after {
+  content: "";
+  position: absolute;
+  left: 80px;
+  top: 48px;
+  width: 220px;
+  height: 110px;
+  background: radial-gradient(circle at left center, rgba(113, 194, 255, 0.42), rgba(73, 146, 255, 0.02) 72%);
+  opacity: 0.48;
+  filter: blur(10px);
+  animation: agent-gaze-pulse 2.6s ease-in-out infinite;
+}
+
+.character {
+  position: absolute;
+  bottom: 0;
+  border-radius: 24px 24px 0 0;
+}
+
+.character-eyes {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  gap: 18px;
+}
+
+.eye-ball {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.eye-pupil {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #1d1f24;
+  transform: translate3d(0, 0, 0);
+  transition: transform 60ms linear;
+  box-shadow: 0 0 8px rgba(110, 204, 255, 0.34);
+}
+
+.figure-purple {
+  left: 40px;
+  width: 132px;
+  height: 300px;
+  background: linear-gradient(180deg, #7145ff, #5730d4);
+}
+
+.figure-dark {
+  left: 160px;
+  width: 96px;
+  height: 240px;
+  background: linear-gradient(180deg, #2e3340, #222730);
+}
+
+.figure-orange {
+  left: 0;
+  width: 210px;
+  height: 178px;
+  border-radius: 130px 130px 0 0;
+  background: linear-gradient(180deg, #ffae84, #f68f61);
+}
+
+.figure-yellow {
+  right: 0;
+  width: 150px;
+  height: 206px;
+  border-radius: 100px 100px 0 0;
+  background: linear-gradient(180deg, #f2e367, #d8c84f);
+}
+
+.figure-yellow .character-eyes {
+  top: 20px;
+}
+
+.character-mouth {
+  position: absolute;
+  left: 50%;
+  top: 78px;
+  width: 34px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(39, 41, 45, 0.9);
 }
 
 .upload-copy h1 {
   margin: 0;
-  font-size: clamp(42px, 5.1vw, 60px);
+  font-size: clamp(42px, 5vw, 60px);
   line-height: 1.02;
   color: #fff;
-  letter-spacing: -0.035em;
+  letter-spacing: 0.01em;
   text-wrap: balance;
   text-shadow: 0 10px 34px rgba(6, 14, 32, 0.58);
+  font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  position: relative;
+  z-index: 2;
+}
+
+.upload-badge-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.upload-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 14px;
+  border: 1px solid rgba(176, 210, 255, 0.52);
+  border-radius: 999px;
+  background: rgba(17, 40, 76, 0.58);
+  color: rgba(224, 238, 255, 0.96);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.upload-subtitle {
+  margin: 12px auto 0;
+  max-width: 760px;
+  color: rgba(220, 232, 250, 0.82);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.upload-pill-row {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.upload-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(145, 187, 255, 0.34);
+  border-radius: 999px;
+  background: rgba(9, 24, 48, 0.62);
+  color: rgba(210, 229, 255, 0.84);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .upload-description {
@@ -223,16 +421,28 @@ button.nav-cta {
 }
 
 .workflow-card {
+  position: relative;
   display: grid;
   gap: 22px;
-  padding: 26px;
-  border: 1px solid rgba(120, 184, 255, 0.18);
+  padding: 28px;
+  border: 1px solid rgba(132, 186, 255, 0.26);
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(9, 23, 46, 0.54), rgba(8, 20, 40, 0.38));
+  background: linear-gradient(180deg, rgba(11, 26, 50, 0.48), rgba(8, 20, 40, 0.32));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 16px 44px rgba(2, 10, 26, 0.26);
-  backdrop-filter: blur(3px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 16px 40px rgba(2, 10, 26, 0.28),
+    0 0 0 1px rgba(101, 172, 255, 0.08);
+  backdrop-filter: blur(15px);
+}
+
+.workflow-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid rgba(125, 196, 255, 0.18);
+  box-shadow: 0 0 22px rgba(83, 165, 255, 0.14);
 }
 
 .workflow-options {
@@ -245,7 +455,7 @@ button.nav-cta {
   display: grid;
   gap: 8px;
   padding: 18px;
-  border: 1px solid rgba(142, 199, 255, 0.24);
+  border: 1px solid rgba(142, 199, 255, 0.2);
   border-radius: 22px;
   color: rgba(232, 240, 255, 0.74);
   background: rgba(5, 13, 27, 0.38);
@@ -261,21 +471,23 @@ button.nav-cta {
 }
 
 .workflow-option.is-active {
-  border-color: rgba(120, 188, 255, 0.9);
+  border-color: rgba(133, 190, 255, 0.62);
   background:
-    radial-gradient(circle at top right, rgba(47, 111, 235, 0.34), transparent 9rem),
-    rgba(18, 45, 86, 0.9);
-  box-shadow: 0 0 0 1px rgba(89, 156, 255, 0.16);
+    radial-gradient(circle at top right, rgba(76, 133, 231, 0.22), transparent 9rem),
+    rgba(20, 46, 86, 0.74);
+  box-shadow: 0 0 0 1px rgba(122, 174, 255, 0.12);
 }
 
 .workflow-option-title {
   color: #fff;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .workflow-option-copy {
   font-size: 13px;
+  font-weight: 400;
   line-height: 1.45;
 }
 
@@ -310,14 +522,14 @@ button.nav-cta {
   gap: 18px;
   min-height: 340px;
   padding: 24px;
-  border: 1px solid rgba(139, 199, 255, 0.68);
+  border: 1px solid rgba(139, 199, 255, 0.52);
   border-radius: 24px;
   background:
-    radial-gradient(circle at top left, rgba(77, 160, 255, 0.26), transparent 18rem),
-    linear-gradient(180deg, rgba(20, 48, 92, 0.96), rgba(13, 28, 55, 0.98));
+    radial-gradient(circle at top left, rgba(77, 160, 255, 0.18), transparent 18rem),
+    linear-gradient(180deg, rgba(19, 45, 86, 0.92), rgba(13, 28, 55, 0.94));
   box-shadow:
-    0 0 0 1px rgba(97, 161, 255, 0.12),
-    0 18px 38px rgba(3, 12, 28, 0.34),
+    0 0 0 1px rgba(97, 161, 255, 0.1),
+    0 14px 30px rgba(3, 12, 28, 0.28),
     inset 0 0 30px rgba(89, 156, 255, 0.14);
   text-align: left;
 }
@@ -349,14 +561,16 @@ button.nav-cta {
 .input-card-copy h3 {
   margin: 0;
   color: #fff;
-  font-size: 22px;
-  letter-spacing: -0.02em;
+  font-size: 30px;
+  font-weight: 640;
+  letter-spacing: 0.005em;
 }
 
 .input-card-copy p {
   margin: 0;
   color: rgba(219, 231, 249, 0.78);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.6;
 }
 
@@ -428,23 +642,56 @@ button.nav-cta {
 }
 
 .upload-analyze-button {
+  position: relative;
+  overflow: hidden;
   min-height: 56px;
   width: 100%;
   padding: 0 24px;
   border: 1px solid rgba(97, 161, 255, 0.72);
-  background: linear-gradient(135deg, #165df6 0%, #2f8eff 100%);
+  background: linear-gradient(135deg, #1e5fe9 0%, #2d7ef6 56%, #3690ff 100%);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
   border-radius: 18px;
-  box-shadow: 0 18px 32px rgba(22, 93, 246, 0.26);
+  box-shadow: 0 12px 28px rgba(35, 111, 255, 0.34), 0 0 20px rgba(88, 170, 255, 0.26);
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.upload-analyze-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.08) 0 8px,
+    rgba(255, 255, 255, 0) 8px 16px
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  mix-blend-mode: soft-light;
 }
 
 .upload-analyze-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 22px 36px rgba(22, 93, 246, 0.34);
+  box-shadow: 0 18px 34px rgba(35, 111, 255, 0.42), 0 0 26px rgba(88, 170, 255, 0.32);
   filter: saturate(1.08);
+}
+
+.upload-analyze-button:hover:not(:disabled)::after {
+  opacity: 1;
+}
+
+@keyframes agent-gaze-pulse {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: scaleX(0.96);
+  }
+
+  50% {
+    opacity: 0.64;
+    transform: scaleX(1.02);
+  }
 }
 
 .secondary-action {
@@ -3912,6 +4159,27 @@ button.dimension-row.is-linked-active {
 }
 
 @media (max-width: 1100px) {
+  .upload-page {
+    width: min(100%, 900px);
+    padding: 34px 20px;
+  }
+
+  .upload-character-panel {
+    top: -34px;
+    left: 14px;
+  }
+
+  .character-stage {
+    transform: scale(0.26);
+  }
+
+  .upload-copy h1,
+  .upload-badge-row,
+  .upload-subtitle,
+  .upload-pill-row {
+    text-align: center;
+  }
+
   .input-workflow,
   .tool-shell {
     grid-template-columns: 1fr;
@@ -3977,7 +4245,12 @@ button.dimension-row.is-linked-active {
   }
 
   .upload-page {
-    padding: 28px 18px;
+    width: min(100%, 620px);
+    padding: 24px 14px;
+  }
+
+  .upload-character-panel {
+    display: none;
   }
 
   .upload-hero {
