@@ -10,8 +10,16 @@ export function EyeHistoryPanel({
   searchQuery,
   onPageChange,
 }) {
-  // Eye-tracking evidence is shown as supporting context beside the main report
-  // history, but it keeps its own pagination because the datasets can differ.
+  // Layout container for the Eye-Tracking Evidence section.
+  //
+  // Interaction with other files:
+  // - HistoryPage.jsx fetches eyeSessionItems from api/historyApi.js and passes
+  //   them into this component.
+  // - EyeRows.jsx receives eyeSessionItems and renders each saved gaze session.
+  // - Pagination.jsx receives currentPage and totalEyeSessions, then calls
+  //   onPageChange when the user moves through evidence pages.
+  // This section supports the report history, but it keeps independent
+  // pagination because eye sessions and report runs can have different counts.
   const emptyMessage = searchQuery
     ? "No eye-tracking evidence sessions match the current search."
     : "No eye-tracking evidence sessions have been saved yet.";

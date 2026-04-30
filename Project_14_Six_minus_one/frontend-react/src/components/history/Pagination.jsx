@@ -14,8 +14,16 @@ export function Pagination({
   itemLabelText,
   onPageChange,
 }) {
-  // Clamp the active page so browser state, API totals, and typed jump values
-  // cannot move the table outside the available page range.
+  // Shared pagination control used by both ReportHistoryPanel.jsx and
+  // EyeHistoryPanel.jsx.
+  //
+  // This component only calculates display values such as "Page 2 of 4" and
+  // "26-50 of 61 reports". It does not own the report or eye-session data.
+  // When the user clicks Previous, Next, or Go, it calls onPageChange. The
+  // parent panel passes that callback from HistoryPage.jsx, where the actual
+  // page state is updated and the API request is re-run.
+  // The visible page is clamped so typed jump values cannot move outside the
+  // available page range.
   const totalPages = getTotalPages(totalItems, pageSize);
   const visiblePageNumber = Math.min(Math.max(1, Number(currentPage) || 1), totalPages);
   const firstVisibleItemNumber = totalItems ? getPageOffset(visiblePageNumber, pageSize) + 1 : 0;

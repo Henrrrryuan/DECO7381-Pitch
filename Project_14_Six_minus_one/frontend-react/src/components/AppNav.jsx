@@ -1,6 +1,10 @@
 export function AppNav() {
-  // Keep the shared product navigation in one component so the Vite page can
-  // match the older static pages while History is migrated first.
+  // Shared navigation for the Vite History page.
+  //
+  // HistoryPage.jsx renders this component at the top of the page. The links
+  // still point to the older static frontend on port 8001, while History stays
+  // on the Vite route. This allows a step-by-step migration instead of moving
+  // the whole frontend to React at once.
   return (
     <header className="app-nav">
       <div className="app-nav-inner">

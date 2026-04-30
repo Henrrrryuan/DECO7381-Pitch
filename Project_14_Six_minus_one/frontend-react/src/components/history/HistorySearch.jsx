@@ -1,6 +1,14 @@
 export function HistorySearch({ queryInput, onQueryInputChange, onSearch }) {
-  // The same search term is shared by report history and eye-tracking evidence
-  // so users can look up a file name, Report ID, or Evidence ID from one place.
+  // Search input component for the History page.
+  //
+  // Data flow:
+  // - HistoryPage.jsx passes queryInput so this input can display the current
+  //   typed text.
+  // - When the user types, onQueryInputChange updates queryInput in
+  //   HistoryPage.jsx.
+  // - When the user submits the form, onSearch calls runSearch in
+  //   HistoryPage.jsx. That page then reloads both the report history and the
+  //   eye-tracking evidence tables through api/historyApi.js.
   return (
     <section className="history-toolbar" aria-label="History search">
       <label className="history-search-label" htmlFor="historySearchInput">

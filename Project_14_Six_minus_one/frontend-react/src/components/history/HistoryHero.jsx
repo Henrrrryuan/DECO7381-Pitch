@@ -1,6 +1,9 @@
 export function HistoryHero() {
-  // This hero gives the page a clear purpose before the user reaches the two
-  // history tables below it.
+  // Static page heading for the History route.
+  //
+  // HistoryPage.jsx renders this before the search and table sections. It does
+  // not receive data or call other files; its only job is to explain the page
+  // purpose visually.
   return (
     <section className="history-hero">
       <p className="upload-kicker">History</p>

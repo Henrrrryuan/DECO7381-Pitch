@@ -4,8 +4,16 @@ import {
 } from "../../utils/historyUtils.js";
 
 export function ReportRows({ reportItems, status, emptyMessage, onOpenReport }) {
-  // These early returns keep the table state readable: loading, error, empty,
-  // and data rows are handled as separate visual outcomes.
+  // Row renderer for ReportHistoryPanel.jsx.
+  //
+  // Interaction with other files:
+  // - ReportHistoryPanel.jsx passes reportItems and the current loading/error
+  //   status into this component.
+  // - historyUtils.js formats dates and short Report IDs for display.
+  // - The View and Print buttons call onOpenReport, which is implemented in
+  //   HistoryPage.jsx. That page fetches the full report detail and opens the
+  //   older dashboard.html page.
+  // These early returns keep loading, error, empty, and data states separate.
   if (status.loading) {
     return <p className="history-empty">Loading analysis history...</p>;
   }

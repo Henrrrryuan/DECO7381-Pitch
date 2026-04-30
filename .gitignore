@@ -2,3 +2,6 @@ owl-inclusive-design-skills/
 .DS_Store
 __pycache__/
 *.py[cod]
+node_modules/
+dist/
+*.log

@@ -1,9 +1,16 @@
-// This module is the only place where the Vite History page talks to the
-// FastAPI backend. Components call these functions instead of building fetch
-// requests directly, which keeps backend communication separate from UI code.
+// API boundary for the Vite History page.
+//
+// HistoryPage.jsx calls the functions in this file when it needs backend data.
+// Components such as ReportHistoryPanel.jsx and EyeHistoryPanel.jsx do not call
+// fetch directly; they only render the data that HistoryPage has already loaded.
+// Keeping all FastAPI requests here makes the UI components easier to read and
+// makes endpoint changes easier to manage in one place.
 const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
 
 async function fetchJsonResponse(requestUrl, requestOptions = {}) {
+  // Shared fetch wrapper used by every API function below. It converts backend
+  // error responses into JavaScript Error objects so HistoryPage.jsx can show
+  // the message through its loading/error state.
   const response = await fetch(requestUrl, requestOptions);
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;
@@ -20,8 +27,9 @@ async function fetchJsonResponse(requestUrl, requestOptions = {}) {
   return response.json();
 }
 
-// Build the paginated URL used by both the report history table and the
-// eye-tracking evidence table. The backend uses limit/offset pagination.
+// Build the paginated URL used by both data tables. HistoryPage.jsx passes the
+// current page number and submitted search query here; the backend receives
+// them as limit, offset, and query parameters.
 export function buildPagedUrl(endpointPath, pageNumber, searchQuery, pageSize) {
   const searchParameters = new URLSearchParams({
     limit: String(pageSize),
@@ -41,6 +49,8 @@ export function fetchReportHistory({
   pageSize,
   abortSignal,
 }) {
+  // Called by HistoryPage.jsx to load the Report History table.
+  // Backend interaction: GET /history?limit=...&offset=...&query=...
   return fetchJsonResponse(
     buildPagedUrl("/history", pageNumber, searchQuery, pageSize),
     { signal: abortSignal },
@@ -53,6 +63,8 @@ export function fetchEyeHistory({
   pageSize,
   abortSignal,
 }) {
+  // Called by HistoryPage.jsx to load the Eye-Tracking Evidence table.
+  // Backend interaction: GET /eye/sessions?limit=...&offset=...&query=...
   return fetchJsonResponse(
     buildPagedUrl("/eye/sessions", pageNumber, searchQuery, pageSize),
     { signal: abortSignal },
@@ -60,5 +72,8 @@ export function fetchEyeHistory({
 }
 
 export function fetchReportDetail(reportRunId) {
+  // Called by HistoryPage.jsx when the user clicks View or Print in
+  // ReportRows.jsx. The returned detail is converted by historyUtils.js into
+  // the sessionStorage shape expected by the older dashboard.html page.
   return fetchJsonResponse(`${BACKEND_API_BASE_URL}/history/${reportRunId}`);
 }

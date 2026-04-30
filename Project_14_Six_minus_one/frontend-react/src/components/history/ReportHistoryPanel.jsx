@@ -11,8 +11,16 @@ export function ReportHistoryPanel({
   onPageChange,
   onOpenReport,
 }) {
-  // This panel owns only the report history table layout. Fetching and search
-  // state stay in HistoryPage so this component remains easy to test and reuse.
+  // Layout container for the Report History section.
+  //
+  // Interaction with other files:
+  // - HistoryPage.jsx fetches reportItems from api/historyApi.js and passes them
+  //   into this component.
+  // - ReportRows.jsx receives reportItems and renders each individual row.
+  // - Pagination.jsx receives currentPage and totalReports, then calls
+  //   onPageChange when the user moves to another page.
+  // This component does not fetch data itself; it only organizes the report
+  // table header, row renderer, empty state, and pagination.
   const emptyMessage = searchQuery
     ? "No reports match the current file name or ID search."
     : "No analysis history has been saved yet.";
