@@ -12,7 +12,6 @@ import {
   formatDate,
   formatReportTimestamp,
   formatShortId,
-  saveDashboardSession,
 } from "./common.js";
 
 // This file is a progressive React migration for the History page only.
@@ -164,14 +163,12 @@ function HistoryApp() {
     setReportPage(1);
   }, [queryInput]);
 
-  // Open a saved report by fetching its full detail, saving it to sessionStorage,
-  // and then navigating to dashboard.html.
+  // Open a saved report as a temporary history view. Do not overwrite the
+  // current dashboard session; Back to analysis should return to that session.
   const openReport = useCallback(async (runId) => {
-    const detail = await fetchJson(`${API_BASE}/history/${runId}`);
-    saveDashboardSession(buildCurrentSession(detail));
     sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, runId);
     sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
-    window.location.href = "./dashboard.html?from=history";
+    window.location.href = `./dashboard.html?from=history&run=${encodeURIComponent(runId)}`;
   }, []);
 
   useEffect(() => {

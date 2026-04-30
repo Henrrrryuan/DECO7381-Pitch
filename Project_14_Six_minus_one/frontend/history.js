@@ -4,7 +4,6 @@ import {
   fetchJson,
   formatDate,
   formatShortId,
-  saveDashboardSession,
 } from "./common.js";
 
 const state = {
@@ -176,14 +175,12 @@ async function handleHistoryClick(event) {
     return;
   }
 
-  const detail = await fetchJson(`${API_BASE}/history/${runId}`);
-  saveDashboardSession(buildCurrentSession(detail));
   if (button.dataset.action === "print") {
     sessionStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
   } else {
     sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
   }
-  window.location.href = "./dashboard.html";
+  window.location.href = `./dashboard.html?from=history&run=${encodeURIComponent(runId)}`;
 }
 
 async function loadReportHistory(nextToken = searchRequestToken) {

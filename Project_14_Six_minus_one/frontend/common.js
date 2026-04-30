@@ -155,24 +155,51 @@ async function analyzeUploadFile(file, baselineRunId = null) {
 }
 
 function saveDashboardSession(payload) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  const serialized = JSON.stringify(payload);
+  sessionStorage.setItem(STORAGE_KEY, serialized);
+  try {
+    localStorage.setItem(STORAGE_KEY, serialized);
+  } catch (error) {
+    // localStorage may be blocked in private or embedded contexts.
+  }
 }
 
 function loadDashboardSession() {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
+  let raw = sessionStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    try {
+      raw = localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+      raw = null;
+    }
+  }
   if (!raw) {
     return null;
   }
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!sessionStorage.getItem(STORAGE_KEY)) {
+      sessionStorage.setItem(STORAGE_KEY, raw);
+    }
+    return parsed;
   } catch (error) {
     sessionStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (storageError) {
+      // Ignore storage cleanup failures.
+    }
     return null;
   }
 }
 
 function clearDashboardSession() {
   sessionStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    // Ignore storage cleanup failures.
+  }
 }
 
 function buildAnalysisView(payload) {

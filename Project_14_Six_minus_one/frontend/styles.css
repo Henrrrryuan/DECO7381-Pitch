@@ -1225,9 +1225,14 @@ body.analysis-loading-active {
 }
 
 .back-to-history-button {
+  display: none !important;
   border-color: rgba(59, 130, 246, 0.35);
   color: #1d4ed8;
   background: #eff6ff;
+}
+
+body.is-history-report-view .back-to-history-button {
+  display: inline-flex !important;
 }
 
 .history-context-badge {
@@ -3770,6 +3775,70 @@ button.dimension-row.is-linked-active {
   .print-dimension-summary {
     grid-template-columns: 1fr;
   }
+}
+
+.empty-analysis-panel {
+  margin: 48px auto;
+  max-width: 760px;
+  padding: 32px;
+  border: 1px solid #d6e3ff;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  box-shadow: 0 18px 45px rgba(38, 90, 160, 0.08);
+}
+
+.empty-analysis-panel__eyebrow {
+  margin: 0 0 10px;
+  color: #5c6b80;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.empty-analysis-panel h2 {
+  margin: 0 0 10px;
+  color: #151923;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.empty-analysis-panel p {
+  margin: 0 0 18px;
+  color: #5f6b7c;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.empty-analysis-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primary-pill-button,
+.secondary-pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primary-pill-button {
+  border: 1px solid #2b6feb;
+  background: #2f6feb;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(47, 111, 235, 0.18);
+}
+
+.secondary-pill-button {
+  border: 1px solid #b8cdfb;
+  background: #fff;
+  color: #2f6feb;
 }
 
 @media print {

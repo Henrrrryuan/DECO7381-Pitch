@@ -85,6 +85,17 @@
       } catch (_) {
         returnUrl = "";
       }
+      if (returnUrl) {
+        try {
+          const parsedUrl = new URL(returnUrl, window.location.href);
+          if (parsedUrl.searchParams.get("from") === "history") {
+            returnUrl = "./dashboard.html";
+            sessionStorage.setItem(storageKey, returnUrl);
+          }
+        } catch (_) {
+          // Keep the stored URL if it cannot be parsed.
+        }
+      }
       if (!returnUrl) {
         return;
       }

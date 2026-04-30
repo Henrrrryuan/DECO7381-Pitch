@@ -5,11 +5,12 @@ import {
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
+  fetchJson,
   findDimension,
   formatReportTimestamp,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js?v=id-sync-1";
+} from "./common.js?v=history-context-2";
 
 const state = {
   currentHtml: "",
@@ -2829,7 +2830,31 @@ function initAssistantFloating() {
 function initPreviewMessageBridge() {
 }
 
+function getHistoryReportRunIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("from") !== "history") {
+    return "";
+  }
+  return params.get("run") || params.get("run_id") || "";
+}
+
+function isHistoryReportView() {
+  return Boolean(getHistoryReportRunIdFromUrl());
+}
+
+function clearHistoryReportContext() {
+  try {
+    sessionStorage.removeItem(DASHBOARD_HISTORY_CONTEXT_KEY);
+    sessionStorage.removeItem(DASHBOARD_HISTORY_ONCE_KEY);
+  } catch (_) {
+    // Ignore sessionStorage errors.
+  }
+}
+
 function rememberAnalysisReturnUrl() {
+  if (isHistoryReportView()) {
+    return;
+  }
   try {
     sessionStorage.setItem(ANALYSIS_RETURN_URL_STORAGE_KEY, window.location.href);
   } catch (_) {
@@ -2861,50 +2886,33 @@ function initHistoryContextPanel() {
   const backButton = document.getElementById("backToHistoryButton");
   const printButton = document.getElementById("printReportBtn");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a"));
-  const url = new URL(window.location.href);
-  const fromHistory = url.searchParams.get("from") === "history";
-  const isHistoryContext = fromHistory;
-  if (!isHistoryContext) {
-    if (backButton) {
-      backButton.hidden = true;
-      backButton.disabled = false;
-      backButton.onclick = null;
-    }
-    if (printButton) {
-      printButton.disabled = false;
-      printButton.title = "Print current report";
-    }
-    navLinks.forEach((link) => {
-      link.classList.remove("disabled-nav-link");
-      link.removeAttribute("aria-disabled");
-      link.removeAttribute("tabindex");
-      if (link.dataset.hrefBackup) {
-        link.setAttribute("href", link.dataset.hrefBackup);
-        delete link.dataset.hrefBackup;
-      }
-    });
-    return;
-  }
+  const openedFromHistory = isHistoryReportView();
+  document.body.classList.toggle("is-history-report-view", openedFromHistory);
+
   if (backButton) {
-    backButton.hidden = false;
+    backButton.hidden = !openedFromHistory;
     backButton.disabled = false;
     backButton.title = "Back to History";
-    backButton.onclick = () => {
-      window.location.href = "./history.html";
-    };
+    backButton.onclick = openedFromHistory
+      ? () => {
+        window.location.href = "./history.html";
+      }
+      : null;
   }
+
   if (printButton) {
     printButton.disabled = false;
     printButton.title = "Print current report";
   }
+
   navLinks.forEach((link) => {
-    if (!link.dataset.hrefBackup) {
-      link.dataset.hrefBackup = link.getAttribute("href") || "";
+    link.classList.remove("disabled-nav-link");
+    link.removeAttribute("aria-disabled");
+    link.removeAttribute("tabindex");
+    if (link.dataset.hrefBackup) {
+      link.setAttribute("href", link.dataset.hrefBackup);
+      delete link.dataset.hrefBackup;
     }
-    link.removeAttribute("href");
-    link.classList.add("disabled-nav-link");
-    link.setAttribute("aria-disabled", "true");
-    link.setAttribute("tabindex", "-1");
   });
 }
 
@@ -3070,21 +3078,72 @@ function bindEvents() {
   }
 }
 
+function buildDashboardSessionFromHistoryDetail(detail) {
+  const sourceName = detail.run?.source_name || "history-item";
+  const analysis = detail.analysis || detail.result || {};
+  return {
+    current: {
+      payload: {
+        ...analysis,
+        run: detail.run || analysis?.run,
+        resource_bundle: detail.resource_bundle || analysis?.resource_bundle || null,
+        html_content: detail.html_content || analysis?.html_content || "",
+      },
+      html: detail.html_content || analysis?.html_content || "",
+      sourceName,
+      sourceUrl: isProbablyUrl(sourceName) ? sourceName : "",
+    },
+    previous: null,
+  };
+}
+
+async function loadDashboardSessionWithHistoryFallback() {
+  const runId = getHistoryReportRunIdFromUrl();
+  if (runId) {
+    const detail = await fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`);
+    return buildDashboardSessionFromHistoryDetail(detail);
+  }
+
+  const storedSession = loadDashboardSession();
+  return storedSession;
+}
+
+function renderMissingAnalysisState() {
+  const comparisonList = document.getElementById("comparisonList");
+  if (!comparisonList) {
+    return;
+  }
+  comparisonList.innerHTML = `
+    <section class="empty-analysis-panel" aria-live="polite">
+      <p class="empty-analysis-panel__eyebrow">No analysis loaded</p>
+      <h2>Open a saved report from History or start a new analysis.</h2>
+      <p>This page needs an analysis result before issue cards and guidance can be shown.</p>
+      <div class="empty-analysis-panel__actions">
+        <a class="secondary-pill-button" href="./history.html">Back to History</a>
+        <a class="primary-pill-button" href="./index.html">New Analysis</a>
+      </div>
+    </section>
+  `;
+}
+
 async function init() {
   initSidebar();
   bindEvents();
 
-  const session = loadDashboardSession();
+  const session = await loadDashboardSessionWithHistoryFallback();
   const currentSession = session?.current;
   const previousSession = session?.previous;
   if (!currentSession?.payload) {
-    window.location.href = "./index.html";
+    renderMissingAnalysisState();
     return;
   }
 
   const currentResult = buildAnalysisView(currentSession.payload);
   const previousResult = previousSession?.payload ? buildAnalysisView(previousSession.payload) : null;
   const sourceNode = document.getElementById("dashboardSourceName");
+  if (!isHistoryReportView()) {
+    clearHistoryReportContext();
+  }
   state.currentPayload = currentSession.payload;
   state.sourceName = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
   state.sourceUrl = currentSession.sourceUrl || (isProbablyUrl(state.sourceName) ? state.sourceName : "");
