@@ -679,7 +679,7 @@ body.analysis-loading-active {
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 100%);
   overflow: visible;
-  transition: background 0.3s ease;
+  transition: width 0.42s ease, background 0.42s ease;
   box-sizing: border-box;
 }
 
@@ -739,28 +739,34 @@ body.analysis-loading-active {
 
 .sidebar-collapse-toggle {
   position: absolute;
-  top: 40%;
-  right: -20px;
+  top: 50%;
+  right: -24px;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 64px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--muted);
+  border: 0;
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(180deg, #f2f8ff 0%, #dcecff 100%);
+  color: #111827;
   cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 8;
+  clip-path: polygon(0 0, 100% 12px, 100% calc(100% - 12px), 0 100%);
+  box-shadow: 8px 10px 18px rgba(45, 116, 184, 0.16);
+  transition:
+    background 0.32s ease,
+    box-shadow 0.32s ease,
+    color 0.32s ease,
+    transform 0.42s ease;
 }
 
 .sidebar-collapse-toggle:hover {
-  background: #f4f7fb;
-  color: var(--ink);
-  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.18);
+  background: linear-gradient(180deg, #e7f3ff 0%, #cfe5ff 100%);
+  color: #111827;
+  box-shadow: 8px 12px 22px rgba(45, 116, 184, 0.24);
 }
 
 .sidebar-collapse-toggle-icon {
