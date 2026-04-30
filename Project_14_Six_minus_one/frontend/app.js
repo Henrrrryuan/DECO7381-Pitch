@@ -1169,6 +1169,61 @@ function locationPrimaryText(location) {
     || "";
 }
 
+function looksLikeTechnicalSelector(value) {
+  const text = String(value || "").trim();
+  return /^[.#]?[a-z][\w-]*(?:[.#][\w-]+|\[[^\]]+\]|:[\w-]+)?$/i.test(text)
+    || /^[a-z][\w-]*\.[\w.-]+$/i.test(text);
+}
+
+function titleCaseSelectorPart(value) {
+  return String(value || "")
+    .replace(/^[.#]/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\bcta\b/gi, "CTA")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function friendlyLocationLabel(location) {
+  if (!location || typeof location !== "object") {
+    return "Affected page area";
+  }
+
+  const readableText = location.text
+    || location.preview
+    || location.sentence_preview
+    || location.label
+    || "";
+  if (readableText && !looksLikeTechnicalSelector(readableText)) {
+    return readableText;
+  }
+
+  const technicalText = location.summary || location.region || location.selector || location.tag || "";
+  const knownLabels = {
+    "main.hero": "Hero section",
+    "h1": "Main heading",
+    "div.cta-row": "CTA button group",
+    "a.button-primary": "Primary CTA button",
+    "a.button-secondary": "Secondary CTA button",
+    "section.content-card": "Supporting content section",
+    "div.video-panel": "Video panel",
+    "video": "Video player",
+    "h2": "Section heading",
+    "h3": "Subsection heading",
+    "a.active": "Active navigation link",
+    "aside.floating-chat.chat-widget": "Floating chat widget",
+    "div.promo-strip": "Promotional strip",
+    "button": "Button",
+    "p": "Text paragraph",
+  };
+  if (knownLabels[technicalText]) {
+    return knownLabels[technicalText];
+  }
+  if (technicalText.includes(".")) {
+    return titleCaseSelectorPart(technicalText.split(".").pop());
+  }
+  return technicalText ? titleCaseSelectorPart(technicalText) : "Affected page area";
+}
+
 function locationMetaText(location) {
   if (!location || typeof location !== "object") {
     return "Location detail";
@@ -1188,6 +1243,20 @@ function locationMetaText(location) {
   return "Location detail";
 }
 
+function uniqueKeyLocations(locations, limit = 3) {
+  const seen = new Set();
+  const keyLocations = [];
+  locations.forEach((location) => {
+    const label = friendlyLocationLabel(location);
+    const normalized = label.toLowerCase();
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      keyLocations.push({ location, label });
+    }
+  });
+  return keyLocations.slice(0, limit);
+}
+
 function failingElementsMarkup(issue) {
   const locations = Array.isArray(issue?.locations) ? issue.locations : [];
   const count = issueFailingElementCount(issue);
@@ -1203,17 +1272,38 @@ function failingElementsMarkup(issue) {
     `;
   }
 
-  return locations.slice(0, 8).map((location, index) => `
-    <div class="standards-failing-element">
-      <span class="standards-location-index">${index + 1}.</span>
-      <div>
-        <span class="standards-location-meta">${escapeHtml(locationMetaText(location))}</span>
-        <p>${escapeHtml(locationPrimaryText(location))}</p>
-      </div>
+  const previewLimit = 3;
+  const shownLocations = uniqueKeyLocations(locations, previewLimit);
+  const technicalMatches = locations.map((location, index) => `
+    <li>
+      <span aria-hidden="true">${index + 1}</span>
+      <code>${escapeHtml(locationMetaText(location).replace(/^Location: /, ""))}</code>
+    </li>
+  `).join("");
+
+  return `
+    <div class="standards-evidence-intro">
+      <p>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found. Key page areas:`)}</p>
+      <small>Use <strong>Show on page</strong> to inspect the exact highlighted locations.</small>
     </div>
-  `).join("") + (locations.length > 8
-    ? `<p class="standards-extra-note">${escapeHtml(`${locations.length - 8} more detected location${locations.length - 8 === 1 ? "" : "s"} not shown.`)}</p>`
-    : "");
+    <ol class="standards-failing-list">
+      ${shownLocations.map(({ label }, index) => `
+        <li class="standards-failing-element">
+          <span class="standards-location-index">${index + 1}.</span>
+          <p>${escapeHtml(label)}</p>
+        </li>
+      `).join("")}
+    </ol>
+    ${locations.length ? `
+      <details class="standards-technical-matches" aria-label="Optional developer selector details">
+        <summary>
+          <span>Optional developer details</span>
+          <small>CSS selectors used for highlight/debugging</small>
+        </summary>
+        <ul>${technicalMatches}</ul>
+      </details>
+    ` : ""}
+  `;
 }
 
 function standardsIssueTableMarkup(result) {
@@ -1267,9 +1357,10 @@ function standardsIssueTableMarkup(result) {
         </summary>
         <div class="standards-issue-details">
           <section class="standards-detail-section">
-            <h4><span>1.</span> Page evidence (${count}):</h4>
-            <div class="standards-failing-list">
-              ${failingElementsMarkup(issue)}
+            <h4><span>1.</span> First redesign move</h4>
+            <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
+              <p>${escapeHtml(firstFixCopy)}</p>
+              ${profileGuidanceMarkup}
             </div>
           </section>
           <section class="standards-detail-section">
@@ -1279,11 +1370,8 @@ function standardsIssueTableMarkup(result) {
             </div>
           </section>
           <section class="standards-detail-section">
-            <h4><span>3.</span> First redesign move</h4>
-            <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
-              <p>${escapeHtml(firstFixCopy)}</p>
-              ${profileGuidanceMarkup}
-            </div>
+            <h4><span>3.</span> Page evidence</h4>
+            ${failingElementsMarkup(issue)}
           </section>
         </div>
       </details>
