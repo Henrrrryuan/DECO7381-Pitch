@@ -521,7 +521,7 @@ function renderScoreSlider(result) {
     if (state.currentResult) {
       renderExplanation(state.currentResult);
       renderDashboardSummary(state.currentResult);
-      if (state.rightPanelMode === "summary") {
+      if (state.workspaceMode === "explanation") {
         renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
       }
     }
@@ -1073,15 +1073,21 @@ function comparisonRow(label, currentScore, previousScore, className = "") {
 function renderComparison(currentResult, previousResult, previousSourceName) {
   state.previousResult = previousResult || null;
   state.previousSourceName = previousSourceName || "";
-  state.rightPanelMode = "summary";
   const comparisonList = document.getElementById("comparisonList");
   if (!comparisonList) {
     return;
   }
-  comparisonList.className = "comparison-list standards-workspace-list";
-  comparisonList.innerHTML = `
-    ${standardsIssueTableMarkup(currentResult)}
-  `;
+
+  const selected = selectedIssueRecord();
+  if (state.rightPanelMode === "detail" && selected) {
+    comparisonList.className = "comparison-list issue-guidance-workspace";
+    comparisonList.innerHTML = selectedIssueWorkspaceMarkup(selected);
+    return;
+  }
+
+  state.rightPanelMode = "summary";
+  comparisonList.className = "comparison-list issue-workspace-summary";
+  comparisonList.innerHTML = "";
 }
 
 function allIssueRecords(result) {
@@ -1181,15 +1187,6 @@ function friendlyLocationLabel(location) {
     return "Affected page area";
   }
 
-  const readableText = location.text
-    || location.preview
-    || location.sentence_preview
-    || location.label
-    || "";
-  if (readableText && !looksLikeTechnicalSelector(readableText)) {
-    return readableText;
-  }
-
   const technicalText = location.summary || location.region || location.selector || location.tag || "";
   const knownLabels = {
     "main.hero": "Hero section",
@@ -1214,7 +1211,19 @@ function friendlyLocationLabel(location) {
   if (technicalText.includes(".")) {
     return titleCaseSelectorPart(technicalText.split(".").pop());
   }
-  return technicalText ? titleCaseSelectorPart(technicalText) : "Affected page area";
+  if (technicalText) {
+    return titleCaseSelectorPart(technicalText);
+  }
+
+  const readableText = location.label
+    || location.preview
+    || location.sentence_preview
+    || location.text
+    || "";
+  if (readableText && !looksLikeTechnicalSelector(readableText)) {
+    return conciseText(readableText, "Affected text passage", 72);
+  }
+  return "Affected page area";
 }
 
 function locationMetaText(location) {
@@ -1267,17 +1276,11 @@ function failingElementsMarkup(issue) {
 
   const previewLimit = 3;
   const shownLocations = uniqueKeyLocations(locations, previewLimit);
-  const technicalMatches = locations.map((location, index) => `
-    <li>
-      <span aria-hidden="true">${index + 1}</span>
-      <code>${escapeHtml(locationMetaText(location).replace(/^Location: /, ""))}</code>
-    </li>
-  `).join("");
 
   return `
     <div class="standards-evidence-intro">
       <p>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found. Key page areas:`)}</p>
-      <small>Use <strong>Show on page</strong> to inspect the exact highlighted locations.</small>
+      <small>Use <strong>Show highlighted location</strong> on the issue card to inspect the exact locations.</small>
     </div>
     <ol class="standards-failing-list">
       ${shownLocations.map(({ label }, index) => `
@@ -1287,15 +1290,136 @@ function failingElementsMarkup(issue) {
         </li>
       `).join("")}
     </ol>
-    ${locations.length ? `
-      <details class="standards-technical-matches" aria-label="Optional developer selector details">
-        <summary>
-          <span>Optional developer details</span>
-          <small>CSS selectors used for highlight/debugging</small>
-        </summary>
-        <ul>${technicalMatches}</ul>
-      </details>
-    ` : ""}
+  `;
+}
+
+function recommendedFixSteps(issue, dimensionName) {
+  const ruleId = issue?.rule_id || "";
+  const category = displayDimensionName(dimensionName);
+  if (ruleId.startsWith("RD") || category === "Readability") {
+    return [
+      "Rewrite the affected text into shorter, single-idea sentences.",
+      "Replace dense or specialist wording with familiar terms where possible.",
+      "Use headings, bullets, or spacing so readers can scan before reading in full.",
+    ];
+  }
+  if (ruleId.startsWith("ID") || category === "Interaction & Distraction") {
+    return [
+      "Remove automatic interruptions, autoplay, or motion that starts before users choose it.",
+      "Make overlays, chat prompts, and secondary actions user-triggered where possible.",
+      "Keep the primary task visible and stable while users are reading or deciding.",
+    ];
+  }
+  if (ruleId.startsWith("CS") || category === "Consistency") {
+    return [
+      "Use consistent headings, labels, and navigation patterns across related sections.",
+      "Make the next step predictable before asking users to act.",
+      "Avoid sudden layout or wording changes that force users to re-orient.",
+    ];
+  }
+  return [
+    "Choose one primary reading path or task for this area.",
+    "Demote secondary banners, panels, media, or CTAs that compete with the main path.",
+    "Use Show highlighted location to check the highlighted areas after redesigning the layout.",
+  ];
+}
+
+function recommendedFixStepsMarkup(issue, dimensionName) {
+  const steps = recommendedFixSteps(issue, dimensionName);
+  return `
+    <ol class="guidance-step-list">
+      ${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
+    </ol>
+  `;
+}
+
+function advancedDetailsMarkup(issue, ruleId, standards, isoClauses) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const selectorItems = locations.map((location, index) => `
+    <li>
+      <span aria-hidden="true">${index + 1}</span>
+      <code>${escapeHtml(locationMetaText(location).replace(/^Location: /, ""))}</code>
+    </li>
+  `).join("");
+  return `
+    <details class="advanced-details">
+      <summary>Advanced details</summary>
+      <div class="advanced-details-grid">
+        <section>
+          <span class="issue-detail-label">Standards mapping</span>
+          <ul class="priority-evidence">
+            <li>${escapeHtml(standards.wcag)}</li>
+            <li>${escapeHtml(standards.coga)}</li>
+            ${isoClauses.map((clause) => `<li>${escapeHtml(clause)}</li>`).join("")}
+          </ul>
+        </section>
+        <section>
+          <span class="issue-detail-label">Developer selectors</span>
+          ${selectorItems ? `<ul class="advanced-selector-list">${selectorItems}</ul>` : `<p class="summary-muted">No exact selector was linked for this issue.</p>`}
+        </section>
+      </div>
+    </details>
+  `;
+}
+
+function selectedIssueWorkspaceMarkup(record) {
+  const { dimension, issue } = record;
+  const dimensionName = dimension.dimension;
+  const ruleId = issue.rule_id || "";
+  const model = issueDisplayModel(issue, dimensionName);
+  const users = issueAffectedUserTags(ruleId);
+  const objective = issueCognitiveObjective(ruleId);
+  const isoClauses = issueIsoClauseTags(ruleId);
+  const standards = frameworkMappingCopy(ruleId);
+  const affectedCount = issueFailingElementCount(issue);
+  return `
+    <section class="issue-guidance-panel" aria-label="Selected issue guidance">
+      <div class="issue-guidance-hero">
+        <div class="issue-detail-heading">
+          <span>${escapeHtml(model.issueCategory)}</span>
+        </div>
+        <div class="issue-detail-problem">
+          <span class="issue-detail-label">Selected issue</span>
+          <h3>${escapeHtml(model.issueTitle)}</h3>
+          <p>Use these steps to redesign the selected issue. Exact locations are available from the issue card.</p>
+        </div>
+        <div class="issue-brief-strip" aria-label="Issue summary">
+          <div class="issue-brief-item">
+            <span>Affected elements</span>
+            <strong>${affectedCount}</strong>
+          </div>
+          <div class="issue-brief-item">
+            <span>Most affected users</span>
+            <div class="user-group-chip-list">
+              ${users.map((user) => `<span class="user-group-chip">${escapeHtml(user)}</span>`).join("")}
+            </div>
+          </div>
+          <div class="issue-brief-item">
+            <span>Guidance focus</span>
+            <strong>${escapeHtml(objective)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="issue-guidance-grid">
+        <section class="guidance-card guidance-card-primary">
+          <span class="issue-detail-label">Recommended fix steps</span>
+          ${recommendedFixStepsMarkup(issue, dimensionName)}
+        </section>
+        <div class="issue-guidance-secondary">
+          <section class="guidance-card">
+            <span class="issue-detail-label">Why this matters</span>
+            <p>${escapeHtml(model.whyItMatters)}</p>
+          </section>
+          <section class="guidance-card">
+            <span class="issue-detail-label">Page evidence</span>
+            ${failingElementsMarkup(issue)}
+          </section>
+        </div>
+      </div>
+
+      ${advancedDetailsMarkup(issue, ruleId, standards, isoClauses)}
+    </section>
   `;
 }
 
@@ -1445,7 +1569,7 @@ function updatePreviewIssueHeader() {
 
   if (!selected) {
     titleNode.textContent = "No issue selected";
-    setWebsiteStatus("Select an issue and choose Show on page to highlight it in the preview.");
+    setWebsiteStatus("Select an issue and choose Show highlighted location to highlight it in the preview.");
     return;
   }
 
@@ -1512,16 +1636,19 @@ function openIssueInSummary(dimensionName, ruleId) {
   const issueId = issueDomId(dimensionName, ruleId);
   const isSameIssueOpen = (
     state.selectedIssueId === issueId
-    && state.rightPanelMode === "summary"
+    && state.rightPanelMode === "detail"
     && state.workspaceMode === "explanation"
   );
 
-  state.rightPanelMode = "summary";
-  setWorkspaceMode("explanation");
-
   if (isSameIssueOpen) {
     state.selectedIssueId = "";
-    renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+    state.activeHighlightDimension = "";
+    state.activeHighlightIssueId = "";
+    state.rightPanelMode = "summary";
+    setWorkspaceMode("website");
+    clearWebsiteHighlights();
+    updatePreviewIssueHeader();
+    setWebsiteStatus("Preview reset. Select an issue to highlight it on the page.");
     updateActiveHighlightButtons();
     return;
   }
@@ -1531,17 +1658,10 @@ function openIssueInSummary(dimensionName, ruleId) {
     return;
   }
 
+  state.rightPanelMode = "detail";
+  setWorkspaceMode("explanation");
   renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
   updateActiveHighlightButtons();
-
-  const target = document.querySelector(
-    `.standards-issue-row[data-summary-issue-id="${CSS.escape(issueId)}"]`,
-  );
-  if (!target) {
-    return;
-  }
-  target.open = true;
-  target.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function renderIssuePreviewPanel(dimensionName, ruleId) {
@@ -1580,7 +1700,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const isSelected = issueId === state.selectedIssueId;
   const isPreviewActive = isSelected && state.rightPanelMode === "preview";
   const isDetailActive = isSelected
-    && state.rightPanelMode === "summary"
+    && state.rightPanelMode === "detail"
     && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 135);
@@ -1605,9 +1725,9 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
           type="button"
           data-view-on-page="${escapeHtml(issue.rule_id)}"
           data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="Show this issue on the analysed page"
+          aria-label="Show highlighted location for this issue on the analysed page"
           aria-pressed="${isPreviewActive ? "true" : "false"}"
-        >Show on page</button>
+        >Show highlighted location</button>
         <button
           class="view-details-button${isDetailActive ? " is-active" : ""}"
           type="button"
@@ -2075,7 +2195,7 @@ function updateActiveHighlightButtons() {
   document.querySelectorAll("[data-view-issue]").forEach((button) => {
     const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewIssue);
     const isActive = issueId === state.selectedIssueId
-      && state.rightPanelMode === "summary"
+      && state.rightPanelMode === "detail"
       && state.workspaceMode === "explanation";
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
@@ -2444,7 +2564,7 @@ async function analyzeRenderedPreviewDocument(doc) {
     saveTransientDashboardState(mergedPayload, renderedHtml);
     renderResult(buildAnalysisView(mergedPayload), renderedHtml, { preserveSelectedIssue: true });
     updateActiveHighlightButtons();
-    if (state.rightPanelMode === "summary") {
+    if (state.workspaceMode === "explanation") {
       renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
     }
 
@@ -2897,16 +3017,6 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
-    const topIssueTrigger = event.target.closest("[data-open-top-issue]");
-    if (topIssueTrigger) {
-      event.preventDefault();
-      const dimensionName = topIssueTrigger.dataset.openTopDimension;
-      const ruleId = topIssueTrigger.dataset.openTopIssue;
-      focusIssueCard(dimensionName, ruleId);
-      openIssueInSummary(dimensionName, ruleId);
-      return;
-    }
-
     const pageTrigger = event.target.closest("[data-view-on-page]");
     if (pageTrigger) {
       event.preventDefault();
