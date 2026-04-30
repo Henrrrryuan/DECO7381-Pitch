@@ -1662,46 +1662,6 @@ button.dimension-row.is-linked-active {
   white-space: normal;
 }
 
-.standards-pill.more {
-  border: 1px solid #dfe5ed;
-  background: #fff;
-  cursor: default;
-  font-family: inherit;
-  color: #1f2937;
-}
-
-.standards-more-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.standards-more-popover {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  z-index: 25;
-  min-width: max-content;
-  max-width: min(280px, 70vw);
-  display: none;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid #dce2ea;
-  border-radius: 0;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-}
-
-.standards-more-wrap:hover .standards-more-popover,
-.standards-more-wrap:focus-within .standards-more-popover {
-  display: inline-flex;
-}
-
-.standards-more-popover .standards-pill {
-  width: fit-content;
-}
-
 .standards-pill-list.objective .standards-pill,
 .standards-pill-list.iso .standards-pill,
 .standards-pill-list.rules .standards-pill {
@@ -1709,12 +1669,6 @@ button.dimension-row.is-linked-active {
   align-items: center;
   background: #e8ecef;
   line-height: 1.35;
-}
-
-.standards-pill-list.objective .standards-pill.more,
-.standards-pill-list.iso .standards-pill.more,
-.standards-pill-list.rules .standards-pill.more {
-  background: #fff;
 }
 
 .standards-iso-cell {

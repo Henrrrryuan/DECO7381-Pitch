@@ -1136,20 +1136,9 @@ function issueCognitiveObjective(ruleId) {
 
 function pillListMarkup(items, limit = 2, className = "") {
   const safeItems = [...new Set(items.filter(Boolean))];
-  const shown = safeItems.slice(0, limit);
-  const hiddenItems = safeItems.slice(limit);
-  const hiddenCount = hiddenItems.length;
   return `
     <span class="standards-pill-list ${className}">
-      ${shown.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
-      ${hiddenCount ? `
-        <span class="standards-more-wrap">
-          <button class="standards-pill more" type="button" aria-label="${escapeHtml(`Show ${hiddenCount} more mapped item${hiddenCount === 1 ? "" : "s"}`)}">+${hiddenCount} more</button>
-          <span class="standards-more-popover" role="tooltip">
-            ${hiddenItems.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
-          </span>
-        </span>
-      ` : ""}
+      ${safeItems.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
     </span>
   `;
 }
