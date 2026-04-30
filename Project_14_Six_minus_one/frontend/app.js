@@ -2806,6 +2806,19 @@ function bindEvents() {
 
   if (printButton) {
     printButton.addEventListener("click", () => {
+      const previousMode = state.workspaceMode;
+      if (previousMode !== "explanation") {
+        window.addEventListener(
+          "afterprint",
+          () => {
+            setWorkspaceMode(previousMode);
+          },
+          { once: true },
+        );
+      }
+      if (previousMode !== "explanation") {
+        setWorkspaceMode("explanation");
+      }
       window.print();
     });
   }

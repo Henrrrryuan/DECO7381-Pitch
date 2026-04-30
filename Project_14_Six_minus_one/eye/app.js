@@ -801,6 +801,7 @@ function handleGaze(data) {
   state.samples += 1;
   samplesText.textContent = String(state.samples);
   coordsText.textContent = `x: ${Math.round(x)}, y: ${Math.round(y)}`;
+  updateSaveButtonState();
 }
 
 function beginTracking() {

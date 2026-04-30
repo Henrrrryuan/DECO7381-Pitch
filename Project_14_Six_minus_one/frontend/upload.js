@@ -170,6 +170,21 @@ function normalizeUrl(rawUrl) {
     throw new Error("Only http:// or https:// URLs are supported.");
   }
 
+  const hostname = parsed.hostname.toLowerCase();
+  const isParsedLocalTarget =
+    hostname === "localhost" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    /^127\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
+
+  if (!isParsedLocalTarget) {
+    throw new Error("Only local URLs are supported (localhost, 127.0.0.1, or LAN IP).");
+  }
+
   return parsed.href;
 }
 

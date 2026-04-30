@@ -18,8 +18,37 @@ const loadingMessage = document.getElementById("analysisLoadingMessage");
 const loadingPercent = document.getElementById("analysisLoadingPercent");
 const loadingProgressBar = document.getElementById("analysisLoadingProgressBar");
 const loadingError = document.getElementById("analysisLoadingError");
+const cancelButton = document.getElementById("analysisCancelButton");
 
 let displayedProgress = 8;
+let cancelRequested = false;
+
+function createCancelledError() {
+  const error = new Error("Analysis cancelled by user.");
+  error.name = "AnalysisCancelledError";
+  return error;
+}
+
+function ensureNotCancelled() {
+  if (cancelRequested) {
+    throw createCancelledError();
+  }
+}
+
+function handleCancelAnalysis() {
+  if (cancelRequested) {
+    return;
+  }
+  cancelRequested = true;
+  sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
+  loadingError.hidden = true;
+  setMessage("Cancelling and returning to home");
+  if (cancelButton) {
+    cancelButton.disabled = true;
+    cancelButton.textContent = "Cancelling...";
+  }
+  window.location.href = "./index.html";
+}
 
 function initBackToAnalysisButton() {
   const backButton = document.getElementById("backToAnalysisButton");
@@ -84,12 +113,15 @@ async function fileFromDataUrl(dataUrl, fileName, fileType) {
 }
 
 async function analyzePendingFile(pending) {
+  ensureNotCancelled();
   if (pending.sourceType === "zip") {
     setProgress(24);
     setMessage("Reading the uploaded package");
     const file = await fileFromDataUrl(pending.fileDataUrl, pending.fileName, pending.fileType);
+    ensureNotCancelled();
     setProgress(38);
     const payload = await analyzeUploadFile(file, pending.baselineRunId || null);
+    ensureNotCancelled();
     return {
       payload,
       html: payload.html_content || "",
@@ -103,6 +135,7 @@ async function analyzePendingFile(pending) {
   const html = pending.html || "";
   setProgress(42);
   const payload = await analyzeHtmlText(html, pending.fileName || "uploaded.html");
+  ensureNotCancelled();
   return {
     payload,
     html,
@@ -112,9 +145,11 @@ async function analyzePendingFile(pending) {
 }
 
 async function analyzePendingUrl(pending) {
+  ensureNotCancelled();
   setProgress(24);
   setMessage("Fetching the live page");
   const payload = await analyzeUrl(pending.url, pending.baselineRunId || null);
+  ensureNotCancelled();
   const html = payload.html_content || "";
   return {
     payload,
@@ -126,19 +161,24 @@ async function analyzePendingUrl(pending) {
 }
 
 async function attachVisualComplexity(result, pending) {
+  ensureNotCancelled();
   setProgress(68);
   setMessage("Checking visual complexity");
   try {
     if (pending.mode === "url" && pending.url) {
       result.payload.visual_complexity = await analyzeVisualComplexityUrl(pending.url);
+      ensureNotCancelled();
       return;
     }
     result.payload.visual_complexity = await analyzeVisualComplexityHtml(result.html || "");
+    ensureNotCancelled();
   } catch (error) {
+    ensureNotCancelled();
     result.payload.visual_complexity_error = error.message || String(error);
     if (pending.mode === "url" && result.html) {
       try {
         result.payload.visual_complexity = await analyzeVisualComplexityHtml(result.html);
+        ensureNotCancelled();
       } catch (fallbackError) {
         result.payload.visual_complexity_error = fallbackError.message || String(fallbackError);
       }
@@ -147,6 +187,7 @@ async function attachVisualComplexity(result, pending) {
 }
 
 function saveResult(result) {
+  ensureNotCancelled();
   setProgress(92);
   sessionStorage.removeItem(DASHBOARD_HISTORY_CONTEXT_KEY);
   sessionStorage.removeItem(DASHBOARD_HISTORY_ONCE_KEY);
@@ -179,28 +220,38 @@ function showError(error) {
 async function runPendingAnalysis() {
   const startedAt = Date.now();
   try {
+    ensureNotCancelled();
     const pending = loadPendingAnalysis();
     setProgress(12);
     const result = pending.mode === "url"
       ? await analyzePendingUrl(pending)
       : await analyzePendingFile(pending);
 
+    ensureNotCancelled();
     await attachVisualComplexity(result, pending);
+    ensureNotCancelled();
     setProgress(86);
     setMessage("Preparing the report");
     saveResult(result);
+    ensureNotCancelled();
     sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
     const elapsed = Date.now() - startedAt;
     if (elapsed < MIN_LOADING_TIME_MS) {
       await wait(MIN_LOADING_TIME_MS - elapsed);
     }
+    ensureNotCancelled();
     setProgress(100);
     await wait(350);
+    ensureNotCancelled();
     window.location.href = "./dashboard.html";
   } catch (error) {
+    if (cancelRequested || error?.name === "AnalysisCancelledError") {
+      return;
+    }
     showError(error);
   }
 }
 
 initBackToAnalysisButton();
+cancelButton?.addEventListener("click", handleCancelAnalysis);
 runPendingAnalysis();

@@ -27,10 +27,6 @@
     <section class="upload-hero">
       <div class="upload-copy">
         <h1>Cognitive Accessibility Evaluation</h1>
-        <p class="upload-description">
-          Check a live page or uploaded file for readability, clutter, distraction,
-          and navigation issues.
-        </p>
       </div>
 
       <section class="input-workflow" aria-label="CogniLens input workflow">
@@ -45,7 +41,7 @@
               data-workflow-option="url"
             >
               <span class="workflow-option-title">Website URL</span>
-              <span class="workflow-option-copy">Check a page from localhost or a public website.</span>
+              <span class="workflow-option-copy">Check a page from your local development server only.</span>
             </button>
             <button
               class="workflow-option"
@@ -65,8 +61,7 @@
               <div class="input-card-copy">
                 <h3>Check a website</h3>
                 <p>
-                  Paste the page link you want to review. Localhost and public URLs are
-                  both supported.
+                  Paste a local development URL (localhost / local network).
                 </p>
               </div>
 
@@ -79,9 +74,6 @@
                   placeholder="http://localhost:5173"
                   autocomplete="url"
                 >
-                <p class="url-examples">
-                  （Examples: localhost:5173 · localhost:3000 · 127.0.0.1:5500/index.html）
-                </p>
               </div>
 
               <button id="analyzeUrlButton" class="upload-analyze-button" type="submit" disabled>

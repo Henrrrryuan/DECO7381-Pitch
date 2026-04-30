@@ -351,57 +351,12 @@ function EyeEvidenceSummaryCard({
     );
     return (sum / items.length).toFixed(1);
   }, [items]);
-  const linkedReports = useMemo(() => {
-    const set = new Set(items.map((item) => item.run_id).filter(Boolean));
-    return set.size;
-  }, [items]);
-  const latestUpdatedAt = latestSession?.created_at ? formatDate(latestSession.created_at) : "—";
-  const coverageTrend = useMemo(() => {
-    if (items.length < 2) {
-      return "Not enough data";
-    }
-    const recentBucket = items.slice(0, 3);
-    const previousBucket = items.slice(3, 6);
-    const recentAvg = recentBucket.reduce((acc, item) => acc + Number(item.coverage_percent ?? 0), 0)
-      / recentBucket.length;
-    if (!previousBucket.length) {
-      return "Stable";
-    }
-    const previousAvg = previousBucket.reduce((acc, item) => acc + Number(item.coverage_percent ?? 0), 0)
-      / previousBucket.length;
-    const delta = recentAvg - previousAvg;
-    if (delta > 1.5) {
-      return "Upward";
-    }
-    if (delta < -1.5) {
-      return "Downward";
-    }
-    return "Stable";
-  }, [items]);
-  const qualityHint = useMemo(() => {
-    if (!items.length) {
-      return "No evidence yet";
-    }
-    const values = items.map((item) => Number(item.coverage_percent ?? 0));
-    const avg = values.reduce((acc, value) => acc + value, 0) / values.length;
-    const variance = values.reduce((acc, value) => acc + ((value - avg) ** 2), 0) / values.length;
-    if (variance > 25) {
-      return "High variance in gaze coverage";
-    }
-    if (avg < 20) {
-      return "Coverage is generally low";
-    }
-    return "Coverage pattern looks stable";
-  }, [items]);
 
   return h("section", { className: "history-list-shell eye-history-summary-shell" },
     h("div", { className: "history-section-header history-section-header-compact" },
       h("div", null,
         h("p", { className: "upload-kicker" }, "Supporting Evidence"),
         h("h2", null, "Eye-Tracking Evidence"),
-      ),
-      h("p", { className: "history-section-copy" },
-        "Use saved eye sessions to validate attention and scanning patterns for report findings.",
       ),
     ),
     h("div", { className: "history-evidence-summary-grid" },
@@ -412,10 +367,6 @@ function EyeEvidenceSummaryCard({
       h("article", { className: "history-evidence-summary-card" },
         h("span", { className: "history-evidence-summary-label" }, "Avg coverage (this page)"),
         h("strong", null, `${averageCoverage}%`),
-      ),
-      h("article", { className: "history-evidence-summary-card" },
-        h("span", { className: "history-evidence-summary-label" }, "Linked reports (this page)"),
-        h("strong", null, String(linkedReports)),
       ),
     ),
     h("div", { className: "history-evidence-latest" },
@@ -432,20 +383,6 @@ function EyeEvidenceSummaryCard({
               h("span", null, formatDate(latestSession.created_at)),
             )
             : h("p", { className: "history-empty" }, "No eye-tracking evidence sessions have been saved yet."),
-    ),
-    h("div", { className: "history-evidence-insights" },
-      h("div", { className: "history-evidence-insight-row" },
-        h("span", null, "Last updated"),
-        h("strong", null, latestUpdatedAt),
-      ),
-      h("div", { className: "history-evidence-insight-row" },
-        h("span", null, "Coverage trend"),
-        h("strong", null, coverageTrend),
-      ),
-      h("div", { className: "history-evidence-insight-row" },
-        h("span", null, "Quality hint"),
-        h("strong", null, qualityHint),
-      ),
     ),
     h("div", { className: "history-evidence-actions" },
       h("button", {
@@ -465,17 +402,7 @@ function EyeEvidenceModal({
   onPageChange,
   onClose,
 }) {
-  const [filter, setFilter] = useState("all");
-  const filteredItems = useMemo(() => {
-    if (filter === "linked") {
-      return items.filter((item) => Boolean(item.run_id));
-    }
-    if (filter === "unlinked") {
-      return items.filter((item) => !item.run_id);
-    }
-    return items;
-  }, [items, filter]);
-  const emptyMessage = "No eye-tracking evidence sessions for this filter.";
+  const emptyMessage = "No eye-tracking evidence sessions have been saved yet.";
 
   return h("div", { className: "history-evidence-modal-backdrop", role: "presentation", onClick: onClose },
     h("section", {
@@ -490,23 +417,6 @@ function EyeEvidenceModal({
         h("p", { className: "upload-kicker" }, "Supporting Evidence"),
         h("h2", null, "All Eye-Tracking Evidence Sessions"),
       ),
-      h("div", { className: "history-evidence-filter-group", role: "tablist", "aria-label": "Evidence filters" },
-        h("button", {
-          type: "button",
-          className: `history-evidence-filter-btn${filter === "all" ? " is-active" : ""}`,
-          onClick: () => setFilter("all"),
-        }, "All"),
-        h("button", {
-          type: "button",
-          className: `history-evidence-filter-btn${filter === "linked" ? " is-active" : ""}`,
-          onClick: () => setFilter("linked"),
-        }, "Linked"),
-        h("button", {
-          type: "button",
-          className: `history-evidence-filter-btn${filter === "unlinked" ? " is-active" : ""}`,
-          onClick: () => setFilter("unlinked"),
-        }, "Unlinked"),
-      ),
       h("button", {
         type: "button",
         className: "history-modal-close-btn",
@@ -520,7 +430,7 @@ function EyeEvidenceModal({
       h("span", null, "Coverage"),
     ),
     h("div", { id: "eyeHistoryList", className: "history-table-body" },
-      h(EyeRows, { items: filteredItems, status, emptyMessage }),
+      h(EyeRows, { items, status, emptyMessage }),
     ),
     h(Pagination, {
       id: "eyeHistoryPagination",
