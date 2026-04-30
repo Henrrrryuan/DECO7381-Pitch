@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "https://esm.sh/react@18.2.0";
 import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
@@ -9,6 +10,7 @@ import {
   API_BASE,
   fetchJson,
   formatDate,
+  formatReportTimestamp,
   formatShortId,
   saveDashboardSession,
 } from "./common.js";
@@ -17,8 +19,10 @@ import {
 // The existing CSS classes are reused so the visual design stays consistent
 // while the old manual DOM rendering is replaced with state-driven components.
 const h = React.createElement;
-const PAGE_SIZE = 25;
-const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
+const REPORT_PAGE_SIZE = 10;
+const EYE_PAGE_SIZE = 25;
+const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
+const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 
 // Convert a saved history detail response into the session shape expected by
 // dashboard.html. This keeps the full run metadata, so the Dashboard Report ID
@@ -50,20 +54,20 @@ function formatDuration(ms) {
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
-function getTotalPages(total) {
-  return Math.max(1, Math.ceil((Number(total) || 0) / PAGE_SIZE));
+function getTotalPages(total, pageSize) {
+  return Math.max(1, Math.ceil((Number(total) || 0) / pageSize));
 }
 
-function getPageOffset(page) {
-  return (Math.max(1, Number(page) || 1) - 1) * PAGE_SIZE;
+function getPageOffset(page, pageSize) {
+  return (Math.max(1, Number(page) || 1) - 1) * pageSize;
 }
 
 // Build API URLs for server-side pagination. The backend returns one page of
 // records plus a total count; React stores only the current page in state.
-function buildPagedUrl(path, page, query) {
+function buildPagedUrl(path, page, query, pageSize) {
   const params = new URLSearchParams({
-    limit: String(PAGE_SIZE),
-    offset: String(getPageOffset(page)),
+    limit: String(pageSize),
+    offset: String(getPageOffset(page, pageSize)),
   });
 
   if (query) {
@@ -85,6 +89,7 @@ function HistoryApp() {
   const [eyeSessions, setEyeSessions] = useState({ items: [], total: 0 });
   const [reportStatus, setReportStatus] = useState({ loading: true, error: "" });
   const [eyeStatus, setEyeStatus] = useState({ loading: true, error: "" });
+  const [eyeModalOpen, setEyeModalOpen] = useState(false);
 
   // Load report history whenever the submitted query or report page changes.
   // AbortController prevents old requests from updating the UI after a newer
@@ -93,10 +98,10 @@ function HistoryApp() {
     const controller = new AbortController();
     setReportStatus({ loading: true, error: "" });
 
-    fetchJson(buildPagedUrl("/history", reportPage, query), { signal: controller.signal })
+    fetchJson(buildPagedUrl("/history", reportPage, query, REPORT_PAGE_SIZE), { signal: controller.signal })
       .then((payload) => {
         const total = Number(payload.total ?? payload.items?.length ?? 0) || 0;
-        const totalPages = getTotalPages(total);
+        const totalPages = getTotalPages(total, REPORT_PAGE_SIZE);
         if (reportPage > totalPages) {
           setReportPage(totalPages);
           return;
@@ -119,16 +124,16 @@ function HistoryApp() {
     return () => controller.abort();
   }, [query, reportPage]);
 
-  // Load eye-tracking evidence independently from report history. It uses the
-  // same query text but keeps its own page number and loading state.
+  // Load eye-tracking evidence independently from report history. It does not
+  // follow the left search query, so the right panel remains a stable summary.
   useEffect(() => {
     const controller = new AbortController();
     setEyeStatus({ loading: true, error: "" });
 
-    fetchJson(buildPagedUrl("/eye/sessions", eyePage, query), { signal: controller.signal })
+    fetchJson(buildPagedUrl("/eye/sessions", eyePage, "", EYE_PAGE_SIZE), { signal: controller.signal })
       .then((payload) => {
         const total = Number(payload.total ?? payload.items?.length ?? 0) || 0;
-        const totalPages = getTotalPages(total);
+        const totalPages = getTotalPages(total, EYE_PAGE_SIZE);
         if (eyePage > totalPages) {
           setEyePage(totalPages);
           return;
@@ -149,7 +154,7 @@ function HistoryApp() {
       });
 
     return () => controller.abort();
-  }, [query, eyePage]);
+  }, [eyePage]);
 
   // Search is submitted explicitly. This avoids reloading both tables on every
   // keystroke and resets both pagers back to page 1 for the new result set.
@@ -157,22 +162,30 @@ function HistoryApp() {
     event?.preventDefault();
     setQuery(queryInput.trim());
     setReportPage(1);
-    setEyePage(1);
   }, [queryInput]);
 
   // Open a saved report by fetching its full detail, saving it to sessionStorage,
-  // and then navigating to dashboard.html. The print action sets a short-lived
-  // flag so the Dashboard can open the browser print flow after loading.
-  const openReport = useCallback(async (runId, action) => {
+  // and then navigating to dashboard.html.
+  const openReport = useCallback(async (runId) => {
     const detail = await fetchJson(`${API_BASE}/history/${runId}`);
     saveDashboardSession(buildCurrentSession(detail));
-    if (action === "print") {
-      sessionStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
-    } else {
-      sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
-    }
-    window.location.href = "./dashboard.html";
+    sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, runId);
+    sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
+    window.location.href = "./dashboard.html?from=history";
   }, []);
+
+  useEffect(() => {
+    if (!eyeModalOpen) {
+      return undefined;
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setEyeModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [eyeModalOpen]);
 
   return h(React.Fragment, null,
     h(HistoryHero),
@@ -191,15 +204,21 @@ function HistoryApp() {
         onPageChange: setReportPage,
         onOpenReport: openReport,
       }),
-      h(EyeHistoryPanel, {
+      h(EyeEvidenceSummaryCard, {
         items: eyeSessions.items,
         total: eyeSessions.total,
-        page: eyePage,
         status: eyeStatus,
-        query,
-        onPageChange: setEyePage,
+        onOpenModal: () => setEyeModalOpen(true),
       }),
     ),
+    eyeModalOpen && h(EyeEvidenceModal, {
+      items: eyeSessions.items,
+      total: eyeSessions.total,
+      page: eyePage,
+      status: eyeStatus,
+      onPageChange: setEyePage,
+      onClose: () => setEyeModalOpen(false),
+    }),
   );
 }
 
@@ -207,11 +226,7 @@ function HistoryApp() {
 // the main HistoryApp easier to read and mirrors how React pages are usually split.
 function HistoryHero() {
   return h("section", { className: "history-hero" },
-    h("p", { className: "upload-kicker" }, "History"),
     h("h1", null, "Previous Analyses"),
-    h("p", { className: "history-description" },
-      "Review recent submissions and reopen a previous analysis in the dashboard.",
-    ),
   );
 }
 
@@ -219,15 +234,12 @@ function HistoryHero() {
 // user submits, then HistoryApp applies it as the active API query.
 function HistorySearch({ queryInput, onQueryInputChange, onSearch }) {
   return h("section", { className: "history-toolbar", "aria-label": "History search" },
-    h("label", { className: "history-search-label", htmlFor: "historySearchInput" },
-      "Search by file name, report ID, or evidence session ID",
-    ),
     h("form", { className: "history-search-row", onSubmit: onSearch },
       h("input", {
         id: "historySearchInput",
         className: "history-search-input",
         type: "search",
-        placeholder: "Enter a file name, report ID, or evidence session ID",
+        placeholder: "Enter a file name or report ID",
         autoComplete: "off",
         value: queryInput,
         onChange: (event) => onQueryInputChange(event.target.value),
@@ -279,6 +291,7 @@ function ReportHistoryPanel({
       page,
       total,
       itemLabel: "reports",
+      pageSize: REPORT_PAGE_SIZE,
       onPageChange,
     }),
   );
@@ -301,7 +314,7 @@ function ReportRows({ items, status, emptyMessage, onOpenReport }) {
 
   return items.map((item) => h("article", { className: "history-row", key: item.run_id },
     h("span", { className: "history-cell history-id", title: item.run_id },
-      formatShortId(item.run_id, "R-"),
+      formatReportTimestamp(item.created_at),
     ),
     h("span", { className: "history-cell title", title: item.source_name }, item.source_name),
     h("span", { className: "history-cell" }, formatDate(item.created_at)),
@@ -312,17 +325,8 @@ function ReportRows({ items, status, emptyMessage, onOpenReport }) {
           className: "history-open-btn",
           type: "button",
           "data-run-id": item.run_id,
-          "data-action": "open",
-          onClick: () => onOpenReport(item.run_id, "open"),
+          onClick: () => onOpenReport(item.run_id),
         }, "View"),
-        h("button", {
-          className: "history-print-btn",
-          type: "button",
-          "data-run-id": item.run_id,
-          "data-action": "print",
-          title: "Open this record and print it",
-          onClick: () => onOpenReport(item.run_id, "print"),
-        }, h("span", { "aria-hidden": "true" }, "Print")),
       ),
     ),
   ));
@@ -330,36 +334,193 @@ function ReportRows({ items, status, emptyMessage, onOpenReport }) {
 
 // Right-hand panel for optional eye-tracking evidence sessions. These records
 // are supporting evidence linked back to Report IDs rather than primary reports.
-function EyeHistoryPanel({
+function EyeEvidenceSummaryCard({
+  items,
+  total,
+  status,
+  onOpenModal,
+}) {
+  const latestSession = items[0] || null;
+  const averageCoverage = useMemo(() => {
+    if (!items.length) {
+      return "0.0";
+    }
+    const sum = items.reduce(
+      (acc, item) => acc + Number(item.coverage_percent ?? 0),
+      0,
+    );
+    return (sum / items.length).toFixed(1);
+  }, [items]);
+  const linkedReports = useMemo(() => {
+    const set = new Set(items.map((item) => item.run_id).filter(Boolean));
+    return set.size;
+  }, [items]);
+  const latestUpdatedAt = latestSession?.created_at ? formatDate(latestSession.created_at) : "—";
+  const coverageTrend = useMemo(() => {
+    if (items.length < 2) {
+      return "Not enough data";
+    }
+    const recentBucket = items.slice(0, 3);
+    const previousBucket = items.slice(3, 6);
+    const recentAvg = recentBucket.reduce((acc, item) => acc + Number(item.coverage_percent ?? 0), 0)
+      / recentBucket.length;
+    if (!previousBucket.length) {
+      return "Stable";
+    }
+    const previousAvg = previousBucket.reduce((acc, item) => acc + Number(item.coverage_percent ?? 0), 0)
+      / previousBucket.length;
+    const delta = recentAvg - previousAvg;
+    if (delta > 1.5) {
+      return "Upward";
+    }
+    if (delta < -1.5) {
+      return "Downward";
+    }
+    return "Stable";
+  }, [items]);
+  const qualityHint = useMemo(() => {
+    if (!items.length) {
+      return "No evidence yet";
+    }
+    const values = items.map((item) => Number(item.coverage_percent ?? 0));
+    const avg = values.reduce((acc, value) => acc + value, 0) / values.length;
+    const variance = values.reduce((acc, value) => acc + ((value - avg) ** 2), 0) / values.length;
+    if (variance > 25) {
+      return "High variance in gaze coverage";
+    }
+    if (avg < 20) {
+      return "Coverage is generally low";
+    }
+    return "Coverage pattern looks stable";
+  }, [items]);
+
+  return h("section", { className: "history-list-shell eye-history-summary-shell" },
+    h("div", { className: "history-section-header history-section-header-compact" },
+      h("div", null,
+        h("p", { className: "upload-kicker" }, "Supporting Evidence"),
+        h("h2", null, "Eye-Tracking Evidence"),
+      ),
+      h("p", { className: "history-section-copy" },
+        "Use saved eye sessions to validate attention and scanning patterns for report findings.",
+      ),
+    ),
+    h("div", { className: "history-evidence-summary-grid" },
+      h("article", { className: "history-evidence-summary-card" },
+        h("span", { className: "history-evidence-summary-label" }, "Total sessions"),
+        h("strong", null, String(total || 0)),
+      ),
+      h("article", { className: "history-evidence-summary-card" },
+        h("span", { className: "history-evidence-summary-label" }, "Avg coverage (this page)"),
+        h("strong", null, `${averageCoverage}%`),
+      ),
+      h("article", { className: "history-evidence-summary-card" },
+        h("span", { className: "history-evidence-summary-label" }, "Linked reports (this page)"),
+        h("strong", null, String(linkedReports)),
+      ),
+    ),
+    h("div", { className: "history-evidence-latest" },
+      h("h3", null, "Latest evidence session"),
+      status.loading
+        ? h("p", { className: "history-empty" }, "Loading eye-tracking evidence...")
+        : status.error
+          ? h("p", { className: "history-empty" }, status.error)
+          : latestSession
+            ? h("div", { className: "history-evidence-latest-meta" },
+              h("strong", { title: latestSession.source_name }, latestSession.source_name),
+              h("span", null, `Evidence ${formatShortId(latestSession.session_id, "E-")}`),
+              h("span", null, `Coverage ${Number(latestSession.coverage_percent ?? 0).toFixed(1)}%`),
+              h("span", null, formatDate(latestSession.created_at)),
+            )
+            : h("p", { className: "history-empty" }, "No eye-tracking evidence sessions have been saved yet."),
+    ),
+    h("div", { className: "history-evidence-insights" },
+      h("div", { className: "history-evidence-insight-row" },
+        h("span", null, "Last updated"),
+        h("strong", null, latestUpdatedAt),
+      ),
+      h("div", { className: "history-evidence-insight-row" },
+        h("span", null, "Coverage trend"),
+        h("strong", null, coverageTrend),
+      ),
+      h("div", { className: "history-evidence-insight-row" },
+        h("span", null, "Quality hint"),
+        h("strong", null, qualityHint),
+      ),
+    ),
+    h("div", { className: "history-evidence-actions" },
+      h("button", {
+        type: "button",
+        className: "history-open-btn",
+        onClick: onOpenModal,
+      }, "View all evidence"),
+    ),
+  );
+}
+
+function EyeEvidenceModal({
   items,
   total,
   page,
   status,
-  query,
   onPageChange,
+  onClose,
 }) {
-  const emptyMessage = query
-    ? "No eye-tracking evidence sessions match the current search."
-    : "No eye-tracking evidence sessions have been saved yet.";
+  const [filter, setFilter] = useState("all");
+  const filteredItems = useMemo(() => {
+    if (filter === "linked") {
+      return items.filter((item) => Boolean(item.run_id));
+    }
+    if (filter === "unlinked") {
+      return items.filter((item) => !item.run_id);
+    }
+    return items;
+  }, [items, filter]);
+  const emptyMessage = "No eye-tracking evidence sessions for this filter.";
 
-  return h("section", { className: "history-list-shell eye-history-shell" },
+  return h("div", { className: "history-evidence-modal-backdrop", role: "presentation", onClick: onClose },
+    h("section", {
+      className: "history-list-shell eye-history-shell history-evidence-modal",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": "All eye-tracking evidence sessions",
+      onClick: (event) => event.stopPropagation(),
+    },
     h("div", { className: "history-section-header" },
-      h("div", null,
+      h("div", { className: "history-modal-title-wrap" },
         h("p", { className: "upload-kicker" }, "Supporting Evidence"),
-        h("h2", null, "Eye-Tracking Evidence Sessions"),
+        h("h2", null, "All Eye-Tracking Evidence Sessions"),
       ),
-      h("p", { className: "history-section-copy" },
-        "Review saved gaze sessions as supporting evidence for attention patterns, information overload, and related analysis runs.",
+      h("div", { className: "history-evidence-filter-group", role: "tablist", "aria-label": "Evidence filters" },
+        h("button", {
+          type: "button",
+          className: `history-evidence-filter-btn${filter === "all" ? " is-active" : ""}`,
+          onClick: () => setFilter("all"),
+        }, "All"),
+        h("button", {
+          type: "button",
+          className: `history-evidence-filter-btn${filter === "linked" ? " is-active" : ""}`,
+          onClick: () => setFilter("linked"),
+        }, "Linked"),
+        h("button", {
+          type: "button",
+          className: `history-evidence-filter-btn${filter === "unlinked" ? " is-active" : ""}`,
+          onClick: () => setFilter("unlinked"),
+        }, "Unlinked"),
       ),
+      h("button", {
+        type: "button",
+        className: "history-modal-close-btn",
+        "aria-label": "Close evidence drawer",
+        onClick: onClose,
+      }, "Close"),
     ),
     h("div", { className: "history-eye-table-head" },
       h("span", null, "Evidence ID"),
       h("span", null, "Page"),
       h("span", null, "Coverage"),
-      h("span", null, "Report ID"),
     ),
     h("div", { id: "eyeHistoryList", className: "history-table-body" },
-      h(EyeRows, { items, status, emptyMessage }),
+      h(EyeRows, { items: filteredItems, status, emptyMessage }),
     ),
     h(Pagination, {
       id: "eyeHistoryPagination",
@@ -367,8 +528,10 @@ function EyeHistoryPanel({
       page,
       total,
       itemLabel: "sessions",
+      pageSize: EYE_PAGE_SIZE,
       onPageChange,
     }),
+    ),
   );
 }
 
@@ -389,7 +552,6 @@ function EyeRows({ items, status, emptyMessage }) {
 
   return items.map((item) => {
     const coverage = Number(item.coverage_percent ?? 0).toFixed(1);
-    const relatedRun = item.run_id ? formatShortId(item.run_id, "R-") : "—";
     const sessionMeta = `${formatDate(item.created_at)} / ${item.sample_count} samples / ${formatDuration(item.duration_ms)}`;
 
     return h("article", { className: "history-eye-row", key: item.session_id },
@@ -404,7 +566,6 @@ function EyeRows({ items, status, emptyMessage }) {
         h("small", null, sessionMeta),
       ),
       h("span", { className: "history-cell score" }, `${coverage}%`),
-      h("span", { className: "history-cell history-id", title: item.run_id || "" }, relatedRun),
     );
   });
 }
@@ -417,26 +578,17 @@ function Pagination({
   page,
   total,
   itemLabel,
+  pageSize,
   onPageChange,
 }) {
-  const totalPages = getTotalPages(total);
+  const totalPages = getTotalPages(total, pageSize);
   const safePage = Math.min(Math.max(1, Number(page) || 1), totalPages);
-  const startItem = total ? getPageOffset(safePage) + 1 : 0;
-  const endItem = Math.min(getPageOffset(safePage) + PAGE_SIZE, total);
-  const [jumpPage, setJumpPage] = useState(String(safePage));
-
-  useEffect(() => {
-    setJumpPage(String(safePage));
-  }, [safePage, totalPages]);
-
-  const jumpToPage = () => {
-    const nextPage = Math.min(Math.max(1, Number(jumpPage) || safePage), totalPages);
-    onPageChange(nextPage);
-  };
+  const startItem = total ? getPageOffset(safePage, pageSize) + 1 : 0;
+  const endItem = Math.min(getPageOffset(safePage, pageSize) + pageSize, total);
 
   return h("div", { id, className: "history-pagination", "aria-label": ariaLabel },
     h("div", { className: "history-pagination-summary" },
-      h("strong", null, `Page ${safePage} of ${totalPages}`),
+      h("strong", null, `Page ${safePage} / ${totalPages}`),
       h("span", null, `${startItem}-${endItem} of ${total} ${itemLabel}`),
     ),
     h("div", { className: "history-pagination-controls" },
@@ -446,29 +598,7 @@ function Pagination({
         disabled: safePage <= 1,
         onClick: () => onPageChange(Math.max(1, safePage - 1)),
       }, "Previous"),
-      h("label", { className: "history-page-jump" },
-        h("span", null, "Go to"),
-        h("input", {
-          className: "history-page-input",
-          type: "number",
-          min: "1",
-          max: String(totalPages),
-          value: jumpPage,
-          inputMode: "numeric",
-          onChange: (event) => setJumpPage(event.target.value),
-          onKeyDown: (event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              jumpToPage();
-            }
-          },
-        }),
-      ),
-      h("button", {
-        className: "history-page-btn",
-        type: "button",
-        onClick: jumpToPage,
-      }, "Go"),
+      h("span", { className: "history-pagination-page-indicator", "aria-live": "polite" }, `${safePage} / ${totalPages}`),
       h("button", {
         className: "history-page-btn",
         type: "button",

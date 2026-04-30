@@ -11,6 +11,8 @@ import {
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const MIN_LOADING_TIME_MS = 2600;
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
+const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
+const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 
 const loadingMessage = document.getElementById("analysisLoadingMessage");
 const loadingPercent = document.getElementById("analysisLoadingPercent");
@@ -146,6 +148,8 @@ async function attachVisualComplexity(result, pending) {
 
 function saveResult(result) {
   setProgress(92);
+  sessionStorage.removeItem(DASHBOARD_HISTORY_CONTEXT_KEY);
+  sessionStorage.removeItem(DASHBOARD_HISTORY_ONCE_KEY);
   const previousSession = loadDashboardSession();
   const savedAt = new Date().toISOString();
   saveDashboardSession({

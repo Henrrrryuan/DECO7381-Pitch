@@ -6,7 +6,7 @@ import {
   chatWithAssistant,
   escapeHtml,
   findDimension,
-  formatShortId,
+  formatReportTimestamp,
   loadDashboardSession,
   saveDashboardSession,
 } from "./common.js?v=id-sync-1";
@@ -39,6 +39,8 @@ const SIDEBAR_WIDTH_STORAGE_KEY = "cognilens.sidebar.width";
 const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
+const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
+const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 const DEFAULT_SIDEBAR_WIDTH = 360;
 const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 560;
@@ -618,9 +620,10 @@ function renderReportId() {
   if (!reportIdNode) {
     return;
   }
+  const createdAt = state.currentPayload?.run?.created_at || "";
   const runId = state.currentPayload?.run?.run_id || "";
-  reportIdNode.textContent = formatShortId(runId, "R-");
-  reportIdNode.title = runId || "";
+  reportIdNode.textContent = formatReportTimestamp(createdAt);
+  reportIdNode.title = createdAt || runId || "";
 }
 
 const SEVERITY_RANK = {
@@ -2734,6 +2737,57 @@ function initBackToAnalysisButton() {
   });
 }
 
+function initHistoryContextPanel() {
+  const backButton = document.getElementById("backToHistoryButton");
+  const printButton = document.getElementById("printReportBtn");
+  const navLinks = Array.from(document.querySelectorAll(".app-nav-links a"));
+  const url = new URL(window.location.href);
+  const fromHistory = url.searchParams.get("from") === "history";
+  const isHistoryContext = fromHistory;
+  if (!isHistoryContext) {
+    if (backButton) {
+      backButton.hidden = true;
+      backButton.disabled = false;
+      backButton.onclick = null;
+    }
+    if (printButton) {
+      printButton.disabled = false;
+      printButton.title = "Print current report";
+    }
+    navLinks.forEach((link) => {
+      link.classList.remove("disabled-nav-link");
+      link.removeAttribute("aria-disabled");
+      link.removeAttribute("tabindex");
+      if (link.dataset.hrefBackup) {
+        link.setAttribute("href", link.dataset.hrefBackup);
+        delete link.dataset.hrefBackup;
+      }
+    });
+    return;
+  }
+  if (backButton) {
+    backButton.hidden = false;
+    backButton.disabled = false;
+    backButton.title = "Back to History";
+    backButton.onclick = () => {
+      window.location.href = "./history.html";
+    };
+  }
+  if (printButton) {
+    printButton.disabled = false;
+    printButton.title = "Print current report";
+  }
+  navLinks.forEach((link) => {
+    if (!link.dataset.hrefBackup) {
+      link.dataset.hrefBackup = link.getAttribute("href") || "";
+    }
+    link.removeAttribute("href");
+    link.classList.add("disabled-nav-link");
+    link.setAttribute("aria-disabled", "true");
+    link.setAttribute("tabindex", "-1");
+  });
+}
+
 function bindEvents() {
   const printButton = document.getElementById("printReportBtn");
   const assistantForm = document.getElementById("assistantForm");
@@ -2919,6 +2973,7 @@ async function init() {
     currentResult,
     currentSession.html || currentSession.payload.html_content || "",
   );
+  initHistoryContextPanel();
   renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
   // Default first entry to the raw website preview.
   setWorkspaceMode("website");

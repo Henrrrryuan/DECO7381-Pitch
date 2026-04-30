@@ -62,6 +62,20 @@ function formatShortId(id, prefix = "") {
   return `${prefix}${value.slice(0, 6).toUpperCase()}`;
 }
 
+function formatReportTimestamp(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hour = String(parsed.getHours()).padStart(2, "0");
+  const minute = String(parsed.getMinutes()).padStart(2, "0");
+  const second = String(parsed.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}${hour}${minute}${second}`;
+}
+
 async function analyzeHtmlText(html, sourceName = "uploaded.html", options = {}) {
   const { persistResult = true } = options;
   return fetchJson(`${API_BASE}/analyze`, {
@@ -196,6 +210,7 @@ export {
   fetchJson,
   findDimension,
   formatDate,
+  formatReportTimestamp,
   formatShortId,
   isHtmlFile,
   isZipFile,

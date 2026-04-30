@@ -49,6 +49,7 @@ const state = {
   pausedDurationMs: 0,
   pausedAtPerf: 0,
   saving: false,
+  savedThisRun: false,
   lastSavedSessionId: ""
 };
 
@@ -78,9 +79,18 @@ function updateSaveButtonState() {
   if (!saveBtn) {
     return;
   }
-  const canSave = Boolean(state.currentTargetUrl) && state.samples > 0 && !state.saving;
+  const canSave = (
+    Boolean(state.currentTargetUrl)
+    && state.samples > 0
+    && !state.saving
+    && !state.savedThisRun
+  );
   saveBtn.disabled = !canSave;
-  saveBtn.textContent = state.saving ? "Saving..." : "Save Session";
+  if (state.saving) {
+    saveBtn.textContent = "Saving...";
+    return;
+  }
+  saveBtn.textContent = state.savedThisRun ? "Saved" : "Save Session";
 }
 
 function getErrorMessage(error) {
@@ -456,6 +466,10 @@ async function saveCurrentSession() {
   if (state.saving) {
     return;
   }
+  if (state.savedThisRun) {
+    setStatus("This eye session has already been saved.");
+    return;
+  }
   if (!state.currentTargetUrl || state.samples <= 0) {
     setStatus("Track a page first before saving an eye session.");
     return;
@@ -489,6 +503,7 @@ async function saveCurrentSession() {
     const payload = await response.json();
     const sessionId = payload?.session?.session_id || "";
     state.lastSavedSessionId = sessionId;
+    state.savedThisRun = true;
     setStatus(
       sessionId
         ? `Eye session saved to history (${sessionId.slice(0, 8)}...).`
@@ -525,6 +540,7 @@ function resetTrackingData() {
   state.sessionStartPerf = state.started ? performance.now() : 0;
   state.sessionStartedAtIso = state.started ? new Date().toISOString() : "";
   state.lastSavedSessionId = "";
+  state.savedThisRun = false;
   state.cellCounts.fill(0);
   state.visitedCellIds.clear();
   samplesText.textContent = "0";

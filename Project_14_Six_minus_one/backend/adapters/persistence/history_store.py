@@ -153,9 +153,10 @@ def list_history_runs(
             where_clause = """
             WHERE LOWER(source_name) LIKE LOWER(?)
                OR LOWER(id) LIKE LOWER(?)
+               OR REPLACE(REPLACE(REPLACE(REPLACE(SUBSTR(created_at, 1, 19), '-', ''), ':', ''), 'T', ''), ' ', '') LIKE ?
             """
             like_query = f"%{normalized_query}%"
-            params.extend([like_query, like_query])
+            params.extend([like_query, like_query, like_query])
 
         total = connection.execute(
             f"""
