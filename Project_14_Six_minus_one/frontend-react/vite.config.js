@@ -6,5 +6,15 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     port: 5173,
+    proxy: {
+      "/eye/proxy": {
+        target: "http://127.0.0.1:8001",
+        changeOrigin: true,
+      },
+      "/eye/sessions": {
+        target: "http://127.0.0.1:8001",
+        changeOrigin: true,
+      },
+    },
   },
 });
