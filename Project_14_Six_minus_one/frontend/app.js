@@ -192,63 +192,31 @@ const RULE_FRAMEWORK_MAP = {
     iso: "ISO 9241-11: Effectiveness and efficiency",
     wcag: "WCAG: Consistent identification",
   },
-};
-
-const RULE_BENEFICIARY_TAGS = {
-  IO: ["Reading difficulties", "Attention regulation"],
-  RD: ["Reading difficulties", "Communication differences"],
-  ID: ["Attention regulation", "Autistic users"],
-  CS: ["Autistic users", "Executive function support"],
-};
-
-const RULE_AFFECTED_USERS = {
-  "IO-1": ["Dyslexia", "ADHD"],
-  "IO-2": ["Dyslexia", "ADHD"],
-  "IO-3": ["ADHD", "Autism"],
-  "IO-4": ["ADHD", "Autism"],
-  "IO-5": ["Dyslexia", "ADHD", "Autism"],
-  "RD-1": ["Dyslexia"],
-  "RD-2": ["Dyslexia", "ADHD"],
-  "RD-3": ["Dyslexia", "ADHD", "Autism"],
-  "RD-4": ["Dyslexia"],
-  "RD-5": ["Dyslexia", "ADHD", "Autism"],
-  "RD-6": ["Dyslexia", "ADHD"],
-  "ID-1": ["ADHD", "Autism"],
-  "ID-2": ["ADHD", "Autism"],
-  "ID-3": ["ADHD", "Autism"],
-  "CS-1": ["Dyslexia", "Autism"],
-  "CS-2": ["ADHD", "Autism"],
-  "CS-3": ["ADHD", "Autism"],
-  "CS-4": ["Dyslexia", "ADHD", "Autism"],
-  "CS-5": ["ADHD", "Autism"],
-  "CS-6": ["ADHD", "Autism"],
-  "CS-7": ["Dyslexia", "ADHD", "Autism"],
-  "CS-8": ["ADHD", "Autism"],
-};
-
-const RULE_COGNITIVE_OBJECTIVES = {
-  "IO-1": "Help Users Focus",
-  "IO-2": "Help Users Focus",
-  "IO-3": "Help Users Focus",
-  "IO-4": "Help Users Focus",
-  "IO-5": "Help Users Find What They Need",
-  "RD-1": "Use Clear and Understandable Content",
-  "RD-2": "Use Clear and Understandable Content",
-  "RD-3": "Help Users Understand What Things are and How to Use Them",
-  "RD-4": "Use Clear and Understandable Content",
-  "RD-5": "Use Clear and Understandable Content",
-  "RD-6": "Use Clear and Understandable Content",
-  "ID-1": "Support Adaptation and Personalization",
-  "ID-2": "Support Adaptation and Personalization",
-  "ID-3": "Help Users Focus",
-  "CS-1": "Help Users Understand What Things are and How to Use Them",
-  "CS-2": "Help Users Find What They Need",
-  "CS-3": "Ensure Processes Do Not Rely on Memory",
-  "CS-4": "Help Users Understand What Things are and How to Use Them",
-  "CS-5": "Help Users Find What They Need",
-  "CS-6": "Help Users Find What They Need",
-  "CS-7": "Help Users Understand What Things are and How to Use Them",
-  "CS-8": "Help Users Understand What Things are and How to Use Them",
+  "CS-4": {
+    coga: "COGA: Clear component purpose",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Understandable UI components",
+  },
+  "CS-5": {
+    coga: "COGA: Predictable navigation cues",
+    iso: "ISO 9241-11: Efficiency",
+    wcag: "WCAG: Navigable structure",
+  },
+  "CS-6": {
+    coga: "COGA: Stable wayfinding",
+    iso: "ISO 9241-11: Efficiency",
+    wcag: "WCAG: Consistent navigation patterns",
+  },
+  "CS-7": {
+    coga: "COGA: Explicit labels and instructions",
+    iso: "ISO 9241-11: Effectiveness",
+    wcag: "WCAG: Understandable labels",
+  },
+  "CS-8": {
+    coga: "COGA: Predictable interactions",
+    iso: "ISO 9241-11: Effectiveness and efficiency",
+    wcag: "WCAG: Predictable component behavior",
+  },
 };
 
 const RULE_ISO_CLAUSES = {
@@ -923,30 +891,6 @@ function detectedEvidenceCopy(issue) {
     : "This issue was detected by the current cognitive accessibility rule set.";
 }
 
-function userSpecificRecommendations(issue, dimensionName) {
-  const suggestion = conciseText(issue?.suggestion, "Review this issue and simplify the interaction.", 180);
-  const category = issueCategoryKeyForDimension(dimensionName);
-  const recommendations = {
-    ADHD: "Reduce interruptions, competing actions, and unexpected changes so attention can stay on the current task.",
-    Dyslexia: "Use short, direct wording and preserve a clear reading path so users do not need to reread or relocate content.",
-    Autism: "Keep structure and interaction cues predictable, and avoid sudden overlays or unclear state changes.",
-  };
-
-  if (category === "RD") {
-    recommendations.Dyslexia = suggestion;
-  } else if (category === "ID") {
-    recommendations.ADHD = suggestion;
-    recommendations.Autism = "Avoid sudden or automatic interruptions and make the interaction user-triggered where possible.";
-  } else if (category === "CS") {
-    recommendations.Autism = suggestion;
-  } else {
-    recommendations.ADHD = suggestion;
-    recommendations.Dyslexia = "Reduce competing content and make the primary reading path visually obvious.";
-  }
-
-  return recommendations;
-}
-
 function frameworkMappingCopy(ruleId) {
   if (RULE_COGNITIVE_OBJECTIVES[ruleId] || RULE_ISO_CLAUSES[ruleId]) {
     return {
@@ -960,6 +904,21 @@ function frameworkMappingCopy(ruleId) {
     iso: "ISO 9241-11: effectiveness, efficiency, satisfaction",
     wcag: "WCAG: understandable and predictable interactions",
   };
+}
+
+/** Short WCAG / ISO lines for left-panel issue cards (not full standards copy). */
+function issueCardStandardsSummary(ruleId) {
+  const mapped = RULE_FRAMEWORK_MAP[ruleId];
+  if (mapped) {
+    return {
+      wcag: mapped.wcag.replace(/^WCAG:\s*/i, "").trim(),
+      iso: mapped.iso.replace(/^ISO\s*9241-11:\s*/i, "").trim(),
+    };
+  }
+  const clauses = RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
+  const isoLine = clauses.slice(0, 2).join(" · ");
+  const wcagHint = RULE_COGNITIVE_OBJECTIVES[ruleId] || "Understandable, predictable interactions";
+  return { wcag: wcagHint, iso: isoLine };
 }
 
 function beneficiaryTags(ruleId, dimensionName) {
@@ -1429,10 +1388,8 @@ function issueDisplayModel(issue, dimensionName) {
     detectedProblem: issue?.title || "Review this issue",
     affectedUsers: issueAffectedGroups(issue, dimensionName),
     cognitiveImpact: issue?.description || "This issue may increase cognitive load for users.",
-    firstFix: issue?.suggestion || "Review this issue and simplify the interaction.",
     evidence: detectedEvidenceCopy(issue),
     whyItMatters: issue?.description || "This pattern can increase mental effort and make the page harder to use.",
-    userRecommendations: userSpecificRecommendations(issue, dimensionName),
     standards: [standards.wcag, standards.coga, standards.iso],
     highlightTargets: issue?.locations || [],
   };
@@ -1581,21 +1538,9 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
     && state.rightPanelMode === "detail"
     && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
-  const model = issueDisplayModel(issue, dimensionName);
-  const activeProfile = normalizeProfileLabel(state.activeProfile);
-  const profileLabel = activeProfile === "Autism" ? "Autistic users" : `${activeProfile} users`;
-  const defaultFix = model.firstFix || issue?.suggestion || "Review this issue and simplify the interaction.";
-  const tailoredFix = model.userRecommendations?.[activeProfile] || defaultFix;
-  const normalizedTailoredFix = String(tailoredFix).trim().replace(/\s+/g, " ").toLowerCase();
-  const normalizedDefaultFix = String(defaultFix).trim().replace(/\s+/g, " ").toLowerCase();
-  const isTailored = normalizedTailoredFix !== normalizedDefaultFix;
-  const firstFix = conciseText(tailoredFix, "Review this issue and simplify the interaction.", 140);
-  const profileWhyMap = {
-    Dyslexia: "Prioritize shorter, clearer wording to reduce rereading effort.",
-    ADHD: "Reduce competing actions to keep attention on the primary task.",
-    Autism: "Keep wording and interaction patterns predictable to lower uncertainty.",
-  };
-  const profileWhy = profileWhyMap[activeProfile] || "Tailor the fix to the selected user profile needs.";
+  const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
+  const wcagLine = conciseText(wcagSummary, "Understandable, predictable interactions.", 110);
+  const isoLine = conciseText(isoSummary, "Effectiveness, efficiency, satisfaction.", 110);
 
   return `
     <article
@@ -1605,16 +1550,15 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
     >
       <div class="issue-summary-topline">
         <span class="issue-highlight-rule">Issue ${issueNumber}</span>
-        ${isTailored ? `<span class="issue-profile-badge">Profile-tailored</span>` : ""}
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
-      <div class="issue-summary-row">
-        <span class="issue-highlight-label">First fix</span>
-        <span class="issue-highlight-copy">${escapeHtml(firstFix)}</span>
+      <div class="issue-summary-row issue-summary-row-standards">
+        <span class="issue-highlight-label">WCAG</span>
+        <span class="issue-highlight-copy">${escapeHtml(wcagLine)}</span>
       </div>
-      <div class="issue-summary-row issue-summary-row-profile">
-        <span class="issue-highlight-label">Why for ${escapeHtml(profileLabel)}</span>
-        <span class="issue-highlight-copy">${escapeHtml(profileWhy)}</span>
+      <div class="issue-summary-row issue-summary-row-standards">
+        <span class="issue-highlight-label">ISO</span>
+        <span class="issue-highlight-copy">${escapeHtml(isoLine)}</span>
       </div>
       <div class="issue-summary-actions">
         <button

@@ -3538,20 +3538,6 @@ button.dimension-row.is-linked-active {
   gap: 10px;
 }
 
-.issue-profile-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border: 1px solid rgba(37, 99, 235, 0.24);
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #1d4ed8;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
 .issue-summary-category {
   color: var(--ink);
   font-size: 13px;
@@ -3570,7 +3556,7 @@ button.dimension-row.is-linked-active {
   gap: 3px;
 }
 
-.issue-summary-row-profile .issue-highlight-copy {
+.issue-summary-row-standards .issue-highlight-copy {
   color: #4b5a72;
   font-size: 12px;
 }
