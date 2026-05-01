@@ -10,7 +10,7 @@ import {
   formatReportTimestamp,
   loadDashboardSession,
   saveDashboardSession,
-} from "./common.js?v=guidance-ui-1";
+} from "./common.js?v=guidance-table-1";
 
 const state = {
   currentHtml: "",
@@ -1181,6 +1181,47 @@ function failingElementsMarkup(issue) {
   `;
 }
 
+function guidanceEvidenceMarkup(issue) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const count = issueFailingElementCount(issue);
+  if (!locations.length) {
+    return `
+      <div class="guidance-location-list">
+        <div class="guidance-location-card">
+          <span class="guidance-location-index">1.</span>
+          <div>
+            <strong>${escapeHtml(issue?.rule_id || "Detected rule")}</strong>
+            <p>${escapeHtml(issue?.title || "This rule was triggered by the current analysis.")}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const shownLocations = uniqueKeyLocations(locations, 8);
+  return `
+    <div class="guidance-evidence-note">
+      <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
+      <span>Use <strong>Show highlighted location</strong> on the issue card to inspect the exact page highlight.</span>
+    </div>
+    <div class="guidance-location-list">
+      ${shownLocations.map(({ location, label }, index) => {
+        const meta = locationMetaText(location).replace(/^Location: /, "");
+        const showMeta = meta && meta !== label;
+        return `
+          <div class="guidance-location-card">
+            <span class="guidance-location-index">${index + 1}.</span>
+            <div>
+              <strong>${escapeHtml(label)}</strong>
+              ${showMeta ? `<p>${escapeHtml(meta)}</p>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function recommendedFixSteps(issue, dimensionName) {
   const ruleId = issue?.rule_id || "";
   const category = displayDimensionName(dimensionName);
@@ -1214,14 +1255,14 @@ function recommendedFixSteps(issue, dimensionName) {
 
 function recommendedFixStepsMarkup(issue, dimensionName) {
   const steps = recommendedFixSteps(issue, dimensionName);
+  const visibleSteps = steps.slice(0, 2);
+  const stepLabels = ["First change", "Supporting change"];
   return `
     <ol class="guidance-step-list">
-      ${steps.map((step) => `
+      ${visibleSteps.map((step, index) => `
         <li>
-          <p>
-            <span class="guidance-step-priority ${escapeHtml(String(step.priority || "").toLowerCase())}">${escapeHtml(step.priority || "Step")}</span>
-            ${escapeHtml(step.text || "")}
-          </p>
+          <strong>${escapeHtml(stepLabels[index] || `Step ${index + 1}`)}</strong>
+          <p>${escapeHtml(step.text || "")}</p>
         </li>
       `).join("")}
     </ol>
@@ -1291,61 +1332,57 @@ function selectedIssueWorkspaceMarkup(record) {
   const ruleId = issue.rule_id || "";
   const model = issueDisplayModel(issue, dimensionName);
   const users = issueAffectedUserTags(ruleId);
-  const objective = issueCognitiveObjective(ruleId);
   const isoClauses = issueIsoClauseTags(ruleId);
   const standards = frameworkMappingCopy(ruleId);
   const affectedCount = issueFailingElementCount(issue);
   const goal = issueGoalText(issue, dimensionName);
   const doneWhen = issueDoneWhenText(issue, dimensionName);
+  const primaryUser = users[0] || "affected users";
   return `
     <section class="issue-guidance-panel" aria-label="Selected issue guidance">
-      <div class="issue-guidance-hero">
-        <div class="issue-detail-heading">
-          <span>${escapeHtml(model.issueCategory)}</span>
-        </div>
-        <div class="issue-detail-problem">
-          <span class="issue-detail-label">Selected issue</span>
+      <header class="guidance-summary-row">
+        <span class="guidance-row-number">Selected</span>
+        <div class="guidance-row-issue">
           <h3>${escapeHtml(model.issueTitle)}</h3>
-          <p>Follow the priority steps below, then verify changes with <strong>Show highlighted location</strong>.</p>
+          <p>${escapeHtml(model.issueCategory)}</p>
         </div>
-        <div class="issue-brief-strip" aria-label="Issue summary">
-          <div class="issue-brief-item">
-            <span>Affected elements</span>
-            <strong>${affectedCount}</strong>
-          </div>
-          <div class="issue-brief-item">
-            <span>Most affected users</span>
-            <div class="user-group-chip-list">
-              ${users.map((user) => `<span class="user-group-chip">${escapeHtml(user)}</span>`).join("")}
-            </div>
-          </div>
-          <div class="issue-brief-item">
-            <span>Redesign goal</span>
-            <strong>${escapeHtml(goal)}</strong>
+        <div class="guidance-meta-group">
+          <span class="guidance-meta-label">Affected elements</span>
+          <span class="guidance-count-pill">${escapeHtml(`${affectedCount} element${affectedCount === 1 ? "" : "s"}`)}</span>
+        </div>
+        <div class="guidance-meta-group">
+          <span class="guidance-meta-label">Most affected users</span>
+          <div class="guidance-user-pills">
+            ${users.map((user) => `<span>${escapeHtml(user)}</span>`).join("")}
           </div>
         </div>
-      </div>
+        <div class="guidance-meta-group">
+          <span class="guidance-meta-label">Guidance focus</span>
+          <span class="guidance-framework-pill">${escapeHtml(standards.coga.replace(/^COGA:\s*/i, ""))}</span>
+        </div>
+      </header>
 
-      <div class="issue-guidance-grid">
-        <section class="guidance-card guidance-card-primary">
-          <span class="issue-detail-label">Recommended fix steps (priority order)</span>
-          ${recommendedFixStepsMarkup(issue, dimensionName)}
+      <div class="guidance-expanded-report">
+        <section class="guidance-numbered-section">
+          <h4><span>1.</span> Page evidence (${escapeHtml(String(affectedCount))})</h4>
+          ${guidanceEvidenceMarkup(issue)}
         </section>
-        <div class="issue-guidance-secondary">
-          <section class="guidance-card">
-            <span class="issue-detail-label">Why this matters</span>
+
+        <section class="guidance-numbered-section">
+          <h4><span>2.</span> Why this matters</h4>
+          <div class="guidance-text-card">
             <p>${escapeHtml(model.whyItMatters)}</p>
-          </section>
-          <section class="guidance-card">
-            <span class="issue-detail-label">Done when</span>
-            <p>${escapeHtml(doneWhen)}</p>
-            <small>Expected impact: ${escapeHtml(objective)}</small>
-          </section>
-          <section class="guidance-card">
-            <span class="issue-detail-label">Page evidence</span>
-            ${failingElementsMarkup(issue)}
-          </section>
-        </div>
+          </div>
+        </section>
+
+        <section class="guidance-numbered-section">
+          <h4><span>3.</span> First redesign move</h4>
+          <div class="guidance-text-card">
+            <p class="guidance-redesign-goal">${escapeHtml(goal)}</p>
+            ${recommendedFixStepsMarkup(issue, dimensionName)}
+            <p class="guidance-success-check"><strong>Success check for ${escapeHtml(primaryUser)}:</strong> ${escapeHtml(doneWhen.replace(/^Done when\s*/i, ""))}</p>
+          </div>
+        </section>
       </div>
 
       ${advancedDetailsMarkup(issue, ruleId, standards, isoClauses)}
