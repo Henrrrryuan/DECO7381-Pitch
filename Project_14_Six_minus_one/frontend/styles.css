@@ -3322,6 +3322,57 @@ button.dimension-row.is-linked-active {
   height: 8px;
   border-radius: 999px;
   background: #c4a7ef;
+  opacity: 0.7;
+}
+
+.accessibility-option-levels span.is-active {
+  background: #8b5cf6;
+  opacity: 1;
+}
+
+.accessibility-reading-mask {
+  display: none;
+}
+
+body.accessibility-reading-mask-active .accessibility-reading-mask {
+  --reading-band-height: 78px;
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: block;
+  pointer-events: none;
+}
+
+.accessibility-reading-mask span {
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: block;
+}
+
+.accessibility-reading-mask-top {
+  top: 0;
+  height: max(0px, calc(var(--accessibility-reading-mask-y, 50vh) - 39px));
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.accessibility-reading-mask-band {
+  top: max(0px, calc(var(--accessibility-reading-mask-y, 50vh) - 39px));
+  height: 78px;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.accessibility-reading-mask-bottom {
+  top: calc(var(--accessibility-reading-mask-y, 50vh) + 39px);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.66);
+}
+
+body.accessibility-reading-mask-active .accessibility-menu {
+  z-index: 130;
 }
 
 .accessibility-menu-footer {

@@ -148,6 +148,7 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     label: "Reading Aid",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M8 19h11v-3" /><path d="M5 19V8" /></svg>',
     levels: 2,
+    activeLabel: "Reading Mask",
   },
   {
     id: "page-structure",

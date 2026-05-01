@@ -25,6 +25,8 @@ export function AccessibilityWidget() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
   const [buttonIsSpinning, setButtonIsSpinning] = useState(false);
   const [expandedSectionId, setExpandedSectionId] = useState("");
+  const [activeOptionIds, setActiveOptionIds] = useState(() => new Set());
+  const readingMaskIsActive = activeOptionIds.has("reading-aid");
 
   useEffect(() => {
     if (!buttonIsSpinning) {
@@ -38,6 +40,33 @@ export function AccessibilityWidget() {
 
     return () => window.clearTimeout(spinTimer);
   }, [buttonIsSpinning]);
+
+  useEffect(() => {
+    document.body.classList.toggle("accessibility-reading-mask-active", readingMaskIsActive);
+    if (!readingMaskIsActive) {
+      document.documentElement.style.removeProperty("--accessibility-reading-mask-y");
+      return undefined;
+    }
+
+    const updateReadingMaskPosition = (event) => {
+      document.documentElement.style.setProperty(
+        "--accessibility-reading-mask-y",
+        `${Math.round(event.clientY)}px`,
+      );
+    };
+
+    document.documentElement.style.setProperty(
+      "--accessibility-reading-mask-y",
+      `${Math.round(window.innerHeight * 0.5)}px`,
+    );
+    window.addEventListener("pointermove", updateReadingMaskPosition, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointermove", updateReadingMaskPosition);
+      document.body.classList.remove("accessibility-reading-mask-active");
+      document.documentElement.style.removeProperty("--accessibility-reading-mask-y");
+    };
+  }, [readingMaskIsActive]);
 
   function openMenuAfterSpin() {
     if (menuIsOpen || buttonIsSpinning) {
@@ -56,17 +85,37 @@ export function AccessibilityWidget() {
     runAccessibilityMenuFeature(sectionId);
   }
 
-  function renderOptionLevels(levelCount) {
-    if (!levelCount) {
+  function renderOptionLevelsWithState(option) {
+    if (!option.levels) {
       return null;
     }
+    const optionIsActive = activeOptionIds.has(option.id);
     return (
       <span className="accessibility-option-levels" aria-hidden="true">
-        {Array.from({ length: levelCount }).map((_, levelIndex) => (
-          <span key={levelIndex} />
+        {Array.from({ length: option.levels }).map((_, levelIndex) => (
+          <span
+            className={optionIsActive && levelIndex === 0 ? "is-active" : ""}
+            key={levelIndex}
+          />
         ))}
       </span>
     );
+  }
+
+  function toggleAccessibilityOption(optionId) {
+    if (optionId === "reading-aid") {
+      setActiveOptionIds((currentOptionIds) => {
+        const nextOptionIds = new Set(currentOptionIds);
+        if (nextOptionIds.has(optionId)) {
+          nextOptionIds.delete(optionId);
+        } else {
+          nextOptionIds.add(optionId);
+        }
+        return nextOptionIds;
+      });
+      return;
+    }
+    runAccessibilityMenuFeature(optionId);
   }
 
   return (
@@ -130,11 +179,12 @@ export function AccessibilityWidget() {
                         className="accessibility-option-card"
                         type="button"
                         key={option.id}
-                        onClick={() => runAccessibilityMenuFeature(option.id)}
+                        aria-pressed={activeOptionIds.has(option.id)}
+                        onClick={() => toggleAccessibilityOption(option.id)}
                       >
                         <SvgMarkup className="accessibility-option-icon" markup={option.icon} />
-                        <span>{option.label}</span>
-                        {renderOptionLevels(option.levels)}
+                        <span>{activeOptionIds.has(option.id) ? (option.activeLabel || option.label) : option.label}</span>
+                        {renderOptionLevelsWithState(option)}
                       </button>
                     ))}
                   </div>
@@ -152,6 +202,11 @@ export function AccessibilityWidget() {
           </button>
         </footer>
       </aside>
+      <div className="accessibility-reading-mask" aria-hidden="true">
+        <span className="accessibility-reading-mask-top" />
+        <span className="accessibility-reading-mask-band" />
+        <span className="accessibility-reading-mask-bottom" />
+      </div>
     </>
   );
 }

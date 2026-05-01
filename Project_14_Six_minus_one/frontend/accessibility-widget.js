@@ -16,6 +16,7 @@ function createAccessibilityWidget() {
   }
 
   const button = document.createElement("button");
+  const activeOptionIds = new Set();
   button.className = "accessibility-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Open accessibility menu");
@@ -28,6 +29,7 @@ function createAccessibilityWidget() {
   `;
 
   const menu = document.createElement("aside");
+  const readingMask = document.createElement("div");
   menu.id = "accessibilityMenu";
   menu.className = "accessibility-menu";
   menu.setAttribute("aria-label", "Accessibility Menu");
@@ -56,9 +58,15 @@ function createAccessibilityWidget() {
           ${section.id === "main-options" ? `
             <div class="accessibility-main-options-grid" hidden>
               ${ACCESSIBILITY_MAIN_OPTIONS.map((option) => `
-                <button class="accessibility-option-card" type="button" data-accessibility-option="${option.id}">
+                <button
+                  class="accessibility-option-card"
+                  type="button"
+                  data-accessibility-option="${option.id}"
+                  data-default-label="${option.label}"
+                  data-active-label="${option.activeLabel || option.label}"
+                >
                   <span class="accessibility-option-icon">${option.icon}</span>
-                  <span>${option.label}</span>
+                  <span class="accessibility-option-label">${option.label}</span>
                   ${option.levels ? `
                     <span class="accessibility-option-levels" aria-hidden="true">
                       ${Array.from({ length: option.levels }).map(() => "<span></span>").join("")}
@@ -79,12 +87,41 @@ function createAccessibilityWidget() {
       </button>
     </footer>
   `;
+  readingMask.className = "accessibility-reading-mask";
+  readingMask.setAttribute("aria-hidden", "true");
+  readingMask.innerHTML = `
+    <span class="accessibility-reading-mask-top"></span>
+    <span class="accessibility-reading-mask-band"></span>
+    <span class="accessibility-reading-mask-bottom"></span>
+  `;
 
   function closeMenu() {
     menu.classList.remove("is-open");
     menu.hidden = true;
     button.hidden = false;
     button.setAttribute("aria-expanded", "false");
+  }
+
+  function setReadingMaskActive(isActive) {
+    document.body.classList.toggle("accessibility-reading-mask-active", isActive);
+    if (!isActive) {
+      document.documentElement.style.removeProperty("--accessibility-reading-mask-y");
+      return;
+    }
+    document.documentElement.style.setProperty(
+      "--accessibility-reading-mask-y",
+      `${Math.round(window.innerHeight * 0.5)}px`,
+    );
+  }
+
+  function updateReadingMaskPosition(event) {
+    if (!document.body.classList.contains("accessibility-reading-mask-active")) {
+      return;
+    }
+    document.documentElement.style.setProperty(
+      "--accessibility-reading-mask-y",
+      `${Math.round(event.clientY)}px`,
+    );
   }
 
   button.addEventListener("click", () => {
@@ -120,14 +157,36 @@ function createAccessibilityWidget() {
   });
   menu.querySelectorAll("[data-accessibility-option]").forEach((optionButton) => {
     optionButton.addEventListener("click", () => {
-      runAccessibilityMenuFeature(optionButton.dataset.accessibilityOption || "");
+      const optionId = optionButton.dataset.accessibilityOption || "";
+      if (optionId === "reading-aid") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        if (nextActiveState) {
+          activeOptionIds.add(optionId);
+        } else {
+          activeOptionIds.delete(optionId);
+        }
+        optionButton.classList.toggle("is-active", nextActiveState);
+        optionButton.setAttribute("aria-pressed", String(nextActiveState));
+        const optionLabel = optionButton.querySelector(".accessibility-option-label");
+        if (optionLabel) {
+          optionLabel.textContent = nextActiveState
+            ? optionButton.dataset.activeLabel || optionLabel.textContent
+            : optionButton.dataset.defaultLabel || optionLabel.textContent;
+        }
+        const firstLevelDot = optionButton.querySelector(".accessibility-option-levels span");
+        firstLevelDot?.classList.toggle("is-active", nextActiveState);
+        setReadingMaskActive(nextActiveState);
+        return;
+      }
+      runAccessibilityMenuFeature(optionId);
     });
   });
   menu.querySelector(".accessibility-restore-button")?.addEventListener("click", () => {
     restoreAccessibilityDefaults();
   });
 
-  document.body.append(button, menu);
+  document.body.append(button, menu, readingMask);
+  window.addEventListener("pointermove", updateReadingMaskPosition, { passive: true });
 }
 
 if (document.readyState === "loading") {
