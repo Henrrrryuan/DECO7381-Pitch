@@ -203,7 +203,7 @@ button.nav-cta {
   justify-items: center;
   position: relative;
   z-index: 1;
-  transform: translateX(74px);
+  transform: translateX(70px);
 }
 
 .upload-hero {
