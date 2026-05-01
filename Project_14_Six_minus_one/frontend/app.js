@@ -958,12 +958,30 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   if (state.rightPanelMode === "detail" && selected) {
     comparisonList.className = "comparison-list issue-guidance-workspace";
     comparisonList.innerHTML = selectedIssueWorkspaceMarkup(selected);
+    animatePanelEntry(comparisonList);
     return;
   }
 
   state.rightPanelMode = "summary";
   comparisonList.className = "comparison-list issue-workspace-summary";
   comparisonList.innerHTML = "";
+  animatePanelEntry(comparisonList);
+}
+
+function animatePanelEntry(element) {
+  if (!element || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+  // Keep panel changes feeling responsive without adding an artificial delay.
+  // The class is re-applied on each right-panel update so new content fades in.
+  window.clearTimeout(element.dataset.panelAnimationTimer);
+  element.classList.remove("is-panel-entering");
+  void element.offsetWidth;
+  element.classList.add("is-panel-entering");
+  element.dataset.panelAnimationTimer = window.setTimeout(() => {
+    element.classList.remove("is-panel-entering");
+    delete element.dataset.panelAnimationTimer;
+  }, 180);
 }
 
 function prioritizedIssuesForProfile(dimension) {
@@ -1816,6 +1834,7 @@ function setWorkspaceMode(mode) {
   websiteView.hidden = !isWebsite;
   explanationView.classList.toggle("is-active", !isWebsite);
   websiteView.classList.toggle("is-active", isWebsite);
+  animatePanelEntry(isWebsite ? websiteView : explanationView);
 
   if (isWebsite) {
     updatePreviewIssueHeader();
