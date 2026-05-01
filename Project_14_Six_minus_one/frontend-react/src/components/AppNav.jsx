@@ -14,13 +14,13 @@ export function AppNav({ activePage = "history" }) {
         </a>
 
         <nav className="app-nav-links" aria-label="Primary">
+          <a href="http://127.0.0.1:8001/docs.html">Guide</a>
           <a className={activePage === "eye" ? "active-link" : ""} href="/eye">
             Eye Tracking
           </a>
           <a className={activePage === "history" ? "active-link" : ""} href="/history">
             History
           </a>
-          <a href="http://127.0.0.1:8001/docs.html">Docs</a>
           <a className={`nav-cta${activePage === "home" ? " active" : ""}`} href="/">New Analysis</a>
         </nav>
       </div>

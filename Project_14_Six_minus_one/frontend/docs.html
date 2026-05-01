@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CogniLens Docs</title>
+  <title>CogniLens Guide</title>
   <link rel="stylesheet" href="./styles.css?v=ai-chat-1">
 </head>
 <body class="docs-body">
@@ -15,60 +15,75 @@
       </a>
 
       <nav class="app-nav-links" aria-label="Primary">
-            <a href="http://127.0.0.1:8001/eye/">Eye Tracking</a>
+        <a class="active-link" href="./docs.html">Guide</a>
+        <a href="http://127.0.0.1:8001/eye/">Eye Tracking</a>
         <a href="./history.html">History</a>
-        <a class="active-link" href="./docs.html">Docs</a>
         <button id="backToAnalysisButton" class="nav-cta" type="button" hidden>Back to analysis</button>
         <a class="nav-cta" href="./index.html">New Analysis</a>
       </nav>
     </div>
   </header>
 
-  <main class="docs-page">
-    <section class="docs-panel">
-      <p class="upload-kicker">Docs</p>
+  <main class="docs-page docs-page-future">
+    <section class="docs-panel docs-panel-future">
       <h1>How to use CogniLens</h1>
       <div class="docs-copy">
-        <p>CogniLens helps web designers and developers identify cognitive accessibility issues, inspect where they appear, and turn the findings into redesign actions.</p>
+        <p>CogniLens helps teams detect cognitive accessibility issues, inspect exactly where they appear, and turn findings into practical redesign actions.</p>
       </div>
     </section>
 
-    <section class="docs-grid" aria-label="CogniLens workflow documentation">
-      <article class="docs-card">
+    <section class="docs-timeline" aria-label="CogniLens workflow documentation">
+      <div class="docs-timeline-axis" aria-hidden="true"></div>
+
+      <article class="docs-card docs-card-left">
         <span class="docs-step">1</span>
-        <h2>Start a new analysis</h2>
-        <p>Click <strong>New Analysis</strong>, then analyse a website URL, localhost page, HTML file, or ZIP package.</p>
-        <p>After analysis, CogniLens opens the dashboard with issue categories, issue cards, and an issue workspace.</p>
+        <h2>Quick path</h2>
+        <p><strong>New Analysis</strong> -> <strong>Analyze</strong> -> choose a category by risk -> open an issue card -> inspect location -> open guidance.</p>
+        <p>Use this route when you want a fast first pass before deeper review.</p>
       </article>
 
-      <article class="docs-card">
+      <article class="docs-card docs-card-right">
         <span class="docs-step">2</span>
-        <h2>Use risk levels to prioritise</h2>
-        <p><strong>High</strong>, <strong>Medium</strong>, and <strong>Low risk</strong> show which issue categories may need attention first.</p>
-        <p>Risk levels are a prioritisation guide, not a final accessibility grade. A low-risk category can still contain issues worth reviewing.</p>
+        <h2>Start an analysis</h2>
+        <p>Click <strong>New Analysis</strong>, then analyze a local <span class="docs-mono-tag">URL</span>, <span class="docs-mono-tag">HTML</span> file, or <span class="docs-mono-tag">ZIP</span> package.</p>
+        <p>After processing, CogniLens opens the dashboard with profile-based risk views and issue cards.</p>
       </article>
 
-      <article id="issue-workspace" class="docs-card docs-card-wide">
+      <article id="issue-workspace" class="docs-card docs-card-core">
         <span class="docs-step">3</span>
-        <h2>Work through one issue at a time</h2>
-        <p>The issue cards on the left are the main workflow. Each card gives a short issue summary and two actions:</p>
+        <h2>Prioritize and inspect issues</h2>
+        <p>Use <strong>High / Medium / Low risk</strong> to decide where to start. Risk is prioritization support, not a final compliance grade.</p>
+        <div class="docs-risk-row" aria-hidden="true">
+          <span class="docs-risk-pill is-high">High risk</span>
+          <span class="docs-risk-pill is-medium">Medium risk</span>
+          <span class="docs-risk-pill is-low">Low risk</span>
+        </div>
+        <p>Each Top Issue Card provides two core actions:</p>
         <ul class="docs-list">
           <li><strong>Show highlighted location</strong> opens the website preview and highlights where the issue appears.</li>
-          <li><strong>Read guidance</strong> opens the right-side issue guidance with redesign steps, cognitive impact, evidence, affected users, and standards mapping.</li>
+          <li><strong>Open guidance</strong> opens the detailed issue workspace with evidence, why it matters, and redesign direction.</li>
         </ul>
       </article>
 
-      <article class="docs-card">
+      <article class="docs-card docs-card-left">
         <span class="docs-step">4</span>
-        <h2>Read guidance before redesigning</h2>
-        <p>Use <strong>Recommended fix steps</strong> as the first redesign action. Then read <strong>Why this matters</strong> to understand the cognitive load impact.</p>
-        <p><strong>Page evidence</strong> summarises key affected page areas. Technical CSS selectors are kept in optional developer details.</p>
+        <h2>Use guidance to redesign</h2>
+        <p>In issue guidance, review <strong>Page evidence</strong>, <strong>Why this matters</strong>, and <strong>First redesign move</strong> in order.</p>
+        <p>For technical implementation, use the selector details and standards mapping as your engineering checklist.</p>
       </article>
 
-      <article class="docs-card">
+      <article class="docs-card docs-card-right">
         <span class="docs-step">5</span>
-        <h2>Reopen previous work</h2>
-        <p>Use <strong>History</strong> to reopen previous analyses and compare later design changes with earlier versions.</p>
+        <h2>Understand scoring signals</h2>
+        <p>Hover the info icon beside each dimension to see <strong>what it means</strong> and <strong>how it is scored</strong>.</p>
+        <p>Dimension scoring aligns with your cognitive risk model and maps to <span class="docs-mono-tag">WCAG</span> / <span class="docs-mono-tag">ISO</span>-based signals in issue details.</p>
+      </article>
+
+      <article class="docs-card docs-card-left">
+        <span class="docs-step">6</span>
+        <h2>Use Eye Tracking and History</h2>
+        <p>Open <strong>Eye Tracking</strong> when you need behavior evidence for attention and visual focus patterns.</p>
+        <p>Use <strong>History</strong> to reopen reports, compare iterations, and continue from prior analysis runs.</p>
       </article>
     </section>
   </main>
@@ -76,6 +91,7 @@
     (() => {
       const backButton = document.getElementById("backToAnalysisButton");
       const storageKey = "cognilens.return.analysis-url";
+
       if (!backButton) {
         return;
       }
