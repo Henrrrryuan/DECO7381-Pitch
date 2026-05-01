@@ -471,10 +471,13 @@ def detect_rd3_vague_controls(controls: list[dict[str, Any]]) -> Issue | None:
 
     for control in controls:
         if generic_control_label(control["text"]):
+            # Keep enough element context for the report UI to distinguish
+            # separate generic controls that share the same tag, e.g. two buttons.
             vague_controls.append(
                 {
                     "tag": control["tag"],
                     "text": control["text"],
+                    "attrs": control.get("attrs", {}),
                 }
             )
 
