@@ -109,139 +109,114 @@ const DIMENSION_CONFIG = [
 const RULE_FRAMEWORK_MAP = {
   "IO-1": {
     coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11: Efficiency and satisfaction",
-    wcag: "WCAG: Understandable content structure",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
+    wcag: "WCAG 2.2 SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
   "IO-2": {
     coga: "COGA: Reduce cognitive load from dense regions",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG: Understandable grouping and chunking",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "IO-3": {
     coga: "COGA: Minimize competing peripheral content",
-    iso: "ISO 9241-11: Satisfaction and comfort",
-    wcag: "WCAG: Understandable page purpose",
+    iso: "ISO 9241-11:2018 6.4.3 Cognitive responses; 6.4.4 Emotional responses",
+    wcag: "WCAG 2.2 SC 2.4.3 Focus Order; SC 3.2.3 Consistent Navigation",
   },
   "IO-4": {
     coga: "COGA: Make the next action obvious",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Predictable operation",
+    iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
   "IO-5": {
     coga: "COGA: Keep a clear information hierarchy",
-    iso: "ISO 9241-11: Effectiveness and efficiency",
-    wcag: "WCAG: Semantic heading structure",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "RD-1": {
     coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Readable text and comprehension",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG 2.2 SC 3.1.5 Reading Level (AAA)",
   },
   "RD-2": {
     coga: "COGA: Break content into manageable chunks",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG: Understandable content blocks",
+    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "RD-3": {
     coga: "COGA: Use clear action labels",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Input purpose clarity",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG 2.2 SC 2.4.6 Headings and Labels; SC 3.3.2 Labels or Instructions",
   },
   "RD-4": {
     coga: "COGA: Prefer familiar vocabulary",
-    iso: "ISO 9241-11: Effectiveness and satisfaction",
-    wcag: "WCAG: Understandable wording",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.4.3 Cognitive responses",
+    wcag: "WCAG 2.2 SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
   "RD-5": {
     coga: "COGA: Keep instructions explicit and direct",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Understandable instructions",
+    iso: "ISO 9241-11:2018 6.2.3 Completeness",
+    wcag: "WCAG 2.2 SC 3.3.2 Labels or Instructions; SC 3.3.5 Help (AAA)",
   },
   "RD-6": {
     coga: "COGA: Support scanning with chunking",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG: Understandable content organization",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "ID-1": {
     coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11: Satisfaction and comfort",
-    wcag: "WCAG: Provide user control over media",
+    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
+    wcag: "WCAG 2.2 SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
   "ID-2": {
     coga: "COGA: Reduce distracting motion",
-    iso: "ISO 9241-11: Satisfaction",
-    wcag: "WCAG: Animation and motion control",
+    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.3 Cognitive responses",
+    wcag: "WCAG 2.2 SC 2.3.3 Animation from Interactions; SC 2.2.2 Pause, Stop, Hide",
   },
   "ID-3": {
     coga: "COGA: Avoid interruptive overlays",
-    iso: "ISO 9241-11: Effectiveness and satisfaction",
-    wcag: "WCAG: Predictable interactions",
+    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
+    wcag: "WCAG 2.2 SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
   "CS-1": {
     coga: "COGA: Keep structure predictable",
-    iso: "ISO 9241-11: Efficiency and confidence",
-    wcag: "WCAG: Consistent heading hierarchy",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "CS-2": {
     coga: "COGA: Keep users oriented in multi-step tasks",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Location and progress cues",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG 2.2 SC 2.4.8 Location (AAA)",
   },
   "CS-3": {
-    coga: "COGA: Use consistent action wording",
-    iso: "ISO 9241-11: Effectiveness and efficiency",
-    wcag: "WCAG: Consistent identification",
+    coga: "COGA: Keep users oriented during multi-step processes",
+    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 3.3.2 Labels or Instructions; SC 2.4.6 Headings and Labels",
   },
   "CS-4": {
     coga: "COGA: Clear component purpose",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Understandable UI components",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG 2.2 SC 2.4.2 Page Titled; SC 2.4.6 Headings and Labels",
   },
   "CS-5": {
     coga: "COGA: Predictable navigation cues",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG: Navigable structure",
+    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
   "CS-6": {
-    coga: "COGA: Stable wayfinding",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG: Consistent navigation patterns",
+    coga: "COGA: Provide direct lookup for content-heavy pages",
+    iso: "ISO 9241-11:2018 6.3.2 Time used",
+    wcag: "WCAG 2.2 SC 2.4.5 Multiple Ways; SC 3.3.2 Labels or Instructions",
   },
   "CS-7": {
     coga: "COGA: Explicit labels and instructions",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG: Understandable labels",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG 2.2 SC 4.1.2 Name, Role, Value; SC 3.3.2 Labels or Instructions",
   },
   "CS-8": {
     coga: "COGA: Predictable interactions",
-    iso: "ISO 9241-11: Effectiveness and efficiency",
-    wcag: "WCAG: Predictable component behavior",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
+    wcag: "WCAG 2.2 SC 3.2.4 Consistent Identification",
   },
-};
-
-const RULE_ISO_CLAUSES = {
-  "IO-1": ["6.3.3 Human effort expended", "6.4.3 Cognitive responses"],
-  "IO-2": ["6.3.3 Human effort expended"],
-  "IO-3": ["6.4.3 Cognitive responses", "6.4.4 Emotional responses"],
-  "IO-4": ["6.2.1 Effectiveness general", "6.3.3 Human effort expended"],
-  "IO-5": ["6.2.2 Accuracy", "6.3.3 Human effort expended"],
-  "RD-1": ["6.2.2 Accuracy"],
-  "RD-2": ["6.3.2 Time used", "6.3.3 Human effort expended"],
-  "RD-3": ["6.2.2 Accuracy"],
-  "RD-4": ["6.2.2 Accuracy", "6.4.3 Cognitive responses"],
-  "RD-5": ["6.2.3 Completeness"],
-  "RD-6": ["6.3.3 Human effort expended"],
-  "ID-1": ["6.4.2 Physical responses", "6.4.4 Emotional responses"],
-  "ID-2": ["6.4.2 Physical responses", "6.4.3 Cognitive responses"],
-  "ID-3": ["6.2.3 Completeness", "6.4.4 Emotional responses"],
-  "CS-1": ["6.3.3 Human effort expended"],
-  "CS-2": ["6.2.2 Accuracy"],
-  "CS-3": ["6.2.3 Completeness", "6.3.3 Human effort expended"],
-  "CS-4": ["6.2.2 Accuracy"],
-  "CS-5": ["6.3.2 Time used", "6.3.3 Human effort expended"],
-  "CS-6": ["6.3.2 Time used"],
-  "CS-7": ["6.2.2 Accuracy"],
-  "CS-8": ["6.2.2 Accuracy", "6.3.3 Human effort expended"],
 };
 
 const HIGHLIGHT_CONFIG = {
@@ -354,18 +329,6 @@ function displayProfileName(name) {
   return profileDisplayMeta(name).label;
 }
 
-function normalizeProfileLabel(label) {
-  if (label === "ADHD" || label === "Autism") {
-    return label;
-  }
-  return "Dyslexia";
-}
-
-function issueMatchesActiveProfile() {
-  // Per-rule profile lists were removed; all triggered issues apply to every lens.
-  return true;
-}
-
 function canonicalDimensionName(name) {
   return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
 }
@@ -442,15 +405,6 @@ function buildProfileDimensionEntries(result, profileName) {
   });
 }
 
-function deltaMeta(currentScore, previousScore) {
-  const delta = currentScore - previousScore;
-  return {
-    delta,
-    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
-    label: delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${delta}`,
-  };
-}
-
 function buildScoreSlides(result) {
   const slides = [];
 
@@ -501,7 +455,9 @@ function renderScoreSlider(result) {
 
   const updateControls = () => {
     const currentSlide = slides[currentIndex] || null;
-    state.activeProfile = normalizeProfileLabel(currentSlide?.label);
+    state.activeProfile = (currentSlide?.label === "ADHD" || currentSlide?.label === "Autism")
+      ? currentSlide.label
+      : "Dyslexia";
     dotNodes.forEach((dot, index) => {
       const active = index === currentIndex;
       dot.classList.toggle("is-active", active);
@@ -596,10 +552,7 @@ function renderDashboardSummary(result) {
   }
 
   const totalIssues = result.dimensions.reduce((count, dimension) => {
-    const filteredIssues = (dimension.issues || []).filter((issue) => (
-      issueMatchesActiveProfile(issue, state.activeProfile)
-    ));
-    return count + filteredIssues.length;
+    return count + (dimension.issues || []).length;
   }, 0);
 
   summaryNode.innerHTML = `
@@ -811,14 +764,6 @@ function primaryIssueForDimension(dimension) {
   )[0] || null;
 }
 
-function dimensionPriorityScore(dimension) {
-  const primaryIssue = primaryIssueForDimension(dimension);
-  const unresolvedWeight = Math.max(0, 100 - (dimension?.score || 100)) * 100;
-  return unresolvedWeight
-    + issuePriority(primaryIssue, dimension?.dimension)
-    + ((dimension?.issues?.length || 0) * 5);
-}
-
 function firstSentence(text) {
   const value = String(text || "").trim();
   const match = value.match(/^(.+?[.!?])\s/);
@@ -891,40 +836,104 @@ function detectedEvidenceCopy(issue) {
 }
 
 function frameworkMappingCopy(ruleId) {
-  if (RULE_FRAMEWORK_MAP[ruleId]) {
-    const entry = RULE_FRAMEWORK_MAP[ruleId];
-    return {
-      coga: entry.coga,
-      iso: entry.iso,
-      wcag: entry.wcag,
-    };
-  }
-  if (RULE_ISO_CLAUSES[ruleId]) {
+  const standards = frameworkStandardsForRule(ruleId);
+  return {
+    coga: standards.coga,
+    iso: standards.isoDisplay,
+    wcag: standards.wcagDisplay,
+  };
+}
+
+function parseStandardsItems(text, prefixRegex) {
+  const normalized = String(text || "")
+    .replace(prefixRegex, "")
+    .trim();
+  return normalized
+    .split(/[;；]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseIsoClausesFromRule(ruleId) {
+  const isoText = RULE_FRAMEWORK_MAP[ruleId]?.iso || "";
+  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*/i)
+    .map((item) => item.replace(/^2018\s+/i, "").trim());
+  return clauses.length ? clauses : ["6.3.3 Human effort expended"];
+}
+
+function parseWcagCriteriaFromRule(ruleId) {
+  const wcagText = RULE_FRAMEWORK_MAP[ruleId]?.wcag || "";
+  const criteria = parseStandardsItems(wcagText, /^WCAG(?:\s*2\.2)?\s*/i)
+    .map((item) => (/^SC\s+/i.test(item) ? item : `SC ${item}`));
+  return criteria.length ? criteria : ["SC 2.4.6 Headings and Labels"];
+}
+
+function frameworkStandardsForRule(ruleId) {
+  const entry = RULE_FRAMEWORK_MAP[ruleId];
+  if (!entry) {
     return {
       coga: "COGA: reduce cognitive load in task flow",
-      iso: `ISO 9241-11: ${RULE_ISO_CLAUSES[ruleId].join("; ")}`,
-      wcag: "WCAG: understandable and predictable interactions",
+      wcagCriteria: ["SC 2.4.6 Headings and Labels"],
+      isoClauses: ["6.3.3 Human effort expended"],
+      wcagDisplay: "WCAG 2.2 SC 2.4.6 Headings and Labels",
+      isoDisplay: "ISO 9241-11:2018 6.3.3 Human effort expended",
     };
   }
+  const wcagCriteria = parseWcagCriteriaFromRule(ruleId);
+  const isoClauses = parseIsoClausesFromRule(ruleId);
   return {
-    coga: "COGA: reduce cognitive load in task flow",
-    iso: "ISO 9241-11: effectiveness, efficiency, satisfaction",
-    wcag: "WCAG: understandable and predictable interactions",
+    coga: entry.coga || "COGA: reduce cognitive load in task flow",
+    wcagCriteria,
+    isoClauses,
+    wcagDisplay: `WCAG 2.2 ${wcagCriteria.join("; ")}`,
+    isoDisplay: `ISO 9241-11:2018 ${isoClauses.join("; ")}`,
   };
 }
 
 /** Short WCAG / ISO lines for left-panel issue cards (not full standards copy). */
 function issueCardStandardsSummary(ruleId) {
-  const mapped = RULE_FRAMEWORK_MAP[ruleId];
-  if (mapped) {
-    return {
-      wcag: mapped.wcag.replace(/^WCAG:\s*/i, "").trim(),
-      iso: mapped.iso.replace(/^ISO\s*9241-11:\s*/i, "").trim(),
-    };
+  const standards = frameworkStandardsForRule(ruleId);
+  return {
+    wcag: standards.wcagCriteria.join("; "),
+    iso: standards.isoClauses.join("; "),
+  };
+}
+
+function splitStandardItems(summaryText, fallbackText) {
+  const source = String(summaryText || "").trim();
+  const parts = source
+    .split(/[;；]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (parts.length) {
+    return parts;
   }
-  const clauses = RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
-  const isoLine = clauses.slice(0, 2).join(" · ");
-  return { wcag: "Understandable, predictable interactions", iso: isoLine };
+  return [fallbackText];
+}
+
+function standardsPillsMarkup(summaryText, fallbackText) {
+  const items = splitStandardItems(summaryText, fallbackText);
+  return `
+    <div class="issue-standards-list">
+      ${items.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
+    </div>
+  `;
+}
+
+function wcagStandardsMarkup(summaryText) {
+  const items = splitStandardItems(summaryText, "SC 2.4.6 Headings and Labels");
+  const normalizedItems = items.map((item) => (
+    item.replace(/^WCAG\s*2\.2\s*/i, "").replace(/^WCAG\s*/i, "").trim()
+  ));
+  const criteria = normalizedItems.filter(Boolean).map((item) => (
+    /^SC\s+/i.test(item) ? item : `SC ${item}`
+  ));
+  const visibleCriteria = criteria.length ? criteria : ["SC 2.4.6 Headings and Labels"];
+  return `
+    <div class="issue-standards-list">
+      ${visibleCriteria.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
+    </div>
+  `;
 }
 
 function beneficiaryTags(ruleId, dimensionName) {
@@ -964,24 +973,8 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
   comparisonList.innerHTML = "";
 }
 
-function allIssueRecords(result) {
-  const scoreMap = activeProfileDimensionScoreMap(result);
-  const orderedDimensions = [...(result?.dimensions || [])]
-    .sort((left, right) => compareDimensionsByActiveProfileRisk(left, right, scoreMap));
-
-  const records = [];
-  orderedDimensions.forEach((dimension) => {
-    prioritizedIssuesForProfile(dimension, state.activeProfile)
-      .forEach((issue) => {
-        records.push({ dimension, issue });
-      });
-  });
-  return records;
-}
-
-function prioritizedIssuesForProfile(dimension, activeProfile = state.activeProfile) {
+function prioritizedIssuesForProfile(dimension) {
   return [...(dimension?.issues || [])]
-    .filter((issue) => issueMatchesActiveProfile(issue, activeProfile))
     .sort((left, right) => {
       const priorityDelta = issuePriority(right, dimension?.dimension) - issuePriority(left, dimension?.dimension);
       if (priorityDelta !== 0) {
@@ -1001,7 +994,7 @@ function issueFailingElementCount(issue) {
 }
 
 function issueIsoClauseTags(ruleId) {
-  return RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
+  return parseIsoClausesFromRule(ruleId);
 }
 
 function pillListMarkup(items, limit = 2, className = "") {
@@ -1102,40 +1095,6 @@ function uniqueKeyLocations(locations, limit = 3) {
     }
   });
   return keyLocations.slice(0, limit);
-}
-
-function failingElementsMarkup(issue) {
-  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
-  const count = issueFailingElementCount(issue);
-  if (!locations.length) {
-    return `
-      <div class="standards-failing-element">
-        <span class="standards-location-index">1.</span>
-        <div>
-          <span class="standards-location-meta">${escapeHtml(issue?.rule_id || "Detected rule")}</span>
-          <p>${escapeHtml(issue?.title || "This rule was triggered by the current analysis.")}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  const previewLimit = 3;
-  const shownLocations = uniqueKeyLocations(locations, previewLimit);
-
-  return `
-    <div class="standards-evidence-intro">
-      <p>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found. Key page areas:`)}</p>
-      <small>Use <strong>Show highlighted location</strong> on the issue card to inspect the exact locations.</small>
-    </div>
-    <ol class="standards-failing-list">
-      ${shownLocations.map(({ label }, index) => `
-        <li class="standards-failing-element">
-          <span class="standards-location-index">${index + 1}.</span>
-          <p>${escapeHtml(label)}</p>
-        </li>
-      `).join("")}
-    </ol>
-  `;
 }
 
 function guidanceEvidenceMarkup(issue) {
@@ -1537,8 +1496,8 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
     && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
   const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
-  const wcagLine = conciseText(wcagSummary, "Understandable, predictable interactions.", 110);
-  const isoLine = conciseText(isoSummary, "Effectiveness, efficiency, satisfaction.", 110);
+  const wcagMarkup = wcagStandardsMarkup(wcagSummary);
+  const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
 
   return `
     <article
@@ -1551,12 +1510,12 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label">WCAG</span>
-        <span class="issue-highlight-copy">${escapeHtml(wcagLine)}</span>
+        <span class="issue-highlight-label">WCAG 2.2</span>
+        ${wcagMarkup}
       </div>
       <div class="issue-summary-row issue-summary-row-standards">
         <span class="issue-highlight-label">ISO</span>
-        <span class="issue-highlight-copy">${escapeHtml(isoLine)}</span>
+        ${isoMarkup}
       </div>
       <div class="issue-summary-actions">
         <button
@@ -1592,7 +1551,7 @@ function renderExplanation(result) {
 
   let globalIssueIndex = 0;
   const blocks = orderedDimensions.map((dimension) => {
-    const filteredIssues = prioritizedIssuesForProfile(dimension, state.activeProfile);
+    const filteredIssues = prioritizedIssuesForProfile(dimension);
     const issueCount = filteredIssues.length;
     const displayName = displayDimensionName(dimension.dimension);
     const issueCategoryName = displayIssueCategoryName(dimension.dimension);
@@ -2206,9 +2165,7 @@ function printProfileDimensionCards(result, profileLabel) {
   let issueNumber = 0;
   return DIMENSION_CONFIG.map(({ name }) => {
     const dimension = findDimension(result, name);
-    const issues = (dimension?.issues || []).filter((issue) => (
-      issueMatchesActiveProfile(issue, profileLabel)
-    ));
+    const issues = dimension?.issues || [];
     const issueCards = issues.map((issue) => {
       issueNumber += 1;
       return printIssueCardMarkup(issue, dimension?.dimension || name, issueNumber);
