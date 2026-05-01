@@ -3424,6 +3424,26 @@ body.accessibility-big-cursor-enabled .drop-zone {
   cursor: url("https://img.icons8.com/?size=100&id=37397&format=png&color=000000") 20 6, pointer !important;
 }
 
+body.accessibility-stop-animation-enabled,
+body.accessibility-stop-animation-enabled * {
+  scroll-behavior: auto !important;
+}
+
+body.accessibility-stop-animation-enabled *,
+body.accessibility-stop-animation-enabled *::before,
+body.accessibility-stop-animation-enabled *::after {
+  animation-delay: 0s !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  animation-play-state: paused !important;
+  transition-delay: 0s !important;
+  transition-duration: 0.001ms !important;
+}
+
+body.accessibility-stop-animation-enabled .accessibility-widget-button.is-spinning .accessibility-widget-ring {
+  animation: none !important;
+}
+
 .accessibility-reading-mask {
   display: none;
 }

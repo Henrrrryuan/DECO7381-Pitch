@@ -183,6 +183,7 @@ export function restoreAccessibilityDefaults() {
   const restoredBodyClasses = [
     "accessibility-reading-mask-active",
     "accessibility-big-cursor-enabled",
+    "accessibility-stop-animation-enabled",
   ];
   const restoredDocumentVariables = [
     "--accessibility-reading-mask-y",

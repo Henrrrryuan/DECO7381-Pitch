@@ -119,6 +119,10 @@ function createAccessibilityWidget() {
     document.body.classList.toggle("accessibility-big-cursor-enabled", isActive);
   }
 
+  function setStopAnimationActive(isActive) {
+    document.body.classList.toggle("accessibility-stop-animation-enabled", isActive);
+  }
+
   function updateReadingMaskPosition(event) {
     if (!document.body.classList.contains("accessibility-reading-mask-active")) {
       return;
@@ -211,6 +215,7 @@ function createAccessibilityWidget() {
     resetAccessibilityMenuSections();
     setReadingMaskActive(false);
     setBigCursorActive(false);
+    setStopAnimationActive(false);
     restoreAccessibilityDefaults();
   }
 
@@ -268,6 +273,17 @@ function createAccessibilityWidget() {
         }
         setAccessibilityOptionButtonActive(optionButton, nextActiveState);
         setBigCursorActive(nextActiveState);
+        return;
+      }
+      if (optionId === "stop-animation") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        if (nextActiveState) {
+          activeOptionIds.add(optionId);
+        } else {
+          activeOptionIds.delete(optionId);
+        }
+        setAccessibilityOptionButtonActive(optionButton, nextActiveState);
+        setStopAnimationActive(nextActiveState);
         return;
       }
       runAccessibilityMenuFeature(optionId);
