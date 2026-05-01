@@ -533,7 +533,6 @@ function renderDimensionBars(dimensionEntries) {
             aria-label="${escapeHtml(`${issueCategoryName} info`)}"
             data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
             data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
-            data-tip-fix="${escapeHtml(tooltipCopy.fix)}"
           >i</span>
         </span>
         <span class="risk-badge ${riskMeta.className}">${riskMeta.level}</span>
@@ -634,30 +633,25 @@ function tooltipCopyForDimension(dimensionName) {
   const normalized = normalizedDimensionName(dimensionName);
   const tooltipMap = {
     [INFORMATION_OVERLOAD_NAME]: {
-      issue: "Too many competing elements appear at once.",
-      impact: "Users may struggle to identify the primary reading path quickly.",
-      fix: "Reduce first-screen focal points and group secondary content.",
+      issue: "Too many competing elements make the primary task hard to identify.",
+      impact: "We check first-screen focal density, competing CTAs, sidebar or promo interference, and hierarchy clarity.",
     },
     Readability: {
-      issue: "Sentence structure, wording, or chunking are increasing reading effort.",
-      impact: "Users may need to reread text, decode complex wording, or hold too many instruction details in memory.",
-      fix: "Use simpler words, direct instructions, and shorter grouped chunks that are easier to scan.",
+      issue: "Text is harder to read, scan, or understand quickly.",
+      impact: "We measure sentence and paragraph length, wording complexity, instruction clarity, and chunking quality.",
     },
     "Interaction & Distraction": {
-      issue: "Motion, autoplay, or interruption layers pull attention away from the current task.",
-      impact: "Users may lose concentration when overlays, sticky prompts, or moving regions interrupt the reading flow.",
-      fix: "Reduce autoplay and motion, and keep popups or sticky prompts collapsed unless they are essential.",
+      issue: "Motion, autoplay, or interruptions pull attention away from the current task.",
+      impact: "We detect autoplay media, excessive animation, and interruptive overlays or popups.",
     },
     Consistency: {
-      issue: "Layout or control patterns are not consistently applied.",
-      impact: "Users may spend extra effort relearning navigation patterns.",
-      fix: "Reuse consistent labels, spacing, and action placement.",
+      issue: "Structure and controls are not consistent enough for fast orientation.",
+      impact: "We check heading hierarchy, location and progress cues, control naming, and label consistency.",
     },
   };
   return tooltipMap[normalized] || {
-    issue: "This dimension signals cognitive-accessibility risk patterns.",
-    impact: "Users may need more effort to orient and complete key tasks.",
-    fix: "Simplify structure and prioritize the main user path.",
+    issue: "This dimension reflects cognitive-accessibility risk in task flow.",
+    impact: "We score structural clarity, readability, interaction stability, and predictability signals.",
   };
 }
 
@@ -678,9 +672,8 @@ function initDimensionInfoTooltip() {
 
   const showTooltip = (target, event) => {
     tooltip.innerHTML = `
-      <p><strong>Issue:</strong> ${escapeHtml(target.dataset.tipIssue || "")}</p>
-      <p><strong>Impact:</strong> ${escapeHtml(target.dataset.tipImpact || "")}</p>
-      <p><strong>Fix:</strong> ${escapeHtml(target.dataset.tipFix || "")}</p>
+      <p><strong>What it means:</strong> ${escapeHtml(target.dataset.tipIssue || "")}</p>
+      <p><strong>How scored:</strong> ${escapeHtml(target.dataset.tipImpact || "")}</p>
     `;
     tooltip.hidden = false;
     if (event) positionTooltip(event);
@@ -1734,7 +1727,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
         ${wcagMarkup}
       </div>
       <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label">ISO</span>
+        <span class="issue-highlight-label">ISO 9241-11</span>
         ${isoMarkup}
       </div>
       <div class="issue-summary-actions">

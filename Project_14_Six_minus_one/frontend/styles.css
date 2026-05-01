@@ -203,6 +203,7 @@ button.nav-cta {
   justify-items: center;
   position: relative;
   z-index: 1;
+  transform: translateX(74px);
 }
 
 .upload-hero {
@@ -222,17 +223,17 @@ button.nav-cta {
 
 .upload-character-panel {
   position: absolute;
-  top: -48px;
-  left: 22px;
+  top: 410px;
+  left: -250px;
   z-index: 3;
   pointer-events: none;
 }
 
 .character-stage {
-  width: 126px;
-  height: 98px;
+  width: 156px;
+  height: 160px;
   position: relative;
-  transform: scale(0.3);
+  transform: scale(0.5);
   transform-origin: top left;
 }
 
@@ -265,8 +266,8 @@ button.nav-cta {
 }
 
 .eye-ball {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   background: #fff;
   display: grid;
@@ -274,8 +275,8 @@ button.nav-cta {
 }
 
 .eye-pupil {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   background: #1d1f24;
   transform: translate3d(0, 0, 0);
@@ -284,33 +285,37 @@ button.nav-cta {
 }
 
 .figure-purple {
-  left: 40px;
-  width: 132px;
-  height: 300px;
+  left: 52px;
+  width: 226px;
+  height: 830px;
   background: linear-gradient(180deg, #7145ff, #5730d4);
+  z-index: 1;
 }
 
 .figure-dark {
-  left: 160px;
-  width: 96px;
-  height: 240px;
+  left: 190px;
+  width: 216px;
+  height: 700px;
   background: linear-gradient(180deg, #2e3340, #222730);
+  z-index: 2;
 }
 
 .figure-orange {
-  left: 0;
-  width: 210px;
-  height: 178px;
-  border-radius: 130px 130px 0 0;
+  left: 0px;
+  width: 328px;
+  height: 550px;
+  border-radius: 138px 138px 0 0;
   background: linear-gradient(180deg, #ffae84, #f68f61);
+  z-index: 3;
 }
 
 .figure-yellow {
-  right: 0;
-  width: 150px;
-  height: 206px;
-  border-radius: 100px 100px 0 0;
+  left: 158px;
+  width: 264px;
+  height: 360px;
+  border-radius: 106px 106px 0 0;
   background: linear-gradient(180deg, #f2e367, #d8c84f);
+  z-index: 4;
 }
 
 .figure-yellow .character-eyes {
@@ -4023,6 +4028,105 @@ button.dimension-row.is-linked-active {
   margin-bottom: 24px;
 }
 
+.docs-panel {
+  border-radius: 18px;
+  padding: 26px 28px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(47, 111, 235, 0.08) 0%, rgba(47, 111, 235, 0) 55%),
+    #fff;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+}
+
+.docs-panel h1 {
+  margin: 8px 0 0;
+  font-size: clamp(29px, 4vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.docs-card {
+  border: 1px solid rgba(149, 169, 198, 0.36);
+  border-radius: 16px;
+  background: #fff;
+  padding: 18px 18px 16px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.docs-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47, 111, 235, 0.4);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.12);
+}
+
+.docs-card h2 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.docs-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.docs-card-wide {
+  grid-column: 1 / -1;
+}
+
+.docs-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: rgba(47, 111, 235, 0.14);
+  border: 1px solid rgba(47, 111, 235, 0.28);
+}
+
+.docs-list {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: #475569;
+  line-height: 1.65;
+}
+
+.docs-list li {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-panel {
+    padding: 22px 20px;
+  }
+
+  .docs-card-wide {
+    grid-column: auto;
+  }
+}
+
 .history-toolbar {
   display: grid;
   gap: 8px;
@@ -4496,6 +4600,7 @@ button.dimension-row.is-linked-active {
   .upload-page {
     width: min(100%, 900px);
     padding: 34px 20px;
+    transform: translateX(0);
   }
 
   .upload-character-panel {
@@ -4581,6 +4686,7 @@ button.dimension-row.is-linked-active {
   .upload-page {
     width: min(100%, 620px);
     padding: 24px 14px;
+    transform: translateX(0);
   }
 
   .upload-character-panel {
