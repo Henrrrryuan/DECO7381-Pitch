@@ -1073,6 +1073,17 @@ function friendlyLocationLabel(location) {
     return controlLabel;
   }
 
+  const readableText = location.label
+    || location.preview
+    || location.sentence_preview
+    || location.text
+    || "";
+  // Text-heavy issues become confusing if every item is just "Text paragraph".
+  // Show a short content preview first so the list identifies the actual passage.
+  if (readableText && !looksLikeTechnicalSelector(readableText)) {
+    return conciseText(readableText, "Affected text passage", 96);
+  }
+
   const technicalText = location.summary || location.region || location.selector || location.tag || "";
   const knownLabels = {
     "main.hero": "Hero section",
@@ -1101,41 +1112,37 @@ function friendlyLocationLabel(location) {
     return titleCaseSelectorPart(technicalText);
   }
 
-  const readableText = location.label
-    || location.preview
-    || location.sentence_preview
-    || location.text
-    || "";
-  if (readableText && !looksLikeTechnicalSelector(readableText)) {
-    return conciseText(readableText, "Affected text passage", 72);
-  }
   return "Affected page area";
 }
 
-function locationMetaText(location) {
+function locationMetaText(location, elementNumber = null) {
   if (!location || typeof location !== "object") {
     return "Location detail";
   }
+  const elementPrefix = elementNumber ? `Highlighted as Element ${elementNumber} · ` : "";
   const controlLabel = controlLocationLabel(location);
   if (controlLabel) {
     const attrSummary = locationAttributeSummary(location);
     return attrSummary
-      ? `${controlElementLabel(location.tag)} element · ${attrSummary}`
-      : `${controlElementLabel(location.tag)} element`;
+      ? `${elementPrefix}${controlElementLabel(location.tag)} element · ${attrSummary}`
+      : `${elementPrefix}${controlElementLabel(location.tag)} element`;
+  }
+  if (location.block_index) {
+    return `${elementPrefix}Text block ${location.block_index} in page reading order`;
   }
   if (location.summary) {
-    return `Location: ${location.summary}`;
+    return `${elementPrefix}Location: ${location.summary}`;
   }
   if (location.region) {
-    return `Region: ${location.region}`;
+    return `${elementPrefix}Region: ${location.region}`;
   }
   if (location.tag) {
-    return `Element type: ${location.tag}`;
+    return `${elementPrefix}Element type: ${location.tag}`;
   }
   if (location.selector) {
-    return `Selector: ${location.selector}`;
+    return `${elementPrefix}Selector: ${location.selector}`;
   }
-  return "Location detail";
+  return `${elementPrefix}Location detail`;
 }
 
 function uniqueKeyLocations(locations, limit = 3) {
@@ -1176,12 +1183,12 @@ function guidanceEvidenceMarkup(issue) {
   return `
     <div class="guidance-evidence-note">
       <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
-      <span>Use <strong>Show highlighted location</strong> on the issue card to inspect the exact page highlight.</span>
+      <span>The numbers below match the <strong>Element 1</strong>, <strong>Element 2</strong> labels in the page highlight.</span>
     </div>
     <div class="guidance-location-list">
       ${shownLocations.map((location, index) => {
         const label = friendlyLocationLabel(location);
-        const meta = locationMetaText(location).replace(/^Location: /, "");
+        const meta = locationMetaText(location, index + 1).replace(/^Location: /, "");
         const showMeta = meta && meta !== label;
         return `
           <div class="guidance-location-card">
@@ -1474,35 +1481,14 @@ function selectedIssueWorkspaceMarkup(record) {
   const ruleId = issue.rule_id || "";
   const model = issueDisplayModel(issue, dimensionName);
   const users = issueAffectedGroups(issue, dimensionName);
-  const affectedCount = issueFailingElementCount(issue);
   const goal = issueGoalText(issue, dimensionName);
   const doneWhen = issueDoneWhenText(issue, dimensionName);
   const primaryUser = users[0] || "affected users";
   return `
     <section class="issue-guidance-panel" aria-label="Selected issue guidance">
-      <header class="guidance-summary-row">
-        <span class="guidance-row-number">Selected</span>
-        <div class="guidance-row-issue">
-          <h3>${escapeHtml(model.issueTitle)}</h3>
-          <p>${escapeHtml(model.issueCategory)}</p>
-        </div>
-        <div class="guidance-meta-grid" aria-label="Issue metadata">
-          <div class="guidance-meta-group">
-            <span class="guidance-meta-label">Affected elements</span>
-            <span class="guidance-count-pill">${escapeHtml(`${affectedCount} element${affectedCount === 1 ? "" : "s"}`)}</span>
-          </div>
-          <div class="guidance-meta-group">
-            <span class="guidance-meta-label">Most affected users</span>
-            <div class="guidance-user-pills">
-              ${users.map((user) => `<span>${escapeHtml(user)}</span>`).join("")}
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div class="guidance-expanded-report">
         <section class="guidance-numbered-section">
-          <h4><span>1.</span> Affected elements and locations (${escapeHtml(String(affectedCount))})</h4>
+          <h4><span>1.</span> Affected elements and locations</h4>
           ${guidanceEvidenceMarkup(issue)}
         </section>
 
@@ -1621,7 +1607,7 @@ function highlightIssueInLoadedPreview(dimensionName, ruleId) {
   clearWebsiteHighlights(frameDoc);
 
   const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
-  const highlighted = applyHighlights(elements, config.color, "Issue highlight");
+  const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
@@ -2159,7 +2145,12 @@ function applyHighlights(elements, color, label) {
     ) {
       return;
     }
-    element.setAttribute("data-cognilens-highlight", label);
+    // Issue-level highlights use numbered labels so the preview markers can
+    // be matched back to the ordered element list in the guidance panel.
+    const highlightLabel = typeof label === "function"
+      ? label(element, highlighted.size + 1)
+      : label;
+    element.setAttribute("data-cognilens-highlight", highlightLabel);
     element.style.setProperty("--cognilens-highlight-color", color);
     highlighted.add(element);
   });
@@ -2295,7 +2286,7 @@ function highlightIssue(dimensionName, ruleId, force = false) {
 
   const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
 
-  const highlighted = applyHighlights(elements, config.color, "Issue highlight");
+  const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
