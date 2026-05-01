@@ -361,10 +361,9 @@ function normalizeProfileLabel(label) {
   return "Dyslexia";
 }
 
-function issueMatchesActiveProfile(issue, activeProfile) {
-  const profile = normalizeProfileLabel(activeProfile);
-  const affectedProfiles = RULE_AFFECTED_USERS[issue?.rule_id] || ["Dyslexia", "ADHD", "Autism"];
-  return affectedProfiles.includes(profile);
+function issueMatchesActiveProfile() {
+  // Per-rule profile lists were removed; all triggered issues apply to every lens.
+  return true;
 }
 
 function canonicalDimensionName(name) {
@@ -892,14 +891,22 @@ function detectedEvidenceCopy(issue) {
 }
 
 function frameworkMappingCopy(ruleId) {
-  if (RULE_COGNITIVE_OBJECTIVES[ruleId] || RULE_ISO_CLAUSES[ruleId]) {
+  if (RULE_FRAMEWORK_MAP[ruleId]) {
+    const entry = RULE_FRAMEWORK_MAP[ruleId];
     return {
-      coga: `COGA Objective: ${RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus"}`,
-      iso: `ISO 9241-11: ${(RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"]).join("; ")}`,
-      wcag: `Cognitive Accessibility Guidance: ${RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus"}`,
+      coga: entry.coga,
+      iso: entry.iso,
+      wcag: entry.wcag,
     };
   }
-  return RULE_FRAMEWORK_MAP[ruleId] || {
+  if (RULE_ISO_CLAUSES[ruleId]) {
+    return {
+      coga: "COGA: reduce cognitive load in task flow",
+      iso: `ISO 9241-11: ${RULE_ISO_CLAUSES[ruleId].join("; ")}`,
+      wcag: "WCAG: understandable and predictable interactions",
+    };
+  }
+  return {
     coga: "COGA: reduce cognitive load in task flow",
     iso: "ISO 9241-11: effectiveness, efficiency, satisfaction",
     wcag: "WCAG: understandable and predictable interactions",
@@ -917,19 +924,24 @@ function issueCardStandardsSummary(ruleId) {
   }
   const clauses = RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
   const isoLine = clauses.slice(0, 2).join(" · ");
-  const wcagHint = RULE_COGNITIVE_OBJECTIVES[ruleId] || "Understandable, predictable interactions";
-  return { wcag: wcagHint, iso: isoLine };
+  return { wcag: "Understandable, predictable interactions", iso: isoLine };
 }
 
 function beneficiaryTags(ruleId, dimensionName) {
   const prefix = String(ruleId || "").split("-")[0] || "";
-  if (RULE_BENEFICIARY_TAGS[prefix]) {
-    return RULE_BENEFICIARY_TAGS[prefix];
+  const byPrefix = {
+    IO: ["Reading difficulties", "Attention regulation"],
+    RD: ["Reading difficulties", "Communication differences"],
+    ID: ["Attention regulation", "Autistic users"],
+    CS: ["Autistic users", "Executive function support"],
+  };
+  if (byPrefix[prefix]) {
+    return byPrefix[prefix];
   }
-  if (dimensionName === "Readability") return RULE_BENEFICIARY_TAGS.RD;
-  if (dimensionName === "Interaction & Distraction") return RULE_BENEFICIARY_TAGS.ID;
-  if (dimensionName === "Consistency") return RULE_BENEFICIARY_TAGS.CS;
-  return RULE_BENEFICIARY_TAGS.IO;
+  if (dimensionName === "Readability") return byPrefix.RD;
+  if (dimensionName === "Interaction & Distraction") return byPrefix.ID;
+  if (dimensionName === "Consistency") return byPrefix.CS;
+  return byPrefix.IO;
 }
 
 function renderComparison(currentResult, previousResult, previousSourceName) {
@@ -988,22 +1000,8 @@ function issueFailingElementCount(issue) {
   return Math.max(1, locations.length || 0);
 }
 
-function issueAffectedUserTags(ruleId) {
-  const labelMap = {
-    Dyslexia: "Dyslexia users",
-    ADHD: "ADHD users",
-    Autism: "Autistic users",
-  };
-  return (RULE_AFFECTED_USERS[ruleId] || ["Dyslexia", "ADHD", "Autism"])
-    .map((label) => labelMap[label] || label);
-}
-
 function issueIsoClauseTags(ruleId) {
   return RULE_ISO_CLAUSES[ruleId] || ["6.3.3 Human effort expended"];
-}
-
-function issueCognitiveObjective(ruleId) {
-  return RULE_COGNITIVE_OBJECTIVES[ruleId] || "Help Users Focus";
 }
 
 function pillListMarkup(items, limit = 2, className = "") {
@@ -1290,7 +1288,7 @@ function selectedIssueWorkspaceMarkup(record) {
   const dimensionName = dimension.dimension;
   const ruleId = issue.rule_id || "";
   const model = issueDisplayModel(issue, dimensionName);
-  const users = issueAffectedUserTags(ruleId);
+  const users = issueAffectedGroups(issue, dimensionName);
   const isoClauses = issueIsoClauseTags(ruleId);
   const standards = frameworkMappingCopy(ruleId);
   const affectedCount = issueFailingElementCount(issue);
