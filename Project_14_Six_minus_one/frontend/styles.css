@@ -921,48 +921,13 @@ body.analysis-loading-active {
 
 .tool-sidebar-shell {
   position: relative;
-  width: var(--sidebar-width, 360px);
+  width: var(--sidebar-width, 450px);
   min-width: 80px;
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 100%);
   overflow: visible;
   transition: width 0.42s ease, background 0.42s ease;
   box-sizing: border-box;
-}
-
-.dashboard-body.resizing-sidebar {
-  cursor: col-resize;
-  user-select: none;
-}
-
-.dashboard-body.resizing-sidebar .tool-sidebar-shell {
-  transition: none;
-}
-
-.sidebar-resize-handle {
-  position: absolute;
-  top: 0;
-  right: -5px;
-  width: 10px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 9;
-}
-
-.sidebar-resize-handle::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 4px;
-  width: 2px;
-  height: 100%;
-  background: transparent;
-  transition: background 0.16s ease;
-}
-
-.sidebar-resize-handle:hover::before,
-.dashboard-body.resizing-sidebar .sidebar-resize-handle::before {
-  background: var(--accent);
 }
 
 .tool-workspace-shell {
@@ -1035,10 +1000,6 @@ body.analysis-loading-active {
 .dashboard-body.sidebar-collapsed .tool-sidebar-shell {
   width: 80px;
   background: linear-gradient(180deg, #fcfdff 0%, #f4f7fc 100%);
-}
-
-.dashboard-body.sidebar-collapsed .sidebar-resize-handle {
-  display: none;
 }
 
 .dashboard-body.sidebar-collapsed .tool-sidebar {
@@ -3381,6 +3342,20 @@ button.dimension-row.is-linked-active {
   gap: 10px;
 }
 
+.issue-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
 .issue-summary-category {
   color: var(--ink);
   font-size: 13px;
@@ -3397,6 +3372,11 @@ button.dimension-row.is-linked-active {
 .issue-summary-row {
   display: grid;
   gap: 3px;
+}
+
+.issue-summary-row-profile .issue-highlight-copy {
+  color: #4b5a72;
+  font-size: 12px;
 }
 
 .view-details-button,

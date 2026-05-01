@@ -36,37 +36,27 @@ const state = {
 };
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
-const SIDEBAR_WIDTH_STORAGE_KEY = "cognilens.sidebar.width";
 const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
-const DEFAULT_SIDEBAR_WIDTH = 360;
-const MIN_SIDEBAR_WIDTH = 320;
-const MAX_SIDEBAR_WIDTH = 560;
 const ASSISTANT_MARGIN = 16;
-const ASSISTANT_LONG_PRESS_MS = 220;
-const ASSISTANT_DRAG_CANCEL_DISTANCE = 8;
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
 const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
 const ISSUE_CATEGORY_CONFIG = {
   IO: {
     displayName: "Information Overload Issue",
-    cognitiveDimension: "Information Filtering / Visual Prioritisation",
   },
   RD: {
     displayName: "Readability Issue",
-    cognitiveDimension: "Reading Load / Comprehension",
   },
   ID: {
     displayName: "Interaction & Distraction Issue",
-    cognitiveDimension: "Attention Regulation / Task Continuity",
   },
   CS: {
     displayName: "Consistency & Predictability Issue",
-    cognitiveDimension: "Predictability / Wayfinding",
   },
 };
 const DIMENSION_CATEGORY_KEYS = {
@@ -380,12 +370,6 @@ const HIGHLIGHT_CONFIG = {
   },
 };
 
-function scoreStatus(score) {
-  if (score >= 85) return "Strong";
-  if (score >= 70) return "Moderate";
-  return "Weak";
-}
-
 function profileDisplayMeta(name) {
   const meta = PROFILE_DISPLAY_CONFIG[name];
   if (meta) {
@@ -419,16 +403,54 @@ function canonicalDimensionName(name) {
   return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
 }
 
-function buildOverallDimensionEntries(result) {
-  return DIMENSION_CONFIG.map(({ name, className }) => {
-    const dimension = findDimension(result, name);
-    return {
-      name,
-      className,
-      score: dimension ? dimension.score : 0,
-      issueCount: dimension?.issues?.length || 0,
-    };
+function dimensionBaseOrderIndex(name) {
+  const order = [
+    INFORMATION_OVERLOAD_NAME,
+    "Readability",
+    "Interaction & Distraction",
+    "Consistency",
+  ];
+  const index = order.indexOf(canonicalDimensionName(name));
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function compareDimensionEntriesByRisk(left, right) {
+  const scoreDelta = normalizedScore(left?.score) - normalizedScore(right?.score);
+  if (scoreDelta !== 0) {
+    return scoreDelta;
+  }
+  const issueDelta = (right?.issueCount || 0) - (left?.issueCount || 0);
+  if (issueDelta !== 0) {
+    return issueDelta;
+  }
+  return dimensionBaseOrderIndex(left?.name) - dimensionBaseOrderIndex(right?.name);
+}
+
+function activeProfileDimensionScoreMap(result) {
+  const profileSourceName = profileSourceNameForLabel(result, state.activeProfile);
+  const entries = buildProfileDimensionEntries(result, profileSourceName);
+  const scoreMap = new Map();
+  entries.forEach((entry) => {
+    scoreMap.set(canonicalDimensionName(entry.name), normalizedScore(entry.score));
   });
+  return scoreMap;
+}
+
+function compareDimensionsByActiveProfileRisk(left, right, scoreMap) {
+  const leftKey = canonicalDimensionName(left?.dimension);
+  const rightKey = canonicalDimensionName(right?.dimension);
+  const leftScore = scoreMap.get(leftKey);
+  const rightScore = scoreMap.get(rightKey);
+  const scoreDelta = (Number.isFinite(leftScore) ? leftScore : normalizedScore(left?.score))
+    - (Number.isFinite(rightScore) ? rightScore : normalizedScore(right?.score));
+  if (scoreDelta !== 0) {
+    return scoreDelta;
+  }
+  const issueDelta = (right?.issues?.length || 0) - (left?.issues?.length || 0);
+  if (issueDelta !== 0) {
+    return issueDelta;
+  }
+  return dimensionBaseOrderIndex(left?.dimension) - dimensionBaseOrderIndex(right?.dimension);
 }
 
 function buildProfileDimensionEntries(result, profileName) {
@@ -570,7 +592,9 @@ function renderDimensionBars(dimensionEntries) {
     return;
   }
 
-  const dimensionRows = (dimensionEntries || []).map(({ name, score }) => {
+  const dimensionRows = [...(dimensionEntries || [])]
+    .sort(compareDimensionEntriesByRisk)
+    .map(({ name, score }) => {
     const riskMeta = riskMetaFromScore(score);
     const dimensionKey = displayDimensionName(name);
     const issueCategoryName = displayIssueCategoryName(name);
@@ -592,7 +616,7 @@ function renderDimensionBars(dimensionEntries) {
         <span class="risk-badge ${riskMeta.className}">${riskMeta.level}</span>
       </button>
     `;
-  }).join("");
+    }).join("");
 
   dimensionBars.innerHTML = dimensionRows;
 }
@@ -797,31 +821,6 @@ function focusExplanationDimension(dimensionName) {
   setActiveDimensionBar(targetName);
 }
 
-function focusIssueCard(dimensionName, ruleId) {
-  focusExplanationDimension(dimensionName);
-  const issueSelector = [
-    `.issue-summary-card[data-highlight-dimension="${CSS.escape(dimensionName)}"]`,
-    `[data-highlight-issue="${CSS.escape(ruleId)}"]`,
-  ].join("");
-  const card = document.querySelector(issueSelector);
-  card?.scrollIntoView({ block: "center", behavior: "smooth" });
-}
-
-const DIMENSION_BARRIER_COPY = {
-  [INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
-  [LEGACY_INFORMATION_OVERLOAD_NAME]: "The page is asking users to process too much at once, which makes the main reading path and task harder to identify.",
-  Readability: "Sentence length, wording, instruction complexity, or missing chunking are increasing reading effort and making the main message harder to process.",
-  "Interaction & Distraction": "Motion, autoplay, or interruption layers are shifting attention away from the current reading or task path.",
-  Consistency: "Structural inconsistency is increasing wayfinding effort and making the page flow harder to predict.",
-};
-
-function totalIssueCount(result) {
-  return (result?.dimensions || []).reduce(
-    (count, dimension) => count + (dimension.issues?.length || 0),
-    0,
-  );
-}
-
 function issueEvidenceNumber(issue, key) {
   const value = Number(issue?.evidence?.[key]);
   return Number.isFinite(value) ? value : 0;
@@ -853,80 +852,10 @@ function dimensionPriorityScore(dimension) {
     + ((dimension?.issues?.length || 0) * 5);
 }
 
-function priorityDimension(result) {
-  return [...(result?.dimensions || [])]
-    .filter((dimension) => (dimension.issues?.length || 0) > 0)
-    .sort((a, b) => {
-      return dimensionPriorityScore(b) - dimensionPriorityScore(a);
-    })[0] || null;
-}
-
 function firstSentence(text) {
   const value = String(text || "").trim();
   const match = value.match(/^(.+?[.!?])\s/);
   return match ? match[1] : value;
-}
-
-function uniqueSuggestions(issues) {
-  const seen = new Set();
-  return (issues || [])
-    .map((issue) => issue.suggestion)
-    .filter(Boolean)
-    .filter((suggestion) => {
-      const key = suggestion.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 3);
-}
-
-function issueImpactLabel(issue, dimensionName) {
-  if (!isInformationOverloadDimension(dimensionName)) {
-    return issue?.severity ? `${issue.severity} issue` : "Priority issue";
-  }
-  const score = issuePriority(issue, dimensionName);
-  if (score >= 700) return "High mental effort";
-  if (score >= 450) return "Moderate mental effort";
-  return "Supportive refinement";
-}
-
-function fixPriorityBand(issue, dimensionName) {
-  if (!isInformationOverloadDimension(dimensionName)) {
-    if (issue?.severity === "critical") return "Fix first";
-    if (issue?.severity === "major") return "Fix next";
-    return "Polish later";
-  }
-
-  const blocksPrimaryTask = Boolean(issue?.evidence?.blocks_primary_task);
-  const confusionLevel = issueEvidenceNumber(issue, "confusion_distraction_level");
-  const cumulativeLevel = issueEvidenceNumber(issue, "cumulative_load_level");
-
-  if (blocksPrimaryTask && confusionLevel >= 3) {
-    return "Reduce first";
-  }
-  if (confusionLevel >= 2 || cumulativeLevel >= 3) {
-    return "Improve next";
-  }
-  return "Polish later";
-}
-
-function fixPriorityReason(issue, dimensionName) {
-  if (!isInformationOverloadDimension(dimensionName)) {
-    return "This issue should be prioritised based on how severe the current rule violation is.";
-  }
-
-  const blocksPrimaryTask = Boolean(issue?.evidence?.blocks_primary_task);
-  const confusionLevel = issueEvidenceNumber(issue, "confusion_distraction_level");
-  const cumulativeLevel = issueEvidenceNumber(issue, "cumulative_load_level");
-
-  if (blocksPrimaryTask && confusionLevel >= 3) {
-    return "This pattern can directly block users from locating the main reading path or the next obvious step.";
-  }
-  if (confusionLevel >= 2 || cumulativeLevel >= 3) {
-    return "This pattern is likely to add repeated comparison, filtering, or distraction while users try to read and decide what matters.";
-  }
-  return "This pattern still contributes to overload, but it is less likely to be the main blocker on the current page.";
 }
 
 function affectedUsersCopy(issue, dimensionName) {
@@ -1044,33 +973,6 @@ function beneficiaryTags(ruleId, dimensionName) {
   return RULE_BENEFICIARY_TAGS.IO;
 }
 
-function comparisonRow(label, currentScore, previousScore, className = "") {
-  const { direction, label: deltaLabel } = deltaMeta(currentScore, previousScore);
-  const previousWidth = Math.max(0, Math.min(100, previousScore));
-  const currentWidth = Math.max(0, Math.min(100, currentScore));
-
-  return `
-    <article class="comparison-item ${className}">
-      <div class="comparison-topline">
-        <strong>${escapeHtml(label)}</strong>
-        <span class="comparison-delta ${direction}">${deltaLabel}</span>
-      </div>
-      <div class="comparison-values">
-        <span>Previous ${previousScore}</span>
-        <span>Current ${currentScore}</span>
-      </div>
-      <div class="comparison-chart">
-        <div class="comparison-track previous">
-          <div class="comparison-fill previous" style="width:${previousWidth}%"></div>
-        </div>
-        <div class="comparison-track current">
-          <div class="comparison-fill current" style="width:${currentWidth}%"></div>
-        </div>
-      </div>
-    </article>
-  `;
-}
-
 function renderComparison(currentResult, previousResult, previousSourceName) {
   state.previousResult = previousResult || null;
   state.previousSourceName = previousSourceName || "";
@@ -1092,34 +994,34 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
 }
 
 function allIssueRecords(result) {
-  const dimensionOrder = [
-    INFORMATION_OVERLOAD_NAME,
-    "Readability",
-    "Interaction & Distraction",
-    "Consistency",
-  ];
-  const orderIndex = (dimensionName) => {
-    const index = dimensionOrder.indexOf(displayDimensionName(dimensionName));
-    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
-  };
-
-  const orderedDimensions = [...(result?.dimensions || [])].sort((left, right) => {
-    const orderDelta = orderIndex(left.dimension) - orderIndex(right.dimension);
-    if (orderDelta !== 0) {
-      return orderDelta;
-    }
-    return displayDimensionName(left.dimension).localeCompare(displayDimensionName(right.dimension));
-  });
+  const scoreMap = activeProfileDimensionScoreMap(result);
+  const orderedDimensions = [...(result?.dimensions || [])]
+    .sort((left, right) => compareDimensionsByActiveProfileRisk(left, right, scoreMap));
 
   const records = [];
   orderedDimensions.forEach((dimension) => {
-    (dimension.issues || [])
-      .filter((issue) => issueMatchesActiveProfile(issue, state.activeProfile))
+    prioritizedIssuesForProfile(dimension, state.activeProfile)
       .forEach((issue) => {
         records.push({ dimension, issue });
       });
   });
   return records;
+}
+
+function prioritizedIssuesForProfile(dimension, activeProfile = state.activeProfile) {
+  return [...(dimension?.issues || [])]
+    .filter((issue) => issueMatchesActiveProfile(issue, activeProfile))
+    .sort((left, right) => {
+      const priorityDelta = issuePriority(right, dimension?.dimension) - issuePriority(left, dimension?.dimension);
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
+      const elementDelta = issueFailingElementCount(right) - issueFailingElementCount(left);
+      if (elementDelta !== 0) {
+        return elementDelta;
+      }
+      return String(left?.title || left?.rule_id || "").localeCompare(String(right?.title || right?.rule_id || ""));
+    });
 }
 
 function issueFailingElementCount(issue) {
@@ -1152,21 +1054,6 @@ function pillListMarkup(items, limit = 2, className = "") {
       ${safeItems.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
     </span>
   `;
-}
-
-function locationPrimaryText(location) {
-  if (!location || typeof location !== "object") {
-    return "";
-  }
-  return location.text
-    || location.preview
-    || location.sentence_preview
-    || location.label
-    || location.summary
-    || location.region
-    || location.html_snippet
-    || location.selector
-    || "";
 }
 
 function looksLikeTechnicalSelector(value) {
@@ -1466,95 +1353,6 @@ function selectedIssueWorkspaceMarkup(record) {
   `;
 }
 
-function standardsIssueTableMarkup(result) {
-  const records = allIssueRecords(result);
-  if (!records.length) {
-    return `
-      <section class="standards-issue-panel">
-        <div class="standards-issue-empty">No triggered issues to map to cognitive accessibility guidance.</div>
-      </section>
-    `;
-  }
-
-  const rows = records.map(({ dimension, issue }, index) => {
-    const ruleId = issue.rule_id || "";
-    const count = issueFailingElementCount(issue);
-    const objective = issueCognitiveObjective(ruleId);
-    const isoClauses = issueIsoClauseTags(ruleId);
-    const users = issueAffectedUserTags(ruleId);
-    const rowNumber = index + 1;
-    const issueId = issueDomId(dimension.dimension, issue.rule_id);
-    const model = issueDisplayModel(issue, dimension.dimension);
-    const meaningCopy = model.whyItMatters || model.cognitiveImpact || "This issue may increase cognitive load for users.";
-    const firstFixCopy = model.firstFix || "Review this issue and simplify the interaction.";
-    const activeProfile = normalizeProfileLabel(state.activeProfile);
-    const activeProfileLabel = activeProfile === "Autism" ? "Autistic users" : `${activeProfile} users`;
-    const activeProfileGuidance = model.userRecommendations?.[activeProfile] || firstFixCopy;
-    const sameGuidance = String(activeProfileGuidance).trim().replace(/\s+/g, " ").toLowerCase()
-      === String(firstFixCopy).trim().replace(/\s+/g, " ").toLowerCase();
-    const profileGuidanceMarkup = sameGuidance ? "" : `
-      <p><strong>For ${escapeHtml(activeProfileLabel)}:</strong> ${escapeHtml(activeProfileGuidance)}</p>
-    `;
-    return `
-      <details class="standards-issue-row" data-summary-issue-id="${escapeHtml(issueId)}">
-        <summary class="standards-issue-summary">
-          <span class="standards-cell standards-number">${rowNumber}</span>
-          <span class="standards-cell standards-issue-title">
-            <span>
-              <strong>${escapeHtml(issue.title || "Review this issue")}</strong>
-              <small>${escapeHtml(displayIssueCategoryName(dimension.dimension))}</small>
-            </span>
-          </span>
-          <span class="standards-cell standards-count">
-            <span class="standards-count-pill">${count} element${count === 1 ? "" : "s"}</span>
-          </span>
-          <span class="standards-cell">${pillListMarkup(users, 2)}</span>
-          <span class="standards-cell">${pillListMarkup([objective], 1, "objective")}</span>
-          <span class="standards-cell standards-iso-cell">
-            ${pillListMarkup(isoClauses, 1, "iso")}
-            <span class="standards-expand-icon" aria-hidden="true"></span>
-          </span>
-        </summary>
-        <div class="standards-issue-details">
-          <section class="standards-detail-section">
-            <h4><span>1.</span> First redesign move</h4>
-            <div class="standards-empty-detail large" aria-label="How to solve it for the selected user profile">
-              <p>${escapeHtml(firstFixCopy)}</p>
-              ${profileGuidanceMarkup}
-            </div>
-          </section>
-          <section class="standards-detail-section">
-            <h4><span>2.</span> Why this matters</h4>
-            <div class="standards-empty-detail" aria-label="What this means for the selected user profile">
-              ${escapeHtml(meaningCopy)}
-            </div>
-          </section>
-          <section class="standards-detail-section">
-            <h4><span>3.</span> Page evidence</h4>
-            ${failingElementsMarkup(issue)}
-          </section>
-        </div>
-      </details>
-    `;
-  }).join("");
-
-  return `
-    <section class="standards-issue-panel" aria-label="Full audit overview">
-      <div class="standards-issue-header">
-        <span>#</span>
-        <span>Issue</span>
-        <span>Affected elements</span>
-        <span>Most affected users</span>
-        <span>Guidance framework</span>
-        <span>Usability standard</span>
-      </div>
-      <div class="standards-issue-rows">
-        ${rows}
-      </div>
-    </section>
-  `;
-}
-
 function findIssueById(issueId) {
   if (!issueId || !state.currentResult) {
     return null;
@@ -1746,7 +1544,21 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
     && state.rightPanelMode === "detail"
     && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
-  const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 135);
+  const model = issueDisplayModel(issue, dimensionName);
+  const activeProfile = normalizeProfileLabel(state.activeProfile);
+  const profileLabel = activeProfile === "Autism" ? "Autistic users" : `${activeProfile} users`;
+  const defaultFix = model.firstFix || issue?.suggestion || "Review this issue and simplify the interaction.";
+  const tailoredFix = model.userRecommendations?.[activeProfile] || defaultFix;
+  const normalizedTailoredFix = String(tailoredFix).trim().replace(/\s+/g, " ").toLowerCase();
+  const normalizedDefaultFix = String(defaultFix).trim().replace(/\s+/g, " ").toLowerCase();
+  const isTailored = normalizedTailoredFix !== normalizedDefaultFix;
+  const firstFix = conciseText(tailoredFix, "Review this issue and simplify the interaction.", 140);
+  const profileWhyMap = {
+    Dyslexia: "Prioritize shorter, clearer wording to reduce rereading effort.",
+    ADHD: "Reduce competing actions to keep attention on the primary task.",
+    Autism: "Keep wording and interaction patterns predictable to lower uncertainty.",
+  };
+  const profileWhy = profileWhyMap[activeProfile] || "Tailor the fix to the selected user profile needs.";
 
   return `
     <article
@@ -1756,11 +1568,16 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
     >
       <div class="issue-summary-topline">
         <span class="issue-highlight-rule">Issue ${issueNumber}</span>
+        ${isTailored ? `<span class="issue-profile-badge">Profile-tailored</span>` : ""}
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       <div class="issue-summary-row">
         <span class="issue-highlight-label">First fix</span>
         <span class="issue-highlight-copy">${escapeHtml(firstFix)}</span>
+      </div>
+      <div class="issue-summary-row issue-summary-row-profile">
+        <span class="issue-highlight-label">Why for ${escapeHtml(profileLabel)}</span>
+        <span class="issue-highlight-copy">${escapeHtml(profileWhy)}</span>
       </div>
       <div class="issue-summary-actions">
         <button
@@ -1790,29 +1607,13 @@ function renderExplanation(result) {
     return;
   }
 
-  const explanationOrder = [
-    INFORMATION_OVERLOAD_NAME,
-    "Readability",
-    "Interaction & Distraction",
-    "Consistency",
-  ];
-  const orderIndex = (dimensionName) => {
-    const index = explanationOrder.indexOf(displayDimensionName(dimensionName));
-    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
-  };
-  const orderedDimensions = [...result.dimensions].sort((left, right) => {
-    const orderDelta = orderIndex(left.dimension) - orderIndex(right.dimension);
-    if (orderDelta !== 0) {
-      return orderDelta;
-    }
-    return displayDimensionName(left.dimension).localeCompare(displayDimensionName(right.dimension));
-  });
+  const scoreMap = activeProfileDimensionScoreMap(result);
+  const orderedDimensions = [...result.dimensions]
+    .sort((left, right) => compareDimensionsByActiveProfileRisk(left, right, scoreMap));
 
   let globalIssueIndex = 0;
   const blocks = orderedDimensions.map((dimension) => {
-    const filteredIssues = (dimension.issues || []).filter((issue) => (
-      issueMatchesActiveProfile(issue, state.activeProfile)
-    ));
+    const filteredIssues = prioritizedIssuesForProfile(dimension, state.activeProfile);
     const issueCount = filteredIssues.length;
     const displayName = displayDimensionName(dimension.dimension);
     const issueCategoryName = displayIssueCategoryName(dimension.dimension);
@@ -2738,20 +2539,6 @@ function queueRenderedDomAnalysis() {
   }, 900);
 }
 
-function getStoredSidebarWidth() {
-  const storedWidth = Number(sessionStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY));
-  if (!Number.isFinite(storedWidth)) {
-    return DEFAULT_SIDEBAR_WIDTH;
-  }
-  return Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, storedWidth));
-}
-
-function setSidebarWidth(width) {
-  const resolvedWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, width));
-  document.documentElement.style.setProperty("--sidebar-width", `${resolvedWidth}px`);
-  sessionStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(resolvedWidth));
-}
-
 function applySidebarState() {
   const isCompactViewport = window.matchMedia("(max-width: 1100px)").matches;
   const collapsed = !isCompactViewport && state.sidebarCollapsed;
@@ -2780,36 +2567,9 @@ function handleSidebarToggle() {
 }
 
 function initSidebar() {
-  setSidebarWidth(getStoredSidebarWidth());
   state.sidebarCollapsed = sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
   applySidebarState();
   window.addEventListener("resize", applySidebarState);
-}
-
-function initSidebarResize() {
-  const resizeHandle = document.getElementById("sidebarResizeHandle");
-  if (!resizeHandle) {
-    return;
-  }
-
-  resizeHandle.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    document.body.classList.add("resizing-sidebar");
-    resizeHandle.setPointerCapture?.(event.pointerId);
-
-    const handleMove = (moveEvent) => {
-      setSidebarWidth(moveEvent.clientX);
-    };
-
-    const handleUp = () => {
-      document.body.classList.remove("resizing-sidebar");
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-    };
-
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-  });
 }
 
 function clampAssistantPosition(left, top) {
@@ -3058,7 +2818,6 @@ function bindEvents() {
   const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
-  initSidebarResize();
   initAssistantFloating();
   initPreviewMessageBridge();
   initDimensionInfoTooltip();
