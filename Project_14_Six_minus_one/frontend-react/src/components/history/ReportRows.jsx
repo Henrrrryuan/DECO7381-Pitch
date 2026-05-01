@@ -1,6 +1,6 @@
 import {
   formatDate,
-  formatShortId,
+  formatReportTimestamp,
 } from "../../utils/historyUtils.js";
 
 export function ReportRows({ reportItems, status, emptyMessage, onOpenReport }) {
@@ -9,10 +9,10 @@ export function ReportRows({ reportItems, status, emptyMessage, onOpenReport }) 
   // Interaction with other files:
   // - ReportHistoryPanel.jsx passes reportItems and the current loading/error
   //   status into this component.
-  // - historyUtils.js formats dates and short Report IDs for display.
-  // - The View and Print buttons call onOpenReport, which is implemented in
-  //   HistoryPage.jsx. That page fetches the full report detail and opens the
-  //   older dashboard.html page.
+  // - historyUtils.js formats dates and timestamp-style Report IDs for display.
+  // - The View button calls onOpenReport, which is implemented in
+  //   HistoryPage.jsx. That page opens dashboard.html in history context mode
+  //   without overwriting the user's current dashboard session.
   // These early returns keep loading, error, empty, and data states separate.
   if (status.loading) {
     return <p className="history-empty">Loading analysis history...</p>;
@@ -28,8 +28,8 @@ export function ReportRows({ reportItems, status, emptyMessage, onOpenReport }) 
 
   return reportItems.map((reportItem) => (
     <article className="history-row" key={reportItem.run_id}>
-      <span className="history-cell history-id" title={reportItem.run_id}>
-        {formatShortId(reportItem.run_id, "R-")}
+      <span className="history-cell history-id" title={reportItem.created_at || reportItem.run_id}>
+        {formatReportTimestamp(reportItem.created_at)}
       </span>
       <span className="history-cell title" title={reportItem.source_name}>
         {reportItem.source_name}
@@ -42,20 +42,9 @@ export function ReportRows({ reportItems, status, emptyMessage, onOpenReport }) 
             className="history-open-btn"
             type="button"
             data-run-id={reportItem.run_id}
-            data-action="open"
-            onClick={() => onOpenReport(reportItem.run_id, "open")}
+            onClick={() => onOpenReport(reportItem.run_id)}
           >
             View
-          </button>
-          <button
-            className="history-print-btn"
-            type="button"
-            data-run-id={reportItem.run_id}
-            data-action="print"
-            title="Open this record and print it"
-            onClick={() => onOpenReport(reportItem.run_id, "print")}
-          >
-            <span aria-hidden="true">Print</span>
           </button>
         </div>
       </span>

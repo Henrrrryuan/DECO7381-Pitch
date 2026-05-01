@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import {
   getPageOffset,
   getTotalPages,
@@ -19,11 +17,11 @@ export function Pagination({
   //
   // This component only calculates display values such as "Page 2 of 4" and
   // "26-50 of 61 reports". It does not own the report or eye-session data.
-  // When the user clicks Previous, Next, or Go, it calls onPageChange. The
-  // parent panel passes that callback from HistoryPage.jsx, where the actual
-  // page state is updated and the API request is re-run.
-  // The visible page is clamped so typed jump values cannot move outside the
-  // available page range.
+  // When the user clicks Previous or Next, it calls onPageChange. The parent
+  // panel passes that callback from HistoryPage.jsx, where the actual page
+  // state is updated and the API request is re-run.
+  // The visible page is clamped so state cannot move outside the available
+  // page range.
   const totalPages = getTotalPages(totalItems, pageSize);
   const visiblePageNumber = Math.min(Math.max(1, Number(currentPage) || 1), totalPages);
   const firstVisibleItemNumber = totalItems ? getPageOffset(visiblePageNumber, pageSize) + 1 : 0;
@@ -31,17 +29,6 @@ export function Pagination({
     getPageOffset(visiblePageNumber, pageSize) + pageSize,
     totalItems,
   );
-  const [typedPageNumber, setTypedPageNumber] = useState(String(visiblePageNumber));
-
-  useEffect(() => {
-    setTypedPageNumber(String(visiblePageNumber));
-  }, [visiblePageNumber, totalPages]);
-
-  const goToTypedPage = () => {
-    const requestedPageNumber = Number(typedPageNumber) || visiblePageNumber;
-    const nextPageNumber = Math.min(Math.max(1, requestedPageNumber), totalPages);
-    onPageChange(nextPageNumber);
-  };
 
   return (
     <div id={containerId} className="history-pagination" aria-label={ariaLabel}>
@@ -60,28 +47,9 @@ export function Pagination({
           Previous
         </button>
 
-        <label className="history-page-jump">
-          <span>Go to</span>
-          <input
-            className="history-page-input"
-            type="number"
-            min="1"
-            max={String(totalPages)}
-            value={typedPageNumber}
-            inputMode="numeric"
-            onChange={(event) => setTypedPageNumber(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                goToTypedPage();
-              }
-            }}
-          />
-        </label>
-
-        <button className="history-page-btn" type="button" onClick={goToTypedPage}>
-          Go
-        </button>
+        <span className="history-pagination-page-indicator">
+          {`${visiblePageNumber} / ${totalPages}`}
+        </span>
 
         <button
           className="history-page-btn"

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   fetchEyeHistory,
-  fetchReportDetail,
   fetchReportHistory,
 } from "../api/historyApi.js";
 import { AppNav } from "../components/AppNav.jsx";
@@ -11,25 +10,25 @@ import { HistoryHero } from "../components/history/HistoryHero.jsx";
 import { HistorySearch } from "../components/history/HistorySearch.jsx";
 import { ReportHistoryPanel } from "../components/history/ReportHistoryPanel.jsx";
 import {
-  buildCurrentSession,
+  DASHBOARD_HISTORY_CONTEXT_KEY,
+  DASHBOARD_HISTORY_ONCE_KEY,
   getTotalPages,
-  saveDashboardSession,
 } from "../utils/historyUtils.js";
 
-const PAGE_SIZE = 25;
-const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
+const REPORT_PAGE_SIZE = 10;
+const EYE_PAGE_SIZE = 25;
 
 // Page controller for the Vite version of the History page.
 //
 // This file owns the workflow logic for the whole page:
 // - It stores search text, submitted search text, pagination state, loaded data,
 //   and loading/error status.
-// - It calls api/historyApi.js to load report history, eye-tracking evidence,
-//   and full report details.
+// - It calls api/historyApi.js to load report history and optional
+//   eye-tracking evidence.
 // - It passes data and callback functions into presentation components under
 //   components/history/.
-// - It uses utils/historyUtils.js to prepare a selected report for the older
-//   dashboard.html page.
+// - It uses utils/historyUtils.js storage keys to tell the older dashboard.html
+//   page which saved report should be reopened.
 // Child components render UI and call callbacks, but this page decides what
 // data should be loaded and what happens after user actions.
 export function HistoryPage() {
@@ -45,6 +44,7 @@ export function HistoryPage() {
   // eye-tracking sessions can have different totals.
   const [reportPage, setReportPage] = useState(1);
   const [eyeEvidencePage, setEyeEvidencePage] = useState(1);
+  const [eyeEvidenceModalOpen, setEyeEvidenceModalOpen] = useState(false);
 
   // Loaded table data. ReportHistoryPanel.jsx and EyeHistoryPanel.jsx receive
   // these values as props and never fetch data directly.
@@ -71,12 +71,12 @@ export function HistoryPage() {
     fetchReportHistory({
       pageNumber: reportPage,
       searchQuery: submittedSearchQuery,
-      pageSize: PAGE_SIZE,
+      pageSize: REPORT_PAGE_SIZE,
       abortSignal: reportHistoryRequestController.signal,
     })
       .then((reportHistoryPayload) => {
         const totalReports = Number(reportHistoryPayload.total ?? reportHistoryPayload.items?.length ?? 0) || 0;
-        const totalPages = getTotalPages(totalReports, PAGE_SIZE);
+        const totalPages = getTotalPages(totalReports, REPORT_PAGE_SIZE);
         if (reportPage > totalPages) {
           setReportPage(totalPages);
           return;
@@ -94,24 +94,23 @@ export function HistoryPage() {
     return () => reportHistoryRequestController.abort();
   }, [submittedSearchQuery, reportPage]);
 
-  // Fetch eye-tracking evidence separately. It uses the same submitted search
-  // query, but it keeps independent pagination so users can browse reports and
-  // evidence sessions without forcing both tables onto the same page. This
-  // effect calls fetchEyeHistory from api/historyApi.js, then passes the result
-  // into EyeHistoryPanel.jsx through eyeEvidenceHistory state.
+  // Fetch eye-tracking evidence separately from report search. The teammate's
+  // latest progressive History page keeps evidence as a stable supporting
+  // summary, so changing the report search text should not hide evidence
+  // records from the right-side panel or its modal.
   useEffect(() => {
     const eyeEvidenceRequestController = new AbortController();
     setEyeEvidenceStatus({ loading: true, error: "" });
 
     fetchEyeHistory({
       pageNumber: eyeEvidencePage,
-      searchQuery: submittedSearchQuery,
-      pageSize: PAGE_SIZE,
+      searchQuery: "",
+      pageSize: EYE_PAGE_SIZE,
       abortSignal: eyeEvidenceRequestController.signal,
     })
       .then((eyeEvidencePayload) => {
         const totalEyeSessions = Number(eyeEvidencePayload.total ?? eyeEvidencePayload.items?.length ?? 0) || 0;
-        const totalPages = getTotalPages(totalEyeSessions, PAGE_SIZE);
+        const totalPages = getTotalPages(totalEyeSessions, EYE_PAGE_SIZE);
         if (eyeEvidencePage > totalPages) {
           setEyeEvidencePage(totalPages);
           return;
@@ -130,36 +129,31 @@ export function HistoryPage() {
       });
 
     return () => eyeEvidenceRequestController.abort();
-  }, [submittedSearchQuery, eyeEvidencePage]);
+  }, [eyeEvidencePage]);
 
   // Callback passed into HistorySearch.jsx as onSearch. It runs when the user
-  // submits the search form. Updating submittedSearchQuery triggers both useEffect
-  // blocks above, so both tables reload with the same search term.
+  // submits the search form. Updating submittedSearchQuery triggers only the
+  // report-history effect above; eye-tracking evidence stays available as
+  // optional supporting evidence instead of being filtered by report search.
   const runSearch = useCallback((event) => {
     event.preventDefault();
     setSubmittedSearchQuery(queryInput.trim());
     setReportPage(1);
-    setEyeEvidencePage(1);
   }, [queryInput]);
 
   // Callback passed into ReportRows.jsx through ReportHistoryPanel.jsx as
-  // onOpenReport. It loads full report detail through api/historyApi.js, converts
-  // it with historyUtils.js, stores it in sessionStorage, and then opens the
-  // existing dashboard.html page on port 8001.
-  const openReport = useCallback(async (reportRunId, requestedAction) => {
-    const reportDetail = await fetchReportDetail(reportRunId);
-    saveDashboardSession(buildCurrentSession(reportDetail));
-    if (requestedAction === "print") {
-      sessionStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
-    } else {
-      sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
-    }
-    window.location.href = "http://127.0.0.1:8001/dashboard.html";
+  // onOpenReport. The dashboard page now receives the selected run_id and uses
+  // its own history fallback loader to fetch the saved report. This keeps the
+  // History page from overwriting an active dashboard session.
+  const openReport = useCallback((reportRunId) => {
+    sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, reportRunId);
+    sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
+    window.location.href = `http://127.0.0.1:8001/dashboard.html?from=history&run=${encodeURIComponent(reportRunId)}`;
   }, []);
 
   return (
     <>
-      <AppNav />
+      <AppNav activePage="history" />
       <main className="history-page">
         <HistoryHero />
         {/* HistorySearch.jsx displays the input, while runSearch above performs the search workflow. */}
@@ -174,7 +168,7 @@ export function HistoryPage() {
             reportItems={reportHistory.reportItems}
             totalReports={reportHistory.totalReports}
             currentPage={reportPage}
-            pageSize={PAGE_SIZE}
+            pageSize={REPORT_PAGE_SIZE}
             status={reportStatus}
             searchQuery={submittedSearchQuery}
             onPageChange={setReportPage}
@@ -185,10 +179,12 @@ export function HistoryPage() {
             eyeSessionItems={eyeEvidenceHistory.eyeSessionItems}
             totalEyeSessions={eyeEvidenceHistory.totalEyeSessions}
             currentPage={eyeEvidencePage}
-            pageSize={PAGE_SIZE}
+            pageSize={EYE_PAGE_SIZE}
             status={eyeEvidenceStatus}
-            searchQuery={submittedSearchQuery}
             onPageChange={setEyeEvidencePage}
+            isModalOpen={eyeEvidenceModalOpen}
+            onOpenModal={() => setEyeEvidenceModalOpen(true)}
+            onCloseModal={() => setEyeEvidenceModalOpen(false)}
           />
         </div>
       </main>

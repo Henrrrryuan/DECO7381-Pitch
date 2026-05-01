@@ -1,4 +1,6 @@
 const DASHBOARD_STORAGE_KEY = "cognilens-dashboard-session";
+export const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
+export const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 
 // Convert backend ISO timestamps into the user's local date/time format.
 // Used by ReportRows.jsx and EyeRows.jsx before dates are displayed in rows.
@@ -28,6 +30,23 @@ export function formatShortId(fullIdentifier, prefix = "") {
     return "-";
   }
   return `${prefix}${identifierText.slice(0, 6).toUpperCase()}`;
+}
+
+// Display the timestamp-based report label now used by the dashboard and the
+// old progressive History page. The full backend run_id remains available in
+// title text where needed, but the visible label is easier to compare by time.
+export function formatReportTimestamp(value) {
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "-";
+  }
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  const hour = String(parsedDate.getHours()).padStart(2, "0");
+  const minute = String(parsedDate.getMinutes()).padStart(2, "0");
+  const second = String(parsedDate.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}${hour}${minute}${second}`;
 }
 
 // Shared pagination helpers used by HistoryPage.jsx and Pagination.jsx.
