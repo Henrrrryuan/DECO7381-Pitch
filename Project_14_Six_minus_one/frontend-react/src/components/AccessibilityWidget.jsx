@@ -6,6 +6,7 @@ import {
   ACCESSIBILITY_MAIN_OPTIONS,
   ACCESSIBILITY_MENU_FEATURES,
   ACCESSIBILITY_PERSON_ICON,
+  ACCESSIBILITY_PROFILE_OPTIONS,
   ACCESSIBILITY_RESTORE_ICON,
   ACCESSIBILITY_SPIN_DURATION_MS,
   restoreAccessibilityDefaults,
@@ -26,6 +27,7 @@ export function AccessibilityWidget() {
   const [buttonIsSpinning, setButtonIsSpinning] = useState(false);
   const [expandedSectionId, setExpandedSectionId] = useState("");
   const [activeOptionIds, setActiveOptionIds] = useState(() => new Set());
+  const [activeProfileIds, setActiveProfileIds] = useState(() => new Set());
   const readingMaskIsActive = activeOptionIds.has("reading-aid");
   const bigCursorIsActive = activeOptionIds.has("big-cursor");
   const stopAnimationIsActive = activeOptionIds.has("stop-animation");
@@ -92,7 +94,7 @@ export function AccessibilityWidget() {
   }
 
   function handleMenuSectionClick(sectionId) {
-    if (sectionId === "main-options") {
+    if (sectionId === "main-options" || sectionId === "profiles") {
       setExpandedSectionId((currentSectionId) => (
         currentSectionId === sectionId ? "" : sectionId
       ));
@@ -134,9 +136,32 @@ export function AccessibilityWidget() {
     runAccessibilityMenuFeature(optionId);
   }
 
+  function activateAccessibilityProfile(profileId) {
+    if (profileId !== "adhd") {
+      return;
+    }
+    if (activeProfileIds.has(profileId)) {
+      restoreAccessibilityWidgetDefaults();
+      return;
+    }
+    setActiveProfileIds((currentProfileIds) => {
+      const nextProfileIds = new Set(currentProfileIds);
+      nextProfileIds.add(profileId);
+      return nextProfileIds;
+    });
+    setActiveOptionIds((currentOptionIds) => {
+      const nextOptionIds = new Set(currentOptionIds);
+      nextOptionIds.add("reading-aid");
+      nextOptionIds.add("big-cursor");
+      nextOptionIds.add("stop-animation");
+      return nextOptionIds;
+    });
+  }
+
   function restoreAccessibilityWidgetDefaults() {
     restoreAccessibilityDefaults();
     setActiveOptionIds(new Set());
+    setActiveProfileIds(new Set());
     setExpandedSectionId("");
     setButtonIsSpinning(false);
   }
@@ -183,7 +208,7 @@ export function AccessibilityWidget() {
                 <button
                   className={`accessibility-menu-row${sectionIsExpanded ? " is-expanded" : ""}`}
                   type="button"
-                  aria-expanded={section.id === "main-options" ? sectionIsExpanded : undefined}
+                  aria-expanded={section.id === "main-options" || section.id === "profiles" ? sectionIsExpanded : undefined}
                   onClick={() => handleMenuSectionClick(section.id)}
                 >
                   <SvgMarkup className="accessibility-menu-row-icon" markup={section.icon} />
@@ -195,6 +220,22 @@ export function AccessibilityWidget() {
                     <SvgMarkup markup={ACCESSIBILITY_CHEVRON_ICON} />
                   </span>
                 </button>
+                {section.id === "profiles" && sectionIsExpanded ? (
+                  <div className="accessibility-profile-options-grid">
+                    {ACCESSIBILITY_PROFILE_OPTIONS.map((profile) => (
+                      <button
+                        className={`accessibility-profile-card${activeProfileIds.has(profile.id) ? " is-active" : ""}`}
+                        type="button"
+                        key={profile.id}
+                        aria-pressed={activeProfileIds.has(profile.id)}
+                        onClick={() => activateAccessibilityProfile(profile.id)}
+                      >
+                        <SvgMarkup className="accessibility-profile-icon" markup={profile.icon} />
+                        <span className="accessibility-profile-label">{profile.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {section.id === "main-options" && sectionIsExpanded ? (
                   <div className="accessibility-main-options-grid">
                     {ACCESSIBILITY_MAIN_OPTIONS.map((option) => (

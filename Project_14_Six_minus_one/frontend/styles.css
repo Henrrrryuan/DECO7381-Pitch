@@ -3253,6 +3253,10 @@ button.dimension-row.is-linked-active {
   background: #f1f4fa;
 }
 
+.accessibility-menu-row.is-expanded .accessibility-menu-chevron svg {
+  transform: rotate(180deg);
+}
+
 .accessibility-menu-chevron svg {
   width: 22px;
   height: 22px;
@@ -3286,6 +3290,85 @@ button.dimension-row.is-linked-active {
 
 .accessibility-main-options-grid[hidden] {
   display: none !important;
+}
+
+.accessibility-profile-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 24px 20px 10px;
+  border-bottom: 1px solid #e4e1ef;
+  background: #f4f7fd;
+}
+
+.accessibility-profile-options-grid[hidden] {
+  display: none !important;
+}
+
+.accessibility-profile-card {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #edf0f6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #3f444c;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  cursor: pointer;
+  text-align: left;
+}
+
+.accessibility-profile-card:hover {
+  border-color: #d8ddeb;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.accessibility-profile-card.is-active,
+.accessibility-profile-card[aria-pressed="true"] {
+  border-color: #8b5cf6;
+  border-width: 2px;
+  background: #ffffff;
+  color: #332145;
+  box-shadow: 0 8px 18px rgba(139, 92, 246, 0.12);
+}
+
+.accessibility-profile-icon {
+  display: grid;
+  place-items: center;
+  color: #1f1430;
+}
+
+.accessibility-profile-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.accessibility-profile-card.is-active .accessibility-profile-icon,
+.accessibility-profile-card[aria-pressed="true"] .accessibility-profile-icon {
+  color: #8b5cf6;
+}
+
+.accessibility-profile-label {
+  min-width: 0;
+  color: #3f444c;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.accessibility-profile-card.is-active .accessibility-profile-label,
+.accessibility-profile-card[aria-pressed="true"] .accessibility-profile-label {
+  color: #332145;
 }
 
 .accessibility-option-card {
@@ -5338,6 +5421,22 @@ body.accessibility-reading-mask-active .accessibility-menu {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     padding: 20px 16px;
+  }
+
+  .accessibility-profile-options-grid {
+    gap: 10px;
+    padding: 20px 16px 10px;
+  }
+
+  .accessibility-profile-card {
+    min-height: 50px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .accessibility-profile-label {
+    font-size: 13px;
   }
 
   .accessibility-option-card {

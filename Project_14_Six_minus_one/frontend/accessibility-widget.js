@@ -4,6 +4,7 @@ import {
   ACCESSIBILITY_MAIN_OPTIONS,
   ACCESSIBILITY_MENU_FEATURES,
   ACCESSIBILITY_PERSON_ICON,
+  ACCESSIBILITY_PROFILE_OPTIONS,
   ACCESSIBILITY_RESTORE_ICON,
   ACCESSIBILITY_SPIN_DURATION_MS,
   restoreAccessibilityDefaults,
@@ -17,6 +18,7 @@ function createAccessibilityWidget() {
 
   const button = document.createElement("button");
   const activeOptionIds = new Set();
+  const activeProfileIds = new Set();
   button.className = "accessibility-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Open accessibility menu");
@@ -48,13 +50,28 @@ function createAccessibilityWidget() {
             class="accessibility-menu-row"
             type="button"
             data-accessibility-feature="${section.id}"
-            ${section.id === "main-options" ? 'aria-expanded="false"' : ""}
+            ${section.id === "main-options" || section.id === "profiles" ? 'aria-expanded="false"' : ""}
           >
             <span class="accessibility-menu-row-icon">${section.icon}</span>
             <span class="accessibility-menu-row-label">${section.label}</span>
             ${section.extraHtml || ""}
             <span class="accessibility-menu-chevron">${ACCESSIBILITY_CHEVRON_ICON}</span>
           </button>
+          ${section.id === "profiles" ? `
+            <div class="accessibility-profile-options-grid" hidden>
+              ${ACCESSIBILITY_PROFILE_OPTIONS.map((profile) => `
+                <button
+                  class="accessibility-profile-card"
+                  type="button"
+                  data-accessibility-profile="${profile.id}"
+                  aria-pressed="false"
+                >
+                  <span class="accessibility-profile-icon">${profile.icon}</span>
+                  <span class="accessibility-profile-label">${profile.label}</span>
+                </button>
+              `).join("")}
+            </div>
+          ` : ""}
           ${section.id === "main-options" ? `
             <div class="accessibility-main-options-grid" hidden>
               ${ACCESSIBILITY_MAIN_OPTIONS.map((option) => `
@@ -164,6 +181,44 @@ function createAccessibilityWidget() {
     });
   }
 
+  function setAccessibilityOptionActive(optionId, isActive) {
+    const optionButton = menu.querySelector(`[data-accessibility-option="${optionId}"]`);
+    if (isActive) {
+      activeOptionIds.add(optionId);
+    } else {
+      activeOptionIds.delete(optionId);
+    }
+    if (optionButton) {
+      setAccessibilityOptionButtonActive(optionButton, isActive);
+    }
+    if (optionId === "reading-aid") {
+      setReadingMaskActive(isActive);
+    }
+    if (optionId === "big-cursor") {
+      setBigCursorActive(isActive);
+    }
+    if (optionId === "stop-animation") {
+      setStopAnimationActive(isActive);
+    }
+  }
+
+  function setAccessibilityProfileButtonActive(profileButton, isActive) {
+    profileButton.classList.toggle("is-active", isActive);
+    profileButton.setAttribute("aria-pressed", String(isActive));
+  }
+
+  function applyAdhdProfile(profileButton) {
+    if (activeProfileIds.has("adhd")) {
+      restoreAccessibilityWidgetDefaults();
+      return;
+    }
+    activeProfileIds.add("adhd");
+    setAccessibilityProfileButtonActive(profileButton, true);
+    setAccessibilityOptionActive("reading-aid", true);
+    setAccessibilityOptionActive("big-cursor", true);
+    setAccessibilityOptionActive("stop-animation", true);
+  }
+
   function resetAccessibilityOptionButton(optionButton) {
     const optionId = optionButton.dataset.accessibilityOption || "";
     const optionConfig = getAccessibilityOptionConfig(optionId);
@@ -209,9 +264,19 @@ function createAccessibilityWidget() {
     });
   }
 
+  function resetAccessibilityProfileButtons() {
+    activeProfileIds.clear();
+    menu.querySelectorAll("[data-accessibility-profile]").forEach((profileButton) => {
+      profileButton.classList.remove("is-active");
+      profileButton.setAttribute("aria-pressed", "false");
+    });
+  }
+
   function restoreAccessibilityWidgetDefaults() {
     activeOptionIds.clear();
+    activeProfileIds.clear();
     resetAccessibilityOptionButtons();
+    resetAccessibilityProfileButtons();
     resetAccessibilityMenuSections();
     setReadingMaskActive(false);
     setBigCursorActive(false);
@@ -237,8 +302,10 @@ function createAccessibilityWidget() {
   menu.querySelectorAll("[data-accessibility-feature]").forEach((featureButton) => {
     featureButton.addEventListener("click", () => {
       const featureId = featureButton.dataset.accessibilityFeature || "";
-      if (featureId === "main-options") {
-        const optionsGrid = featureButton.parentElement?.querySelector(".accessibility-main-options-grid");
+      if (featureId === "main-options" || featureId === "profiles") {
+        const optionsGrid = featureButton.parentElement?.querySelector(
+          featureId === "profiles" ? ".accessibility-profile-options-grid" : ".accessibility-main-options-grid",
+        );
         const nextExpandedState = featureButton.getAttribute("aria-expanded") !== "true";
         featureButton.classList.toggle("is-expanded", nextExpandedState);
         featureButton.setAttribute("aria-expanded", String(nextExpandedState));
@@ -287,6 +354,14 @@ function createAccessibilityWidget() {
         return;
       }
       runAccessibilityMenuFeature(optionId);
+    });
+  });
+  menu.querySelectorAll("[data-accessibility-profile]").forEach((profileButton) => {
+    profileButton.addEventListener("click", () => {
+      const profileId = profileButton.dataset.accessibilityProfile || "";
+      if (profileId === "adhd") {
+        applyAdhdProfile(profileButton);
+      }
     });
   });
   menu.querySelector(".accessibility-restore-button")?.addEventListener("click", () => {
