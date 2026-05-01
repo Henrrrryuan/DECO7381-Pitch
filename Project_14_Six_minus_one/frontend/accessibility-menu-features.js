@@ -74,6 +74,39 @@ export const ACCESSIBILITY_MENU_FEATURES = [
   },
 ];
 
+export const ACCESSIBILITY_PROFILE_OPTIONS = [
+  {
+    id: "motor-impaired",
+    label: "Motor Impaired",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-1.2 3.2 3 2.6V15h3l2.2 5M7 10.5l3.8-2.3L13 14.5V21M5 21h8" /></svg>',
+  },
+  {
+    id: "dyslexia",
+    label: "Dyslexia",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3M9 9h6v6H9z" /></svg>',
+  },
+  {
+    id: "cognitive",
+    label: "Cognitive",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4a3 3 0 0 1 5.6-1.5A3.5 3.5 0 0 1 19 5.4a3.6 3.6 0 0 1-.7 6.9 4 4 0 0 1-5.8 5.3A3.5 3.5 0 0 1 7 16a3.8 3.8 0 0 1-1-7.4A3.4 3.4 0 0 1 8 4Z" /></svg>',
+  },
+  {
+    id: "adhd",
+    label: "ADHD",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v4m-5 4h10M8 20l1-8h6l1 8M7 7l10-2M6 20h12" /></svg>',
+  },
+  {
+    id: "visual-impaired",
+    label: "Visual-impaired",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm2 15V11l3 3 2-2-4-4H7l-3 6h3l1-3v10M15 21l2-8 3 8" /></svg>',
+  },
+  {
+    id: "seizures",
+    label: "Seizures",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.4 4.1L17 4l-2.1 3.7L19 9l-4.1 1.3L17 14l-3.6-2.1L12 16l-1.4-4.1L7 14l2.1-3.7L5 9l4.1-1.3L7 4l3.6 2.1L12 2Z" /></svg>',
+  },
+];
+
 export const ACCESSIBILITY_MAIN_OPTIONS = [
   {
     id: "screen-reader",
@@ -147,6 +180,7 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     id: "reading-aid",
     label: "Reading Aid",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M8 19h11v-3" /><path d="M5 19V8" /></svg>',
+    activeIcon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v4H5M16 5v4h3M8 19v-4H5M16 19v-4h3" /></svg>',
     levels: 2,
     activeLabel: "Reading Mask",
   },
@@ -177,5 +211,28 @@ export function runAccessibilityMenuFeature(featureId) {
 }
 
 export function restoreAccessibilityDefaults() {
-  return { implemented: false };
+  const documentElement = document.documentElement;
+  const bodyElement = document.body;
+  const restoredBodyClasses = [
+    "accessibility-reading-mask-active",
+    "accessibility-big-cursor-enabled",
+    "accessibility-stop-animation-enabled",
+  ];
+  const restoredDocumentVariables = [
+    "--accessibility-reading-mask-y",
+  ];
+
+  restoredBodyClasses.forEach((className) => {
+    bodyElement?.classList.remove(className);
+  });
+
+  restoredDocumentVariables.forEach((propertyName) => {
+    documentElement?.style.removeProperty(propertyName);
+  });
+
+  return {
+    implemented: true,
+    restoredBodyClasses,
+    restoredDocumentVariables,
+  };
 }
