@@ -1066,17 +1066,6 @@ function friendlyLocationLabel(location) {
     return controlLabel;
   }
 
-  const readableText = location.label
-    || location.preview
-    || location.sentence_preview
-    || location.text
-    || "";
-  // Text-heavy issues become confusing if every item is just "Text paragraph".
-  // Show a short content preview first so the list identifies the actual passage.
-  if (readableText && !looksLikeTechnicalSelector(readableText)) {
-    return conciseText(readableText, "Affected text passage", 96);
-  }
-
   const technicalText = location.summary || location.region || location.selector || location.tag || "";
   const knownLabels = {
     "main.hero": "Hero section",
@@ -1113,29 +1102,41 @@ function locationMetaText(location, elementNumber = null) {
     return "Location detail";
   }
   const elementPrefix = elementNumber ? `Highlighted as Element ${elementNumber} · ` : "";
+  const readableText = location.label
+    || location.preview
+    || location.sentence_preview
+    || location.text
+    || "";
+  const isTextBlock = ["p", "li", "article", "section", "blockquote", "td", "th", "fallback"].includes(
+    String(location.tag || "").toLowerCase(),
+  );
+  const textHint = readableText && !isTextBlock && !looksLikeTechnicalSelector(readableText)
+    ? ` · "${conciseText(readableText, readableText, 72)}"`
+    : "";
   const controlLabel = controlLocationLabel(location);
   if (controlLabel) {
     const attrSummary = locationAttributeSummary(location);
     return attrSummary
-      ? `${elementPrefix}${controlElementLabel(location.tag)} element · ${attrSummary}`
-      : `${elementPrefix}${controlElementLabel(location.tag)} element`;
+      ? `${elementPrefix}${controlElementLabel(location.tag)} element · code marker ${attrSummary}`
+      : `${elementPrefix}${controlElementLabel(location.tag)} element in page reading order`;
   }
   if (location.block_index) {
-    return `${elementPrefix}Text block ${location.block_index} in page reading order`;
+    return `${elementPrefix}Text block ${location.block_index} in page reading order${textHint}`;
   }
   if (location.summary) {
-    return `${elementPrefix}Location: ${location.summary}`;
+    const summaryType = looksLikeTechnicalSelector(location.summary) ? "CSS selector" : "Page area";
+    return `${elementPrefix}${summaryType}: ${location.summary}${textHint}`;
   }
   if (location.region) {
-    return `${elementPrefix}Region: ${location.region}`;
+    return `${elementPrefix}Page region: ${location.region}${textHint}`;
   }
   if (location.tag) {
-    return `${elementPrefix}Element type: ${location.tag}`;
+    return `${elementPrefix}HTML <${location.tag}> element${textHint}`;
   }
   if (location.selector) {
-    return `${elementPrefix}Selector: ${location.selector}`;
+    return `${elementPrefix}CSS selector: ${location.selector}${textHint}`;
   }
-  return `${elementPrefix}Location detail`;
+  return `${elementPrefix}Location detail${textHint}`;
 }
 
 function uniqueKeyLocations(locations, limit = 3) {
@@ -1176,7 +1177,7 @@ function guidanceEvidenceMarkup(issue) {
   return `
     <div class="guidance-evidence-note">
       <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
-      <span>The numbers below match the <strong>Element 1</strong>, <strong>Element 2</strong> labels in the page highlight.</span>
+      <span>Each row shows the element type and its approximate page or code location. The numbers match the <strong>Element 1</strong>, <strong>Element 2</strong> labels in the page highlight.</span>
     </div>
     <div class="guidance-location-list">
       ${shownLocations.map((location, index) => {
