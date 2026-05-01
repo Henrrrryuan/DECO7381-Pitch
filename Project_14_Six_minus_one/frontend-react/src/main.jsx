@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import "../../frontend/styles.css";
 import "./styles/eyeTracking.css";
+import { AccessibilityWidget } from "./components/AccessibilityWidget.jsx";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { EyeTrackingPage } from "./pages/EyeTrackingPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
@@ -39,5 +40,6 @@ document.body.classList.toggle("dashboard-body", isDashboardRoute);
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ActivePage />
+    <AccessibilityWidget />
   </React.StrictMode>,
 );
