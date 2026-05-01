@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ACCESSIBILITY_CHEVRON_ICON,
   ACCESSIBILITY_CLOSE_ICON,
+  ACCESSIBILITY_MAIN_OPTIONS,
   ACCESSIBILITY_MENU_FEATURES,
   ACCESSIBILITY_PERSON_ICON,
   ACCESSIBILITY_RESTORE_ICON,
@@ -23,6 +24,7 @@ function SvgMarkup({ markup, className = "" }) {
 export function AccessibilityWidget() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
   const [buttonIsSpinning, setButtonIsSpinning] = useState(false);
+  const [expandedSectionId, setExpandedSectionId] = useState("");
 
   useEffect(() => {
     if (!buttonIsSpinning) {
@@ -42,6 +44,29 @@ export function AccessibilityWidget() {
       return;
     }
     setButtonIsSpinning(true);
+  }
+
+  function handleMenuSectionClick(sectionId) {
+    if (sectionId === "main-options") {
+      setExpandedSectionId((currentSectionId) => (
+        currentSectionId === sectionId ? "" : sectionId
+      ));
+      return;
+    }
+    runAccessibilityMenuFeature(sectionId);
+  }
+
+  function renderOptionLevels(levelCount) {
+    if (!levelCount) {
+      return null;
+    }
+    return (
+      <span className="accessibility-option-levels" aria-hidden="true">
+        {Array.from({ length: levelCount }).map((_, levelIndex) => (
+          <span key={levelIndex} />
+        ))}
+      </span>
+    );
   }
 
   return (
@@ -79,23 +104,44 @@ export function AccessibilityWidget() {
         </header>
 
         <div className="accessibility-menu-sections">
-          {ACCESSIBILITY_MENU_FEATURES.map((section) => (
-            <button
-              className="accessibility-menu-row"
-              type="button"
-              key={section.label}
-              onClick={() => runAccessibilityMenuFeature(section.id)}
-            >
-              <SvgMarkup className="accessibility-menu-row-icon" markup={section.icon} />
-              <span className="accessibility-menu-row-label">{section.label}</span>
-              {section.extraHtml ? (
-                <SvgMarkup markup={section.extraHtml} />
-              ) : null}
-              <span className="accessibility-menu-chevron">
-                <SvgMarkup markup={ACCESSIBILITY_CHEVRON_ICON} />
-              </span>
-            </button>
-          ))}
+          {ACCESSIBILITY_MENU_FEATURES.map((section) => {
+            const sectionIsExpanded = expandedSectionId === section.id;
+            return (
+              <div className="accessibility-menu-section" key={section.label}>
+                <button
+                  className={`accessibility-menu-row${sectionIsExpanded ? " is-expanded" : ""}`}
+                  type="button"
+                  aria-expanded={section.id === "main-options" ? sectionIsExpanded : undefined}
+                  onClick={() => handleMenuSectionClick(section.id)}
+                >
+                  <SvgMarkup className="accessibility-menu-row-icon" markup={section.icon} />
+                  <span className="accessibility-menu-row-label">{section.label}</span>
+                  {section.extraHtml ? (
+                    <SvgMarkup markup={section.extraHtml} />
+                  ) : null}
+                  <span className="accessibility-menu-chevron">
+                    <SvgMarkup markup={ACCESSIBILITY_CHEVRON_ICON} />
+                  </span>
+                </button>
+                {section.id === "main-options" && sectionIsExpanded ? (
+                  <div className="accessibility-main-options-grid">
+                    {ACCESSIBILITY_MAIN_OPTIONS.map((option) => (
+                      <button
+                        className="accessibility-option-card"
+                        type="button"
+                        key={option.id}
+                        onClick={() => runAccessibilityMenuFeature(option.id)}
+                      >
+                        <SvgMarkup className="accessibility-option-icon" markup={option.icon} />
+                        <span>{option.label}</span>
+                        {renderOptionLevels(option.levels)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
 
         <footer className="accessibility-menu-footer">
