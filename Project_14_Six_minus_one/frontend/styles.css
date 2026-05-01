@@ -123,6 +123,10 @@ input {
   transition: all 180ms ease;
 }
 
+.app-nav-links [hidden] {
+  display: none !important;
+}
+
 .app-nav-links a:hover,
 .app-nav-links button:hover {
   transform: translateY(-1px);
