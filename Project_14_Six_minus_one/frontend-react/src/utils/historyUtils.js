@@ -83,6 +83,6 @@ export function buildCurrentSession(reportDetail) {
 }
 
 export function saveDashboardSession(dashboardSessionPayload) {
-  // Store the converted report so dashboard.html can reopen the selected run.
+  // Store the converted report so the React Dashboard can reopen the selected run.
   sessionStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardSessionPayload));
 }

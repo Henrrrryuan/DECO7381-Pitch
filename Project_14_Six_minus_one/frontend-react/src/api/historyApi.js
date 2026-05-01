@@ -74,6 +74,6 @@ export function fetchEyeHistory({
 export function fetchReportDetail(reportRunId) {
   // Called by HistoryPage.jsx when the user clicks View or Print in
   // ReportRows.jsx. The returned detail is converted by historyUtils.js into
-  // the sessionStorage shape expected by the older dashboard.html page.
+  // the sessionStorage shape expected by the React Dashboard page.
   return fetchJsonResponse(`${BACKEND_API_BASE_URL}/history/${reportRunId}`);
 }

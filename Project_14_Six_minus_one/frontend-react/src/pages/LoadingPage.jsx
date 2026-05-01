@@ -14,7 +14,7 @@ import {
   createFileFromDataAddress,
   loadPendingAnalysisPayload,
   MINIMUM_LOADING_TIME_MS,
-  openOldDashboardForRun,
+  openDashboardForRun,
   saveViteDashboardSession,
   wait,
 } from "../utils/loadingUtils.js";
@@ -25,8 +25,8 @@ let loadingWorkflowHasStarted = false;
 //
 // HomePage.jsx saves a pending-analysis payload in sessionStorage and navigates
 // here. LoadingPage.jsx reads that payload, calls api/analysisApi.js to run the
-// backend analysis, attaches visual complexity evidence, then opens the older
-// dashboard.html page by run_id. The JSX keeps the old loading.html class names
+// backend analysis, attaches visual complexity evidence, then opens the React
+// Dashboard page by run_id. The JSX keeps the old loading.html class names
 // so the visual design stays the same while the implementation moves to React.
 export function LoadingPage() {
   const [loadingMessage, setLoadingMessage] = useState("Checking your interface before opening the report");
@@ -177,7 +177,7 @@ export function LoadingPage() {
       if (!runIdentifier) {
         throw new Error("Analysis finished, but no Report ID was returned.");
       }
-      openOldDashboardForRun(runIdentifier);
+      openDashboardForRun(runIdentifier);
     } catch (error) {
       if (cancelRequestedRef.current || error?.name === "AnalysisCancelledError") {
         return;

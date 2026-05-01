@@ -27,7 +27,7 @@ const EYE_PAGE_SIZE = 25;
 //   eye-tracking evidence.
 // - It passes data and callback functions into presentation components under
 //   components/history/.
-// - It uses utils/historyUtils.js storage keys to tell the older dashboard.html
+// - It uses utils/historyUtils.js storage keys to tell the React Dashboard
 //   page which saved report should be reopened.
 // Child components render UI and call callbacks, but this page decides what
 // data should be loaded and what happens after user actions.
@@ -148,7 +148,7 @@ export function HistoryPage() {
   const openReport = useCallback((reportRunId) => {
     sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, reportRunId);
     sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
-    window.location.href = `http://127.0.0.1:8001/dashboard.html?from=history&run=${encodeURIComponent(reportRunId)}`;
+    window.location.href = `/dashboard?from=history&run=${encodeURIComponent(reportRunId)}`;
   }, []);
 
   return (

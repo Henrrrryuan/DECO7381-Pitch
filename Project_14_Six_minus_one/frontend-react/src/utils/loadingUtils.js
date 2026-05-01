@@ -4,7 +4,7 @@ import {
 } from "./uploadUtils.js";
 
 export const MINIMUM_LOADING_TIME_MS = 2600;
-export const OLD_DASHBOARD_BASE_ADDRESS = "http://127.0.0.1:8001/dashboard.html";
+export const DASHBOARD_PAGE_ROUTE = "/dashboard";
 export const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 export const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 
@@ -12,7 +12,7 @@ export const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 //
 // HomePage.jsx creates the pending-analysis payload. LoadingPage.jsx reads it,
 // calls backend analysis APIs, saves a local Vite copy for future baseline
-// selection, then opens the old dashboard through its history-run fallback.
+// selection, then opens the migrated React Dashboard by Report ID.
 
 export function wait(milliseconds) {
   return new Promise((resolve) => {
@@ -93,13 +93,13 @@ export function clearPendingAnalysisPayload() {
   sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
 }
 
-export function openOldDashboardForRun(runIdentifier) {
+export function openDashboardForRun(runIdentifier) {
   const encodedRunIdentifier = encodeURIComponent(runIdentifier || "");
   try {
     sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, runIdentifier || "");
     sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
   } catch (_) {
-    // The URL run parameter is enough for the old dashboard history fallback.
+    // The URL run parameter is enough for the Dashboard history fallback.
   }
-  window.location.href = `${OLD_DASHBOARD_BASE_ADDRESS}?from=history&run=${encodedRunIdentifier}`;
+  window.location.href = `${DASHBOARD_PAGE_ROUTE}?from=history&run=${encodedRunIdentifier}`;
 }
