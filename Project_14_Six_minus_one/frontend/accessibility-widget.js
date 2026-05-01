@@ -61,6 +61,7 @@ function createAccessibilityWidget() {
                 <button
                   class="accessibility-option-card"
                   type="button"
+                  aria-pressed="false"
                   data-accessibility-option="${option.id}"
                   data-default-label="${option.label}"
                   data-active-label="${option.activeLabel || option.label}"
@@ -114,6 +115,10 @@ function createAccessibilityWidget() {
     );
   }
 
+  function setBigCursorActive(isActive) {
+    document.body.classList.toggle("accessibility-big-cursor-enabled", isActive);
+  }
+
   function updateReadingMaskPosition(event) {
     if (!document.body.classList.contains("accessibility-reading-mask-active")) {
       return;
@@ -122,6 +127,91 @@ function createAccessibilityWidget() {
       "--accessibility-reading-mask-y",
       `${Math.round(event.clientY)}px`,
     );
+  }
+
+  function getAccessibilityOptionConfig(optionId) {
+    return ACCESSIBILITY_MAIN_OPTIONS.find((option) => option.id === optionId) || null;
+  }
+
+  function setAccessibilityOptionButtonActive(optionButton, isActive) {
+    const optionId = optionButton.dataset.accessibilityOption || "";
+    const optionConfig = getAccessibilityOptionConfig(optionId);
+    const optionLabel = optionButton.querySelector(".accessibility-option-label");
+    const optionIcon = optionButton.querySelector(".accessibility-option-icon");
+    const optionLevelDots = optionButton.querySelectorAll(".accessibility-option-levels span");
+
+    optionButton.classList.toggle("is-active", isActive);
+    optionButton.setAttribute("aria-pressed", String(isActive));
+
+    if (optionLabel) {
+      optionLabel.textContent = isActive
+        ? optionButton.dataset.activeLabel || optionConfig?.activeLabel || optionButton.dataset.defaultLabel || optionConfig?.label || optionLabel.textContent
+        : optionButton.dataset.defaultLabel || optionConfig?.label || optionLabel.textContent;
+    }
+
+    if (optionIcon && optionConfig) {
+      optionIcon.innerHTML = isActive
+        ? optionConfig.activeIcon || optionConfig.icon
+        : optionConfig.icon;
+    }
+
+    optionLevelDots.forEach((levelDot, levelIndex) => {
+      levelDot.classList.toggle("is-active", isActive && levelIndex === 0);
+    });
+  }
+
+  function resetAccessibilityOptionButton(optionButton) {
+    const optionId = optionButton.dataset.accessibilityOption || "";
+    const optionConfig = getAccessibilityOptionConfig(optionId);
+    const defaultLabel = optionButton.dataset.defaultLabel || optionConfig?.label || "";
+    const optionLabel = optionButton.querySelector(".accessibility-option-label");
+    const optionIcon = optionButton.querySelector(".accessibility-option-icon");
+    const optionLevelDots = optionButton.querySelectorAll(".accessibility-option-levels span");
+
+    optionButton.classList.remove("is-active");
+    optionButton.setAttribute("aria-pressed", "false");
+
+    if (optionLabel && defaultLabel) {
+      optionLabel.textContent = defaultLabel;
+    }
+
+    if (optionIcon && optionConfig?.icon) {
+      optionIcon.innerHTML = optionConfig.icon;
+    }
+
+    optionLevelDots.forEach((levelDot) => {
+      levelDot.classList.remove("is-active");
+    });
+  }
+
+  function resetAccessibilityMenuSections() {
+    menu.querySelectorAll("[data-accessibility-feature]").forEach((featureButton) => {
+      const featureId = featureButton.dataset.accessibilityFeature || "";
+      if (featureId !== "main-options") {
+        return;
+      }
+      const optionsGrid = featureButton.parentElement?.querySelector(".accessibility-main-options-grid");
+      featureButton.classList.remove("is-expanded");
+      featureButton.setAttribute("aria-expanded", "false");
+      if (optionsGrid) {
+        optionsGrid.hidden = true;
+      }
+    });
+  }
+
+  function resetAccessibilityOptionButtons() {
+    menu.querySelectorAll("[data-accessibility-option]").forEach((optionButton) => {
+      resetAccessibilityOptionButton(optionButton);
+    });
+  }
+
+  function restoreAccessibilityWidgetDefaults() {
+    activeOptionIds.clear();
+    resetAccessibilityOptionButtons();
+    resetAccessibilityMenuSections();
+    setReadingMaskActive(false);
+    setBigCursorActive(false);
+    restoreAccessibilityDefaults();
   }
 
   button.addEventListener("click", () => {
@@ -165,24 +255,26 @@ function createAccessibilityWidget() {
         } else {
           activeOptionIds.delete(optionId);
         }
-        optionButton.classList.toggle("is-active", nextActiveState);
-        optionButton.setAttribute("aria-pressed", String(nextActiveState));
-        const optionLabel = optionButton.querySelector(".accessibility-option-label");
-        if (optionLabel) {
-          optionLabel.textContent = nextActiveState
-            ? optionButton.dataset.activeLabel || optionLabel.textContent
-            : optionButton.dataset.defaultLabel || optionLabel.textContent;
-        }
-        const firstLevelDot = optionButton.querySelector(".accessibility-option-levels span");
-        firstLevelDot?.classList.toggle("is-active", nextActiveState);
+        setAccessibilityOptionButtonActive(optionButton, nextActiveState);
         setReadingMaskActive(nextActiveState);
+        return;
+      }
+      if (optionId === "big-cursor") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        if (nextActiveState) {
+          activeOptionIds.add(optionId);
+        } else {
+          activeOptionIds.delete(optionId);
+        }
+        setAccessibilityOptionButtonActive(optionButton, nextActiveState);
+        setBigCursorActive(nextActiveState);
         return;
       }
       runAccessibilityMenuFeature(optionId);
     });
   });
   menu.querySelector(".accessibility-restore-button")?.addEventListener("click", () => {
-    restoreAccessibilityDefaults();
+    restoreAccessibilityWidgetDefaults();
   });
 
   document.body.append(button, menu, readingMask);

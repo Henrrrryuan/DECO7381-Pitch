@@ -27,6 +27,7 @@ export function AccessibilityWidget() {
   const [expandedSectionId, setExpandedSectionId] = useState("");
   const [activeOptionIds, setActiveOptionIds] = useState(() => new Set());
   const readingMaskIsActive = activeOptionIds.has("reading-aid");
+  const bigCursorIsActive = activeOptionIds.has("big-cursor");
 
   useEffect(() => {
     if (!buttonIsSpinning) {
@@ -68,6 +69,13 @@ export function AccessibilityWidget() {
     };
   }, [readingMaskIsActive]);
 
+  useEffect(() => {
+    document.body.classList.toggle("accessibility-big-cursor-enabled", bigCursorIsActive);
+    return () => {
+      document.body.classList.remove("accessibility-big-cursor-enabled");
+    };
+  }, [bigCursorIsActive]);
+
   function openMenuAfterSpin() {
     if (menuIsOpen || buttonIsSpinning) {
       return;
@@ -103,7 +111,7 @@ export function AccessibilityWidget() {
   }
 
   function toggleAccessibilityOption(optionId) {
-    if (optionId === "reading-aid") {
+    if (optionId === "reading-aid" || optionId === "big-cursor") {
       setActiveOptionIds((currentOptionIds) => {
         const nextOptionIds = new Set(currentOptionIds);
         if (nextOptionIds.has(optionId)) {
@@ -116,6 +124,13 @@ export function AccessibilityWidget() {
       return;
     }
     runAccessibilityMenuFeature(optionId);
+  }
+
+  function restoreAccessibilityWidgetDefaults() {
+    restoreAccessibilityDefaults();
+    setActiveOptionIds(new Set());
+    setExpandedSectionId("");
+    setButtonIsSpinning(false);
   }
 
   return (
@@ -176,13 +191,16 @@ export function AccessibilityWidget() {
                   <div className="accessibility-main-options-grid">
                     {ACCESSIBILITY_MAIN_OPTIONS.map((option) => (
                       <button
-                        className="accessibility-option-card"
+                        className={`accessibility-option-card${activeOptionIds.has(option.id) ? " is-active" : ""}`}
                         type="button"
                         key={option.id}
                         aria-pressed={activeOptionIds.has(option.id)}
                         onClick={() => toggleAccessibilityOption(option.id)}
                       >
-                        <SvgMarkup className="accessibility-option-icon" markup={option.icon} />
+                        <SvgMarkup
+                          className="accessibility-option-icon"
+                          markup={activeOptionIds.has(option.id) ? (option.activeIcon || option.icon) : option.icon}
+                        />
                         <span>{activeOptionIds.has(option.id) ? (option.activeLabel || option.label) : option.label}</span>
                         {renderOptionLevelsWithState(option)}
                       </button>
@@ -196,7 +214,7 @@ export function AccessibilityWidget() {
 
         <footer className="accessibility-menu-footer">
           <strong className="accessibility-menu-brand">CogniLens</strong>
-          <button className="accessibility-restore-button" type="button" onClick={restoreAccessibilityDefaults}>
+          <button className="accessibility-restore-button" type="button" onClick={restoreAccessibilityWidgetDefaults}>
             <SvgMarkup markup={ACCESSIBILITY_RESTORE_ICON} />
             Restore Default
           </button>

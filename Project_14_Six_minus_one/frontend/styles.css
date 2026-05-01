@@ -3289,6 +3289,7 @@ button.dimension-row.is-linked-active {
 }
 
 .accessibility-option-card {
+  position: relative;
   aspect-ratio: 1.22 / 1;
   min-height: 116px;
   display: grid;
@@ -3311,10 +3312,38 @@ button.dimension-row.is-linked-active {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 
+.accessibility-option-card.is-active,
+.accessibility-option-card[aria-pressed="true"] {
+  border-color: #8b5cf6;
+  border-width: 2px;
+  background: #ffffff;
+  color: #332145;
+  box-shadow: 0 8px 18px rgba(139, 92, 246, 0.12);
+}
+
+.accessibility-option-card.is-active::after,
+.accessibility-option-card[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #8b5cf6;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 6.1 5.1 8.2 9 3.8' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 10px 10px;
+}
+
 .accessibility-option-icon {
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   color: #1f1430;
+  border-radius: 999px;
 }
 
 .accessibility-option-icon svg {
@@ -3327,6 +3356,12 @@ button.dimension-row.is-linked-active {
   stroke-linejoin: round;
 }
 
+.accessibility-option-card.is-active .accessibility-option-icon,
+.accessibility-option-card[aria-pressed="true"] .accessibility-option-icon {
+  background: #eee6ff;
+  color: #8b5cf6;
+}
+
 .accessibility-option-card > span:not(.accessibility-option-icon):not(.accessibility-option-levels) {
   align-self: start;
   max-width: 100%;
@@ -3336,6 +3371,11 @@ button.dimension-row.is-linked-active {
   font-weight: 400;
   overflow-wrap: normal;
   word-break: normal;
+}
+
+.accessibility-option-card.is-active > span:not(.accessibility-option-icon):not(.accessibility-option-levels),
+.accessibility-option-card[aria-pressed="true"] > span:not(.accessibility-option-icon):not(.accessibility-option-levels) {
+  color: #332145;
 }
 
 .accessibility-option-levels {
@@ -3357,6 +3397,31 @@ button.dimension-row.is-linked-active {
 .accessibility-option-levels span.is-active {
   background: #8b5cf6;
   opacity: 1;
+}
+
+body.accessibility-big-cursor-enabled,
+body.accessibility-big-cursor-enabled * {
+  cursor: url("https://img.icons8.com/ios/100/cursor--v1.png") 10 4, auto !important;
+}
+
+body.accessibility-big-cursor-enabled a,
+body.accessibility-big-cursor-enabled button,
+body.accessibility-big-cursor-enabled [role="button"],
+body.accessibility-big-cursor-enabled input[type="button"],
+body.accessibility-big-cursor-enabled input[type="submit"],
+body.accessibility-big-cursor-enabled input[type="reset"],
+body.accessibility-big-cursor-enabled label,
+body.accessibility-big-cursor-enabled summary,
+body.accessibility-big-cursor-enabled select,
+body.accessibility-big-cursor-enabled .accessibility-option-card,
+body.accessibility-big-cursor-enabled .accessibility-menu-row,
+body.accessibility-big-cursor-enabled .dimension-row,
+body.accessibility-big-cursor-enabled .issue-card,
+body.accessibility-big-cursor-enabled .tab-button,
+body.accessibility-big-cursor-enabled .view-toggle button,
+body.accessibility-big-cursor-enabled .upload-card,
+body.accessibility-big-cursor-enabled .drop-zone {
+  cursor: url("https://img.icons8.com/?size=100&id=37397&format=png&color=000000") 20 6, pointer !important;
 }
 
 .accessibility-reading-mask {

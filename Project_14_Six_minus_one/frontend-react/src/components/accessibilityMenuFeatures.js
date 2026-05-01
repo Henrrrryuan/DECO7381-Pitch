@@ -147,6 +147,7 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     id: "reading-aid",
     label: "Reading Aid",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M8 19h11v-3" /><path d="M5 19V8" /></svg>',
+    activeIcon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v4H5M16 5v4h3M8 19v-4H5M16 19v-4h3" /></svg>',
     levels: 2,
     activeLabel: "Reading Mask",
   },
@@ -177,5 +178,27 @@ export function runAccessibilityMenuFeature(featureId) {
 }
 
 export function restoreAccessibilityDefaults() {
-  return { implemented: false };
+  const documentElement = document.documentElement;
+  const bodyElement = document.body;
+  const restoredBodyClasses = [
+    "accessibility-reading-mask-active",
+    "accessibility-big-cursor-enabled",
+  ];
+  const restoredDocumentVariables = [
+    "--accessibility-reading-mask-y",
+  ];
+
+  restoredBodyClasses.forEach((className) => {
+    bodyElement?.classList.remove(className);
+  });
+
+  restoredDocumentVariables.forEach((propertyName) => {
+    documentElement?.style.removeProperty(propertyName);
+  });
+
+  return {
+    implemented: true,
+    restoredBodyClasses,
+    restoredDocumentVariables,
+  };
 }
