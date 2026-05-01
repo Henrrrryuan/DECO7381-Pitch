@@ -1872,7 +1872,7 @@ button.dimension-row.is-linked-active {
 
 .guidance-summary-row {
   display: grid;
-  grid-template-columns: 72px minmax(260px, 1fr) minmax(130px, auto) minmax(210px, auto) minmax(190px, auto);
+  grid-template-columns: 72px minmax(260px, 1fr) minmax(320px, auto);
   gap: 18px;
   align-items: center;
   padding: 18px 22px;
@@ -1923,6 +1923,13 @@ button.dimension-row.is-linked-active {
   line-height: 1.15;
 }
 
+.guidance-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
 .guidance-meta-group {
   display: grid;
   gap: 6px;
@@ -1942,6 +1949,11 @@ button.dimension-row.is-linked-active {
   border: 1px solid #e0b4b4;
   background: #fff8f8;
   color: #8b2b2b;
+}
+
+.guidance-framework-pill {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .guidance-user-pills {
@@ -2039,6 +2051,13 @@ button.dimension-row.is-linked-active {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.guidance-hidden-count {
+  margin: 10px 0 0;
+  color: #647187;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .guidance-text-card {
@@ -4603,6 +4622,10 @@ button.dimension-row.is-linked-active {
   .guidance-summary-row {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .guidance-meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .guidance-row-number {
