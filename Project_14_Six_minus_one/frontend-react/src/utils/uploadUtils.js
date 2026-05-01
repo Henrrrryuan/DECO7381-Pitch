@@ -1,13 +1,13 @@
 export const DASHBOARD_SESSION_STORAGE_KEY = "cognilens-dashboard-session";
 export const EYE_TARGET_WEBSITE_ADDRESS_STORAGE_KEY = "cognilens.eye.target-url";
 export const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
-export const LEGACY_LOADING_PAGE_ADDRESS = "http://127.0.0.1:8001/loading.html";
+export const LOADING_PAGE_ROUTE = "/loading";
 
 // Utility functions shared by the Vite Home page and its upload workflow.
 //
 // HomePage.jsx calls these helpers through api/uploadApi.js when the user starts
 // a URL analysis, file upload analysis, or sample analysis. The old
-// frontend/loading.js file then reads the saved pending-analysis payload from
+// LoadingPage.jsx then reads the saved pending-analysis payload from
 // sessionStorage and continues the existing backend analysis flow.
 
 export function isHtmlFile(selectedFile) {

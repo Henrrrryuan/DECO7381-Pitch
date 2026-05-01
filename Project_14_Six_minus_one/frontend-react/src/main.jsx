@@ -6,6 +6,7 @@ import "./styles/eyeTracking.css";
 import { EyeTrackingPage } from "./pages/EyeTrackingPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { HistoryPage } from "./pages/HistoryPage.jsx";
+import { LoadingPage } from "./pages/LoadingPage.jsx";
 
 // Vite starts the React app from this entry file. It imports the existing
 // shared CSS from frontend/styles.css so migrated pages keep the same visual
@@ -14,18 +15,20 @@ import { HistoryPage } from "./pages/HistoryPage.jsx";
 const routePath = window.location.pathname;
 const isEyeRoute = routePath.startsWith("/eye");
 const isHistoryRoute = routePath.startsWith("/history");
-const isHomeRoute = !isEyeRoute && !isHistoryRoute;
-const ActivePage = routePath.startsWith("/eye")
+const isLoadingRoute = routePath.startsWith("/loading");
+const isHomeRoute = !isEyeRoute && !isHistoryRoute && !isLoadingRoute;
+const ActivePage = isEyeRoute
   ? EyeTrackingPage
-  : routePath.startsWith("/history")
+  : isHistoryRoute
     ? HistoryPage
-    : HomePage;
+    : isLoadingRoute
+      ? LoadingPage
+      : HomePage;
 
-// The old Home page had <body class="upload-body"> directly in index.html.
-// Set that class before React renders so the dark patterned background appears
-// immediately and matches the legacy upload page instead of briefly using the
-// default light body background.
-document.body.classList.toggle("upload-body", isHomeRoute);
+// The old Home and Loading pages had <body class="upload-body"> directly in
+// their HTML files. Set that class before React renders so the dark patterned
+// background appears immediately and matches the legacy upload/loading pages.
+document.body.classList.toggle("upload-body", isHomeRoute || isLoadingRoute);
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

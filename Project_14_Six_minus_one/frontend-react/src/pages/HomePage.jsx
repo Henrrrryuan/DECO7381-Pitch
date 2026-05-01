@@ -11,7 +11,7 @@ import { InputMethodTabs } from "../components/home/InputMethodTabs.jsx";
 import { WebsiteAnalysisPanel } from "../components/home/WebsiteAnalysisPanel.jsx";
 import {
   EYE_TARGET_WEBSITE_ADDRESS_STORAGE_KEY,
-  LEGACY_LOADING_PAGE_ADDRESS,
+  LOADING_PAGE_ROUTE,
   persistEyeTrackingTargetAddress,
 } from "../utils/uploadUtils.js";
 
@@ -37,8 +37,8 @@ export function HomePage() {
     setStatusIsError(isError);
   }, []);
 
-  const startLegacyLoadingPage = useCallback(() => {
-    window.location.href = LEGACY_LOADING_PAGE_ADDRESS;
+  const startLoadingPage = useCallback(() => {
+    window.location.href = LOADING_PAGE_ROUTE;
   }, []);
 
   const handleWebsiteAddressInputChange = useCallback((nextWebsiteAddress) => {
@@ -58,14 +58,14 @@ export function HomePage() {
 
     try {
       prepareWebsiteAnalysis(websiteAddressInputValue);
-      startLegacyLoadingPage();
+      startLoadingPage();
     } catch (error) {
       setWorkflowStatus(error.message || String(error), true);
       setAnalysisIsStarting(false);
     }
   }, [
     analysisIsStarting,
-    startLegacyLoadingPage,
+    startLoadingPage,
     setWorkflowStatus,
     websiteAddressInputValue,
   ]);
@@ -81,7 +81,7 @@ export function HomePage() {
 
     try {
       await prepareFileAnalysis(selectedUploadFile);
-      startLegacyLoadingPage();
+      startLoadingPage();
     } catch (error) {
       setWorkflowStatus(error.message || String(error), true);
       setAnalysisIsStarting(false);
@@ -89,7 +89,7 @@ export function HomePage() {
   }, [
     analysisIsStarting,
     selectedUploadFile,
-    startLegacyLoadingPage,
+    startLoadingPage,
     setWorkflowStatus,
   ]);
 
