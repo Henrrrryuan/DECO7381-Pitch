@@ -2378,6 +2378,95 @@ function renderPrintSummary(result) {
   }).join("");
 }
 
+function printProfileLabels(result) {
+  const labels = buildScoreSlides(result).map((slide) => slide.label);
+  const preferredOrder = ["Dyslexia", "ADHD", "Autism"];
+  return preferredOrder.filter((label) => labels.includes(label));
+}
+
+function profileSourceNameForLabel(result, profileLabel) {
+  return (result.profile_scores || []).find((profile) => (
+    displayProfileName(profile.name) === profileLabel
+  ))?.name || profileLabel;
+}
+
+function printProfileDimensionRows(result, profileLabel) {
+  const profileSourceName = profileSourceNameForLabel(result, profileLabel);
+  return buildProfileDimensionEntries(result, profileSourceName).map(({ name, score }) => {
+    const riskMeta = riskMetaFromScore(score);
+    return `
+      <div class="print-profile-risk-row">
+        <span>${escapeHtml(displayIssueCategoryName(name))}</span>
+        <span class="risk-badge ${riskMeta.className}">${escapeHtml(riskMeta.level)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function printIssueCardMarkup(issue, dimensionName, issueNumber) {
+  const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 180);
+  const description = conciseText(issue.description, "This issue may increase cognitive effort for users.", 220);
+  return `
+    <article class="print-issue-card">
+      <div class="print-issue-card__meta">
+        <span>Issue ${issueNumber}</span>
+        <span>${escapeHtml(issue.severity || "review")}</span>
+      </div>
+      <h4>${escapeHtml(issue.title || "Review this issue")}</h4>
+      <p>${escapeHtml(description)}</p>
+      <p><strong>First fix:</strong> ${escapeHtml(firstFix)}</p>
+      <div class="print-issue-card__tags">
+        ${pillListMarkup(issueIsoClauseTags(issue.rule_id), 99, "iso")}
+      </div>
+    </article>
+  `;
+}
+
+function printProfileDimensionCards(result, profileLabel) {
+  let issueNumber = 0;
+  return DIMENSION_CONFIG.map(({ name }) => {
+    const dimension = findDimension(result, name);
+    const issues = (dimension?.issues || []).filter((issue) => (
+      issueMatchesActiveProfile(issue, profileLabel)
+    ));
+    const issueCards = issues.map((issue) => {
+      issueNumber += 1;
+      return printIssueCardMarkup(issue, dimension?.dimension || name, issueNumber);
+    }).join("");
+    return `
+      <details class="print-profile-dimension-card" open>
+        <summary>
+          <span>${escapeHtml(displayIssueCategoryName(name))}</span>
+          <strong>${issues.length}</strong>
+        </summary>
+        <div class="print-profile-dimension-body">
+          ${issues.length ? issueCards : `<p class="print-empty-note">No triggered issues for this profile in this dimension.</p>`}
+        </div>
+      </details>
+    `;
+  }).join("");
+}
+
+function renderPrintableProfileReport(result) {
+  const printProfileReport = document.getElementById("printProfileReport");
+  if (!printProfileReport) {
+    return;
+  }
+
+  const labels = printProfileLabels(result);
+  printProfileReport.innerHTML = labels.map((profileLabel) => `
+    <section class="print-profile-section">
+      <h2>${escapeHtml(profileLabel)}</h2>
+      <div class="print-profile-risk-list">
+        ${printProfileDimensionRows(result, profileLabel)}
+      </div>
+      <div class="print-profile-dimension-list">
+        ${printProfileDimensionCards(result, profileLabel)}
+      </div>
+    </section>
+  `).join("");
+}
+
 function buildAssistantContext() {
   const result = state.currentResult;
   if (!result) {
@@ -2519,6 +2608,7 @@ function renderResult(result, html, options = {}) {
   renderScoreSlider(result);
   renderDashboardSummary(result);
   renderPrintSummary(result);
+  renderPrintableProfileReport(result);
   renderExplanation(result);
   renderAssistantMessages();
 }
@@ -2976,20 +3066,7 @@ function bindEvents() {
 
   if (printButton) {
     printButton.addEventListener("click", () => {
-      const previousMode = state.workspaceMode;
-      if (previousMode !== "explanation") {
-        window.addEventListener(
-          "afterprint",
-          () => {
-            setWorkspaceMode(previousMode);
-          },
-          { once: true },
-        );
-      }
-      if (previousMode !== "explanation") {
-        setWorkspaceMode("explanation");
-      }
-      window.print();
+      printDashboardReport({ restoreMode: state.workspaceMode });
     });
   }
 
@@ -3120,6 +3197,25 @@ function bindEvents() {
   }
 }
 
+function printDashboardReport({ restoreMode = "" } = {}) {
+  const shouldRestoreMode = restoreMode && restoreMode !== "explanation";
+  if (shouldRestoreMode) {
+    window.addEventListener(
+      "afterprint",
+      () => {
+        setWorkspaceMode(restoreMode);
+      },
+      { once: true },
+    );
+    setWorkspaceMode("explanation");
+  }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  });
+}
+
 function buildDashboardSessionFromHistoryDetail(detail) {
   const sourceName = detail.run?.source_name || "history-item";
   const analysis = detail.analysis || detail.result || {};
@@ -3206,7 +3302,7 @@ async function init() {
   if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
     sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
     window.setTimeout(() => {
-      window.print();
+      printDashboardReport();
     }, 150);
   }
 }
