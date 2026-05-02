@@ -2,3 +2,6 @@ backend/analysis_history.sqlite3
 node_modules/
 dist/
 .DS_Store
+frontend-react/.vite/
+frontend-react/node_modules/
+frontend-react/dist/
