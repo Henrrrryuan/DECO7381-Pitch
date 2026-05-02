@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -14,13 +14,16 @@ export function DashboardPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { initDashboard } = await import("../legacy/dashboardApp.js");
+      const module = await import("../legacy/dashboardApp.js");
       if (!cancelled) {
-        await initDashboard();
+        await module.initDashboard();
       }
     })();
     return () => {
       cancelled = true;
+      import("../legacy/dashboardApp.js").then((module) => {
+        module.notifyDashboardUnmount();
+      });
     };
   }, []);
 
@@ -35,9 +38,9 @@ export function DashboardPage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to="/docs?source=analysis">Guide</Link>
+            <Link to={spaGuideAnalysisHref}>Guide</Link>
             <a href={eyeTrackingHref}>Eye Tracking</a>
-            <Link to="/history">History</Link>
+            <Link to={spaHistoryHref}>History</Link>
             <Link className="nav-cta" to="/">
               New Analysis
             </Link>

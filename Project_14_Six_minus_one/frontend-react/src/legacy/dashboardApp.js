@@ -2727,6 +2727,7 @@ function handleSidebarToggle() {
 }
 
 function initSidebar() {
+  window.removeEventListener("resize", applySidebarState);
   state.sidebarCollapsed = sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
   applySidebarState();
   window.addEventListener("resize", applySidebarState);
@@ -3189,11 +3190,14 @@ function renderMissingAnalysisState() {
   `;
 }
 
-async function init() {
+async function init(lifecycleSnapshot) {
   initSidebar();
   bindEvents();
 
   const session = await loadDashboardSessionWithHistoryFallback();
+  if (lifecycleSnapshot !== dashboardLifecycle) {
+    return;
+  }
   const currentSession = session?.current;
   const previousSession = session?.previous;
   if (!currentSession?.payload) {
@@ -3232,16 +3236,21 @@ async function init() {
   }
 }
 
-let dashboardInitDone = false;
+/** Bumped when the React dashboard route unmounts so in-flight init() does not paint a torn-down DOM. */
+let dashboardLifecycle = 0;
+
+export function notifyDashboardUnmount() {
+  dashboardLifecycle += 1;
+}
 
 export async function initDashboard() {
-  if (dashboardInitDone) {
-    return;
-  }
-  dashboardInitDone = true;
+  const snapshot = dashboardLifecycle;
   try {
-    await init();
+    await init(snapshot);
   } catch (error) {
+    if (snapshot !== dashboardLifecycle) {
+      return;
+    }
     document.body.innerHTML = `<pre style="padding:24px;">${escapeHtml(String(error))}</pre>`;
   }
 }

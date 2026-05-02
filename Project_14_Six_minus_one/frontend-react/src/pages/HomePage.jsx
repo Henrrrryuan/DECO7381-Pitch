@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { isHtmlFile, isZipFile, loadDashboardSession } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { spaGuideLandingHref } from "../lib/siteUrls.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
@@ -291,7 +292,7 @@ export function HomePage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to="/docs?source=landing">Guide</Link>
+            <Link to={spaGuideLandingHref}>Guide</Link>
           </nav>
         </div>
       </header>

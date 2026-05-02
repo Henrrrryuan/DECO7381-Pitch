@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const STORAGE_KEY = "cognilens.return.analysis-url";
 
@@ -55,13 +55,13 @@ export function DocsPage() {
             <Link id="landingBackButton" className="nav-cta" to="/" hidden={showAnalysisNav}>
               Back to start
             </Link>
-            <Link className="active-link" to="/docs?source=analysis" hidden={!showAnalysisNav} data-analysis-nav>
+            <Link className="active-link" to={spaGuideAnalysisHref} hidden={!showAnalysisNav} data-analysis-nav>
               Guide
             </Link>
             <a href={eyeTrackingHref} hidden={!showAnalysisNav} data-analysis-nav>
               Eye Tracking
             </a>
-            <Link to="/history" hidden={!showAnalysisNav} data-analysis-nav>
+            <Link to={spaHistoryHref} hidden={!showAnalysisNav} data-analysis-nav>
               History
             </Link>
             <button
