@@ -453,11 +453,13 @@ function renderScoreSlider(result) {
 
   let currentIndex = 0;
 
+  const profileLabelForSlide = (slide) => (
+    slide?.label === "ADHD" || slide?.label === "Autism" ? slide.label : "Dyslexia"
+  );
+
   const updateControls = () => {
     const currentSlide = slides[currentIndex] || null;
-    state.activeProfile = (currentSlide?.label === "ADHD" || currentSlide?.label === "Autism")
-      ? currentSlide.label
-      : "Dyslexia";
+    state.activeProfile = profileLabelForSlide(currentSlide);
     dotNodes.forEach((dot, index) => {
       const active = index === currentIndex;
       dot.classList.toggle("is-active", active);
@@ -474,7 +476,12 @@ function renderScoreSlider(result) {
   };
 
   const goToSlide = (targetIndex) => {
+    const previousProfile = state.activeProfile;
     currentIndex = Math.max(0, Math.min(dotNodes.length - 1, targetIndex));
+    const nextProfile = profileLabelForSlide(slides[currentIndex]);
+    if (nextProfile !== previousProfile) {
+      resetIssueWorkspaceForProfileChange();
+    }
     updateControls();
   };
 
@@ -1552,6 +1559,20 @@ function selectIssue(dimensionName, ruleId) {
 
 function selectedIssueRecord() {
   return findIssueById(state.selectedIssueId);
+}
+
+function resetIssueWorkspaceForProfileChange() {
+  // A profile switch changes the audience lens, so old issue guidance/highlights
+  // should not stay visible under a different user group.
+  state.selectedIssueId = "";
+  state.activeHighlightDimension = "";
+  state.activeHighlightIssueId = "";
+  state.rightPanelMode = "summary";
+
+  clearWebsiteHighlights();
+  setWorkspaceMode("website");
+  updatePreviewIssueHeader();
+  updateActiveHighlightButtons();
 }
 
 function issueDisplayModel(issue, dimensionName) {
