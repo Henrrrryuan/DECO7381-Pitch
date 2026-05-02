@@ -5,7 +5,7 @@
 // Keeping fetch logic here means Dashboard components only describe interface
 // behavior. They do not need to know the backend route names used for history,
 // assistant chat, or rendered DOM re-analysis.
-const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
+const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE ?? "";
 
 async function fetchJsonResponse(requestUrl, requestOptions = {}) {
   const response = await fetch(requestUrl, requestOptions);

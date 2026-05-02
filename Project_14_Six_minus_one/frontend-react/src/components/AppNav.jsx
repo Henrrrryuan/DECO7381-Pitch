@@ -1,10 +1,6 @@
 export function AppNav({ activePage = "history" }) {
-  // Shared navigation for migrated Vite pages.
-  //
-  // HomePage.jsx, HistoryPage.jsx, and EyeTrackingPage.jsx render this component
-  // at the top of the page. Migrated routes stay inside Vite (/, /history, and
-  // /eye), while pages that have not moved yet still point to the older static
-  // frontend on port 8001. This keeps the migration incremental.
+  // Shared navigation for the Vite React app. Guide is still the legacy HTML page,
+  // proxied from the dev server as /static-ui/docs.html.
   return (
     <header className="app-nav">
       <div className="app-nav-inner">
@@ -14,7 +10,7 @@ export function AppNav({ activePage = "history" }) {
         </a>
 
         <nav className="app-nav-links" aria-label="Primary">
-          <a href="http://127.0.0.1:8001/docs.html">Guide</a>
+          <a href="/static-ui/docs.html">Guide</a>
           <a className={activePage === "eye" ? "active-link" : ""} href="/eye">
             Eye Tracking
           </a>

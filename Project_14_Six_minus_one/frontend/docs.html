@@ -9,18 +9,18 @@
 <body class="docs-body">
   <header class="app-nav">
     <div class="app-nav-inner">
-      <a class="app-brand" href="./index.html">
+      <a class="app-brand" href="http://127.0.0.1:5173/">
         <span class="app-brand-mark">C</span>
         <span class="app-brand-name">CogniLens</span>
       </a>
 
       <nav class="app-nav-links" aria-label="Primary">
-        <a id="landingBackButton" class="nav-cta" href="./index.html">Back to start</a>
-        <a class="active-link" href="./docs.html" data-analysis-nav hidden>Guide</a>
-        <a href="http://127.0.0.1:8001/eye/" data-analysis-nav hidden>Eye Tracking</a>
-        <a href="./history.html" data-analysis-nav hidden>History</a>
+        <a id="landingBackButton" class="nav-cta" href="http://127.0.0.1:5173/">Back to start</a>
+        <a class="active-link" href="http://127.0.0.1:5173/static-ui/docs.html" data-analysis-nav hidden>Guide</a>
+        <a href="http://127.0.0.1:5173/eye" data-analysis-nav hidden>Eye Tracking</a>
+        <a href="http://127.0.0.1:5173/history" data-analysis-nav hidden>History</a>
         <button id="backToAnalysisButton" class="nav-cta" type="button" data-analysis-nav hidden>Back to analysis</button>
-        <a class="nav-cta" href="./index.html" data-analysis-nav hidden>New Analysis</a>
+        <a class="nav-cta" href="http://127.0.0.1:5173/" data-analysis-nav hidden>New Analysis</a>
       </nav>
     </div>
   </header>
@@ -94,8 +94,19 @@
       const landingBackButton = document.getElementById("landingBackButton");
       const analysisNavItems = Array.from(document.querySelectorAll("[data-analysis-nav]"));
       const storageKey = "cognilens.return.analysis-url";
+      const reactAppOrigin = "http://127.0.0.1:5173";
       const source = new URLSearchParams(window.location.search).get("source");
       const openedFromAnalysis = source === "analysis";
+
+      function absoluteReactReturnUrl(url) {
+        if (!url) {
+          return url;
+        }
+        if (/^https?:\/\//i.test(url)) {
+          return url;
+        }
+        return url.startsWith("/") ? `${reactAppOrigin}${url}` : url;
+      }
 
       if (!backButton) {
         return;
@@ -122,7 +133,7 @@
         try {
           const parsedUrl = new URL(returnUrl, window.location.href);
           if (parsedUrl.searchParams.get("from") === "history") {
-            returnUrl = "./dashboard.html";
+            returnUrl = `${reactAppOrigin}/dashboard`;
             sessionStorage.setItem(storageKey, returnUrl);
           }
         } catch (_) {
@@ -142,7 +153,7 @@
       });
       backButton.hidden = false;
       backButton.addEventListener("click", () => {
-        window.location.href = returnUrl;
+        window.location.href = absoluteReactReturnUrl(returnUrl);
       });
     })();
   </script>

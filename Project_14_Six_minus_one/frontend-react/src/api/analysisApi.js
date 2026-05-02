@@ -3,7 +3,9 @@
 // LoadingPage.jsx calls these functions after it reads the pending-analysis
 // payload created by HomePage.jsx. This file mirrors the old frontend/common.js
 // backend requests, but keeps the network code in one React-friendly module.
-const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
+// Dev: leave unset so requests use the Vite origin; vite.config.js proxies to FastAPI :8001.
+// Production: set VITE_API_BASE to your API origin if the UI is not served by FastAPI.
+const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE ?? "";
 
 async function fetchJsonResponse(requestUrl, requestOptions = {}) {
   const response = await fetch(requestUrl, requestOptions);

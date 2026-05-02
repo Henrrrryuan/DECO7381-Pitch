@@ -5,7 +5,7 @@
 // fetch directly; they only render the data that HistoryPage has already loaded.
 // Keeping all FastAPI requests here makes the UI components easier to read and
 // makes endpoint changes easier to manage in one place.
-const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
+const BACKEND_API_BASE_URL = import.meta.env.VITE_API_BASE ?? "";
 
 async function fetchJsonResponse(requestUrl, requestOptions = {}) {
   // Shared fetch wrapper used by every API function below. It converts backend
