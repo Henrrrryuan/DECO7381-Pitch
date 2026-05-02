@@ -2,9 +2,9 @@ import { DimensionBars } from "./DimensionBars.jsx";
 import { IssueSummaryCard } from "./IssueSummaryCard.jsx";
 import { ProfileScores } from "./ProfileScores.jsx";
 import {
+  displayDimensionName,
   getAllIssueRecords,
   getCognitiveDimensionLabel,
-  getOrderedDimensionResults,
   getTotalIssueCount,
 } from "../../utils/dashboardUtils.js";
 
@@ -12,6 +12,7 @@ export function DashboardSidebar({
   analysisResult,
   activeProfileIndex,
   activeProfileLabel,
+  activeProfileDimensionEntries,
   selectedIssueIdentifier,
   selectedDimensionName,
   workspaceMode,
@@ -29,9 +30,11 @@ export function DashboardSidebar({
   // collapsed width. This component renders the old dashboard sidebar classes
   // and sends user actions back up through callback props.
   const totalIssueCount = getTotalIssueCount(analysisResult);
-  const orderedDimensionResults = getOrderedDimensionResults(analysisResult);
   const profileScoreItems = analysisResult?.profile_scores || [];
   const issueRecords = getAllIssueRecords(analysisResult, activeProfileLabel);
+  const orderedDimensionResults = (activeProfileDimensionEntries || [])
+    .map((dimensionEntry) => dimensionEntry.dimensionResult)
+    .filter(Boolean);
 
   return (
     <div className="tool-sidebar-shell">
@@ -72,7 +75,7 @@ export function DashboardSidebar({
               </div>
               <p className="risk-level-hint">Risk levels indicate which issue categories may need attention first.</p>
               <DimensionBars
-                analysisResult={analysisResult}
+                activeProfileDimensionEntries={activeProfileDimensionEntries}
                 selectedDimensionName={selectedDimensionName}
                 workspaceMode={workspaceMode}
                 onDimensionPreviewOpen={onDimensionPreviewOpen}
@@ -109,7 +112,8 @@ export function DashboardSidebar({
                 {analysisResult
                   ? orderedDimensionResults.map((dimensionResult) => {
                     const dimensionIssueRecords = issueRecords.filter((issueRecord) => (
-                      issueRecord.dimensionResult.dimension === dimensionResult.dimension
+                      displayDimensionName(issueRecord.dimensionResult.dimension)
+                        === displayDimensionName(dimensionResult.dimension)
                     ));
                     return (
                     <details

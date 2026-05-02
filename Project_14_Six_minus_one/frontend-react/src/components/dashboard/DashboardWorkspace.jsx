@@ -2,16 +2,17 @@ import { DashboardEmptyState } from "./DashboardEmptyState.jsx";
 import { IssueDetailPanel } from "./IssueDetailPanel.jsx";
 import { WebsitePreviewPanel } from "./WebsitePreviewPanel.jsx";
 import {
+  displayDimensionName,
   displayIssueCategoryName,
   formatReportTimestamp,
   getAllIssueRecords,
-  getOrderedDimensionResults,
 } from "../../utils/dashboardUtils.js";
 
 export function DashboardWorkspace({
   dashboardSession,
   analysisResult,
   activeProfileLabel,
+  activeProfileDimensionEntries,
   selectedIssueRecord,
   selectedDimensionName,
   workspaceMode,
@@ -28,7 +29,9 @@ export function DashboardWorkspace({
   // the old dashboard.html classes so the visual design remains unchanged.
   const currentAnalysisPayload = dashboardSession?.current?.payload || null;
   const reportTimestampLabel = formatReportTimestamp(currentAnalysisPayload?.run?.created_at || "");
-  const orderedDimensionResults = getOrderedDimensionResults(analysisResult);
+  const orderedDimensionResults = (activeProfileDimensionEntries || [])
+    .map((dimensionEntry) => dimensionEntry.dimensionResult)
+    .filter(Boolean);
   const issueRecords = getAllIssueRecords(analysisResult, activeProfileLabel);
   const currentDashboardItem = dashboardSession?.current || null;
   const previewCanBeShown = workspaceMode === "preview" && currentDashboardItem && !loadingIsActive;
@@ -99,7 +102,8 @@ export function DashboardWorkspace({
                     <>
                       {orderedDimensionResults.map((dimensionResult) => {
                         const dimensionIssueCount = issueRecords.filter((issueRecord) => (
-                          issueRecord.dimensionResult.dimension === dimensionResult.dimension
+                          displayDimensionName(issueRecord.dimensionResult.dimension)
+                            === displayDimensionName(dimensionResult.dimension)
                         )).length;
                         return (
                           <section className="explanation-block" key={dimensionResult.dimension}>

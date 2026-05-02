@@ -14,6 +14,7 @@ import {
   buildAnalysisView,
   buildDashboardSessionFromReportDetail,
   findIssueRecordByIdentifier,
+  getActiveProfileDimensionEntries,
   getActiveProfileLabel,
   getHistoryReportRunIdentifierFromUrl,
   normalizeDashboardSession,
@@ -82,6 +83,10 @@ export function DashboardPage() {
   const analysisResult = currentAnalysisPayload ? buildAnalysisView(currentAnalysisPayload) : null;
   const profileScoreItems = analysisResult?.profile_scores || [];
   const activeProfileLabel = getActiveProfileLabel(profileScoreItems, activeProfileIndex);
+  const activeProfileDimensionEntries = useMemo(
+    () => getActiveProfileDimensionEntries(analysisResult, activeProfileLabel),
+    [analysisResult, activeProfileLabel],
+  );
   const selectedIssueRecord = findIssueRecordByIdentifier(
     analysisResult,
     selectedIssueIdentifier,
@@ -301,6 +306,7 @@ export function DashboardPage() {
           analysisResult={analysisResult}
           activeProfileIndex={activeProfileIndex}
           activeProfileLabel={activeProfileLabel}
+          activeProfileDimensionEntries={activeProfileDimensionEntries}
           selectedIssueIdentifier={selectedIssueIdentifier}
           selectedDimensionName={selectedDimensionName}
           workspaceMode={workspaceMode}
@@ -316,6 +322,7 @@ export function DashboardPage() {
           dashboardSession={dashboardSession}
           analysisResult={analysisResult}
           activeProfileLabel={activeProfileLabel}
+          activeProfileDimensionEntries={activeProfileDimensionEntries}
           selectedIssueRecord={selectedIssueRecord}
           selectedDimensionName={selectedDimensionName}
           workspaceMode={workspaceMode}

@@ -3,6 +3,55 @@ export const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
 const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
+const DIMENSION_DISPLAY_ORDER = [
+  INFORMATION_OVERLOAD_NAME,
+  "Readability",
+  "Interaction & Distraction",
+  "Consistency",
+];
+const PROFILE_DISPLAY_CONFIG = {
+  "Reading Difficulties Lens": {
+    label: "Dyslexia",
+    subtitle: "Reading load sensitivity",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.35,
+      Readability: 0.40,
+      "Interaction & Distraction": 0.10,
+      Consistency: 0.15,
+    },
+  },
+  "Attention Regulation Lens": {
+    label: "ADHD",
+    subtitle: "Attention and distraction sensitivity",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.35,
+      Readability: 0.10,
+      "Interaction & Distraction": 0.35,
+      Consistency: 0.20,
+    },
+  },
+  "Autistic Support Lens": {
+    label: "Autism",
+    subtitle: "Predictability and sensory stability",
+    weights: {
+      [INFORMATION_OVERLOAD_NAME]: 0.20,
+      Readability: 0.10,
+      "Interaction & Distraction": 0.25,
+      Consistency: 0.45,
+    },
+  },
+};
+const DIMENSION_CONFIG = [
+  { name: INFORMATION_OVERLOAD_NAME, className: "visual" },
+  { name: "Readability", className: "readability" },
+  { name: "Interaction & Distraction", className: "interaction" },
+  { name: "Consistency", className: "consistency" },
+];
+const SEVERITY_RANK = {
+  critical: 3,
+  major: 2,
+  minor: 1,
+};
 const USER_LABELS_BY_RULE = {
   "IO-1": ["Dyslexia users", "ADHD users"],
   "IO-2": ["Dyslexia users", "ADHD users"],
@@ -240,6 +289,10 @@ export function displayDimensionName(dimensionName) {
     : dimensionName;
 }
 
+export function canonicalDimensionName(dimensionName) {
+  return displayDimensionName(dimensionName);
+}
+
 export function displayIssueCategoryName(dimensionName) {
   const normalizedDimensionName = displayDimensionName(dimensionName);
   if (normalizedDimensionName === INFORMATION_OVERLOAD_NAME) {
@@ -258,25 +311,30 @@ export function displayIssueCategoryName(dimensionName) {
 }
 
 export function riskMetaFromScore(scoreValue) {
-  const numericScore = Number(scoreValue) || 0;
-  if (numericScore < 50) {
-    return { level: "High risk", className: "high" };
+  const riskIndex = 100 - normalizedScore(scoreValue);
+  if (riskIndex <= 25) {
+    return { level: "Low risk", className: "risk-low" };
   }
-  if (numericScore < 75) {
-    return { level: "Medium risk", className: "moderate" };
+  if (riskIndex <= 60) {
+    return { level: "Medium risk", className: "risk-medium" };
   }
-  return { level: "Low risk", className: "low" };
+  return { level: "High risk", className: "risk-high" };
 }
 
 export function displayProfileName(profileName) {
-  const normalizedProfileName = normalizeProfileLabel(profileName);
-  if (normalizedProfileName === "ADHD") {
-    return "ADHD";
+  return getProfileDisplayMeta(profileName).label;
+}
+
+export function getProfileDisplayMeta(profileName) {
+  const profileMeta = PROFILE_DISPLAY_CONFIG[profileName];
+  if (profileMeta) {
+    return profileMeta;
   }
-  if (normalizedProfileName === "Autism") {
-    return "Autism";
-  }
-  return "Dyslexia";
+  return {
+    label: normalizeProfileLabel(profileName),
+    subtitle: "Audience lens",
+    weights: {},
+  };
 }
 
 export function getTotalIssueCount(analysisResult) {
@@ -287,19 +345,133 @@ export function getTotalIssueCount(analysisResult) {
 }
 
 export function getOrderedDimensionResults(analysisResult) {
-  const dimensionOrder = [
-    INFORMATION_OVERLOAD_NAME,
-    "Readability",
-    "Interaction & Distraction",
-    "Consistency",
-  ];
   return [...(analysisResult?.dimensions || [])].sort((firstDimension, secondDimension) => {
-    const firstDimensionIndex = dimensionOrder.indexOf(displayDimensionName(firstDimension.dimension));
-    const secondDimensionIndex = dimensionOrder.indexOf(displayDimensionName(secondDimension.dimension));
+    const firstDimensionIndex = DIMENSION_DISPLAY_ORDER.indexOf(displayDimensionName(firstDimension.dimension));
+    const secondDimensionIndex = DIMENSION_DISPLAY_ORDER.indexOf(displayDimensionName(secondDimension.dimension));
     const normalizedFirstIndex = firstDimensionIndex === -1 ? Number.MAX_SAFE_INTEGER : firstDimensionIndex;
     const normalizedSecondIndex = secondDimensionIndex === -1 ? Number.MAX_SAFE_INTEGER : secondDimensionIndex;
     return normalizedFirstIndex - normalizedSecondIndex;
   });
+}
+
+export function normalizedScore(scoreValue) {
+  return Math.max(0, Math.min(100, Number(scoreValue) || 0));
+}
+
+export function findDimensionResult(analysisResult, dimensionName) {
+  const acceptedNames = canonicalDimensionName(dimensionName) === INFORMATION_OVERLOAD_NAME
+    ? [INFORMATION_OVERLOAD_NAME, LEGACY_INFORMATION_OVERLOAD_NAME]
+    : [dimensionName];
+  return (analysisResult?.dimensions || []).find((dimensionResult) => (
+    acceptedNames.includes(dimensionResult.dimension)
+  )) || null;
+}
+
+function dimensionBaseOrderIndex(dimensionName) {
+  const dimensionIndex = DIMENSION_DISPLAY_ORDER.indexOf(canonicalDimensionName(dimensionName));
+  return dimensionIndex === -1 ? Number.MAX_SAFE_INTEGER : dimensionIndex;
+}
+
+export function compareDimensionEntriesByRisk(firstDimensionEntry, secondDimensionEntry) {
+  const scoreDifference = normalizedScore(firstDimensionEntry?.score) - normalizedScore(secondDimensionEntry?.score);
+  if (scoreDifference !== 0) {
+    return scoreDifference;
+  }
+  const issueCountDifference = (secondDimensionEntry?.issueCount || 0) - (firstDimensionEntry?.issueCount || 0);
+  if (issueCountDifference !== 0) {
+    return issueCountDifference;
+  }
+  return dimensionBaseOrderIndex(firstDimensionEntry?.name) - dimensionBaseOrderIndex(secondDimensionEntry?.name);
+}
+
+export function profileSourceNameForLabel(analysisResult, profileLabel) {
+  return (analysisResult?.profile_scores || []).find((profileScoreItem) => (
+    displayProfileName(profileScoreItem.name) === normalizeProfileLabel(profileLabel)
+  ))?.name || profileLabel;
+}
+
+export function buildProfileDimensionEntries(analysisResult, profileName) {
+  // Recreates the old dashboard app.js lens calculation in React.
+  //
+  // The backend returns raw dimension scores. The frontend then adjusts those
+  // scores for the selected audience lens so the sidebar risk badges can show
+  // which dimensions matter most for Dyslexia, ADHD, or Autism.
+  if (!analysisResult?.dimensions?.length) {
+    return [];
+  }
+
+  const profileWeights = getProfileDisplayMeta(profileName).weights || {};
+  return DIMENSION_CONFIG.map(({ name, className }) => {
+    const dimensionResult = findDimensionResult(analysisResult, name);
+    const rawScore = dimensionResult ? dimensionResult.score : 0;
+    const issueCount = dimensionResult?.issues?.length || 0;
+    const profileWeight = profileWeights[canonicalDimensionName(name)] ?? 0.25;
+    const sensitivityMultiplier = profileWeight / 0.25;
+    const adjustedScore = normalizedScore(Math.round(100 - ((100 - rawScore) * sensitivityMultiplier)));
+    return {
+      name,
+      className,
+      score: adjustedScore,
+      issueCount,
+      dimensionResult,
+    };
+  });
+}
+
+export function buildScoreSlides(analysisResult) {
+  // Converts backend profile_scores into the tab data used by ProfileScores.jsx.
+  //
+  // DashboardPage.jsx uses the selected slide to feed dynamic dimension scores
+  // into DashboardSidebar.jsx and DimensionBars.jsx.
+  return (analysisResult?.profile_scores || []).map((profileScoreItem) => {
+    const profileMeta = getProfileDisplayMeta(profileScoreItem.name);
+    return {
+      label: profileMeta.label,
+      sourceName: profileScoreItem.name,
+      score: profileScoreItem.score,
+      summary: profileScoreItem.summary,
+      dimensionEntries: buildProfileDimensionEntries(analysisResult, profileScoreItem.name),
+    };
+  });
+}
+
+export function getActiveProfileDimensionEntries(analysisResult, activeProfileLabel) {
+  const profileSourceName = profileSourceNameForLabel(analysisResult, activeProfileLabel);
+  return buildProfileDimensionEntries(analysisResult, profileSourceName)
+    .sort(compareDimensionEntriesByRisk);
+}
+
+export function activeProfileDimensionScoreMap(analysisResult, activeProfileLabel) {
+  const scoreMap = new Map();
+  getActiveProfileDimensionEntries(analysisResult, activeProfileLabel).forEach((dimensionEntry) => {
+    scoreMap.set(canonicalDimensionName(dimensionEntry.name), normalizedScore(dimensionEntry.score));
+  });
+  return scoreMap;
+}
+
+export function compareDimensionsByActiveProfileRisk(firstDimensionResult, secondDimensionResult, scoreMap) {
+  const firstDimensionScore = scoreMap.get(canonicalDimensionName(firstDimensionResult?.dimension));
+  const secondDimensionScore = scoreMap.get(canonicalDimensionName(secondDimensionResult?.dimension));
+  const scoreDifference = (
+    Number.isFinite(firstDimensionScore) ? firstDimensionScore : normalizedScore(firstDimensionResult?.score)
+  ) - (
+    Number.isFinite(secondDimensionScore) ? secondDimensionScore : normalizedScore(secondDimensionResult?.score)
+  );
+  if (scoreDifference !== 0) {
+    return scoreDifference;
+  }
+  const issueCountDifference = (secondDimensionResult?.issues?.length || 0) - (firstDimensionResult?.issues?.length || 0);
+  if (issueCountDifference !== 0) {
+    return issueCountDifference;
+  }
+  return dimensionBaseOrderIndex(firstDimensionResult?.dimension) - dimensionBaseOrderIndex(secondDimensionResult?.dimension);
+}
+
+export function getOrderedDimensionResultsForProfile(analysisResult, activeProfileLabel) {
+  const scoreMap = activeProfileDimensionScoreMap(analysisResult, activeProfileLabel);
+  return [...(analysisResult?.dimensions || [])].sort((firstDimensionResult, secondDimensionResult) => (
+    compareDimensionsByActiveProfileRisk(firstDimensionResult, secondDimensionResult, scoreMap)
+  ));
 }
 
 export function isProbablyWebsiteAddress(value) {
@@ -313,8 +485,8 @@ export function buildIssueIdentifier(dimensionName, ruleIdentifier, issueIndex =
 export function getAllIssueRecords(analysisResult, activeProfileLabel = "") {
   const activeUserGroup = normalizeProfileLabel(activeProfileLabel);
   const records = [];
-  getOrderedDimensionResults(analysisResult).forEach((dimensionResult) => {
-    (dimensionResult.issues || []).forEach((issue, issueIndex) => {
+  getOrderedDimensionResultsForProfile(analysisResult, activeUserGroup).forEach((dimensionResult) => {
+    prioritizedIssuesForProfile(dimensionResult).forEach((issue, issueIndex) => {
       if (!issueMatchesActiveProfile(issue, activeUserGroup)) {
         return;
       }
@@ -354,6 +526,43 @@ export function issueMatchesActiveProfile(issue, activeProfileLabel) {
   const activeUserGroup = normalizeProfileLabel(activeProfileLabel);
   const affectedUsers = USER_LABELS_BY_RULE[issue?.rule_id] || ["Dyslexia users", "ADHD users", "Autistic users"];
   return affectedUsers.some((userLabel) => normalizeProfileLabel(userLabel) === activeUserGroup);
+}
+
+function issueEvidenceNumber(issue, evidenceKey) {
+  return Number(issue?.evidence?.[evidenceKey]) || 0;
+}
+
+function issuePriority(issue, dimensionName = "") {
+  if (canonicalDimensionName(dimensionName) === INFORMATION_OVERLOAD_NAME) {
+    return (
+      (issue?.evidence?.blocks_primary_task ? 400 : 0)
+      + (issueEvidenceNumber(issue, "confusion_distraction_level") * 100)
+      + (issueEvidenceNumber(issue, "cumulative_load_level") * 10)
+      + (issue?.penalty || 0)
+    );
+  }
+  return (SEVERITY_RANK[issue?.severity] || 0) * 100 + (issue?.penalty || 0);
+}
+
+export function prioritizedIssuesForProfile(dimensionResult) {
+  // Sorts issue cards the same way as the old dashboard app.js.
+  //
+  // DashboardSidebar.jsx calls getAllIssueRecords(), which uses this function
+  // before rendering IssueSummaryCard.jsx. Higher priority issues appear first
+  // inside the Top Issue Cards accordion for the selected audience lens.
+  return [...(dimensionResult?.issues || [])].sort((firstIssue, secondIssue) => {
+    const priorityDifference = issuePriority(secondIssue, dimensionResult?.dimension)
+      - issuePriority(firstIssue, dimensionResult?.dimension);
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+    const elementCountDifference = issueFailingElementCount(secondIssue) - issueFailingElementCount(firstIssue);
+    if (elementCountDifference !== 0) {
+      return elementCountDifference;
+    }
+    return String(firstIssue?.title || firstIssue?.rule_id || "")
+      .localeCompare(String(secondIssue?.title || secondIssue?.rule_id || ""));
+  });
 }
 
 export function conciseText(text, fallbackText = "", maximumLength = 140) {
