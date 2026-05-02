@@ -868,7 +868,7 @@ function frameworkStandardsForRule(ruleId) {
       coga: "COGA: reduce cognitive load in task flow",
       wcagCriteria: ["SC 2.4.6 Headings and Labels"],
       isoClauses: ["6.3.3 Human effort expended"],
-      wcagDisplay: "WCAG SC 2.4.6 Headings and Labels",
+      wcagDisplay: "WCAG  SC 2.4.6 Headings and Labels",
       isoDisplay: "ISO 9241-11:2018 6.3.3 Human effort expended",
     };
   }
@@ -878,7 +878,7 @@ function frameworkStandardsForRule(ruleId) {
     coga: entry.coga || "COGA: reduce cognitive load in task flow",
     wcagCriteria,
     isoClauses,
-    wcagDisplay: `WCAG ${wcagCriteria.join("; ")}`,
+    wcagDisplay: `WCAG 2.2 ${wcagCriteria.join("; ")}`,
     isoDisplay: `ISO 9241-11:2018 ${isoClauses.join("; ")}`,
   };
 }
@@ -1728,7 +1728,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label">WCAG</span>
+        <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
         ${wcagMarkup}
       </div>
       <div class="issue-summary-row issue-summary-row-standards">
