@@ -19,6 +19,7 @@ function createAccessibilityWidget() {
   const button = document.createElement("button");
   const activeOptionIds = new Set();
   const activeProfileIds = new Set();
+  const readingMaskFrameCleanupByFrame = new WeakMap();
   button.className = "accessibility-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Open accessibility menu");
@@ -126,10 +127,8 @@ function createAccessibilityWidget() {
       document.documentElement.style.removeProperty("--accessibility-reading-mask-y");
       return;
     }
-    document.documentElement.style.setProperty(
-      "--accessibility-reading-mask-y",
-      `${Math.round(window.innerHeight * 0.5)}px`,
-    );
+    setReadingMaskPositionY(window.innerHeight * 0.5);
+    syncReadingMaskFrameListeners();
   }
 
   function setBigCursorActive(isActive) {
@@ -152,10 +151,72 @@ function createAccessibilityWidget() {
     if (!document.body.classList.contains("accessibility-reading-mask-active")) {
       return;
     }
+    setReadingMaskPositionY(event.clientY);
+  }
+
+  function setReadingMaskPositionY(clientY) {
+    const boundedClientY = Math.max(0, Math.min(window.innerHeight, Number(clientY) || 0));
     document.documentElement.style.setProperty(
       "--accessibility-reading-mask-y",
-      `${Math.round(event.clientY)}px`,
+      `${Math.round(boundedClientY)}px`,
     );
+  }
+
+  function updateReadingMaskPositionFromFrame(frameElement, event) {
+    if (!document.body.classList.contains("accessibility-reading-mask-active")) {
+      return;
+    }
+    const frameRect = frameElement.getBoundingClientRect();
+    setReadingMaskPositionY(frameRect.top + event.clientY);
+  }
+
+  function bindReadingMaskFrameDocument(frameElement) {
+    const previousCleanup = readingMaskFrameCleanupByFrame.get(frameElement);
+    if (previousCleanup) {
+      previousCleanup();
+      readingMaskFrameCleanupByFrame.delete(frameElement);
+    }
+
+    let frameDocument = null;
+    try {
+      frameDocument = frameElement.contentDocument || frameElement.contentWindow?.document || null;
+    } catch {
+      frameDocument = null;
+    }
+
+    if (!frameDocument) {
+      return;
+    }
+
+    const framePointerMoveHandler = (event) => updateReadingMaskPositionFromFrame(frameElement, event);
+    const frameMouseMoveHandler = (event) => updateReadingMaskPositionFromFrame(frameElement, event);
+
+    frameDocument.addEventListener("pointermove", framePointerMoveHandler, { passive: true });
+    frameDocument.addEventListener("mousemove", frameMouseMoveHandler, { passive: true });
+
+    readingMaskFrameCleanupByFrame.set(frameElement, () => {
+      frameDocument.removeEventListener("pointermove", framePointerMoveHandler);
+      frameDocument.removeEventListener("mousemove", frameMouseMoveHandler);
+    });
+  }
+
+  function attachReadingMaskFrameListeners(frameElement) {
+    bindReadingMaskFrameDocument(frameElement);
+    if (frameElement.dataset.accessibilityReadingMaskLoadBound === "true") {
+      return;
+    }
+    frameElement.dataset.accessibilityReadingMaskLoadBound = "true";
+    frameElement.addEventListener("load", () => {
+      if (document.body.classList.contains("accessibility-reading-mask-active")) {
+        bindReadingMaskFrameDocument(frameElement);
+      }
+    });
+  }
+
+  function syncReadingMaskFrameListeners() {
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      attachReadingMaskFrameListeners(frameElement);
+    });
   }
 
   function getAccessibilityOptionConfig(optionId) {

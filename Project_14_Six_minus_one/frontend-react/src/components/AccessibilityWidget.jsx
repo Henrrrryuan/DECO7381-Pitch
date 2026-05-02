@@ -54,21 +54,68 @@ export function AccessibilityWidget() {
       return undefined;
     }
 
-    const updateReadingMaskPosition = (event) => {
+    const frameCleanupCallbacks = [];
+
+    const setReadingMaskPositionY = (clientY) => {
+      const boundedClientY = Math.max(0, Math.min(window.innerHeight, Number(clientY) || 0));
       document.documentElement.style.setProperty(
         "--accessibility-reading-mask-y",
-        `${Math.round(event.clientY)}px`,
+        `${Math.round(boundedClientY)}px`,
       );
     };
 
-    document.documentElement.style.setProperty(
-      "--accessibility-reading-mask-y",
-      `${Math.round(window.innerHeight * 0.5)}px`,
-    );
+    const updateReadingMaskPosition = (event) => {
+      setReadingMaskPositionY(event.clientY);
+    };
+
+    const bindReadingMaskFrameDocument = (frameElement) => {
+      let frameDocument = null;
+      try {
+        frameDocument = frameElement.contentDocument || frameElement.contentWindow?.document || null;
+      } catch {
+        frameDocument = null;
+      }
+
+      if (!frameDocument) {
+        return;
+      }
+
+      const updateReadingMaskPositionFromFrame = (event) => {
+        const frameRect = frameElement.getBoundingClientRect();
+        setReadingMaskPositionY(frameRect.top + event.clientY);
+      };
+
+      frameDocument.addEventListener("pointermove", updateReadingMaskPositionFromFrame, { passive: true });
+      frameDocument.addEventListener("mousemove", updateReadingMaskPositionFromFrame, { passive: true });
+
+      frameCleanupCallbacks.push(() => {
+        frameDocument.removeEventListener("pointermove", updateReadingMaskPositionFromFrame);
+        frameDocument.removeEventListener("mousemove", updateReadingMaskPositionFromFrame);
+      });
+    };
+
+    const bindReadingMaskFrame = (frameElement) => {
+      bindReadingMaskFrameDocument(frameElement);
+
+      const rebindReadingMaskFrameDocument = () => {
+        bindReadingMaskFrameDocument(frameElement);
+      };
+
+      frameElement.addEventListener("load", rebindReadingMaskFrameDocument);
+      frameCleanupCallbacks.push(() => {
+        frameElement.removeEventListener("load", rebindReadingMaskFrameDocument);
+      });
+    };
+
+    setReadingMaskPositionY(window.innerHeight * 0.5);
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      bindReadingMaskFrame(frameElement);
+    });
     window.addEventListener("pointermove", updateReadingMaskPosition, { passive: true });
 
     return () => {
       window.removeEventListener("pointermove", updateReadingMaskPosition);
+      frameCleanupCallbacks.forEach((cleanupCallback) => cleanupCallback());
       document.body.classList.remove("accessibility-reading-mask-active");
       document.documentElement.style.removeProperty("--accessibility-reading-mask-y");
     };
