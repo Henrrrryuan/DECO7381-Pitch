@@ -19,14 +19,14 @@ The presentation should prove three things:
 
 Use the following local services:
 
-- Main frontend: `http://127.0.0.1:5500/index.html`
+- Main frontend (React dev): `http://127.0.0.1:5173`
 - Main backend API: `http://127.0.0.1:8001/health`
-- Eye tracking tool: `http://127.0.0.1:5600`
+- Eye tracking page (via same origin + Vite proxy): `http://127.0.0.1:5173/eye/`
 
 Prepare these files before the demo:
 
-- [simple-page.html](C:/Users/16171/Documents/GitHub/DECO7381-Pitch/Project_14_Six_minus_one/backend/sample_input/simple-page.html)
-- [dense-page.html](C:/Users/16171/Documents/GitHub/DECO7381-Pitch/Project_14_Six_minus_one/backend/sample_input/dense-page.html)
+- `backend/sample_input/simple-page.html`
+- `backend/sample_input/dense-page.html`
 
 Optional:
 
@@ -37,10 +37,10 @@ Optional:
 Complete these checks before the audience arrives:
 
 - Confirm backend health page returns `{"status":"ok"}`.
-- Confirm the main frontend page opens normally.
-- Confirm the eye tracking page opens normally.
+- Confirm the main frontend page (`/`) opens normally.
+- Confirm the eye tracking page (`/eye/`) opens normally.
 - Confirm your webcam works in the browser.
-- Register the eye tracking origin `http://127.0.0.1:5600` at [GazeCloud registration](https://api.gazerecorder.com/register/).
+- Register the eye tracking origin `http://127.0.0.1:5173` at [GazeCloud registration](https://api.gazerecorder.com/register/).
 - Keep one HTML file ready on the desktop for quick upload.
 - Use stable lighting and sit centered in front of the camera.
 
@@ -51,14 +51,14 @@ Complete these checks before the audience arrives:
 What to test:
 
 - Navigation bar is visible
-- `Eye Tracking`, `History`, `Docs`, and `New Analysis` links work
+- `Guide`, `History`, and `Eye Tracking` navigation works
 - Upload page accepts supported file types
 
 How to test:
 
-1. Open `http://127.0.0.1:5500/index.html`.
+1. Open `http://127.0.0.1:5173`.
 2. Point out the main navigation.
-3. Click `Docs`, then return to `New Analysis`.
+3. Click `Guide` (`/docs`), then return to start.
 4. Click `History`, then return to `New Analysis`.
 5. Confirm the upload area says HTML or ZIP is supported.
 
@@ -110,7 +110,7 @@ Expected result:
 - The result page is not empty
 - At least one meaningful explanation block is shown
 
-### D. Re-upload comparison
+### D. Second run comparison
 
 What to test:
 
@@ -120,7 +120,7 @@ What to test:
 
 How to test:
 
-1. Click `Re-upload`.
+1. Start another analysis from the upload flow.
 2. Upload `dense-page.html`.
 3. Click `Analyze`.
 4. Return to the dashboard and open the `Comparison` section.
@@ -162,7 +162,7 @@ What to test:
 
 How to test:
 
-1. Click `Print report`.
+1. Click `Print`.
 2. Show that the browser print dialog opens.
 3. Cancel print if you do not need to actually print.
 
@@ -183,13 +183,13 @@ How to test:
 1. Open `History`.
 2. Show that both uploaded files appear.
 3. Use the search box to search `simple`.
-4. Click `Open` on one result.
+4. Click `View` on one result.
 
 Expected result:
 
 - History list updates
 - Search narrows the list
-- Clicking `Open` goes back to dashboard with that report loaded
+- Clicking `View` goes back to dashboard with that report loaded
 
 ## 5. Eye Project Test Flow
 
@@ -205,7 +205,7 @@ What to test:
 
 How to test:
 
-1. Open `http://127.0.0.1:5600`.
+1. Open `http://127.0.0.1:5173/eye/`.
 2. Show the `Target URL` field.
 3. Keep the default `https://example.com` or paste another simple public site.
 4. Click `Load URL`.
@@ -282,12 +282,12 @@ Expected result:
 
 For a smooth presentation, use this order:
 
-1. Start on the CogniLens upload page.
+1. Start on the CogniLens upload page (`/`).
 2. Upload `simple-page.html` and show the first dashboard.
-3. Re-upload `dense-page.html` and show comparison.
+3. Run a second analysis with `dense-page.html` and show comparison.
 4. Show the AI assistant and ask one question.
 5. Open `History` and restore one previous run.
-6. Switch to the eye tracking page.
+6. Switch to the eye tracking page (`/eye/`).
 7. Load a simple URL and run calibration.
 8. Show live dot, heatmap, and coverage.
 

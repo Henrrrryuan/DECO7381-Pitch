@@ -20,7 +20,7 @@ Table analysis_runs {
 Table dimension_results {
   id varchar [pk, note: 'UUID or string id']
   run_id varchar [not null]
-  dimension varchar [not null, note: 'Readability | Visual Complexity | Interaction & Distraction | Consistency']
+  dimension varchar [not null, note: 'Readability | Information Overload (Visual Complexity alias) | Interaction & Distraction | Consistency']
   score int [not null]
   metadata_json text [note: 'JSON string from analyzer metadata']
 }
@@ -46,7 +46,24 @@ Table compare_pairs {
   created_at timestamp [not null]
 }
 
+Table eye_tracking_sessions {
+  id varchar [pk, note: 'UUID or string id']
+  run_id varchar [note: 'nullable; linked analysis run if available']
+  created_at timestamp [not null]
+  source_name varchar [not null]
+  target_url text [not null]
+  html_snapshot text [not null]
+  sample_count int [not null]
+  duration_ms int [not null]
+  coverage_percent float [not null]
+  grid_cols int [not null]
+  grid_rows int [not null]
+  cell_counts_json text [not null, note: 'JSON array']
+  summary_json text [not null, note: 'JSON object']
+}
+
 Ref: dimension_results.run_id > analysis_runs.id
 Ref: issues.dimension_result_id > dimension_results.id
 Ref: compare_pairs.previous_run_id > analysis_runs.id
 Ref: compare_pairs.current_run_id > analysis_runs.id
+Ref: eye_tracking_sessions.run_id > analysis_runs.id

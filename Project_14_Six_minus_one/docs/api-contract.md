@@ -1,8 +1,14 @@
 # API Contract
 
-This document defines the current backend contract for the cognitive accessibility dashboard.
+This document reflects the current FastAPI contract used by the React frontend (`frontend-react`) and the eye-tracking UI.
 
-## 1. Analyze HTML
+## 1. Service Health and Discovery
+
+- `GET /health` -> `{"status":"ok"}`
+- `GET /api` -> service metadata and endpoint list
+- `GET /samples/{sample_name}` -> returns named sample HTML (`simple`, `dense`, `consistency`)
+
+## 2. Analyze HTML
 
 `POST /analyze`
 
@@ -12,40 +18,55 @@ Request body:
 {
   "html": "<html>...</html>",
   "source_name": "simple-page.html",
+  "baseline_run_id": "optional-history-run-id",
+  "persist_result": true
+}
+```
+
+Notes:
+
+- `source_name` is optional (defaults to `"Manual HTML"` when persisted).
+- `baseline_run_id` is optional.
+- `persist_result` defaults to `true`.
+- If `persist_result=false`, the response omits `run` and does not write history.
+
+## 3. Analyze URL
+
+`POST /analyze-url`
+
+Request body:
+
+```json
+{
+  "url": "https://example.com",
+  "source_name": "optional-label",
   "baseline_run_id": "optional-history-run-id"
 }
 ```
 
 Notes:
 
-- `html` is still the unified analyzer input.
-- `source_name` is optional. When omitted, the backend stores `"Manual HTML"`.
-- `baseline_run_id` is optional. When present and valid, the backend records that the new run was compared against a previous history run.
+- Backend fetches URL via proxy, validates HTML content type, and analyzes inlined bundle content.
+- Response includes `resource_bundle` metadata (`entry_name`, CSS/JS file counts, file lists).
 
-## 2. Analyze ZIP
+## 4. Analyze ZIP
 
-`POST /analyze-zip`
-
-Request type:
-
-- `multipart/form-data`
+`POST /analyze-zip` (`multipart/form-data`)
 
 Fields:
 
-- `file`: required `.zip` file
-- `baseline_run_id`: optional history run id
+- `file` (required, `.zip`)
+- `baseline_run_id` (optional)
 
-Backend behavior:
+Validation:
 
-1. Read the ZIP file.
-2. Prefer `index.html` or `index.htm`.
-3. Otherwise use the first `.html` / `.htm` file found in the archive.
-4. Reuse the normal analysis pipeline.
-5. Persist the new analysis run to history.
+- Non-zip uploads -> `400`
+- Empty zip -> `400`
+- File size limit is `20MB` -> `413`
 
-## 3. Analysis Response Shape
+## 5. Analysis Response Shape
 
-Both `POST /analyze` and `POST /analyze-zip` return the analysis result plus persisted run metadata:
+`POST /analyze`, `POST /analyze-url`, and `POST /analyze-zip` return:
 
 ```json
 {
@@ -55,9 +76,21 @@ Both `POST /analyze` and `POST /analyze-zip` return the analysis result plus per
   "dimensions": [
     {
       "dimension": "Readability",
+      "display_name": "Readability Issues",
+      "label": "Readability Issues",
+      "issue_category_key": "RD",
+      "issue_category_label": "Readability Issues",
+      "cognitive_dimension": "Reading Load / Comprehension",
       "score": 82,
       "issues": [],
       "metadata": {}
+    }
+  ],
+  "profile_scores": [
+    {
+      "name": "Reading Difficulties Lens",
+      "score": 80,
+      "summary": "..."
     }
   ],
   "run": {
@@ -73,111 +106,48 @@ Both `POST /analyze` and `POST /analyze-zip` return the analysis result plus per
 }
 ```
 
-## 4. Visual Complexity Score
-
-`POST /visual-complexity`
-
-Request body:
+`/analyze-url` and `/analyze-zip` additionally return:
 
 ```json
 {
-  "html": "<html>...</html>"
+  "resource_bundle": {
+    "entry_name": "https://example.com",
+    "css_file_count": 2,
+    "js_file_count": 3,
+    "css_files": ["a.css"],
+    "js_files": ["a.js"]
+  }
 }
 ```
 
-This endpoint estimates page visual complexity from static HTML. It follows the paper-inspired VCS model using:
+## 6. Visual Complexity Endpoints
 
-```text
-raw = 1.743 + 0.097*TLC + 0.053*words + 0.003*images
-vcs_0_to_10 = min(10, raw / 10)
-score = max(0, round(100 - vcs_0_to_10 * 10))
-```
+- `POST /visual-complexity` with `{ "html": "<html>...</html>" }`
+- `POST /visual-complexity-url` with `{ "url": "https://example.com" }`
 
-Response shape:
+If Playwright/Chromium is unavailable for `/visual-complexity-url`, backend returns `503`.
 
-```json
-{
-  "model": "DOM-based Visual Complexity Score inspired by ViCRAM",
-  "vcs_raw": 8.52,
-  "vcs_0_to_10": 0.85,
-  "score": 91,
-  "complexity_level": "very low",
-  "metrics": {
-    "tlc_count": 24,
-    "word_count": 83,
-    "image_count": 1,
-    "grid_rows": 10,
-    "grid_cols": 10
-  },
-  "formula": {
-    "raw": "1.743 + 0.097*TLC + 0.053*words + 0.003*images",
-    "vcs_0_to_10": "min(10, raw / 10)",
-    "score": "max(0, round(100 - vcs_0_to_10 * 10))"
-  },
-  "heatmap": [
-    {
-      "row": 0,
-      "col": 0,
-      "tlc_count": 1,
-      "word_count": 8,
-      "image_count": 0,
-      "vcs_raw": 2.264,
-      "relative_intensity": 0.54,
-      "color": "yellow"
-    }
-  ],
-  "notes": []
-}
-```
+## 7. History Endpoints
 
-`POST /visual-complexity-url`
+### 7.1 List
 
-Request body:
+`GET /history?limit=25&offset=0&query=...`
 
-```json
-{
-  "url": "https://example.com"
-}
-```
-
-This endpoint captures a Playwright-rendered snapshot, then calculates visual complexity using real element bounding boxes. TLCs and images are assigned to the grid cell containing the element's top-left coordinate; words are distributed across the cells covered by their rendered text box.
-
-Runtime requirement:
-
-```text
-python -m pip install -r requirements.txt
-python -m playwright install chromium
-```
-
-If Playwright or Chromium is unavailable, the endpoint returns `503` with setup guidance.
-
-## 5. History List
-
-`GET /history?limit=8`
+- `limit` range: `1..100`
+- Returns newest-first
 
 Response:
 
 ```json
 {
-  "items": [
-    {
-      "run_id": "8a9d7c...",
-      "created_at": "2026-04-09T18:20:00+10:00",
-      "source_name": "simple-page.html",
-      "overall_score": 74,
-      "weighted_average": 79,
-      "min_dimension_score": 68
-    }
-  ]
+  "items": [],
+  "total": 0,
+  "limit": 25,
+  "offset": 0
 }
 ```
 
-Notes:
-
-- Results are returned newest first.
-- `limit` is clamped to `1..50`.
-
-## 6. History Detail
+### 7.2 Detail
 
 `GET /history/{run_id}`
 
@@ -185,77 +155,76 @@ Response:
 
 ```json
 {
-  "run": {
-    "run_id": "8a9d7c...",
-    "created_at": "2026-04-09T18:20:00+10:00",
-    "source_name": "simple-page.html",
-    "overall_score": 74,
-    "weighted_average": 79,
-    "min_dimension_score": 68
-  },
+  "run": {},
   "html_content": "<html>...</html>",
   "analysis": {
     "overall_score": 74,
     "weighted_average": 79,
     "min_dimension_score": 68,
-    "dimensions": [
-      {
-        "dimension": "Readability",
-        "score": 82,
-        "issues": [],
-        "metadata": {}
-      }
-    ]
+    "dimensions": [],
+    "profile_scores": []
   }
 }
 ```
 
-This endpoint is used by the frontend `History` card for:
+Not found -> `404` with `{"detail":"History run not found."}`.
 
-- viewing an older run
-- setting a history item as the comparison baseline
-- restoring the original HTML into the preview/editor
+## 8. Eye Tracking Endpoints
 
-## 7. Dimension Result Shape
+- `GET /eye/proxy?url=...` -> proxied page response with `X-Proxy-Final-Url`
+- `GET /eye/sessions?limit=25&offset=0&query=...&run_id=...`
+- `GET /eye/sessions/{session_id}`
+- `POST /eye/sessions`
 
-Each analyzer returns:
+`POST /eye/sessions` request body:
 
 ```json
 {
-  "dimension": "Readability",
-  "score": 82,
-  "issues": [
-    {
-      "rule_id": "RD-1",
-      "title": "Average sentence length is too long",
-      "severity": "major",
-      "base_penalty": 3,
-      "penalty": 6,
-      "description": "Average sentence length exceeds the threshold.",
-      "suggestion": "Split long sentences into shorter statements.",
-      "evidence": {
-        "average_sentence_length": 24.1
-      },
-      "locations": []
-    }
-  ],
-  "metadata": {}
+  "run_id": "optional-history-run-id",
+  "source_name": "optional-page-name",
+  "target_url": "https://example.com",
+  "html_snapshot": "<html>...</html>",
+  "sample_count": 120,
+  "duration_ms": 45000,
+  "coverage_percent": 62.5,
+  "grid_cols": 12,
+  "grid_rows": 8,
+  "cell_counts": [0, 3, 1],
+  "summary": {}
 }
 ```
 
-## 8. Severity and Penalty
+Validation:
 
-Allowed severity values:
+- Unknown `run_id` -> `400`
+- Negative metrics -> `400`
+- Invalid grid size -> `400`
+- `len(cell_counts) != grid_cols * grid_rows` -> `400`
 
-- `minor`
-- `major`
-- `critical`
+## 9. Assistant Endpoint
 
-Penalty formula:
+`POST /assistant/chat`
 
-```text
-Penalty = Base Penalty * Severity Multiplier
+Request body:
+
+```json
+{
+  "message": "How can I improve readability?",
+  "source_name": "simple-page.html",
+  "analysis_context": {}
+}
 ```
+
+Response:
+
+```json
+{
+  "reply": "...",
+  "provider": "claude | openai | fallback | scope-guard"
+}
+```
+
+## 10. Scoring Rules (Current)
 
 Severity multipliers:
 
@@ -263,24 +232,17 @@ Severity multipliers:
 - `major = 2`
 - `critical = 3`
 
-## 9. Final Score
+Weighted average:
 
 ```text
-Weighted Average
-= Visual Complexity * 0.30
-+ Readability * 0.25
-+ Interaction & Distraction * 0.25
-+ Consistency * 0.20
-
-Final Score
-= 0.5 * min_dimension_score
-+ 0.5 * weighted_average
+Information Overload (or Visual Complexity alias) * 0.30
+Readability * 0.25
+Interaction & Distraction * 0.25
+Consistency * 0.20
 ```
 
-## 10. Module Responsibilities
+Overall score:
 
-- `analyzers/*.py`: detect issues for a single dimension
-- `scoring.py`: calculate penalties and overall scores
-- `history_store.py`: persist and read analysis history in SQLite
-- `main.py`: expose API routes and orchestrate analysis + persistence
-- `frontend/`: render dashboard, comparison, and history interactions
+```text
+overall = 0.4 * min_dimension_score + 0.6 * weighted_average
+```
