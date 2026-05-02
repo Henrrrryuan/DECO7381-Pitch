@@ -1,4 +1,4 @@
-import { displayProfileName } from "../../utils/dashboardUtils.js";
+import { displayProfileName } from "../../utils/dashboard/dashboardLabels.js";
 
 export function ProfileScores({
   profileScoreItems,

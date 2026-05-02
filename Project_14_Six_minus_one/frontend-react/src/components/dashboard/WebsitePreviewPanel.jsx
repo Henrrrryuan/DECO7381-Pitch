@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  buildPreviewHtml,
   displayIssueCategoryName,
+} from "../../utils/dashboard/dashboardLabels.js";
+import {
+  buildPreviewHtml,
   getFallbackSelectorsForIssue,
   getHighlightSettings,
   getPreviewFrameAddress,
+} from "../../utils/dashboard/previewHighlight.js";
+import {
   locationPrimaryText,
-} from "../../utils/dashboardUtils.js";
+} from "../../utils/dashboard/issueGuidance.js";
 
 function injectHighlightStyles(previewDocument) {
   if (!previewDocument || previewDocument.getElementById("cognilens-highlight-style")) {

@@ -4,9 +4,13 @@ import { WebsitePreviewPanel } from "./WebsitePreviewPanel.jsx";
 import {
   displayDimensionName,
   displayIssueCategoryName,
+} from "../../utils/dashboard/dashboardLabels.js";
+import {
   formatReportTimestamp,
+} from "../../utils/dashboard/dashboardSession.js";
+import {
   getAllIssueRecords,
-} from "../../utils/dashboardUtils.js";
+} from "../../utils/dashboard/issueRecords.js";
 
 export function DashboardWorkspace({
   dashboardSession,

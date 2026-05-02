@@ -1,7 +1,9 @@
 import {
   displayIssueCategoryName,
+} from "../../utils/dashboard/dashboardLabels.js";
+import {
   riskMetaFromScore,
-} from "../../utils/dashboardUtils.js";
+} from "../../utils/dashboard/profileScoring.js";
 
 export function DimensionBars({
   activeProfileDimensionEntries,
@@ -11,10 +13,9 @@ export function DimensionBars({
 }) {
   // Sidebar risk category list.
   //
-  // DashboardPage.jsx calculates activeProfileDimensionEntries in
-  // dashboardUtils.js. That list already contains the profile-weighted scores
-  // for the selected lens, so this component only renders the current risk
-  // badges and sends preview clicks back to DashboardPage.jsx.
+  // DashboardPage.jsx calculates activeProfileDimensionEntries through
+  // utils/dashboard/profileScoring.js. This component only renders the current
+  // risk badges and sends preview clicks back to DashboardPage.jsx.
   const dimensionEntries = activeProfileDimensionEntries || [];
 
   return (

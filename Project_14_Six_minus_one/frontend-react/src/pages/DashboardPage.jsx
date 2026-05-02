@@ -9,16 +9,20 @@ import { AppNav } from "../components/AppNav.jsx";
 import { AssistantFloatingPanel } from "../components/dashboard/AssistantFloatingPanel.jsx";
 import { DashboardSidebar } from "../components/dashboard/DashboardSidebar.jsx";
 import { DashboardWorkspace } from "../components/dashboard/DashboardWorkspace.jsx";
+import { buildAssistantContext } from "../utils/dashboard/assistantContext.js";
 import {
-  buildAssistantContext,
   buildAnalysisView,
   buildDashboardSessionFromReportDetail,
-  findIssueRecordByIdentifier,
-  getActiveProfileDimensionEntries,
-  getActiveProfileLabel,
   getHistoryReportRunIdentifierFromUrl,
   normalizeDashboardSession,
-} from "../utils/dashboardUtils.js";
+} from "../utils/dashboard/dashboardSession.js";
+import {
+  findIssueRecordByIdentifier,
+} from "../utils/dashboard/issueRecords.js";
+import {
+  getActiveProfileDimensionEntries,
+  getActiveProfileLabel,
+} from "../utils/dashboard/profileScoring.js";
 import {
   DASHBOARD_SESSION_STORAGE_KEY,
   loadCurrentDashboardSession,

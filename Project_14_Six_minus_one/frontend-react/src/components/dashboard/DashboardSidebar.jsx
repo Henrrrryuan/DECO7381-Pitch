@@ -3,10 +3,14 @@ import { IssueSummaryCard } from "./IssueSummaryCard.jsx";
 import { ProfileScores } from "./ProfileScores.jsx";
 import {
   displayDimensionName,
-  getAllIssueRecords,
   getCognitiveDimensionLabel,
+} from "../../utils/dashboard/dashboardLabels.js";
+import {
+  getAllIssueRecords,
+} from "../../utils/dashboard/issueRecords.js";
+import {
   getTotalIssueCount,
-} from "../../utils/dashboardUtils.js";
+} from "../../utils/dashboard/profileScoring.js";
 
 export function DashboardSidebar({
   analysisResult,
@@ -27,8 +31,8 @@ export function DashboardSidebar({
   // Left dashboard column.
   //
   // DashboardPage.jsx owns state such as selected issue, active profile, and
-  // collapsed width. This component renders the old dashboard sidebar classes
-  // and sends user actions back up through callback props.
+  // collapsed width. Dashboard utility modules prepare the score and issue
+  // records; this component renders them with the old dashboard CSS classes.
   const totalIssueCount = getTotalIssueCount(analysisResult);
   const profileScoreItems = analysisResult?.profile_scores || [];
   const issueRecords = getAllIssueRecords(analysisResult, activeProfileLabel);

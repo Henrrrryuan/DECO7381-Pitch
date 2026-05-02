@@ -1,4 +1,4 @@
-import { conciseText } from "../../utils/dashboardUtils.js";
+import { conciseText } from "../../utils/dashboard/dashboardLabels.js";
 
 export function IssueSummaryCard({
   issueRecord,

@@ -1,5 +1,7 @@
 import {
   displayIssueCategorySingular,
+} from "../../utils/dashboard/dashboardLabels.js";
+import {
   frameworkMappingCopy,
   getKeyLocations,
   issueAffectedUserTags,
@@ -10,7 +12,7 @@ import {
   issueIsoClauseTags,
   locationMetaText,
   recommendedFixSteps,
-} from "../../utils/dashboardUtils.js";
+} from "../../utils/dashboard/issueGuidance.js";
 
 function PageEvidence({ issue }) {
   // Evidence list for the selected issue detail panel.
@@ -55,8 +57,8 @@ export function IssueDetailPanel({ issueRecord }) {
   // Main guidance panel shown when a user chooses "Open guidance".
   //
   // DashboardWorkspace.jsx passes in the selected issue record. The copy is
-  // derived from dashboardUtils.js so this component can stay focused on
-  // rendering the original dashboard.html guidance structure.
+  // derived from utils/dashboard/issueGuidance.js so this component can stay
+  // focused on rendering the original dashboard.html guidance structure.
   if (!issueRecord) {
     return null;
   }
