@@ -4,6 +4,8 @@ import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
+  const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
+
   useEffect(() => {
     document.body.classList.add("dashboard-body");
     return () => {
@@ -38,12 +40,31 @@ export function DashboardPage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to={spaGuideAnalysisHref}>Guide</Link>
-            <a href={eyeTrackingHref}>Eye Tracking</a>
-            <Link to={spaHistoryHref}>History</Link>
-            <Link className="nav-cta" to="/">
-              New Analysis
-            </Link>
+            {lockTopNav ? (
+              <>
+                <span className="disabled-nav-link" aria-disabled="true">
+                  Guide
+                </span>
+                <span className="disabled-nav-link" aria-disabled="true">
+                  Eye Tracking
+                </span>
+                <span className="disabled-nav-link" aria-disabled="true">
+                  History
+                </span>
+                <span className="nav-cta disabled-nav-link" aria-disabled="true">
+                  New Analysis
+                </span>
+              </>
+            ) : (
+              <>
+                <Link to={spaGuideAnalysisHref}>Guide</Link>
+                <a href={eyeTrackingHref}>Eye Tracking</a>
+                <Link to={spaHistoryHref}>History</Link>
+                <Link className="nav-cta" to="/">
+                  New Analysis
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
