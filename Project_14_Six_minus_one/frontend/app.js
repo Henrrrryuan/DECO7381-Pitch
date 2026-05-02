@@ -110,112 +110,112 @@ const RULE_FRAMEWORK_MAP = {
   "IO-1": {
     coga: "COGA: Help users focus on the primary task",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
-    wcag: "WCAG 2.2 SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
   "IO-2": {
     coga: "COGA: Reduce cognitive load from dense regions",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "IO-3": {
     coga: "COGA: Minimize competing peripheral content",
     iso: "ISO 9241-11:2018 6.4.3 Cognitive responses; 6.4.4 Emotional responses",
-    wcag: "WCAG 2.2 SC 2.4.3 Focus Order; SC 3.2.3 Consistent Navigation",
+    wcag: "WCAG SC 2.4.3 Focus Order; SC 3.2.3 Consistent Navigation",
   },
   "IO-4": {
     coga: "COGA: Make the next action obvious",
     iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
   "IO-5": {
     coga: "COGA: Keep a clear information hierarchy",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "RD-1": {
     coga: "COGA: Use shorter, easier language",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG 2.2 SC 3.1.5 Reading Level (AAA)",
+    wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
   "RD-2": {
     coga: "COGA: Break content into manageable chunks",
     iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "RD-3": {
     coga: "COGA: Use clear action labels",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG 2.2 SC 2.4.6 Headings and Labels; SC 3.3.2 Labels or Instructions",
+    wcag: "WCAG SC 2.4.6 Headings and Labels; SC 3.3.2 Labels or Instructions",
   },
   "RD-4": {
     coga: "COGA: Prefer familiar vocabulary",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.4.3 Cognitive responses",
-    wcag: "WCAG 2.2 SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
+    wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
   "RD-5": {
     coga: "COGA: Keep instructions explicit and direct",
     iso: "ISO 9241-11:2018 6.2.3 Completeness",
-    wcag: "WCAG 2.2 SC 3.3.2 Labels or Instructions; SC 3.3.5 Help (AAA)",
+    wcag: "WCAG SC 3.3.2 Labels or Instructions; SC 3.3.5 Help (AAA)",
   },
   "RD-6": {
     coga: "COGA: Support scanning with chunking",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "ID-1": {
     coga: "COGA: Avoid unexpected autoplay triggers",
     iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
-    wcag: "WCAG 2.2 SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
+    wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
   "ID-2": {
     coga: "COGA: Reduce distracting motion",
     iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.3 Cognitive responses",
-    wcag: "WCAG 2.2 SC 2.3.3 Animation from Interactions; SC 2.2.2 Pause, Stop, Hide",
+    wcag: "WCAG SC 2.3.3 Animation from Interactions; SC 2.2.2 Pause, Stop, Hide",
   },
   "ID-3": {
     coga: "COGA: Avoid interruptive overlays",
     iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
-    wcag: "WCAG 2.2 SC 3.2.1 On Focus; SC 3.2.2 On Input",
+    wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
   "CS-1": {
     coga: "COGA: Keep structure predictable",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "CS-2": {
     coga: "COGA: Keep users oriented in multi-step tasks",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG 2.2 SC 2.4.8 Location (AAA)",
+    wcag: "WCAG SC 2.4.8 Location (AAA)",
   },
   "CS-3": {
     coga: "COGA: Keep users oriented during multi-step processes",
     iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 3.3.2 Labels or Instructions; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 3.3.2 Labels or Instructions; SC 2.4.6 Headings and Labels",
   },
   "CS-4": {
     coga: "COGA: Clear component purpose",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG 2.2 SC 2.4.2 Page Titled; SC 2.4.6 Headings and Labels",
+    wcag: "WCAG SC 2.4.2 Page Titled; SC 2.4.6 Headings and Labels",
   },
   "CS-5": {
     coga: "COGA: Predictable navigation cues",
     iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
+    wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
   "CS-6": {
     coga: "COGA: Provide direct lookup for content-heavy pages",
     iso: "ISO 9241-11:2018 6.3.2 Time used",
-    wcag: "WCAG 2.2 SC 2.4.5 Multiple Ways; SC 3.3.2 Labels or Instructions",
+    wcag: "WCAG SC 2.4.5 Multiple Ways; SC 3.3.2 Labels or Instructions",
   },
   "CS-7": {
     coga: "COGA: Explicit labels and instructions",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG 2.2 SC 4.1.2 Name, Role, Value; SC 3.3.2 Labels or Instructions",
+    wcag: "WCAG SC 4.1.2 Name, Role, Value; SC 3.3.2 Labels or Instructions",
   },
   "CS-8": {
     coga: "COGA: Predictable interactions",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
-    wcag: "WCAG 2.2 SC 3.2.4 Consistent Identification",
+    wcag: "WCAG SC 3.2.4 Consistent Identification",
   },
 };
 
@@ -868,7 +868,7 @@ function frameworkStandardsForRule(ruleId) {
       coga: "COGA: reduce cognitive load in task flow",
       wcagCriteria: ["SC 2.4.6 Headings and Labels"],
       isoClauses: ["6.3.3 Human effort expended"],
-      wcagDisplay: "WCAG 2.2 SC 2.4.6 Headings and Labels",
+      wcagDisplay: "WCAG SC 2.4.6 Headings and Labels",
       isoDisplay: "ISO 9241-11:2018 6.3.3 Human effort expended",
     };
   }
@@ -878,7 +878,7 @@ function frameworkStandardsForRule(ruleId) {
     coga: entry.coga || "COGA: reduce cognitive load in task flow",
     wcagCriteria,
     isoClauses,
-    wcagDisplay: `WCAG 2.2 ${wcagCriteria.join("; ")}`,
+    wcagDisplay: `WCAG ${wcagCriteria.join("; ")}`,
     isoDisplay: `ISO 9241-11:2018 ${isoClauses.join("; ")}`,
   };
 }
@@ -1728,7 +1728,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
       </div>
       <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label">WCAG 2.2</span>
+        <span class="issue-highlight-label">WCAG</span>
         ${wcagMarkup}
       </div>
       <div class="issue-summary-row issue-summary-row-standards">
