@@ -10,7 +10,7 @@ import {
   saveDashboardSession,
 } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { spaGuideDefaultHref } from "../lib/siteUrls.js";
+import { spaGuideAnalysisHref } from "../lib/siteUrls.js";
 
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const MIN_LOADING_TIME_MS = 2600;
@@ -275,7 +275,7 @@ export function LoadingPage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link className="active-link" to={spaGuideDefaultHref}>
+            <Link className="active-link" to={spaGuideAnalysisHref}>
               Guide
             </Link>
           </nav>

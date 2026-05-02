@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const STORAGE_KEY = "cognilens.return.analysis-url";
 
 export function DocsPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const source = searchParams.get("source");
+    if (source == null || source === "") {
+      navigate(spaGuideAnalysisHref, { replace: true });
+    }
+  }, [navigate, searchParams]);
+
   useEffect(() => {
     document.body.classList.add("docs-body");
     return () => document.body.classList.remove("docs-body");
   }, []);
 
-  const [searchParams] = useSearchParams();
   const source = searchParams.get("source");
   const openedFromAnalysis = source === "analysis";
 

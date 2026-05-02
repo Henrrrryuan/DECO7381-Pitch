@@ -8,7 +8,7 @@ import {
   formatShortId,
 } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref, spaGuideDefaultHref, spaHistoryHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const REPORT_PAGE_SIZE = 10;
 const EYE_PAGE_SIZE = 25;
@@ -446,7 +446,7 @@ export function HistoryPage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to={spaGuideDefaultHref}>Guide</Link>
+            <Link to={spaGuideAnalysisHref}>Guide</Link>
             <a href={eyeTrackingHref}>Eye Tracking</a>
             <Link className="active-link" to={spaHistoryHref}>
               History
