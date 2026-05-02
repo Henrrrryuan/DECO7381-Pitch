@@ -87,9 +87,6 @@ export function DocsPage() {
             >
               Back to analysis
             </button>
-            <Link className="nav-cta" to="/" hidden={!showAnalysisNav} data-analysis-nav>
-              New Analysis
-            </Link>
           </nav>
         </div>
       </header>

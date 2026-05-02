@@ -454,9 +454,6 @@ export function HistoryPage() {
             <button id="backToAnalysisButtonHistory" className="nav-cta" type="button" hidden>
               Back to analysis
             </button>
-            <Link className="nav-cta" to="/">
-              New Analysis
-            </Link>
           </nav>
         </div>
       </header>
