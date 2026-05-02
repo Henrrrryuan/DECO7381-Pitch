@@ -97,6 +97,7 @@ export function AccessibilityWidget() {
   const stopAnimationIsActive = activeOptionIds.has("stop-animation");
   const highlightLinksIsActive = activeOptionIds.has("highlight-links");
   const highlightTitlesIsActive = activeOptionIds.has("highlight-titles");
+  const readableFontsIsActive = activeOptionIds.has("readable-fonts");
 
   useEffect(() => {
     if (!buttonIsSpinning) {
@@ -317,6 +318,13 @@ export function AccessibilityWidget() {
     };
   }, [highlightTitlesIsActive]);
 
+  useEffect(() => {
+    document.body.classList.toggle("accessibility-readable-fonts-enabled", readableFontsIsActive);
+    return () => {
+      document.body.classList.remove("accessibility-readable-fonts-enabled");
+    };
+  }, [readableFontsIsActive]);
+
   function openMenuAfterSpin() {
     if (menuIsRendered || menuIsOpen || buttonIsSpinning) {
       return;
@@ -362,6 +370,7 @@ export function AccessibilityWidget() {
       || optionId === "stop-animation"
       || optionId === "highlight-links"
       || optionId === "highlight-titles"
+      || optionId === "readable-fonts"
     ) {
       setActiveOptionIds((currentOptionIds) => {
         const nextOptionIds = new Set(currentOptionIds);

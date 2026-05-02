@@ -219,6 +219,7 @@ export function restoreAccessibilityDefaults() {
     "accessibility-stop-animation-enabled",
     "accessibility-highlight-links-enabled",
     "accessibility-highlight-titles-enabled",
+    "accessibility-readable-fonts-enabled",
   ];
   const restoredDocumentVariables = [
     "--accessibility-reading-mask-y",

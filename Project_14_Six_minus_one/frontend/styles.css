@@ -3537,6 +3537,19 @@ body.accessibility-stop-animation-enabled .accessibility-widget-button.is-spinni
   animation: none !important;
 }
 
+body.accessibility-readable-fonts-enabled,
+body.accessibility-readable-fonts-enabled * {
+  font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
+  letter-spacing: 0.01em !important;
+}
+
+body.accessibility-readable-fonts-enabled input,
+body.accessibility-readable-fonts-enabled textarea,
+body.accessibility-readable-fonts-enabled select,
+body.accessibility-readable-fonts-enabled button {
+  font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
+}
+
 body.accessibility-highlight-links-enabled a:not(.accessibility-widget-button):not(.accessibility-menu a) {
   outline: 2px solid #335cff !important;
   outline-offset: 2px !important;

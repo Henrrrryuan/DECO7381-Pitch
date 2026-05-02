@@ -210,6 +210,10 @@ function createAccessibilityWidget() {
     }
   }
 
+  function setReadableFontsActive(isActive) {
+    document.body.classList.toggle("accessibility-readable-fonts-enabled", isActive);
+  }
+
   function getBigCursorFrameCss() {
     return `
       html,
@@ -434,6 +438,9 @@ function createAccessibilityWidget() {
     if (optionId === "highlight-titles") {
       setHighlightTitlesActive(isActive);
     }
+    if (optionId === "readable-fonts") {
+      setReadableFontsActive(isActive);
+    }
   }
 
   function setAccessibilityProfileButtonActive(profileButton, isActive) {
@@ -517,6 +524,7 @@ function createAccessibilityWidget() {
     setStopAnimationActive(false);
     setHighlightLinksActive(false);
     setHighlightTitlesActive(false);
+    setReadableFontsActive(false);
     restoreAccessibilityDefaults();
   }
 
@@ -597,6 +605,11 @@ function createAccessibilityWidget() {
         return;
       }
       if (optionId === "highlight-titles") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        setAccessibilityOptionActive(optionId, nextActiveState);
+        return;
+      }
+      if (optionId === "readable-fonts") {
         const nextActiveState = !activeOptionIds.has(optionId);
         setAccessibilityOptionActive(optionId, nextActiveState);
         return;
