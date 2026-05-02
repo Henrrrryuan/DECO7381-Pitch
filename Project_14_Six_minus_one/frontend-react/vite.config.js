@@ -6,21 +6,24 @@ const BACKEND = "http://127.0.0.1:8001";
 /**
  * Dev / vite preview: browser only talks to :5173; API + /eye + sample-input are proxied to FastAPI.
  * /history is both SPA route and REST — HTML navigations get index.html; API calls go to backend.
+ *
+ * Vite proxy bypass (unlike http-proxy): return a string to rewrite req.url and skip the proxy;
+ * return false sends HTTP 404. To forward to the target, return undefined (omit return).
  */
 function historyBypass(req) {
   const url = req.url || "";
   const pathOnly = url.split("?")[0];
   const accept = req.headers.accept || "";
   if (pathOnly.startsWith("/history/")) {
-    return false;
+    return;
   }
   if (pathOnly === "/history" && url.includes("limit=")) {
-    return false;
+    return;
   }
   if (accept.includes("text/html")) {
     return "/index.html";
   }
-  return false;
+  return;
 }
 
 const proxy = {
