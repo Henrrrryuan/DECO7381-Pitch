@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from ..adapters.persistence.history_store import init_history_store
-from .core import EYE_DIR, FRONTEND_DIR, SAMPLE_INPUT_DIR
+from .core import EYE_DIR, SAMPLE_INPUT_DIR
 from .routers.analysis import router as analysis_router
 from .routers.assistant import router as assistant_router
 from .routers.eye import router as eye_router
@@ -31,5 +31,5 @@ app.include_router(assistant_router)
 
 app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+# Web UI is the Vite React app (typically http://127.0.0.1:5173); this process serves API + /eye only.
 
