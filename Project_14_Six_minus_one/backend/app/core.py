@@ -6,7 +6,6 @@ from typing import Any
 from pydantic import BaseModel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-FRONTEND_DIR = PROJECT_ROOT / "frontend"
 EYE_DIR = PROJECT_ROOT / "eye"
 MAX_ZIP_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parents[1] / "sample_input"
