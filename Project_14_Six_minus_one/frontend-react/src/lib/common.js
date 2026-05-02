@@ -1,9 +1,22 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
 const isHttpPage = window.location.protocol === "http:" || window.location.protocol === "https:";
 const host = window.location.hostname || "127.0.0.1";
-const API_BASE = isHttpPage
-  ? `${window.location.protocol}//${host}:8001`
-  : "http://127.0.0.1:8001";
+
+/** Vite dev / preview: same-origin + vite proxy → backend. Production build on :8001: direct :8001. */
+function resolveApiBase() {
+  if (!isHttpPage) {
+    return "http://127.0.0.1:8001";
+  }
+  const dev =
+    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV === true) ||
+    window.location.port === "5173";
+  if (dev) {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  return `${window.location.protocol}//${host}:8001`;
+}
+
+const API_BASE = resolveApiBase();
 const FALLBACK_API_BASE = "http://127.0.0.1:8001";
 
 function escapeHtml(value) {
