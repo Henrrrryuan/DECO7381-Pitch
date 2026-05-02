@@ -1,4 +1,38 @@
-import { conciseText } from "../../utils/dashboard/dashboardLabels.js";
+import { issueCardStandardsSummary } from "../../utils/dashboard/issueGuidance.js";
+
+function splitStandardItems(summaryText, fallbackText) {
+  const source = String(summaryText || "").trim();
+  const parts = source
+    .split(/[;；]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return parts.length ? parts : [fallbackText];
+}
+
+function WcagStandardPills({ summaryText }) {
+  const items = splitStandardItems(summaryText, "SC 2.4.6 Headings and Labels")
+    .map((item) => item.replace(/^WCAG\s*2\.2\s*/i, "").replace(/^WCAG\s*/i, "").trim())
+    .filter(Boolean)
+    .map((item) => (/^SC\s+/i.test(item) ? item : `SC ${item}`));
+
+  return (
+    <div className="issue-standards-list">
+      {(items.length ? items : ["SC 2.4.6 Headings and Labels"]).map((item) => (
+        <span className="issue-standard-pill" key={item}>{item}</span>
+      ))}
+    </div>
+  );
+}
+
+function StandardPills({ summaryText, fallbackText }) {
+  return (
+    <div className="issue-standards-list">
+      {splitStandardItems(summaryText, fallbackText).map((item) => (
+        <span className="issue-standard-pill" key={item}>{item}</span>
+      ))}
+    </div>
+  );
+}
 
 export function IssueSummaryCard({
   issueRecord,
@@ -17,11 +51,7 @@ export function IssueSummaryCard({
   const previewIsActive = selectedIsActive && workspaceMode === "preview";
   const detailIsActive = selectedIsActive && workspaceMode === "detail";
   const selectedClassName = selectedIsActive ? " is-selected is-active" : "";
-  const firstFixText = conciseText(
-    issue.suggestion,
-    "Review this issue and simplify the interaction.",
-    135,
-  );
+  const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
 
   return (
     <article
@@ -33,9 +63,15 @@ export function IssueSummaryCard({
         <span className="issue-highlight-rule">{`Issue ${issueNumber}`}</span>
       </div>
       <strong className="issue-summary-title">{issue.title || "Review this issue"}</strong>
-      <div className="issue-summary-row">
-        <span className="issue-highlight-label">First fix</span>
-        <span className="issue-highlight-copy">{firstFixText}</span>
+      <div className="issue-summary-row issue-summary-row-standards">
+        <span className="issue-highlight-label issue-highlight-label--wcag-guidance">
+          WCAG Cognitive Accessibility Guidance
+        </span>
+        <WcagStandardPills summaryText={wcagSummary} />
+      </div>
+      <div className="issue-summary-row issue-summary-row-standards">
+        <span className="issue-highlight-label">ISO 9241-11</span>
+        <StandardPills summaryText={isoSummary} fallbackText="Effectiveness, efficiency, satisfaction." />
       </div>
       <div className="issue-summary-actions">
         <button
