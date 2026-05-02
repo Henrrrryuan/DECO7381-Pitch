@@ -31,6 +31,5 @@ app.include_router(assistant_router)
 
 app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
-# Legacy static HTML (Guide, etc.) — main UI is the Vite React app (typically :5173).
-app.mount("/static-ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="static_ui")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
