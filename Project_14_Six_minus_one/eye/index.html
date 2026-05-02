@@ -9,18 +9,17 @@
   <body>
     <header class="app-nav">
       <div class="app-nav-inner">
-        <a class="app-brand eye-nav-home" href="/">
+        <a class="app-brand" href="../index.html">
           <span class="app-brand-mark">C</span>
           <span class="app-brand-name">CogniLens</span>
         </a>
 
         <nav class="app-nav-links" aria-label="Primary">
-          <!-- Default targets Vite React (:5173). Script below rewrites for FastAPI-only static (:8001). -->
-          <a id="eyeNavGuide" href="/docs?source=analysis">Guide</a>
+          <a href="../docs.html">Guide</a>
           <a class="active-link" href="/eye/">Eye Tracking</a>
-          <a id="eyeNavHistory" href="/history">History</a>
+          <a href="../history.html">History</a>
           <button id="backToAnalysisButton" class="nav-cta" type="button" hidden>Back to analysis</button>
-          <a class="nav-cta eye-nav-home" href="/">New Analysis</a>
+          <a class="nav-cta" href="../index.html">New Analysis</a>
         </nav>
       </div>
     </header>
@@ -85,18 +84,6 @@
     </div>
 
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script>
-      (function () {
-        if (location.port === "5173") return;
-        var guide = document.getElementById("eyeNavGuide");
-        var historyLink = document.getElementById("eyeNavHistory");
-        if (guide) guide.href = "/docs.html?source=analysis";
-        if (historyLink) historyLink.href = "/history.html";
-        document.querySelectorAll(".eye-nav-home").forEach(function (a) {
-          a.href = "/index.html";
-        });
-      })();
-    </script>
     <script src="./app.js?v=eye-scroll-1"></script>
   </body>
 </html>
