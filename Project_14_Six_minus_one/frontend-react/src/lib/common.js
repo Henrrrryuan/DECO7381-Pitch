@@ -1,23 +1,23 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
+const FALLBACK_API_BASE = "http://127.0.0.1:8001";
 const isHttpPage = window.location.protocol === "http:" || window.location.protocol === "https:";
 const host = window.location.hostname || "127.0.0.1";
 
-/** Vite dev / preview: same-origin + vite proxy → backend. Production build on :8001: direct :8001. */
+/** React dev routes can overlap with API routes such as /history, so call FastAPI directly. */
 function resolveApiBase() {
   if (!isHttpPage) {
-    return "http://127.0.0.1:8001";
+    return FALLBACK_API_BASE;
   }
-  const dev =
+  const isViteDev =
     (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV === true) ||
-    window.location.port === "5173";
-  if (dev) {
-    return `${window.location.protocol}//${window.location.host}`;
+    ["5173", "5174", "5175"].includes(window.location.port);
+  if (isViteDev) {
+    return FALLBACK_API_BASE;
   }
   return `${window.location.protocol}//${host}:8001`;
 }
 
 const API_BASE = resolveApiBase();
-const FALLBACK_API_BASE = "http://127.0.0.1:8001";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => {
