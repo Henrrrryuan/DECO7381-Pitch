@@ -96,8 +96,8 @@ export function DocsPage() {
           <h1>How to use CogniLens</h1>
           <div className="docs-copy">
             <p>
-              CogniLens helps teams detect cognitive accessibility issues, inspect exactly where they appear, and turn
-              findings into practical redesign actions.
+              CogniLens is now a React-based workflow for checking cognitive accessibility barriers, locating the
+              affected page elements, and turning each finding into a practical redesign action.
             </p>
           </div>
         </section>
@@ -107,45 +107,44 @@ export function DocsPage() {
 
           <article className="docs-card docs-card-left">
             <span className="docs-step">1</span>
-            <h2>Quick path</h2>
+            <h2>Recommended workflow</h2>
             <p>
-              <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a category by risk -&gt; open an
-              issue card -&gt; inspect location -&gt; open guidance.
+              <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a high-risk issue category -&gt; open
+              an issue card -&gt; show the highlighted location -&gt; open guidance.
             </p>
-            <p>Use this route when you want a fast first pass before deeper review.</p>
+            <p>Use this path to work through one issue at a time instead of reading the whole report at once.</p>
           </article>
 
           <article className="docs-card docs-card-right">
             <span className="docs-step">2</span>
             <h2>Start an analysis</h2>
             <p>
-              Click <strong>New Analysis</strong>, then analyze a local <span className="docs-mono-tag">URL</span>,{" "}
+              On the start page, analyze a local <span className="docs-mono-tag">URL</span>,{" "}
               <span className="docs-mono-tag">HTML</span> file, or <span className="docs-mono-tag">ZIP</span> package.
             </p>
-            <p>After processing, CogniLens opens the dashboard with profile-based risk views and issue cards.</p>
+            <p>After processing, CogniLens opens the React dashboard with profile-based risk views and top issue cards.</p>
           </article>
 
           <article id="issue-workspace" className="docs-card docs-card-core">
             <span className="docs-step">3</span>
             <h2>Prioritize and inspect issues</h2>
             <p>
-              Use <strong>High / Medium / Low risk</strong> to decide where to start. Risk is prioritization support,
-              not a final compliance grade.
+              Use <strong>High / Medium / Low risk</strong> to decide which issue category needs attention first. Risk
+              labels are prioritization support, not a final accessibility grade.
             </p>
             <div className="docs-risk-row" aria-hidden="true">
               <span className="docs-risk-pill is-high">High risk</span>
               <span className="docs-risk-pill is-medium">Medium risk</span>
               <span className="docs-risk-pill is-low">Low risk</span>
             </div>
-            <p>Each Top Issue Card provides two core actions:</p>
+            <p>Each issue card has two clear actions:</p>
             <ul className="docs-list">
               <li>
-                <strong>Show highlighted location</strong> opens the website preview and highlights where the issue
-                appears.
+                <strong>Show highlighted location</strong> opens the page preview and labels the affected elements.
               </li>
               <li>
-                <strong>Open guidance</strong> opens the detailed issue workspace with evidence, why it matters, and
-                redesign direction.
+                <strong>Open guidance</strong> explains the affected elements, why the issue matters, and what to change
+                first.
               </li>
             </ul>
           </article>
@@ -154,33 +153,38 @@ export function DocsPage() {
             <span className="docs-step">4</span>
             <h2>Use guidance to redesign</h2>
             <p>
-              In issue guidance, review <strong>Page evidence</strong>, <strong>Why this matters</strong>, and{" "}
-              <strong>First redesign move</strong> in order.
+              In the guidance panel, review <strong>Affected elements and locations</strong>,{" "}
+              <strong>Why this matters</strong>, and <strong>First redesign move</strong> in order.
             </p>
-            <p>For technical implementation, use the selector details and standards mapping as your engineering checklist.</p>
+            <p>
+              The WCAG / COGA and ISO mapping appears on the issue card so designers and developers can connect each
+              recommendation to recognised accessibility and usability frameworks.
+            </p>
           </article>
 
           <article className="docs-card docs-card-right">
             <span className="docs-step">5</span>
-            <h2>Understand scoring signals</h2>
+            <h2>Check the page location</h2>
             <p>
-              Hover the info icon beside each dimension to see <strong>what it means</strong> and{" "}
-              <strong>how it is scored</strong>.
+              The highlighted preview uses numbered labels such as <strong>Element 1</strong> and{" "}
+              <strong>Element 2</strong>. These numbers match the affected elements listed in guidance.
             </p>
             <p>
-              Dimension scoring aligns with your cognitive risk model and maps to <span className="docs-mono-tag">WCAG</span>{" "}
-              / <span className="docs-mono-tag">ISO</span>-based signals in issue details.
+              Use this view to verify the exact page area before redesigning, then return to guidance for the next
+              action.
             </p>
           </article>
 
           <article className="docs-card docs-card-left">
             <span className="docs-step">6</span>
-            <h2>Use Eye Tracking and History</h2>
+            <h2>Use supporting tools</h2>
             <p>
-              Open <strong>Eye Tracking</strong> when you need behavior evidence for attention and visual focus patterns.
+              Open <strong>History</strong> to revisit saved React reports. When a report is opened from History, use{" "}
+              <strong>Back to History</strong> to return to the report list.
             </p>
             <p>
-              Use <strong>History</strong> to reopen reports, compare iterations, and continue from prior analysis runs.
+              Use <strong>Eye Tracking</strong> as supporting evidence when you need to compare automated findings with
+              attention or scanning behaviour.
             </p>
           </article>
         </section>
