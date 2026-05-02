@@ -16,10 +16,17 @@ function createAccessibilityWidget() {
     return;
   }
 
+  const ACCESSIBILITY_MENU_FADE_DURATION_MS = 840;
   const button = document.createElement("button");
   const activeOptionIds = new Set();
   const activeProfileIds = new Set();
   const readingMaskFrameCleanupByFrame = new WeakMap();
+  const outsideClickFrameCleanupByFrame = new WeakMap();
+  const bigCursorFrameCleanupByFrame = new WeakMap();
+  let menuCloseTimer = 0;
+  const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
+  const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
+  const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
   button.className = "accessibility-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Open accessibility menu");
@@ -115,10 +122,73 @@ function createAccessibilityWidget() {
   `;
 
   function closeMenu() {
+    window.clearTimeout(menuCloseTimer);
     menu.classList.remove("is-open");
-    menu.hidden = true;
-    button.hidden = false;
     button.setAttribute("aria-expanded", "false");
+    menuCloseTimer = window.setTimeout(() => {
+      menu.hidden = true;
+      button.hidden = false;
+    }, ACCESSIBILITY_MENU_FADE_DURATION_MS);
+  }
+
+  function closeMenuAfterOutsidePointer(event) {
+    if (menu.hidden || !menu.classList.contains("is-open")) {
+      return;
+    }
+    const eventTarget = event.target;
+    if (menu.contains(eventTarget) || button.contains(eventTarget)) {
+      return;
+    }
+    closeMenu();
+  }
+
+  function closeMenuFromFramePointer() {
+    if (menu.hidden || !menu.classList.contains("is-open")) {
+      return;
+    }
+    closeMenu();
+  }
+
+  function bindOutsideClickFrameDocument(frameElement) {
+    const previousCleanup = outsideClickFrameCleanupByFrame.get(frameElement);
+    if (previousCleanup) {
+      previousCleanup();
+      outsideClickFrameCleanupByFrame.delete(frameElement);
+    }
+
+    let frameDocument = null;
+    try {
+      frameDocument = frameElement.contentDocument || frameElement.contentWindow?.document || null;
+    } catch {
+      frameDocument = null;
+    }
+
+    if (!frameDocument) {
+      return;
+    }
+
+    frameDocument.addEventListener("pointerdown", closeMenuFromFramePointer, true);
+
+    outsideClickFrameCleanupByFrame.set(frameElement, () => {
+      frameDocument.removeEventListener("pointerdown", closeMenuFromFramePointer, true);
+    });
+  }
+
+  function attachOutsideClickFrameListener(frameElement) {
+    bindOutsideClickFrameDocument(frameElement);
+    if (frameElement.dataset.accessibilityOutsideClickLoadBound === "true") {
+      return;
+    }
+    frameElement.dataset.accessibilityOutsideClickLoadBound = "true";
+    frameElement.addEventListener("load", () => {
+      bindOutsideClickFrameDocument(frameElement);
+    });
+  }
+
+  function syncOutsideClickFrameListeners() {
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      attachOutsideClickFrameListener(frameElement);
+    });
   }
 
   function setReadingMaskActive(isActive) {
@@ -133,6 +203,95 @@ function createAccessibilityWidget() {
 
   function setBigCursorActive(isActive) {
     document.body.classList.toggle("accessibility-big-cursor-enabled", isActive);
+    if (isActive) {
+      syncBigCursorFrameStyles();
+    } else {
+      clearBigCursorFrameStyles();
+    }
+  }
+
+  function getBigCursorFrameCss() {
+    return `
+      html,
+      body,
+      body * {
+        cursor: url("${BIG_CURSOR_DEFAULT_URL}") 10 4, auto !important;
+      }
+
+      a,
+      button,
+      [role="button"],
+      input[type="button"],
+      input[type="submit"],
+      input[type="reset"],
+      label,
+      summary,
+      select,
+      [onclick],
+      [tabindex]:not([tabindex="-1"]) {
+        cursor: url("${BIG_CURSOR_POINTER_URL}") 20 6, pointer !important;
+      }
+    `;
+  }
+
+  function getFrameDocument(frameElement) {
+    try {
+      return frameElement.contentDocument || frameElement.contentWindow?.document || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function injectBigCursorFrameStyle(frameElement) {
+    const frameDocument = getFrameDocument(frameElement);
+    if (!frameDocument) {
+      return;
+    }
+    const frameHead = frameDocument.head || frameDocument.documentElement;
+    if (!frameHead) {
+      return;
+    }
+    let styleElement = frameDocument.getElementById(BIG_CURSOR_FRAME_STYLE_ID);
+    if (!styleElement) {
+      styleElement = frameDocument.createElement("style");
+      styleElement.id = BIG_CURSOR_FRAME_STYLE_ID;
+      frameHead.appendChild(styleElement);
+    }
+    styleElement.textContent = getBigCursorFrameCss();
+  }
+
+  function removeBigCursorFrameStyle(frameElement) {
+    const frameDocument = getFrameDocument(frameElement);
+    frameDocument?.getElementById(BIG_CURSOR_FRAME_STYLE_ID)?.remove();
+  }
+
+  function attachBigCursorFrameStyle(frameElement) {
+    injectBigCursorFrameStyle(frameElement);
+    if (bigCursorFrameCleanupByFrame.has(frameElement)) {
+      return;
+    }
+    const reapplyBigCursorFrameStyle = () => {
+      if (document.body.classList.contains("accessibility-big-cursor-enabled")) {
+        injectBigCursorFrameStyle(frameElement);
+      }
+    };
+    frameElement.addEventListener("load", reapplyBigCursorFrameStyle);
+    bigCursorFrameCleanupByFrame.set(frameElement, () => {
+      frameElement.removeEventListener("load", reapplyBigCursorFrameStyle);
+      removeBigCursorFrameStyle(frameElement);
+    });
+  }
+
+  function syncBigCursorFrameStyles() {
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      attachBigCursorFrameStyle(frameElement);
+    });
+  }
+
+  function clearBigCursorFrameStyles() {
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      removeBigCursorFrameStyle(frameElement);
+    });
   }
 
   function setStopAnimationActive(isActive) {
@@ -367,10 +526,12 @@ function createAccessibilityWidget() {
     }
     button.classList.add("is-spinning");
     window.setTimeout(() => {
+      window.clearTimeout(menuCloseTimer);
       button.classList.remove("is-spinning");
       button.hidden = true;
       button.setAttribute("aria-expanded", "true");
       menu.hidden = false;
+      syncOutsideClickFrameListeners();
       requestAnimationFrame(() => menu.classList.add("is-open"));
     }, ACCESSIBILITY_SPIN_DURATION_MS);
   });
@@ -456,6 +617,7 @@ function createAccessibilityWidget() {
   });
 
   document.body.append(button, menu, readingMask);
+  document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
   window.addEventListener("pointermove", updateReadingMaskPosition, { passive: true });
 }
 

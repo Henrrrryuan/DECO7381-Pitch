@@ -13,6 +13,69 @@ import {
   runAccessibilityMenuFeature,
 } from "./accessibilityMenuFeatures.js";
 
+const ACCESSIBILITY_MENU_FADE_DURATION_MS = 840;
+const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
+const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
+const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
+
+function getBigCursorFrameCss() {
+  return `
+    html,
+    body,
+    body * {
+      cursor: url("${BIG_CURSOR_DEFAULT_URL}") 10 4, auto !important;
+    }
+
+    a,
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    label,
+    summary,
+    select,
+    [onclick],
+    [tabindex]:not([tabindex="-1"]) {
+      cursor: url("${BIG_CURSOR_POINTER_URL}") 20 6, pointer !important;
+    }
+  `;
+}
+
+function getFrameDocument(frameElement) {
+  try {
+    return frameElement.contentDocument || frameElement.contentWindow?.document || null;
+  } catch {
+    return null;
+  }
+}
+
+function injectBigCursorFrameStyle(frameElement) {
+  const frameDocument = getFrameDocument(frameElement);
+  if (!frameDocument) {
+    return;
+  }
+
+  const frameHead = frameDocument.head || frameDocument.documentElement;
+  if (!frameHead) {
+    return;
+  }
+
+  let styleElement = frameDocument.getElementById(BIG_CURSOR_FRAME_STYLE_ID);
+  if (!styleElement) {
+    styleElement = frameDocument.createElement("style");
+    styleElement.id = BIG_CURSOR_FRAME_STYLE_ID;
+    frameHead.appendChild(styleElement);
+  }
+
+  styleElement.textContent = getBigCursorFrameCss();
+}
+
+function removeBigCursorFrameStyle(frameElement) {
+  const frameDocument = getFrameDocument(frameElement);
+  frameDocument?.getElementById(BIG_CURSOR_FRAME_STYLE_ID)?.remove();
+}
+
 function SvgMarkup({ markup, className = "" }) {
   return (
     <span
@@ -23,6 +86,7 @@ function SvgMarkup({ markup, className = "" }) {
 }
 
 export function AccessibilityWidget() {
+  const [menuIsRendered, setMenuIsRendered] = useState(false);
   const [menuIsOpen, setMenuIsOpen] = useState(false);
   const [buttonIsSpinning, setButtonIsSpinning] = useState(false);
   const [expandedSectionId, setExpandedSectionId] = useState("");
@@ -41,11 +105,92 @@ export function AccessibilityWidget() {
 
     const spinTimer = window.setTimeout(() => {
       setButtonIsSpinning(false);
-      setMenuIsOpen(true);
+      setMenuIsRendered(true);
+      window.requestAnimationFrame(() => {
+        setMenuIsOpen(true);
+      });
     }, ACCESSIBILITY_SPIN_DURATION_MS);
 
     return () => window.clearTimeout(spinTimer);
   }, [buttonIsSpinning]);
+
+  useEffect(() => {
+    if (menuIsOpen || !menuIsRendered) {
+      return undefined;
+    }
+
+    const closeTimer = window.setTimeout(() => {
+      setMenuIsRendered(false);
+    }, ACCESSIBILITY_MENU_FADE_DURATION_MS);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [menuIsOpen, menuIsRendered]);
+
+  useEffect(() => {
+    if (!menuIsRendered) {
+      return undefined;
+    }
+
+    const frameCleanupCallbacks = [];
+
+    const closeMenuAfterOutsidePointer = (event) => {
+      const menuElement = document.getElementById("accessibilityMenu");
+      const widgetButton = document.querySelector(".accessibility-widget-button");
+      const eventTarget = event.target;
+
+      if (!menuElement || menuElement.contains(eventTarget) || widgetButton?.contains(eventTarget)) {
+        return;
+      }
+
+      setMenuIsOpen(false);
+    };
+
+    const closeMenuFromFramePointer = () => {
+      setMenuIsOpen(false);
+    };
+
+    const bindOutsideClickFrameDocument = (frameElement) => {
+      let frameDocument = null;
+      try {
+        frameDocument = frameElement.contentDocument || frameElement.contentWindow?.document || null;
+      } catch {
+        frameDocument = null;
+      }
+
+      if (!frameDocument) {
+        return;
+      }
+
+      frameDocument.addEventListener("pointerdown", closeMenuFromFramePointer, true);
+      frameCleanupCallbacks.push(() => {
+        frameDocument.removeEventListener("pointerdown", closeMenuFromFramePointer, true);
+      });
+    };
+
+    const bindOutsideClickFrame = (frameElement) => {
+      bindOutsideClickFrameDocument(frameElement);
+
+      const rebindOutsideClickFrameDocument = () => {
+        bindOutsideClickFrameDocument(frameElement);
+      };
+
+      frameElement.addEventListener("load", rebindOutsideClickFrameDocument);
+      frameCleanupCallbacks.push(() => {
+        frameElement.removeEventListener("load", rebindOutsideClickFrameDocument);
+      });
+    };
+
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      bindOutsideClickFrame(frameElement);
+    });
+
+    document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
+      frameCleanupCallbacks.forEach((cleanupCallback) => cleanupCallback());
+    };
+  }, [menuIsRendered]);
 
   useEffect(() => {
     document.body.classList.toggle("accessibility-reading-mask-active", readingMaskIsActive);
@@ -123,8 +268,31 @@ export function AccessibilityWidget() {
 
   useEffect(() => {
     document.body.classList.toggle("accessibility-big-cursor-enabled", bigCursorIsActive);
+    const frameCleanupCallbacks = [];
+
+    if (bigCursorIsActive) {
+      document.querySelectorAll("iframe").forEach((frameElement) => {
+        injectBigCursorFrameStyle(frameElement);
+
+        const reapplyBigCursorFrameStyle = () => {
+          injectBigCursorFrameStyle(frameElement);
+        };
+
+        frameElement.addEventListener("load", reapplyBigCursorFrameStyle);
+        frameCleanupCallbacks.push(() => {
+          frameElement.removeEventListener("load", reapplyBigCursorFrameStyle);
+          removeBigCursorFrameStyle(frameElement);
+        });
+      });
+    } else {
+      document.querySelectorAll("iframe").forEach((frameElement) => {
+        removeBigCursorFrameStyle(frameElement);
+      });
+    }
+
     return () => {
       document.body.classList.remove("accessibility-big-cursor-enabled");
+      frameCleanupCallbacks.forEach((cleanupCallback) => cleanupCallback());
     };
   }, [bigCursorIsActive]);
 
@@ -150,10 +318,14 @@ export function AccessibilityWidget() {
   }, [highlightTitlesIsActive]);
 
   function openMenuAfterSpin() {
-    if (menuIsOpen || buttonIsSpinning) {
+    if (menuIsRendered || menuIsOpen || buttonIsSpinning) {
       return;
     }
     setButtonIsSpinning(true);
+  }
+
+  function closeMenuWithFade() {
+    setMenuIsOpen(false);
   }
 
   function handleMenuSectionClick(sectionId) {
@@ -242,8 +414,8 @@ export function AccessibilityWidget() {
         type="button"
         aria-label="Open accessibility menu"
         aria-controls="accessibilityMenu"
-        aria-expanded={menuIsOpen}
-        hidden={menuIsOpen}
+        aria-expanded={menuIsOpen && menuIsRendered}
+        hidden={menuIsRendered}
         onClick={openMenuAfterSpin}
       >
         <span className="accessibility-widget-ring">
@@ -255,7 +427,7 @@ export function AccessibilityWidget() {
         id="accessibilityMenu"
         className={`accessibility-menu${menuIsOpen ? " is-open" : ""}`}
         aria-label="Accessibility Menu"
-        hidden={!menuIsOpen}
+        hidden={!menuIsRendered}
       >
         <header className="accessibility-menu-header">
           <h2>Accessibility Menu</h2>
@@ -263,7 +435,7 @@ export function AccessibilityWidget() {
             className="accessibility-menu-close"
             type="button"
             aria-label="Close accessibility menu"
-            onClick={() => setMenuIsOpen(false)}
+            onClick={closeMenuWithFade}
           >
             <SvgMarkup markup={ACCESSIBILITY_CLOSE_ICON} />
           </button>
