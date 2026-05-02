@@ -9,11 +9,19 @@ lerna-debug.log*
 
 node_modules
 dist
+<<<<<<< Updated upstream
 .vite
 dist-ssr
 *.local
 
 # Editor directories and files
+=======
+dist-ssr
+.vite
+*.local
+
+# Editor
+>>>>>>> Stashed changes
 .vscode/*
 !.vscode/extensions.json
 .idea
