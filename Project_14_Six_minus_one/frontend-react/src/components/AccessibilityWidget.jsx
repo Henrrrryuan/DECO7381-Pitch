@@ -31,6 +31,8 @@ export function AccessibilityWidget() {
   const readingMaskIsActive = activeOptionIds.has("reading-aid");
   const bigCursorIsActive = activeOptionIds.has("big-cursor");
   const stopAnimationIsActive = activeOptionIds.has("stop-animation");
+  const highlightLinksIsActive = activeOptionIds.has("highlight-links");
+  const highlightTitlesIsActive = activeOptionIds.has("highlight-titles");
 
   useEffect(() => {
     if (!buttonIsSpinning) {
@@ -86,6 +88,20 @@ export function AccessibilityWidget() {
     };
   }, [stopAnimationIsActive]);
 
+  useEffect(() => {
+    document.body.classList.toggle("accessibility-highlight-links-enabled", highlightLinksIsActive);
+    return () => {
+      document.body.classList.remove("accessibility-highlight-links-enabled");
+    };
+  }, [highlightLinksIsActive]);
+
+  useEffect(() => {
+    document.body.classList.toggle("accessibility-highlight-titles-enabled", highlightTitlesIsActive);
+    return () => {
+      document.body.classList.remove("accessibility-highlight-titles-enabled");
+    };
+  }, [highlightTitlesIsActive]);
+
   function openMenuAfterSpin() {
     if (menuIsOpen || buttonIsSpinning) {
       return;
@@ -121,7 +137,13 @@ export function AccessibilityWidget() {
   }
 
   function toggleAccessibilityOption(optionId) {
-    if (optionId === "reading-aid" || optionId === "big-cursor" || optionId === "stop-animation") {
+    if (
+      optionId === "reading-aid"
+      || optionId === "big-cursor"
+      || optionId === "stop-animation"
+      || optionId === "highlight-links"
+      || optionId === "highlight-titles"
+    ) {
       setActiveOptionIds((currentOptionIds) => {
         const nextOptionIds = new Set(currentOptionIds);
         if (nextOptionIds.has(optionId)) {

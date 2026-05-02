@@ -140,6 +140,14 @@ function createAccessibilityWidget() {
     document.body.classList.toggle("accessibility-stop-animation-enabled", isActive);
   }
 
+  function setHighlightLinksActive(isActive) {
+    document.body.classList.toggle("accessibility-highlight-links-enabled", isActive);
+  }
+
+  function setHighlightTitlesActive(isActive) {
+    document.body.classList.toggle("accessibility-highlight-titles-enabled", isActive);
+  }
+
   function updateReadingMaskPosition(event) {
     if (!document.body.classList.contains("accessibility-reading-mask-active")) {
       return;
@@ -199,6 +207,12 @@ function createAccessibilityWidget() {
     }
     if (optionId === "stop-animation") {
       setStopAnimationActive(isActive);
+    }
+    if (optionId === "highlight-links") {
+      setHighlightLinksActive(isActive);
+    }
+    if (optionId === "highlight-titles") {
+      setHighlightTitlesActive(isActive);
     }
   }
 
@@ -281,6 +295,8 @@ function createAccessibilityWidget() {
     setReadingMaskActive(false);
     setBigCursorActive(false);
     setStopAnimationActive(false);
+    setHighlightLinksActive(false);
+    setHighlightTitlesActive(false);
     restoreAccessibilityDefaults();
   }
 
@@ -351,6 +367,16 @@ function createAccessibilityWidget() {
         }
         setAccessibilityOptionButtonActive(optionButton, nextActiveState);
         setStopAnimationActive(nextActiveState);
+        return;
+      }
+      if (optionId === "highlight-links") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        setAccessibilityOptionActive(optionId, nextActiveState);
+        return;
+      }
+      if (optionId === "highlight-titles") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        setAccessibilityOptionActive(optionId, nextActiveState);
         return;
       }
       runAccessibilityMenuFeature(optionId);

@@ -217,6 +217,8 @@ export function restoreAccessibilityDefaults() {
     "accessibility-reading-mask-active",
     "accessibility-big-cursor-enabled",
     "accessibility-stop-animation-enabled",
+    "accessibility-highlight-links-enabled",
+    "accessibility-highlight-titles-enabled",
   ];
   const restoredDocumentVariables = [
     "--accessibility-reading-mask-y",

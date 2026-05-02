@@ -3531,6 +3531,34 @@ body.accessibility-stop-animation-enabled .accessibility-widget-button.is-spinni
   animation: none !important;
 }
 
+body.accessibility-highlight-links-enabled a:not(.accessibility-widget-button):not(.accessibility-menu a) {
+  outline: 2px solid #335cff !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 1px rgba(51, 92, 255, 0.18) !important;
+}
+
+body.accessibility-highlight-links-enabled button:not(.accessibility-menu button):not(.accessibility-widget-button),
+body.accessibility-highlight-links-enabled [role="button"]:not(.accessibility-menu [role="button"]) {
+  outline: 2px solid #335cff !important;
+  outline-offset: 2px !important;
+}
+
+body.accessibility-highlight-titles-enabled h1,
+body.accessibility-highlight-titles-enabled h2,
+body.accessibility-highlight-titles-enabled h3,
+body.accessibility-highlight-titles-enabled h4,
+body.accessibility-highlight-titles-enabled h5,
+body.accessibility-highlight-titles-enabled h6,
+body.accessibility-highlight-titles-enabled [role="heading"] {
+  outline: 2px solid #335cff !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 1px rgba(51, 92, 255, 0.18) !important;
+}
+
+.accessibility-menu {
+  outline: none;
+}
+
 .accessibility-reading-mask {
   display: none;
 }
