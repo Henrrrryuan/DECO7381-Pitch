@@ -3015,6 +3015,7 @@ function bindEvents() {
     if (
       href === "/eye/" ||
       href.includes("127.0.0.1:8001/eye/") ||
+      href.includes(":8001/eye/") ||
       href.endsWith("/history.html") ||
       href.endsWith("/docs.html") ||
       href === "./history.html" ||
