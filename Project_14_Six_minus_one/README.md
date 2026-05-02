@@ -63,6 +63,14 @@ docs/
   api-contract.md
 ```
 
+## Documentation
+
+Use the docs below for deeper reference while keeping this README focused on setup and day-to-day usage:
+
+- [API Contract](./docs/api-contract.md): endpoint definitions, request/response shapes, and integration expectations.
+- [Database Schema (DBML)](./docs/database-schema.dbml): MVP data model for runs, dimension results, issues, and compare pairs.
+- [Presentation Test Flow](./docs/presentation-test-flow.md): demo/test checklist and step-by-step presentation script.
+
 ## Backend Refactor Summary (Apr 2026)
 
 The backend was restructured to make ownership and interview storytelling clearer while keeping API behavior unchanged.
