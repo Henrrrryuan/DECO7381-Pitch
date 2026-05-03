@@ -40,6 +40,7 @@ function createAccessibilityWidget() {
 
   const menu = document.createElement("aside");
   const readingMask = document.createElement("div");
+  const tooltip = document.createElement("div");
   menu.id = "accessibilityMenu";
   menu.className = "accessibility-menu";
   menu.setAttribute("aria-label", "Accessibility Menu");
@@ -58,6 +59,7 @@ function createAccessibilityWidget() {
             class="accessibility-menu-row"
             type="button"
             data-accessibility-feature="${section.id}"
+            ${section.tooltip ? `data-accessibility-tooltip="${section.tooltip}"` : ""}
             ${section.id === "main-options" || section.id === "profiles" ? 'aria-expanded="false"' : ""}
           >
             <span class="accessibility-menu-row-icon">${section.icon}</span>
@@ -120,6 +122,9 @@ function createAccessibilityWidget() {
     <span class="accessibility-reading-mask-band"></span>
     <span class="accessibility-reading-mask-bottom"></span>
   `;
+  tooltip.className = "accessibility-tooltip-bubble";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.hidden = true;
 
   function closeMenu() {
     window.clearTimeout(menuCloseTimer);
@@ -310,6 +315,88 @@ function createAccessibilityWidget() {
     document.body.classList.toggle("accessibility-highlight-titles-enabled", isActive);
   }
 
+  function setTooltipsActive(isActive) {
+    document.body.classList.toggle("accessibility-tooltips-enabled", isActive);
+    if (!isActive) {
+      hideAccessibilityTooltip();
+    }
+  }
+
+  function getTooltipTarget(eventTarget) {
+    if (!(eventTarget instanceof Element)) {
+      return null;
+    }
+    return eventTarget.closest(
+      "button, a, input, textarea, select, summary, [role='button'], [tabindex]:not([tabindex='-1']), [aria-label], [title], [data-accessibility-tooltip]",
+    );
+  }
+
+  function getTooltipText(targetElement) {
+    if (!targetElement || targetElement === tooltip || tooltip.contains(targetElement)) {
+      return "";
+    }
+
+    const explicitText = targetElement.getAttribute("data-accessibility-tooltip")
+      || targetElement.getAttribute("aria-label")
+      || targetElement.getAttribute("title");
+    if (explicitText?.trim()) {
+      return explicitText.trim();
+    }
+
+    if (targetElement instanceof HTMLInputElement || targetElement instanceof HTMLTextAreaElement || targetElement instanceof HTMLSelectElement) {
+      const labelText = targetElement.labels?.[0]?.textContent?.trim();
+      const placeholderText = targetElement.getAttribute("placeholder")?.trim();
+      return labelText || placeholderText || targetElement.name || "";
+    }
+
+    return targetElement.textContent?.replace(/\s+/g, " ").trim() || "";
+  }
+
+  function positionAccessibilityTooltip(anchorElement) {
+    if (tooltip.hidden || !anchorElement) {
+      return;
+    }
+
+    const anchorRect = anchorElement.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportPadding = 12;
+    let top = anchorRect.top - tooltipRect.height - 10;
+    let left = anchorRect.left + (anchorRect.width - tooltipRect.width) / 2;
+
+    if (top < viewportPadding) {
+      top = anchorRect.bottom + 10;
+    }
+
+    left = Math.max(
+      viewportPadding,
+      Math.min(window.innerWidth - tooltipRect.width - viewportPadding, left),
+    );
+
+    tooltip.style.setProperty("--accessibility-tooltip-left", `${Math.round(left)}px`);
+    tooltip.style.setProperty("--accessibility-tooltip-top", `${Math.round(top)}px`);
+  }
+
+  function showAccessibilityTooltip(targetElement) {
+    if (!document.body.classList.contains("accessibility-tooltips-enabled")) {
+      return;
+    }
+
+    const tooltipText = getTooltipText(targetElement);
+    if (!tooltipText) {
+      hideAccessibilityTooltip();
+      return;
+    }
+
+    tooltip.textContent = tooltipText;
+    tooltip.hidden = false;
+    requestAnimationFrame(() => positionAccessibilityTooltip(targetElement));
+  }
+
+  function hideAccessibilityTooltip() {
+    tooltip.hidden = true;
+    tooltip.textContent = "";
+  }
+
   function updateReadingMaskPosition(event) {
     if (!document.body.classList.contains("accessibility-reading-mask-active")) {
       return;
@@ -441,6 +528,9 @@ function createAccessibilityWidget() {
     if (optionId === "readable-fonts") {
       setReadableFontsActive(isActive);
     }
+    if (optionId === "tooltips") {
+      setTooltipsActive(isActive);
+    }
   }
 
   function setAccessibilityProfileButtonActive(profileButton, isActive) {
@@ -525,6 +615,7 @@ function createAccessibilityWidget() {
     setHighlightLinksActive(false);
     setHighlightTitlesActive(false);
     setReadableFontsActive(false);
+    setTooltipsActive(false);
     restoreAccessibilityDefaults();
   }
 
@@ -614,6 +705,11 @@ function createAccessibilityWidget() {
         setAccessibilityOptionActive(optionId, nextActiveState);
         return;
       }
+      if (optionId === "tooltips") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        setAccessibilityOptionActive(optionId, nextActiveState);
+        return;
+      }
       runAccessibilityMenuFeature(optionId);
     });
   });
@@ -629,8 +725,24 @@ function createAccessibilityWidget() {
     restoreAccessibilityWidgetDefaults();
   });
 
-  document.body.append(button, menu, readingMask);
+  document.body.append(button, menu, readingMask, tooltip);
   document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
+  document.addEventListener("pointerover", (event) => {
+    showAccessibilityTooltip(getTooltipTarget(event.target));
+  }, true);
+  document.addEventListener("pointerout", (event) => {
+    const currentTarget = getTooltipTarget(event.target);
+    const nextTarget = getTooltipTarget(event.relatedTarget);
+    if (!currentTarget || currentTarget !== nextTarget) {
+      hideAccessibilityTooltip();
+    }
+  }, true);
+  document.addEventListener("focusin", (event) => {
+    showAccessibilityTooltip(getTooltipTarget(event.target));
+  }, true);
+  document.addEventListener("focusout", hideAccessibilityTooltip, true);
+  window.addEventListener("resize", hideAccessibilityTooltip);
+  window.addEventListener("scroll", hideAccessibilityTooltip, true);
   window.addEventListener("pointermove", updateReadingMaskPosition, { passive: true });
 }
 

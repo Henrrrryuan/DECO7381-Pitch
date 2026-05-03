@@ -29,6 +29,7 @@ export const ACCESSIBILITY_MENU_FEATURES = [
   {
     id: "language",
     label: "Language",
+    tooltip: "Select language. Current language: English",
     icon: `
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M4 5h9M9 3v2m2 0c-.6 3.7-2.6 6.5-6 8.5m2.8-5.4c1 1.8 2.3 3.1 4.2 4.1M14 20l4-9 4 9m-6.7-3h5.4" />
