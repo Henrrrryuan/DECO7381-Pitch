@@ -27,6 +27,7 @@ function createAccessibilityWidget() {
   let textReaderSelection = null;
   let saturationMode = "default";
   let activeTextAdjustMode = "text-size";
+  let hasOpenedAccessibilityMenu = false;
   const textAdjustLevels = {
     "text-size": "1",
     "text-spacing": "1",
@@ -69,7 +70,7 @@ function createAccessibilityWidget() {
             type="button"
             data-accessibility-feature="${section.id}"
             ${section.tooltip ? `data-accessibility-tooltip="${section.tooltip}"` : ""}
-            ${section.id === "main-options" || section.id === "profiles" ? 'aria-expanded="false"' : ""}
+            ${section.id === "main-options" || section.id === "profiles" || section.id === "statement" ? 'aria-expanded="false"' : ""}
           >
             <span class="accessibility-menu-row-icon">${section.icon}</span>
             <span class="accessibility-menu-row-label">${section.label}</span>
@@ -136,6 +137,27 @@ function createAccessibilityWidget() {
                   <button type="button" data-text-adjust-level="2">x2.0</button>
                 </div>
               </div>
+            </div>
+          ` : ""}
+          ${section.id === "statement" ? `
+            <div class="accessibility-statement-panel" hidden>
+              <p>
+                CogniLens is committed to supporting digital accessibility for all users, regardless of their abilities.
+              </p>
+              <h3>Features</h3>
+              <ul>
+                <li><strong>Accessibility Profiles:</strong> Apply ready-made support modes for Dyslexia, Autism, and ADHD.</li>
+                <li><strong>Text Reader:</strong> Select readable text blocks with a dashed focus outline.</li>
+                <li><strong>Saturation Settings:</strong> Switch between low saturation, high saturation, and the default colour setting.</li>
+                <li><strong>Content Adjustments:</strong> Modify text size, text spacing, line height, and letter spacing for improved readability.</li>
+                <li><strong>Highlight Links and Titles:</strong> Emphasize key links and headings to help users locate important information.</li>
+                <li><strong>Readable Fonts:</strong> Activate a more readable font style for better clarity.</li>
+                <li><strong>Big Cursor:</strong> Enlarge the cursor to improve visibility.</li>
+                <li><strong>Stop Animation:</strong> Pause animations and transitions to reduce distractions.</li>
+                <li><strong>Reading Aid:</strong> Add a reading mask to help users focus on one horizontal area of content.</li>
+                <li><strong>Page Structure:</strong> Review headings, landmarks, and links for easier page navigation.</li>
+                <li><strong>Tooltips:</strong> Show helpful explanations when hovering over interactive controls.</li>
+              </ul>
             </div>
           ` : ""}
         </div>
@@ -792,6 +814,28 @@ function createAccessibilityWidget() {
     menuSections.hidden = false;
   }
 
+  function setMenuSectionExpanded(featureId, isExpanded) {
+    const featureButton = menu.querySelector(`[data-accessibility-feature="${featureId}"]`);
+    const panel = featureButton?.parentElement?.querySelector(
+      featureId === "profiles" ? ".accessibility-profile-options-grid" : ".accessibility-main-options-grid",
+    );
+    if (!featureButton || !panel) {
+      return;
+    }
+    featureButton.classList.toggle("is-expanded", isExpanded);
+    featureButton.setAttribute("aria-expanded", String(isExpanded));
+    panel.hidden = !isExpanded;
+  }
+
+  function expandDefaultMenuSectionsOnce() {
+    if (hasOpenedAccessibilityMenu) {
+      return;
+    }
+    hasOpenedAccessibilityMenu = true;
+    setMenuSectionExpanded("profiles", true);
+    setMenuSectionExpanded("main-options", true);
+  }
+
   function getTooltipTarget(eventTarget) {
     if (!(eventTarget instanceof Element)) {
       return null;
@@ -1191,6 +1235,7 @@ function createAccessibilityWidget() {
       button.hidden = true;
       button.setAttribute("aria-expanded", "true");
       menu.hidden = false;
+      expandDefaultMenuSectionsOnce();
       syncOutsideClickFrameListeners();
       requestAnimationFrame(() => menu.classList.add("is-open"));
     }, ACCESSIBILITY_SPIN_DURATION_MS);
@@ -1200,9 +1245,13 @@ function createAccessibilityWidget() {
   menu.querySelectorAll("[data-accessibility-feature]").forEach((featureButton) => {
     featureButton.addEventListener("click", () => {
       const featureId = featureButton.dataset.accessibilityFeature || "";
-      if (featureId === "main-options" || featureId === "profiles") {
+      if (featureId === "main-options" || featureId === "profiles" || featureId === "statement") {
         const optionsGrid = featureButton.parentElement?.querySelector(
-          featureId === "profiles" ? ".accessibility-profile-options-grid" : ".accessibility-main-options-grid",
+          featureId === "profiles"
+            ? ".accessibility-profile-options-grid"
+            : featureId === "statement"
+              ? ".accessibility-statement-panel"
+              : ".accessibility-main-options-grid",
         );
         const nextExpandedState = featureButton.getAttribute("aria-expanded") !== "true";
         featureButton.classList.toggle("is-expanded", nextExpandedState);

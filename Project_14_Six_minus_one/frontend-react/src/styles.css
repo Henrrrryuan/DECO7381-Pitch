@@ -3583,6 +3583,53 @@ button.dimension-row.is-linked-active {
   display: none !important;
 }
 
+.accessibility-statement-panel {
+  padding: 24px 26px 28px;
+  border-bottom: 1px solid #e4e1ef;
+  background: #ffffff;
+  color: #1f1430;
+}
+
+.accessibility-statement-panel[hidden] {
+  display: none !important;
+}
+
+.accessibility-statement-panel p {
+  margin: 0 0 20px;
+  color: #1f1430;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.accessibility-statement-panel h3 {
+  margin: 0 0 22px;
+  color: #1f1430;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.accessibility-statement-panel ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.accessibility-statement-panel li {
+  margin: 0 0 8px;
+  color: #1f1430;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.accessibility-statement-panel li::marker {
+  color: #8b5cf6;
+}
+
+.accessibility-statement-panel strong {
+  font-weight: 750;
+}
+
 .accessibility-profile-card {
   min-height: 50px;
   display: grid;

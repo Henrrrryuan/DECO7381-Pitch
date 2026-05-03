@@ -56,15 +56,6 @@ export const ACCESSIBILITY_MENU_FEATURES = [
     `,
   },
   {
-    id: "manage",
-    label: "Manage",
-    icon: `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 7h4m4 0h8M4 17h8m4 0h4M8 5v4m8 6v4" />
-      </svg>
-    `,
-  },
-  {
     id: "statement",
     label: "Accessibility Statement",
     icon: `
@@ -95,30 +86,9 @@ export const ACCESSIBILITY_PROFILE_OPTIONS = [
 
 export const ACCESSIBILITY_MAIN_OPTIONS = [
   {
-    id: "screen-reader",
-    label: "Screen Reader",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h1m3-5v10m4-13v16m4-12v8m3-4h1" /></svg>',
-  },
-  {
-    id: "keyboard-navigation",
-    label: "Keyboard Navigation",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="2" /><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8" /></svg>',
-  },
-  {
-    id: "voice-navigation",
-    label: "Voice Navigation",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 10c2 1 2 3 0 4m4-7c3 3 3 7 0 10M5 12h2m0 0 3-4v8l-3-4Z" /></svg>',
-  },
-  {
     id: "text-reader",
     label: "Text Reader",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16H7zM10 4v7l2-1 2 1V4" /></svg>',
-  },
-  {
-    id: "contrast",
-    label: "Contrast",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 4v16" /></svg>',
-    levels: 2,
   },
   {
     id: "saturation",
@@ -126,17 +96,6 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     activeLabel: "Low Saturation",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10Z" /><path d="M10 14h4" /></svg>',
     levels: 2,
-  },
-  {
-    id: "monochrome",
-    label: "Monochrome",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 14 6-6 3 3-6 6H8v-3Z" /><path d="M6 20h12" /></svg>',
-  },
-  {
-    id: "text-position",
-    label: "Text Position",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6h10M7 10h10M7 14h10M7 18h10" /></svg>',
-    levels: 3,
   },
   {
     id: "highlight-links",
@@ -168,23 +127,12 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     label: "Reading Aid",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M8 19h11v-3" /><path d="M5 19V8" /></svg>',
     activeIcon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v4H5M16 5v4h3M8 19v-4H5M16 19v-4h3" /></svg>',
-    levels: 2,
     activeLabel: "Reading Mask",
   },
   {
     id: "page-structure",
     label: "Page Structure",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h11v6H5zM5 15h6v4H5zM15 15h4v4h-4z" /></svg>',
-  },
-  {
-    id: "dictionary",
-    label: "Dictionary",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c3-2 5-2 8 0v13c-3-2-5-2-8 0V6Zm8 0c3-2 5-2 8 0v13c-3-2-5-2-8 0V6Z" /><path d="M7 10h2m6 0h2" /></svg>',
-  },
-  {
-    id: "hide-images",
-    label: "Hide Images",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 16l3-3 2 2 2-3 1 2M4 4l16 16" /></svg>',
   },
   {
     id: "tooltips",
