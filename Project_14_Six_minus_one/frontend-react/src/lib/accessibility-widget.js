@@ -109,6 +109,35 @@ function createAccessibilityWidget() {
         </div>
       `).join("")}
     </div>
+    <section class="accessibility-page-structure" hidden>
+      <header class="accessibility-page-structure-header">
+        <button class="accessibility-page-structure-back" type="button" aria-label="Back to accessibility menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 12H5m6-6-6 6 6 6" />
+          </svg>
+        </button>
+        <h2>Page Structure</h2>
+      </header>
+      <div class="accessibility-page-structure-tabs" role="tablist" aria-label="Page structure categories">
+        <button class="is-active" type="button" role="tab" aria-selected="true" data-page-structure-tab="headings">
+          <span aria-hidden="true">H</span>
+          Heading
+        </button>
+        <button type="button" role="tab" aria-selected="false" data-page-structure-tab="landmarks">
+          <span aria-hidden="true">▦</span>
+          Landmarks
+        </button>
+        <button type="button" role="tab" aria-selected="false" data-page-structure-tab="links">
+          <span aria-hidden="true">⌁</span>
+          Links
+        </button>
+      </div>
+      <div class="accessibility-page-structure-note">
+        <span aria-hidden="true">i</span>
+        <p></p>
+      </div>
+      <div class="accessibility-page-structure-list" role="list"></div>
+    </section>
     <footer class="accessibility-menu-footer">
       <strong class="accessibility-menu-brand">CogniLens</strong>
       <button class="accessibility-restore-button" type="button">
@@ -381,6 +410,187 @@ function createAccessibilityWidget() {
     clearTextReaderSelection();
     textReaderSelection = targetElement;
     textReaderSelection.classList.add("accessibility-text-reader-selection");
+  }
+
+  function getStructureText(element, fallback = "Untitled") {
+    const explicitLabel = element.getAttribute("aria-label")
+      || element.getAttribute("title")
+      || element.querySelector("h1, h2, h3, h4, h5, h6")?.textContent;
+    const text = explicitLabel || element.textContent || "";
+    return text.replace(/\s+/g, " ").trim().slice(0, 120) || fallback;
+  }
+
+  function getLandmarkText(element, fallback = "Untitled") {
+    const explicitLabel = element.getAttribute("aria-label")
+      || element.getAttribute("title")
+      || element.querySelector("h1, h2, h3, h4, h5, h6")?.textContent;
+    return (explicitLabel || fallback).replace(/\s+/g, " ").trim().slice(0, 120) || fallback;
+  }
+
+  function isStructureElementVisible(element) {
+    if (!(element instanceof Element)) {
+      return false;
+    }
+    if (element.closest(".accessibility-menu, .accessibility-widget-button, .accessibility-tooltip-bubble")) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return rect.width > 0
+      && rect.height > 0
+      && style.display !== "none"
+      && style.visibility !== "hidden";
+  }
+
+  function getLandmarkName(element) {
+    const role = element.getAttribute("role")?.toLowerCase() || "";
+    const tagName = element.tagName.toLowerCase();
+    const landmarkTypeByRole = {
+      banner: "Banner",
+      navigation: "Navigation",
+      main: "Main",
+      contentinfo: "Footer",
+      complementary: "Complementary",
+      search: "Search",
+      form: "Form",
+      region: "Region",
+      tablist: "Tabpanel",
+    };
+    const landmarkTypeByTag = {
+      header: "Banner",
+      nav: "Navigation",
+      main: "Main",
+      footer: "Footer",
+      aside: "Complementary",
+      section: "Region",
+      article: "Region",
+      form: "Form",
+    };
+    const landmarkType = landmarkTypeByRole[role] || landmarkTypeByTag[tagName] || "Region";
+    return `${landmarkType}: ${getLandmarkText(element, landmarkType)}`;
+  }
+
+  function getStructureDepth(element) {
+    return Math.min(4, element.parentElement?.closest("main, header, nav, footer, aside, section, article, [role]") ? 1 : 0);
+  }
+
+  function collectPageStructureItems(activeTab) {
+    if (activeTab === "headings") {
+      return Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"))
+        .filter(isStructureElementVisible)
+        .map((element) => ({
+          element,
+          label: getStructureText(element, "Untitled heading"),
+          marker: element.tagName.toUpperCase(),
+          depth: Math.max(0, Number(element.tagName.slice(1)) - 1),
+        }));
+    }
+
+    if (activeTab === "links") {
+      return Array.from(document.querySelectorAll("a[href]"))
+        .filter(isStructureElementVisible)
+        .map((element) => ({
+          element,
+          label: getStructureText(element, element.getAttribute("href") || "Link"),
+          marker: "⌁",
+          depth: 0,
+        }));
+    }
+
+    return Array.from(document.querySelectorAll("header, nav, main, footer, aside, section, article, form, [role='banner'], [role='navigation'], [role='main'], [role='contentinfo'], [role='complementary'], [role='search'], [role='form'], [role='region'], [role='tablist']"))
+      .filter(isStructureElementVisible)
+      .map((element) => ({
+        element,
+        label: getLandmarkName(element),
+        marker: "▦",
+        depth: getStructureDepth(element),
+      }));
+  }
+
+  function getPageStructureDescription(activeTab) {
+    if (activeTab === "links") {
+      return "Highlights key links on the site for quick and easy access to important sections.";
+    }
+    if (activeTab === "landmarks") {
+      return "Divides the page into regions like headers and navigation, making it easier for assistive tools to guide users.";
+    }
+    return "Provides an overview of the website's layout, helping users navigate key sections with ease.";
+  }
+
+  function scrollToStructureElement(element) {
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.classList.add("accessibility-page-structure-target");
+    window.setTimeout(() => {
+      element.classList.remove("accessibility-page-structure-target");
+    }, 1800);
+  }
+
+  function renderPageStructure(activeTab = "headings") {
+    const structureView = menu.querySelector(".accessibility-page-structure");
+    const structureList = menu.querySelector(".accessibility-page-structure-list");
+    const structureNote = menu.querySelector(".accessibility-page-structure-note p");
+    if (!structureView || !structureList || !structureNote) {
+      return;
+    }
+
+    menu.querySelectorAll("[data-page-structure-tab]").forEach((tabButton) => {
+      const isActive = tabButton.dataset.pageStructureTab === activeTab;
+      tabButton.classList.toggle("is-active", isActive);
+      tabButton.setAttribute("aria-selected", String(isActive));
+    });
+
+    structureNote.textContent = getPageStructureDescription(activeTab);
+    structureList.innerHTML = "";
+
+    const items = collectPageStructureItems(activeTab);
+    if (!items.length) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "accessibility-page-structure-empty";
+      emptyState.textContent = "No matching page structure items found.";
+      structureList.appendChild(emptyState);
+      return;
+    }
+
+    items.forEach((item) => {
+      const itemButton = document.createElement("button");
+      itemButton.className = "accessibility-page-structure-item";
+      itemButton.type = "button";
+      itemButton.style.setProperty("--structure-depth", String(item.depth));
+      itemButton.innerHTML = `
+        <span class="accessibility-page-structure-marker">${item.marker}</span>
+        <span class="accessibility-page-structure-text"></span>
+      `;
+      itemButton.querySelector(".accessibility-page-structure-text").textContent = item.label;
+      itemButton.addEventListener("click", () => scrollToStructureElement(item.element));
+      structureList.appendChild(itemButton);
+    });
+  }
+
+  function showPageStructureView() {
+    const structureView = menu.querySelector(".accessibility-page-structure");
+    const menuHeader = menu.querySelector(".accessibility-menu-header");
+    const menuSections = menu.querySelector(".accessibility-menu-sections");
+    if (!structureView || !menuHeader || !menuSections) {
+      return;
+    }
+    menu.classList.add("is-page-structure-view");
+    menuHeader.hidden = true;
+    menuSections.hidden = true;
+    structureView.hidden = false;
+    renderPageStructure("headings");
+  }
+
+  function hidePageStructureView() {
+    const structureView = menu.querySelector(".accessibility-page-structure");
+    const menuHeader = menu.querySelector(".accessibility-menu-header");
+    const menuSections = menu.querySelector(".accessibility-menu-sections");
+    if (!structureView || !menuHeader || !menuSections) {
+      return;
+    }
+    menu.classList.remove("is-page-structure-view");
+    structureView.hidden = true;
+    menuHeader.hidden = false;
+    menuSections.hidden = false;
   }
 
   function getTooltipTarget(eventTarget) {
@@ -738,6 +948,7 @@ function createAccessibilityWidget() {
     resetAccessibilityOptionButtons();
     resetAccessibilityProfileButtons();
     resetAccessibilityMenuSections();
+    hidePageStructureView();
     setReadingMaskActive(false);
     setBigCursorActive(false);
     setStopAnimationActive(false);
@@ -845,6 +1056,10 @@ function createAccessibilityWidget() {
         cycleSaturationOption(optionButton);
         return;
       }
+      if (optionId === "page-structure") {
+        showPageStructureView();
+        return;
+      }
       if (optionId === "tooltips") {
         const nextActiveState = !activeOptionIds.has(optionId);
         setAccessibilityOptionActive(optionId, nextActiveState);
@@ -866,6 +1081,12 @@ function createAccessibilityWidget() {
   });
   menu.querySelector(".accessibility-restore-button")?.addEventListener("click", () => {
     restoreAccessibilityWidgetDefaults();
+  });
+  menu.querySelector(".accessibility-page-structure-back")?.addEventListener("click", hidePageStructureView);
+  menu.querySelectorAll("[data-page-structure-tab]").forEach((tabButton) => {
+    tabButton.addEventListener("click", () => {
+      renderPageStructure(tabButton.dataset.pageStructureTab || "headings");
+    });
   });
 
   document.body.append(button, menu, readingMask, tooltip);
