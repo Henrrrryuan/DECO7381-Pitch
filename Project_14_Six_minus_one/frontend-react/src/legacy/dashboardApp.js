@@ -23,6 +23,8 @@ const state = {
   activeHighlightDimension: "",
   activeHighlightIssueId: "",
   selectedIssueId: "",
+  selectedElementNumber: 0,
+  activeGuidancePopoverKey: "",
   chatMessages: [],
   chatPending: false,
   sidebarCollapsed: false,
@@ -1531,6 +1533,45 @@ function selectedIssueWorkspaceMarkup(record) {
   `;
 }
 
+function issueElementListMarkup(issue, dimensionName) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const inferredCount = Math.max(1, locations.length || 0);
+  const selectedIssueId = issueDomId(dimensionName, issue.rule_id);
+  const activeElementNumber = state.selectedIssueId === selectedIssueId ? state.selectedElementNumber : 0;
+  const visibleLocations = locations.length ? locations : [{ label: issue?.title || "Affected page area" }];
+  const rows = visibleLocations.slice(0, 12).map((location, index) => {
+    const elementNumber = index + 1;
+    const isActive = activeElementNumber === elementNumber;
+    const label = location?.label || friendlyLocationLabel(location);
+    const meta = locationMetaText(location, elementNumber).replace(/^Location: /, "");
+    const showMeta = meta && meta !== label;
+    return `
+      <button
+        class="issue-element-chip${isActive ? " is-active" : ""}"
+        type="button"
+        data-issue-element="${escapeHtml(issue.rule_id)}"
+        data-issue-dimension="${escapeHtml(dimensionName)}"
+        data-element-index="${elementNumber}"
+        aria-pressed="${isActive ? "true" : "false"}"
+      >
+        <strong>Element ${elementNumber}</strong>
+        <span>${escapeHtml(label || `Affected element ${elementNumber}`)}</span>
+        ${showMeta ? `<small>${escapeHtml(meta)}</small>` : ""}
+      </button>
+    `;
+  }).join("");
+  const hiddenCount = Math.max(0, inferredCount - visibleLocations.slice(0, 12).length);
+  return `
+    <div class="issue-summary-row issue-summary-row-elements">
+      <span class="issue-highlight-label">Affected elements</span>
+      <div class="issue-element-chip-list">
+        ${rows}
+      </div>
+      ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+    </div>
+  `;
+}
+
 function findIssueById(issueId) {
   if (!issueId || !state.currentResult) {
     return null;
@@ -1552,6 +1593,10 @@ function selectIssue(dimensionName, ruleId) {
   if (!selected) {
     return null;
   }
+  if (state.selectedIssueId !== issueId) {
+    state.selectedElementNumber = 0;
+    state.activeGuidancePopoverKey = "";
+  }
   state.selectedIssueId = issueId;
   updateActiveHighlightButtons();
   return selected;
@@ -1567,6 +1612,8 @@ function resetIssueWorkspaceForProfileChange() {
   state.selectedIssueId = "";
   state.activeHighlightDimension = "";
   state.activeHighlightIssueId = "";
+  state.selectedElementNumber = 0;
+  state.activeGuidancePopoverKey = "";
   state.rightPanelMode = "summary";
 
   clearWebsiteHighlights();
@@ -1600,7 +1647,7 @@ function updatePreviewIssueHeader() {
 
   if (!selected) {
     titleNode.textContent = "No issue selected";
-    setWebsiteStatus("Select an issue and choose Show highlighted location to highlight it in the preview.");
+    setWebsiteStatus("Select an element from an issue card to highlight it in the webpage preview.");
     return;
   }
 
@@ -1729,10 +1776,6 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
 function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const issueId = issueDomId(dimensionName, issue.rule_id);
   const isSelected = issueId === state.selectedIssueId;
-  const isPreviewActive = isSelected && state.rightPanelMode === "preview";
-  const isDetailActive = isSelected
-    && state.rightPanelMode === "detail"
-    && state.workspaceMode === "explanation";
   const selectedClass = isSelected ? " is-selected is-active" : "";
   const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
   const wcagMarkup = wcagStandardsMarkup(wcagSummary);
@@ -1756,24 +1799,7 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
         <span class="issue-highlight-label">ISO 9241-11</span>
         ${isoMarkup}
       </div>
-      <div class="issue-summary-actions">
-        <button
-          class="view-on-page-button${isPreviewActive ? " is-active" : ""}"
-          type="button"
-          data-view-on-page="${escapeHtml(issue.rule_id)}"
-          data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="Show highlighted location for this issue on the analysed page"
-          aria-pressed="${isPreviewActive ? "true" : "false"}"
-        >Show highlighted location</button>
-        <button
-          class="view-details-button${isDetailActive ? " is-active" : ""}"
-          type="button"
-          data-view-issue="${escapeHtml(issue.rule_id)}"
-          data-view-dimension="${escapeHtml(dimensionName)}"
-          aria-label="Open this issue guidance in summary"
-          aria-pressed="${isDetailActive ? "true" : "false"}"
-        >Open guidance</button>
-      </div>
+      ${issueElementListMarkup(issue, dimensionName)}
     </article>
   `;
 }
@@ -1953,6 +1979,7 @@ function injectHighlightStyles(doc) {
       background-color: color-mix(in srgb, var(--cognilens-highlight-color, #2f6feb) 10%, transparent) !important;
       box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16) !important;
       transition: outline-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease !important;
+      cursor: pointer !important;
     }
 
     [data-cognilens-highlight]::after {
@@ -1969,6 +1996,41 @@ function injectHighlightStyles(doc) {
       letter-spacing: 0.02em;
       pointer-events: none;
     }
+
+    #cognilens-guidance-popover {
+      position: absolute;
+      z-index: 2147483647;
+      width: min(420px, calc(100vw - 24px));
+      background: #ffffff;
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+      padding: 12px 14px;
+      font: 500 13px/1.45 Arial, sans-serif;
+      color: #0f172a;
+    }
+
+    #cognilens-guidance-popover h5 {
+      margin: 0 0 8px;
+      font: 800 12px/1.2 Arial, sans-serif;
+      letter-spacing: 0.02em;
+      color: #1d4ed8;
+      text-transform: uppercase;
+    }
+
+    #cognilens-guidance-popover p {
+      margin: 0 0 10px;
+      color: #1e293b;
+    }
+
+    #cognilens-guidance-popover ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    #cognilens-guidance-popover li + li {
+      margin-top: 6px;
+    }
   `;
   doc.head?.appendChild(style);
 }
@@ -1980,6 +2042,78 @@ function clearWebsiteHighlights(doc = getPreviewDocument()) {
   doc.querySelectorAll("[data-cognilens-highlight]").forEach((node) => {
     node.removeAttribute("data-cognilens-highlight");
     node.style.removeProperty("--cognilens-highlight-color");
+  });
+  removeGuidancePopover(doc);
+}
+
+function removeGuidancePopover(doc = getPreviewDocument()) {
+  if (!doc) {
+    return;
+  }
+  doc.getElementById("cognilens-guidance-popover")?.remove();
+  state.activeGuidancePopoverKey = "";
+}
+
+function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
+  if (!doc || !anchorElement || !record?.issue) {
+    return;
+  }
+  removeGuidancePopover(doc);
+  const { issue, dimension } = record;
+  const goal = issueGoalText(issue, dimension.dimension);
+  const steps = recommendedFixSteps(issue, dimension.dimension)
+    .slice(0, 2)
+    .map((step) => step.text)
+    .filter(Boolean);
+  const container = doc.createElement("aside");
+  container.id = "cognilens-guidance-popover";
+  container.setAttribute("role", "dialog");
+  container.setAttribute("aria-label", `${elementLabel} guidance`);
+  const listMarkup = steps.length
+    ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
+    : `<p>${escapeHtml(goal)}</p>`;
+  container.innerHTML = `
+    <h5>${escapeHtml(elementLabel)}</h5>
+    <h5>Why this matters</h5>
+    <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
+    <h5>First redesign move</h5>
+    ${listMarkup}
+  `;
+  doc.body?.appendChild(container);
+  const anchorRect = anchorElement.getBoundingClientRect();
+  const popoverRect = container.getBoundingClientRect();
+  const maxLeft = Math.max(8, (doc.documentElement?.clientWidth || 0) - popoverRect.width - 8);
+  const left = Math.min(Math.max(8, anchorRect.left + 8), maxLeft);
+  const top = Math.max(8, anchorRect.bottom + 10 + (doc.defaultView?.scrollY || 0));
+  container.style.left = `${left}px`;
+  container.style.top = `${top}px`;
+  state.activeGuidancePopoverKey = `${state.selectedIssueId}:${elementLabel}`;
+}
+
+function bindPreviewElementClick(doc) {
+  if (!doc || doc.body?.dataset.cognilensElementClickBound === "true") {
+    return;
+  }
+  doc.body.dataset.cognilensElementClickBound = "true";
+  doc.addEventListener("click", (event) => {
+    const highlightedElement = event.target.closest("[data-cognilens-highlight]");
+    if (!highlightedElement) {
+      removeGuidancePopover(doc);
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const selected = selectedIssueRecord();
+    if (!selected || !state.selectedIssueId) {
+      return;
+    }
+    const elementLabel = highlightedElement.getAttribute("data-cognilens-highlight") || "Element";
+    const nextKey = `${state.selectedIssueId}:${elementLabel}`;
+    if (state.activeGuidancePopoverKey === nextKey) {
+      removeGuidancePopover(doc);
+      return;
+    }
+    renderGuidancePopover(doc, highlightedElement, selected, elementLabel);
   });
 }
 
@@ -2209,24 +2343,72 @@ function updateActiveHighlightButtons() {
     button.classList.toggle("is-selected", issueId === state.selectedIssueId);
   });
 
-  document.querySelectorAll("[data-view-on-page]").forEach((button) => {
-    const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewOnPage);
+  document.querySelectorAll("[data-issue-element]").forEach((button) => {
+    const issueId = issueDomId(button.dataset.issueDimension, button.dataset.issueElement);
+    const elementIndex = Number(button.dataset.elementIndex || "0");
     const isActive = (
       issueId === state.selectedIssueId
-      && state.rightPanelMode === "preview"
+      && elementIndex === state.selectedElementNumber
     );
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+}
 
-  document.querySelectorAll("[data-view-issue]").forEach((button) => {
-    const issueId = issueDomId(button.dataset.viewDimension, button.dataset.viewIssue);
-    const isActive = issueId === state.selectedIssueId
-      && state.rightPanelMode === "detail"
-      && state.workspaceMode === "explanation";
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
+function highlightIssueElementInPreview(dimensionName, ruleId, elementNumber) {
+  const frameDoc = getPreviewDocument();
+  const dimension = findDimension(state.currentResult, dimensionName);
+  const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
+  const config = HIGHLIGHT_CONFIG[dimensionName];
+  if (!frameDoc || !issue || !config) {
+    setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
+    return;
+  }
+  injectHighlightStyles(frameDoc);
+  clearWebsiteHighlights(frameDoc);
+
+  const { elements } = issueHighlightElements(frameDoc, issue, dimensionName);
+  const target = elements[elementNumber - 1];
+  if (!target) {
+    setWebsiteStatus(`Element ${elementNumber} is not available on this rendered page view.`, true);
+    return;
+  }
+
+  applyHighlights([target], config.color, `Element ${elementNumber}`);
+  target.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  setWebsiteStatus(`Element ${elementNumber} highlighted for ${issue.title || "this issue"}. Click it to open guidance.`);
+}
+
+function focusIssueElement(dimensionName, ruleId, elementNumber) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  const isSameElementActive = (
+    state.selectedIssueId === issueId
+    && state.selectedElementNumber === elementNumber
+    && state.rightPanelMode === "preview"
+  );
+  if (isSameElementActive) {
+    state.selectedElementNumber = 0;
+    state.activeHighlightIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeGuidancePopoverKey = "";
+    clearWebsiteHighlights();
+    updateActiveHighlightButtons();
+    setWebsiteStatus("Highlight cleared. Click an element again to re-highlight it.");
+    return;
+  }
+
+  const selected = selectIssue(dimensionName, ruleId);
+  if (!selected) {
+    return;
+  }
+  state.rightPanelMode = "preview";
+  state.activeHighlightDimension = selected.dimension.dimension;
+  state.activeHighlightIssueId = issueDomId(selected.dimension.dimension, selected.issue.rule_id);
+  state.selectedElementNumber = elementNumber;
+  state.activeGuidancePopoverKey = "";
+  setWorkspaceMode("website");
+  updateActiveHighlightButtons();
+  highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
 }
 
 function highlightDimension(dimensionName) {
@@ -3091,19 +3273,15 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
-    const pageTrigger = event.target.closest("[data-view-on-page]");
-    if (pageTrigger) {
+    const issueElementTrigger = event.target.closest("[data-issue-element]");
+    if (issueElementTrigger) {
       event.preventDefault();
       event.stopPropagation();
-      renderIssuePreviewPanel(pageTrigger.dataset.viewDimension, pageTrigger.dataset.viewOnPage);
-      return;
-    }
-
-    const detailTrigger = event.target.closest("[data-view-issue]");
-    if (detailTrigger) {
-      event.preventDefault();
-      event.stopPropagation();
-      openIssueInSummary(detailTrigger.dataset.viewDimension, detailTrigger.dataset.viewIssue);
+      focusIssueElement(
+        issueElementTrigger.dataset.issueDimension,
+        issueElementTrigger.dataset.issueElement,
+        Number(issueElementTrigger.dataset.elementIndex || "1"),
+      );
       return;
     }
 
@@ -3125,8 +3303,18 @@ function bindEvents() {
         return;
       }
       injectHighlightStyles(doc);
+      bindPreviewElementClick(doc);
       updatePreviewIssueHeader();
-      if (state.rightPanelMode === "preview" && state.selectedIssueId) {
+      if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
+        const selected = selectedIssueRecord();
+        if (selected) {
+          highlightIssueElementInPreview(
+            selected.dimension.dimension,
+            selected.issue.rule_id,
+            state.selectedElementNumber,
+          );
+        }
+      } else if (state.rightPanelMode === "preview" && state.selectedIssueId) {
         highlightSelectedIssueInPreview();
       } else if (state.activeHighlightIssueId) {
         const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
