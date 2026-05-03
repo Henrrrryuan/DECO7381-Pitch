@@ -2380,6 +2380,23 @@ function highlightIssueElementInPreview(dimensionName, ruleId, elementNumber) {
 }
 
 function focusIssueElement(dimensionName, ruleId, elementNumber) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  const isSameElementActive = (
+    state.selectedIssueId === issueId
+    && state.selectedElementNumber === elementNumber
+    && state.rightPanelMode === "preview"
+  );
+  if (isSameElementActive) {
+    state.selectedElementNumber = 0;
+    state.activeHighlightIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeGuidancePopoverKey = "";
+    clearWebsiteHighlights();
+    updateActiveHighlightButtons();
+    setWebsiteStatus("Highlight cleared. Click an element again to re-highlight it.");
+    return;
+  }
+
   const selected = selectIssue(dimensionName, ruleId);
   if (!selected) {
     return;
