@@ -607,6 +607,19 @@ function createAccessibilityWidget() {
     setAccessibilityOptionActive("stop-animation", true);
   }
 
+  function applyDyslexiaProfile(profileButton) {
+    if (activeProfileIds.has("dyslexia")) {
+      restoreAccessibilityWidgetDefaults();
+      return;
+    }
+    activeProfileIds.add("dyslexia");
+    setAccessibilityProfileButtonActive(profileButton, true);
+    setAccessibilityOptionActive("text-reader", true);
+    setAccessibilityOptionActive("readable-fonts", true);
+    setAccessibilityOptionActive("stop-animation", true);
+    setAccessibilityOptionActive("tooltips", true);
+  }
+
   function resetAccessibilityOptionButton(optionButton) {
     const optionId = optionButton.dataset.accessibilityOption || "";
     const optionConfig = getAccessibilityOptionConfig(optionId);
@@ -779,6 +792,9 @@ function createAccessibilityWidget() {
   menu.querySelectorAll("[data-accessibility-profile]").forEach((profileButton) => {
     profileButton.addEventListener("click", () => {
       const profileId = profileButton.dataset.accessibilityProfile || "";
+      if (profileId === "dyslexia") {
+        applyDyslexiaProfile(profileButton);
+      }
       if (profileId === "adhd") {
         applyAdhdProfile(profileButton);
       }
