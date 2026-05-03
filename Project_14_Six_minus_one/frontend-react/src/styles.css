@@ -5677,6 +5677,16 @@ body.accessibility-reading-mask-active .accessibility-menu {
   margin-top: 24px;
 }
 
+.history-evidence-inline-header {
+  margin-bottom: 10px;
+}
+
+.history-evidence-inline-header h2 {
+  margin: 8px 0 0;
+  font-size: 24px;
+  color: var(--text);
+}
+
 .eye-history-shell {
   margin-top: 0;
 }

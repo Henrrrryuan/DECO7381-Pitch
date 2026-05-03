@@ -10,7 +10,7 @@ import {
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
-const REPORT_PAGE_SIZE = 6;
+const REPORT_PAGE_SIZE = 5;
 const EYE_PAGE_SIZE = 25;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
@@ -163,30 +163,30 @@ function EyeRows({ items, status, emptyMessage }) {
 function EyeEvidencePanel({ items, total, page, status, onPageChange }) {
   const emptyMessage = "No eye-tracking evidence sessions have been saved yet.";
   return (
-    <section className="history-list-shell eye-history-shell">
-      <div className="history-section-header">
-        <div className="history-modal-title-wrap">
-          <p className="upload-kicker">Supporting Evidence</p>
-          <h2>All Eye-Tracking Evidence Sessions</h2>
+    <section className="eye-history-panel">
+      <div className="history-evidence-inline-header">
+        <p className="upload-kicker">Supporting Evidence</p>
+        <h2>All Eye-Tracking Evidence Sessions</h2>
+      </div>
+      <div className="history-list-shell eye-history-shell">
+        <div className="history-eye-table-head">
+          <span>Evidence ID</span>
+          <span>Page</span>
+          <span>Coverage</span>
         </div>
+        <div id="eyeHistoryList" className="history-table-body">
+          <EyeRows items={items} status={status} emptyMessage={emptyMessage} />
+        </div>
+        <Pagination
+          id="eyeHistoryPagination"
+          ariaLabel="Eye-tracking evidence pagination"
+          page={page}
+          total={total}
+          itemLabel="sessions"
+          pageSize={EYE_PAGE_SIZE}
+          onPageChange={onPageChange}
+        />
       </div>
-      <div className="history-eye-table-head">
-        <span>Evidence ID</span>
-        <span>Page</span>
-        <span>Coverage</span>
-      </div>
-      <div id="eyeHistoryList" className="history-table-body">
-        <EyeRows items={items} status={status} emptyMessage={emptyMessage} />
-      </div>
-      <Pagination
-        id="eyeHistoryPagination"
-        ariaLabel="Eye-tracking evidence pagination"
-        page={page}
-        total={total}
-        itemLabel="sessions"
-        pageSize={EYE_PAGE_SIZE}
-        onPageChange={onPageChange}
-      />
     </section>
   );
 }
