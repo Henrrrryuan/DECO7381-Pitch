@@ -1543,7 +1543,9 @@ function issueElementListMarkup(issue, dimensionName) {
     const elementNumber = index + 1;
     const isActive = activeElementNumber === elementNumber;
     const label = location?.label || friendlyLocationLabel(location);
-    const meta = locationMetaText(location, elementNumber).replace(/^Location: /, "");
+    const meta = locationMetaText(location, null)
+      .replace(/^Location: /, "")
+      .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
     const showMeta = meta && meta !== label;
     return `
       <button
