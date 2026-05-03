@@ -206,6 +206,7 @@ export function restoreAccessibilityDefaults() {
     "accessibility-highlight-links-enabled",
     "accessibility-highlight-titles-enabled",
     "accessibility-readable-fonts-enabled",
+    "accessibility-text-reader-enabled",
   ];
   const restoredDocumentVariables = [
     "--accessibility-reading-mask-y",

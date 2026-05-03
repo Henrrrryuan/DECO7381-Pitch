@@ -24,6 +24,7 @@ function createAccessibilityWidget() {
   const outsideClickFrameCleanupByFrame = new WeakMap();
   const bigCursorFrameCleanupByFrame = new WeakMap();
   let menuCloseTimer = 0;
+  let textReaderSelection = null;
   const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
   const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
   const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
@@ -219,6 +220,18 @@ function createAccessibilityWidget() {
     document.body.classList.toggle("accessibility-readable-fonts-enabled", isActive);
   }
 
+  function clearTextReaderSelection() {
+    textReaderSelection?.classList.remove("accessibility-text-reader-selection");
+    textReaderSelection = null;
+  }
+
+  function setTextReaderActive(isActive) {
+    document.body.classList.toggle("accessibility-text-reader-enabled", isActive);
+    if (!isActive) {
+      clearTextReaderSelection();
+    }
+  }
+
   function getBigCursorFrameCss() {
     return `
       html,
@@ -320,6 +333,47 @@ function createAccessibilityWidget() {
     if (!isActive) {
       hideAccessibilityTooltip();
     }
+  }
+
+  function isTextReaderIgnoredElement(element) {
+    return Boolean(element.closest(
+      ".accessibility-menu, .accessibility-widget-button, .accessibility-tooltip-bubble, button, a, input, textarea, select, option, label, summary, [role='button'], [contenteditable='true']",
+    ));
+  }
+
+  function getTextReaderTarget(eventTarget) {
+    if (!(eventTarget instanceof Element) || isTextReaderIgnoredElement(eventTarget)) {
+      return null;
+    }
+
+    const textElement = eventTarget.closest(
+      "p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, dd, dt, td, th, article, section, span",
+    );
+    if (!textElement || isTextReaderIgnoredElement(textElement)) {
+      return null;
+    }
+
+    const textContent = textElement.textContent?.replace(/\s+/g, " ").trim() || "";
+    if (textContent.length < 2) {
+      return null;
+    }
+
+    return textElement;
+  }
+
+  function selectTextReaderTarget(targetElement) {
+    if (!document.body.classList.contains("accessibility-text-reader-enabled")) {
+      return;
+    }
+
+    if (!targetElement) {
+      clearTextReaderSelection();
+      return;
+    }
+
+    clearTextReaderSelection();
+    textReaderSelection = targetElement;
+    textReaderSelection.classList.add("accessibility-text-reader-selection");
   }
 
   function getTooltipTarget(eventTarget) {
@@ -528,6 +582,9 @@ function createAccessibilityWidget() {
     if (optionId === "readable-fonts") {
       setReadableFontsActive(isActive);
     }
+    if (optionId === "text-reader") {
+      setTextReaderActive(isActive);
+    }
     if (optionId === "tooltips") {
       setTooltipsActive(isActive);
     }
@@ -615,6 +672,7 @@ function createAccessibilityWidget() {
     setHighlightLinksActive(false);
     setHighlightTitlesActive(false);
     setReadableFontsActive(false);
+    setTextReaderActive(false);
     setTooltipsActive(false);
     restoreAccessibilityDefaults();
   }
@@ -705,6 +763,11 @@ function createAccessibilityWidget() {
         setAccessibilityOptionActive(optionId, nextActiveState);
         return;
       }
+      if (optionId === "text-reader") {
+        const nextActiveState = !activeOptionIds.has(optionId);
+        setAccessibilityOptionActive(optionId, nextActiveState);
+        return;
+      }
       if (optionId === "tooltips") {
         const nextActiveState = !activeOptionIds.has(optionId);
         setAccessibilityOptionActive(optionId, nextActiveState);
@@ -727,6 +790,12 @@ function createAccessibilityWidget() {
 
   document.body.append(button, menu, readingMask, tooltip);
   document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
+  document.addEventListener("click", (event) => {
+    if (!document.body.classList.contains("accessibility-text-reader-enabled")) {
+      return;
+    }
+    selectTextReaderTarget(getTextReaderTarget(event.target));
+  }, true);
   document.addEventListener("pointerover", (event) => {
     showAccessibilityTooltip(getTooltipTarget(event.target));
   }, true);

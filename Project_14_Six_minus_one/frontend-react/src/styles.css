@@ -3550,6 +3550,34 @@ body.accessibility-readable-fonts-enabled button {
   font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
 }
 
+body.accessibility-text-reader-enabled p,
+body.accessibility-text-reader-enabled li,
+body.accessibility-text-reader-enabled h1,
+body.accessibility-text-reader-enabled h2,
+body.accessibility-text-reader-enabled h3,
+body.accessibility-text-reader-enabled h4,
+body.accessibility-text-reader-enabled h5,
+body.accessibility-text-reader-enabled h6,
+body.accessibility-text-reader-enabled blockquote,
+body.accessibility-text-reader-enabled figcaption,
+body.accessibility-text-reader-enabled dd,
+body.accessibility-text-reader-enabled dt,
+body.accessibility-text-reader-enabled td,
+body.accessibility-text-reader-enabled th,
+body.accessibility-text-reader-enabled article,
+body.accessibility-text-reader-enabled section,
+body.accessibility-text-reader-enabled span {
+  cursor: text;
+}
+
+.accessibility-text-reader-selection {
+  outline: 2px dashed #5a2c1f !important;
+  outline-offset: 4px !important;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 body.accessibility-highlight-links-enabled a:not(.accessibility-widget-button):not(.accessibility-menu a) {
   outline: 2px solid #335cff !important;
   outline-offset: 2px !important;
