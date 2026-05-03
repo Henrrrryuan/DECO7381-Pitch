@@ -27,6 +27,7 @@ function createAccessibilityWidget() {
   let textReaderSelection = null;
   let saturationMode = "default";
   let activeTextAdjustMode = "text-size";
+  let activeLanguage = "en";
   let hasOpenedAccessibilityMenu = false;
   const textAdjustLevels = {
     "text-size": "1",
@@ -37,6 +38,98 @@ function createAccessibilityWidget() {
   const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
   const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
   const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
+  const languageCopy = {
+    en: {
+      menuTitle: "Accessibility Menu",
+      restoreDefault: "Restore Default",
+      featureLabels: { language: "Language", profiles: "Accessibility Profiles", "main-options": "Main Options", statement: "Accessibility Statement" },
+      profiles: { dyslexia: "Dyslexia", autism: "Autism", adhd: "ADHD" },
+      options: {
+        "text-reader": "Text Reader",
+        saturation: "Saturation",
+        "highlight-links": "Highlight Links",
+        "highlight-titles": "Highlight Titles",
+        "readable-fonts": "Readable Fonts",
+        "big-cursor": "Big Cursor",
+        "stop-animation": "Stop Animation",
+        "reading-aid": "Reading Aid",
+        "page-structure": "Page Structure",
+        tooltips: "Tooltips",
+      },
+      optionActiveLabels: { saturation: "Low Saturation", highSaturation: "High Saturation", "reading-aid": "Reading Mask" },
+      textAdjust: { "text-size": "Text Size", "text-spacing": "Text Spacing", "height-spacing": "Height Spacing", "letter-spacing": "Letter Spacing" },
+      statementIntro: "CogniLens is committed to supporting digital accessibility for all users, regardless of their abilities.",
+      statementTitle: "Features",
+      statementItems: [
+        ["Accessibility Profiles", "Apply ready-made support modes for Dyslexia, Autism, and ADHD."],
+        ["Text Reader", "Select readable text blocks with a dashed focus outline."],
+        ["Saturation Settings", "Switch between low saturation, high saturation, and the default colour setting."],
+        ["Content Adjustments", "Modify text size, text spacing, line height, and letter spacing for improved readability."],
+        ["Highlight Links and Titles", "Emphasize key links and headings to help users locate important information."],
+        ["Readable Fonts", "Activate a more readable font style for better clarity."],
+        ["Big Cursor", "Enlarge the cursor to improve visibility."],
+        ["Stop Animation", "Pause animations and transitions to reduce distractions."],
+        ["Reading Aid", "Add a reading mask to help users focus on one horizontal area of content."],
+        ["Page Structure", "Review headings, landmarks, and links for easier page navigation."],
+        ["Tooltips", "Show helpful explanations when hovering over interactive controls."],
+      ],
+      pageStructure: {
+        title: "Page Structure",
+        tabs: { headings: "Heading", landmarks: "Landmarks", links: "Links" },
+        descriptions: {
+          headings: "Provides an overview of the website's layout, helping users navigate key sections with ease.",
+          landmarks: "Divides the page into regions like headers and navigation, making it easier for assistive tools to guide users.",
+          links: "Highlights key links on the site for quick and easy access to important sections.",
+        },
+        empty: "No matching page structure items found.",
+      },
+    },
+    zh: {
+      menuTitle: "无障碍菜单",
+      restoreDefault: "恢复默认",
+      featureLabels: { language: "语言", profiles: "无障碍模式", "main-options": "主要选项", statement: "无障碍声明" },
+      profiles: { dyslexia: "阅读障碍", autism: "自闭症", adhd: "ADHD" },
+      options: {
+        "text-reader": "文本阅读器",
+        saturation: "饱和度",
+        "highlight-links": "高亮链接",
+        "highlight-titles": "高亮标题",
+        "readable-fonts": "易读字体",
+        "big-cursor": "大光标",
+        "stop-animation": "停止动画",
+        "reading-aid": "阅读辅助",
+        "page-structure": "页面结构",
+        tooltips: "提示说明",
+      },
+      optionActiveLabels: { saturation: "低饱和度", highSaturation: "高饱和度", "reading-aid": "阅读遮罩" },
+      textAdjust: { "text-size": "文字大小", "text-spacing": "词间距", "height-spacing": "行高间距", "letter-spacing": "字母间距" },
+      statementIntro: "CogniLens 致力于为所有用户提供数字无障碍支持，无论用户能力如何。",
+      statementTitle: "功能",
+      statementItems: [
+        ["无障碍模式", "提供阅读障碍、自闭症和 ADHD 的预设支持模式。"],
+        ["文本阅读器", "点击文本块后，用虚线框帮助用户聚焦阅读内容。"],
+        ["饱和度设置", "可在低饱和度、高饱和度和默认颜色之间切换。"],
+        ["内容调节", "可调整文字大小、词间距、行高和字母间距，提升可读性。"],
+        ["高亮链接和标题", "突出重要链接和标题，帮助用户快速定位信息。"],
+        ["易读字体", "切换为更易阅读的字体样式。"],
+        ["大光标", "放大光标，提高可见性。"],
+        ["停止动画", "暂停动画和过渡效果，减少干扰。"],
+        ["阅读辅助", "添加阅读遮罩，帮助用户聚焦当前横向阅读区域。"],
+        ["页面结构", "查看标题、区域和链接，帮助用户更轻松地导航页面。"],
+        ["提示说明", "悬停在交互控件上时显示说明。"],
+      ],
+      pageStructure: {
+        title: "页面结构",
+        tabs: { headings: "标题", landmarks: "区域", links: "链接" },
+        descriptions: {
+          headings: "概览网页布局，帮助用户更轻松地浏览关键内容区域。",
+          landmarks: "将页面划分为页眉、导航、主体等区域，帮助用户理解页面结构。",
+          links: "列出页面中的关键链接，方便快速访问重要部分。",
+        },
+        empty: "未找到对应的页面结构项目。",
+      },
+    },
+  };
   button.className = "accessibility-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Open accessibility menu");
@@ -70,13 +163,27 @@ function createAccessibilityWidget() {
             type="button"
             data-accessibility-feature="${section.id}"
             ${section.tooltip ? `data-accessibility-tooltip="${section.tooltip}"` : ""}
-            ${section.id === "main-options" || section.id === "profiles" || section.id === "statement" ? 'aria-expanded="false"' : ""}
+            ${section.id === "language" || section.id === "main-options" || section.id === "profiles" || section.id === "statement" ? 'aria-expanded="false"' : ""}
           >
             <span class="accessibility-menu-row-icon">${section.icon}</span>
             <span class="accessibility-menu-row-label">${section.label}</span>
             ${section.extraHtml || ""}
             <span class="accessibility-menu-chevron">${ACCESSIBILITY_CHEVRON_ICON}</span>
           </button>
+          ${section.id === "language" ? `
+            <div class="accessibility-language-options" hidden>
+              <button class="accessibility-language-option is-active" type="button" data-accessibility-language="en" aria-pressed="true">
+                <span class="accessibility-language-flag accessibility-language-flag--us" aria-hidden="true"></span>
+                <span>English (USA)</span>
+                <span class="accessibility-language-check" aria-hidden="true">✓</span>
+              </button>
+              <button class="accessibility-language-option" type="button" data-accessibility-language="zh" aria-pressed="false">
+                <span class="accessibility-language-flag accessibility-language-flag--cn" aria-hidden="true"></span>
+                <span>中文 (Chinese)</span>
+                <span class="accessibility-language-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          ` : ""}
           ${section.id === "profiles" ? `
             <div class="accessibility-profile-options-grid" hidden>
               ${ACCESSIBILITY_PROFILE_OPTIONS.map((profile) => `
@@ -196,7 +303,7 @@ function createAccessibilityWidget() {
       <strong class="accessibility-menu-brand">CogniLens</strong>
       <button class="accessibility-restore-button" type="button">
         ${ACCESSIBILITY_RESTORE_ICON}
-        Restore Default
+        <span class="accessibility-restore-label">Restore Default</span>
       </button>
     </footer>
   `;
@@ -320,6 +427,86 @@ function createAccessibilityWidget() {
     saturationMode = nextSaturationMode;
     document.body.classList.toggle("accessibility-saturation-low", saturationMode === "low");
     document.body.classList.toggle("accessibility-saturation-high", saturationMode === "high");
+  }
+
+  function updateAccessibilityLanguage(nextLanguage) {
+    activeLanguage = nextLanguage === "zh" ? "zh" : "en";
+    const copy = languageCopy[activeLanguage];
+
+    menu.querySelector(".accessibility-menu-header h2").textContent = copy.menuTitle;
+    menu.querySelector(".accessibility-restore-label").textContent = copy.restoreDefault;
+    menu.querySelector(".accessibility-page-structure-header h2").textContent = copy.pageStructure.title;
+
+    menu.querySelectorAll("[data-accessibility-feature]").forEach((featureButton) => {
+      const featureId = featureButton.dataset.accessibilityFeature || "";
+      const label = featureButton.querySelector(".accessibility-menu-row-label");
+      if (label && copy.featureLabels[featureId]) {
+        label.textContent = copy.featureLabels[featureId];
+      }
+    });
+
+    const languageChip = menu.querySelector(".accessibility-language-chip");
+    languageChip?.classList.toggle("accessibility-language-chip--cn", activeLanguage === "zh");
+
+    menu.querySelectorAll("[data-accessibility-profile]").forEach((profileButton) => {
+      const profileId = profileButton.dataset.accessibilityProfile || "";
+      const label = profileButton.querySelector(".accessibility-profile-label");
+      if (label && copy.profiles[profileId]) {
+        label.textContent = copy.profiles[profileId];
+      }
+    });
+
+    menu.querySelectorAll("[data-accessibility-option]").forEach((optionButton) => {
+      const optionId = optionButton.dataset.accessibilityOption || "";
+      if (!copy.options[optionId]) {
+        return;
+      }
+      optionButton.dataset.defaultLabel = copy.options[optionId];
+      optionButton.dataset.activeLabel = copy.optionActiveLabels[optionId] || copy.options[optionId];
+      const label = optionButton.querySelector(".accessibility-option-label");
+      if (!label) {
+        return;
+      }
+      if (optionId === "saturation" && saturationMode !== "default") {
+        label.textContent = saturationMode === "high"
+          ? copy.optionActiveLabels.highSaturation
+          : copy.optionActiveLabels.saturation;
+        return;
+      }
+      label.textContent = optionButton.getAttribute("aria-pressed") === "true"
+        ? optionButton.dataset.activeLabel
+        : optionButton.dataset.defaultLabel;
+    });
+
+    menu.querySelectorAll("[data-text-adjust-mode]").forEach((modeButton) => {
+      const mode = modeButton.dataset.textAdjustMode || "";
+      const label = modeButton.querySelector("small");
+      if (label && copy.textAdjust[mode]) {
+        label.textContent = copy.textAdjust[mode];
+      }
+    });
+
+    menu.querySelectorAll("[data-page-structure-tab]").forEach((tabButton) => {
+      const tab = tabButton.dataset.pageStructureTab || "headings";
+      const icon = tabButton.querySelector("span")?.outerHTML || "";
+      tabButton.innerHTML = `${icon}${copy.pageStructure.tabs[tab] || copy.pageStructure.tabs.headings}`;
+    });
+
+    const statementPanel = menu.querySelector(".accessibility-statement-panel");
+    const statementIntro = statementPanel?.querySelector("p");
+    const statementTitle = statementPanel?.querySelector("h3");
+    const statementList = statementPanel?.querySelector("ul");
+    if (statementIntro && statementTitle && statementList) {
+      statementIntro.textContent = copy.statementIntro;
+      statementTitle.textContent = copy.statementTitle;
+      statementList.innerHTML = copy.statementItems
+        .map(([title, description]) => `<li><strong>${title}:</strong> ${description}</li>`)
+        .join("");
+    }
+
+    renderPageStructure(
+      menu.querySelector("[data-page-structure-tab].is-active")?.dataset.pageStructureTab || "headings",
+    );
   }
 
   function setActiveTextAdjustMode(nextMode) {
@@ -729,13 +916,8 @@ function createAccessibilityWidget() {
   }
 
   function getPageStructureDescription(activeTab) {
-    if (activeTab === "links") {
-      return "Highlights key links on the site for quick and easy access to important sections.";
-    }
-    if (activeTab === "landmarks") {
-      return "Divides the page into regions like headers and navigation, making it easier for assistive tools to guide users.";
-    }
-    return "Provides an overview of the website's layout, helping users navigate key sections with ease.";
+    return languageCopy[activeLanguage].pageStructure.descriptions[activeTab]
+      || languageCopy[activeLanguage].pageStructure.descriptions.headings;
   }
 
   function scrollToStructureElement(element) {
@@ -767,7 +949,7 @@ function createAccessibilityWidget() {
     if (!items.length) {
       const emptyState = document.createElement("p");
       emptyState.className = "accessibility-page-structure-empty";
-      emptyState.textContent = "No matching page structure items found.";
+      emptyState.textContent = languageCopy[activeLanguage].pageStructure.empty;
       structureList.appendChild(emptyState);
       return;
     }
@@ -817,7 +999,11 @@ function createAccessibilityWidget() {
   function setMenuSectionExpanded(featureId, isExpanded) {
     const featureButton = menu.querySelector(`[data-accessibility-feature="${featureId}"]`);
     const panel = featureButton?.parentElement?.querySelector(
-      featureId === "profiles" ? ".accessibility-profile-options-grid" : ".accessibility-main-options-grid",
+      featureId === "language"
+        ? ".accessibility-language-options"
+        : featureId === "profiles"
+          ? ".accessibility-profile-options-grid"
+          : ".accessibility-main-options-grid",
     );
     if (!featureButton || !panel) {
       return;
@@ -1028,9 +1214,9 @@ function createAccessibilityWidget() {
 
     if (optionLabel) {
       optionLabel.textContent = nextSaturationMode === "high"
-        ? "High Saturation"
+        ? languageCopy[activeLanguage].optionActiveLabels.highSaturation
         : nextSaturationMode === "low"
-          ? "Low Saturation"
+          ? languageCopy[activeLanguage].optionActiveLabels.saturation
           : optionButton.dataset.defaultLabel || optionConfig?.label || "Saturation";
     }
 
@@ -1245,9 +1431,11 @@ function createAccessibilityWidget() {
   menu.querySelectorAll("[data-accessibility-feature]").forEach((featureButton) => {
     featureButton.addEventListener("click", () => {
       const featureId = featureButton.dataset.accessibilityFeature || "";
-      if (featureId === "main-options" || featureId === "profiles" || featureId === "statement") {
+      if (featureId === "language" || featureId === "main-options" || featureId === "profiles" || featureId === "statement") {
         const optionsGrid = featureButton.parentElement?.querySelector(
-          featureId === "profiles"
+          featureId === "language"
+            ? ".accessibility-language-options"
+            : featureId === "profiles"
             ? ".accessibility-profile-options-grid"
             : featureId === "statement"
               ? ".accessibility-statement-panel"
@@ -1348,6 +1536,17 @@ function createAccessibilityWidget() {
       if (profileId === "adhd") {
         applyAdhdProfile(profileButton);
       }
+    });
+  });
+  menu.querySelectorAll("[data-accessibility-language]").forEach((languageButton) => {
+    languageButton.addEventListener("click", () => {
+      const nextLanguage = languageButton.dataset.accessibilityLanguage || "en";
+      menu.querySelectorAll("[data-accessibility-language]").forEach((buttonElement) => {
+        const isActive = buttonElement === languageButton;
+        buttonElement.classList.toggle("is-active", isActive);
+        buttonElement.setAttribute("aria-pressed", String(isActive));
+      });
+      updateAccessibilityLanguage(nextLanguage);
     });
   });
   menu.querySelector(".accessibility-restore-button")?.addEventListener("click", () => {
