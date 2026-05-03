@@ -5664,13 +5664,17 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .history-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
 .history-grid .history-list-shell {
   min-width: 0;
+}
+
+.history-evidence-inline {
+  margin-top: 24px;
 }
 
 .eye-history-shell {

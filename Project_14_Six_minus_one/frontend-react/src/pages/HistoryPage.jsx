@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   API_BASE,
@@ -10,7 +10,7 @@ import {
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
-const REPORT_PAGE_SIZE = 10;
+const REPORT_PAGE_SIZE = 6;
 const EYE_PAGE_SIZE = 25;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
@@ -160,99 +160,34 @@ function EyeRows({ items, status, emptyMessage }) {
   });
 }
 
-function EyeEvidenceSummaryCard({ items, total, status, onOpenModal }) {
-  const latestSession = items[0] || null;
-  const averageCoverage = useMemo(() => {
-    if (!items.length) {
-      return "0.0";
-    }
-    const sum = items.reduce((acc, item) => acc + Number(item.coverage_percent ?? 0), 0);
-    return (sum / items.length).toFixed(1);
-  }, [items]);
-
-  return (
-    <section className="history-list-shell eye-history-summary-shell">
-      <div className="history-section-header history-section-header-compact">
-        <div>
-          <p className="upload-kicker">Supporting Evidence</p>
-          <h2>Eye-Tracking Evidence</h2>
-        </div>
-      </div>
-      <div className="history-evidence-summary-grid">
-        <article className="history-evidence-summary-card">
-          <span className="history-evidence-summary-label">Total sessions</span>
-          <strong>{String(total || 0)}</strong>
-        </article>
-        <article className="history-evidence-summary-card">
-          <span className="history-evidence-summary-label">Avg coverage (this page)</span>
-          <strong>{averageCoverage}%</strong>
-        </article>
-      </div>
-      <div className="history-evidence-latest">
-        <h3>Latest evidence session</h3>
-        {status.loading ? (
-          <p className="history-empty">Loading eye-tracking evidence...</p>
-        ) : status.error ? (
-          <p className="history-empty">{status.error}</p>
-        ) : latestSession ? (
-          <div className="history-evidence-latest-meta">
-            <strong title={latestSession.source_name}>{latestSession.source_name}</strong>
-            <span>Evidence {formatShortId(latestSession.session_id, "E-")}</span>
-            <span>Coverage {Number(latestSession.coverage_percent ?? 0).toFixed(1)}%</span>
-            <span>{formatDate(latestSession.created_at)}</span>
-          </div>
-        ) : (
-          <p className="history-empty">No eye-tracking evidence sessions have been saved yet.</p>
-        )}
-      </div>
-      <div className="history-evidence-actions">
-        <button type="button" className="history-open-btn" onClick={onOpenModal}>
-          View all evidence
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function EyeEvidenceModal({ items, total, page, status, onPageChange, onClose }) {
+function EyeEvidencePanel({ items, total, page, status, onPageChange }) {
   const emptyMessage = "No eye-tracking evidence sessions have been saved yet.";
   return (
-    <div className="history-evidence-modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        className="history-list-shell eye-history-shell history-evidence-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="All eye-tracking evidence sessions"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="history-section-header">
-          <div className="history-modal-title-wrap">
-            <p className="upload-kicker">Supporting Evidence</p>
-            <h2>All Eye-Tracking Evidence Sessions</h2>
-          </div>
-          <button type="button" className="history-modal-close-btn" aria-label="Close evidence drawer" onClick={onClose}>
-            Close
-          </button>
+    <section className="history-list-shell eye-history-shell">
+      <div className="history-section-header">
+        <div className="history-modal-title-wrap">
+          <p className="upload-kicker">Supporting Evidence</p>
+          <h2>All Eye-Tracking Evidence Sessions</h2>
         </div>
-        <div className="history-eye-table-head">
-          <span>Evidence ID</span>
-          <span>Page</span>
-          <span>Coverage</span>
-        </div>
-        <div id="eyeHistoryList" className="history-table-body">
-          <EyeRows items={items} status={status} emptyMessage={emptyMessage} />
-        </div>
-        <Pagination
-          id="eyeHistoryPagination"
-          ariaLabel="Eye-tracking evidence pagination"
-          page={page}
-          total={total}
-          itemLabel="sessions"
-          pageSize={EYE_PAGE_SIZE}
-          onPageChange={onPageChange}
-        />
-      </section>
-    </div>
+      </div>
+      <div className="history-eye-table-head">
+        <span>Evidence ID</span>
+        <span>Page</span>
+        <span>Coverage</span>
+      </div>
+      <div id="eyeHistoryList" className="history-table-body">
+        <EyeRows items={items} status={status} emptyMessage={emptyMessage} />
+      </div>
+      <Pagination
+        id="eyeHistoryPagination"
+        ariaLabel="Eye-tracking evidence pagination"
+        page={page}
+        total={total}
+        itemLabel="sessions"
+        pageSize={EYE_PAGE_SIZE}
+        onPageChange={onPageChange}
+      />
+    </section>
   );
 }
 
@@ -309,7 +244,6 @@ export function HistoryPage() {
   const [eyeSessions, setEyeSessions] = useState({ items: [], total: 0 });
   const [reportStatus, setReportStatus] = useState({ loading: true, error: "" });
   const [eyeStatus, setEyeStatus] = useState({ loading: true, error: "" });
-  const [eyeModalOpen, setEyeModalOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -388,19 +322,6 @@ export function HistoryPage() {
     },
     [navigate],
   );
-
-  useEffect(() => {
-    if (!eyeModalOpen) {
-      return undefined;
-    }
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setEyeModalOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [eyeModalOpen]);
 
   useEffect(() => {
     const backButton = document.getElementById("backToAnalysisButtonHistory");
@@ -496,24 +417,16 @@ export function HistoryPage() {
             onPageChange={setReportPage}
             onOpenReport={openReport}
           />
-          <EyeEvidenceSummaryCard
-            items={eyeSessions.items}
-            total={eyeSessions.total}
-            status={eyeStatus}
-            onOpenModal={() => setEyeModalOpen(true)}
-          />
         </div>
-
-        {eyeModalOpen && (
-          <EyeEvidenceModal
+        <div className="history-evidence-inline">
+          <EyeEvidencePanel
             items={eyeSessions.items}
             total={eyeSessions.total}
             page={eyePage}
             status={eyeStatus}
             onPageChange={setEyePage}
-            onClose={() => setEyeModalOpen(false)}
           />
-        )}
+        </div>
       </main>
     </>
   );
