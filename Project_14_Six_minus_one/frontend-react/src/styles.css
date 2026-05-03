@@ -4849,6 +4849,66 @@ body.accessibility-reading-mask-active .accessibility-menu {
   -webkit-line-clamp: 2;
 }
 
+.issue-summary-row-elements {
+  margin-top: 2px;
+  gap: 7px;
+}
+
+.issue-element-chip-list {
+  display: grid;
+  gap: 8px;
+}
+
+.issue-element-chip {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.issue-element-chip strong {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issue-element-chip span {
+  font-size: 12px;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.issue-element-chip small {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.issue-element-chip:hover,
+.issue-element-chip:focus-visible {
+  border-color: rgba(37, 99, 235, 0.65);
+  background: rgba(37, 99, 235, 0.07);
+  outline: none;
+}
+
+.issue-element-chip.is-active {
+  border-color: rgba(37, 99, 235, 0.9);
+  background: rgba(37, 99, 235, 0.14);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.16);
+}
+
+.issue-element-hidden-count {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
 .back-to-summary-button.secondary {
   margin-top: 2px;
 }
