@@ -3302,6 +3302,92 @@ button.dimension-row.is-linked-active {
   display: none !important;
 }
 
+.accessibility-text-adjust-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 18px;
+  padding: 18px 14px 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.accessibility-text-adjust-tools {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.accessibility-text-adjust-tool {
+  min-width: 0;
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #1f1430;
+  cursor: pointer;
+}
+
+.accessibility-text-adjust-tool .accessibility-text-adjust-value {
+  color: #1f1430;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.accessibility-text-adjust-tool small {
+  max-width: 100%;
+  color: #3f444c;
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 400;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.accessibility-text-adjust-tool.is-active .accessibility-text-adjust-value,
+.accessibility-text-adjust-tool.is-active small {
+  color: #8b5cf6;
+}
+
+.accessibility-text-adjust-levels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.accessibility-text-adjust-levels button {
+  min-height: 36px;
+  border: 1px solid #ddc7ff;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f1430;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.accessibility-text-adjust-tool:hover,
+.accessibility-text-adjust-levels button:hover {
+  background: #fbf8ff;
+}
+
+.accessibility-text-adjust-levels button.is-active {
+  border-color: #8b5cf6;
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.accessibility-text-adjust-levels button.is-active::after {
+  content: "✓";
+  margin-left: 10px;
+  font-weight: 800;
+}
+
 .accessibility-page-structure {
   min-height: 0;
   display: grid;

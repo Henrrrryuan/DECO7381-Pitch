@@ -26,6 +26,13 @@ function createAccessibilityWidget() {
   let menuCloseTimer = 0;
   let textReaderSelection = null;
   let saturationMode = "default";
+  let activeTextAdjustMode = "text-size";
+  const textAdjustLevels = {
+    "text-size": "1",
+    "text-spacing": "1",
+    "height-spacing": "1",
+    "letter-spacing": "1",
+  };
   const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
   const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
   const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
@@ -104,6 +111,31 @@ function createAccessibilityWidget() {
                   ` : ""}
                 </button>
               `).join("")}
+              <div class="accessibility-text-adjust-panel" aria-label="Text adjustment controls">
+                <div class="accessibility-text-adjust-tools">
+                  <button class="accessibility-text-adjust-tool is-active" type="button" data-text-adjust-mode="text-size" aria-pressed="true">
+                    <span class="accessibility-text-adjust-value">x1.0</span>
+                    <small>Text Size</small>
+                  </button>
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="text-spacing" aria-pressed="false">
+                    <span class="accessibility-text-adjust-value">x1.0</span>
+                    <small>Text Spacing</small>
+                  </button>
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="height-spacing" aria-pressed="false">
+                    <span class="accessibility-text-adjust-value">x1.0</span>
+                    <small>Height Spacing</small>
+                  </button>
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="letter-spacing" aria-pressed="false">
+                    <span class="accessibility-text-adjust-value">x1.0</span>
+                    <small>Letter Spacing</small>
+                  </button>
+                </div>
+                <div class="accessibility-text-adjust-levels">
+                  <button type="button" data-text-adjust-level="1">x1.0</button>
+                  <button type="button" data-text-adjust-level="1.5">x1.5</button>
+                  <button type="button" data-text-adjust-level="2">x2.0</button>
+                </div>
+              </div>
             </div>
           ` : ""}
         </div>
@@ -266,6 +298,173 @@ function createAccessibilityWidget() {
     saturationMode = nextSaturationMode;
     document.body.classList.toggle("accessibility-saturation-low", saturationMode === "low");
     document.body.classList.toggle("accessibility-saturation-high", saturationMode === "high");
+  }
+
+  function setActiveTextAdjustMode(nextMode) {
+    activeTextAdjustMode = nextMode;
+    menu.querySelectorAll("[data-text-adjust-mode]").forEach((modeButton) => {
+      const isActive = modeButton.dataset.textAdjustMode === activeTextAdjustMode;
+      modeButton.classList.toggle("is-active", isActive);
+      modeButton.setAttribute("aria-pressed", String(isActive));
+    });
+    syncTextAdjustLevelButtons();
+  }
+
+  function syncTextAdjustLevelButtons() {
+    const activeLevel = textAdjustLevels[activeTextAdjustMode] || "1";
+    menu.querySelectorAll("[data-text-adjust-level]").forEach((levelButton) => {
+      const isActive = levelButton.dataset.textAdjustLevel === activeLevel;
+      levelButton.classList.toggle("is-active", isActive);
+      levelButton.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
+  function updateTextAdjustToolLabels() {
+    menu.querySelectorAll("[data-text-adjust-mode]").forEach((modeButton) => {
+      const level = textAdjustLevels[modeButton.dataset.textAdjustMode] || "1";
+      const valueLabel = modeButton.querySelector(".accessibility-text-adjust-value");
+      if (valueLabel) {
+        valueLabel.textContent = `x${Number(level).toFixed(1)}`;
+      }
+    });
+  }
+
+  function applyTextAdjustments() {
+    const textSizeLevel = Number(textAdjustLevels["text-size"]) || 1;
+    const textSpacingLevel = Number(textAdjustLevels["text-spacing"]) || 1;
+    const heightSpacingLevel = Number(textAdjustLevels["height-spacing"]) || 1;
+    const letterSpacingLevel = Number(textAdjustLevels["letter-spacing"]) || 1;
+    const hasAdjustment = Object.values(textAdjustLevels).some((level) => level !== "1");
+
+    document.body.classList.toggle("accessibility-text-adjust-enabled", hasAdjustment);
+    applyTextAdjustmentsToDocument(document, {
+      textSizeLevel,
+      textSpacingLevel,
+      heightSpacingLevel,
+      letterSpacingLevel,
+      hasAdjustment,
+    });
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      const frameDocument = getFrameDocument(frameElement);
+      if (frameDocument) {
+        applyTextAdjustmentsToDocument(frameDocument, {
+          textSizeLevel,
+          textSpacingLevel,
+          heightSpacingLevel,
+          letterSpacingLevel,
+          hasAdjustment,
+        });
+      }
+    });
+    updateTextAdjustToolLabels();
+    syncTextAdjustLevelButtons();
+  }
+
+  function getTextAdjustElements(targetDocument) {
+    return Array.from(targetDocument.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, a, button, label, input, textarea, select, small, strong, span, td, th, dd, dt, figcaption"))
+      .filter((element) => {
+        if (!(element instanceof Element)) {
+          return false;
+        }
+        if (targetDocument === document && element.closest(".accessibility-menu, .accessibility-widget-button, .accessibility-tooltip-bubble")) {
+          return false;
+        }
+        return Boolean((element.textContent || element.getAttribute("value") || element.getAttribute("placeholder") || "").trim());
+      });
+  }
+
+  function ensureOriginalTextAdjustStyles(elements, targetWindow) {
+    const measuredStyles = elements.map((element) => {
+      const computedStyle = targetWindow.getComputedStyle(element);
+      return {
+        element,
+        fontSize: computedStyle.fontSize,
+        lineHeight: computedStyle.lineHeight,
+        letterSpacing: computedStyle.letterSpacing,
+        wordSpacing: computedStyle.wordSpacing,
+      };
+    });
+
+    measuredStyles.forEach(({ element, fontSize, lineHeight, letterSpacing, wordSpacing }) => {
+      if (!element.dataset.accessibilityOriginalFontSize) {
+        element.dataset.accessibilityOriginalFontSize = fontSize;
+        element.dataset.accessibilityOriginalLineHeight = lineHeight;
+        element.dataset.accessibilityOriginalLetterSpacing = letterSpacing;
+        element.dataset.accessibilityOriginalWordSpacing = wordSpacing;
+      }
+    });
+  }
+
+  function applyTextAdjustmentsToDocument(targetDocument, levels) {
+    const targetWindow = targetDocument.defaultView;
+    if (!targetWindow) {
+      return;
+    }
+
+    const elements = getTextAdjustElements(targetDocument);
+    ensureOriginalTextAdjustStyles(elements, targetWindow);
+
+    elements.forEach((element) => {
+      if (!levels.hasAdjustment) {
+        restoreTextAdjustElement(element);
+        return;
+      }
+
+      const originalFontSize = parseFloat(element.dataset.accessibilityOriginalFontSize || "");
+      const originalLineHeight = parseFloat(element.dataset.accessibilityOriginalLineHeight || "");
+      element.style.fontSize = Number.isFinite(originalFontSize)
+        ? `${originalFontSize * levels.textSizeLevel}px`
+        : "";
+      element.style.lineHeight = Number.isFinite(originalLineHeight)
+        ? `${originalLineHeight * levels.heightSpacingLevel}px`
+        : `${levels.heightSpacingLevel}`;
+      element.style.wordSpacing = `${Math.max(0, levels.textSpacingLevel - 1) * 0.35}em`;
+      element.style.letterSpacing = `${Math.max(0, levels.letterSpacingLevel - 1) * 0.12}em`;
+    });
+  }
+
+  function restoreTextAdjustElement(element) {
+    element.style.fontSize = "";
+    element.style.lineHeight = "";
+    element.style.wordSpacing = "";
+    element.style.letterSpacing = "";
+    delete element.dataset.accessibilityOriginalFontSize;
+    delete element.dataset.accessibilityOriginalLineHeight;
+    delete element.dataset.accessibilityOriginalLetterSpacing;
+    delete element.dataset.accessibilityOriginalWordSpacing;
+  }
+
+  function setTextAdjustmentLevel(level) {
+    textAdjustLevels[activeTextAdjustMode] = String(level);
+    applyTextAdjustments();
+  }
+
+  function resetTextAdjustments() {
+    Object.keys(textAdjustLevels).forEach((mode) => {
+      textAdjustLevels[mode] = "1";
+    });
+    document.body.classList.remove("accessibility-text-adjust-enabled");
+    applyTextAdjustmentsToDocument(document, {
+      textSizeLevel: 1,
+      textSpacingLevel: 1,
+      heightSpacingLevel: 1,
+      letterSpacingLevel: 1,
+      hasAdjustment: false,
+    });
+    document.querySelectorAll("iframe").forEach((frameElement) => {
+      const frameDocument = getFrameDocument(frameElement);
+      if (frameDocument) {
+        applyTextAdjustmentsToDocument(frameDocument, {
+          textSizeLevel: 1,
+          textSpacingLevel: 1,
+          heightSpacingLevel: 1,
+          letterSpacingLevel: 1,
+          hasAdjustment: false,
+        });
+      }
+    });
+    updateTextAdjustToolLabels();
+    setActiveTextAdjustMode("text-size");
   }
 
   function getBigCursorFrameCss() {
@@ -958,6 +1157,7 @@ function createAccessibilityWidget() {
     setTextReaderActive(false);
     setSaturationMode("default");
     setTooltipsActive(false);
+    resetTextAdjustments();
     restoreAccessibilityDefaults();
   }
 
@@ -1088,6 +1288,18 @@ function createAccessibilityWidget() {
       renderPageStructure(tabButton.dataset.pageStructureTab || "headings");
     });
   });
+  menu.querySelectorAll("[data-text-adjust-mode]").forEach((modeButton) => {
+    modeButton.addEventListener("click", () => {
+      setActiveTextAdjustMode(modeButton.dataset.textAdjustMode || "text-size");
+    });
+  });
+  menu.querySelectorAll("[data-text-adjust-level]").forEach((levelButton) => {
+    levelButton.addEventListener("click", () => {
+      setTextAdjustmentLevel(levelButton.dataset.textAdjustLevel || "1");
+    });
+  });
+  updateTextAdjustToolLabels();
+  syncTextAdjustLevelButtons();
 
   document.body.append(button, menu, readingMask, tooltip);
   document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
