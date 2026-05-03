@@ -25,6 +25,7 @@ function createAccessibilityWidget() {
   const bigCursorFrameCleanupByFrame = new WeakMap();
   let menuCloseTimer = 0;
   let textReaderSelection = null;
+  let saturationMode = "default";
   const BIG_CURSOR_FRAME_STYLE_ID = "cognilens-accessibility-big-cursor-style";
   const BIG_CURSOR_DEFAULT_URL = "https://img.icons8.com/ios/100/cursor--v1.png";
   const BIG_CURSOR_POINTER_URL = "https://img.icons8.com/?size=100&id=37397&format=png&color=000000";
@@ -230,6 +231,12 @@ function createAccessibilityWidget() {
     if (!isActive) {
       clearTextReaderSelection();
     }
+  }
+
+  function setSaturationMode(nextSaturationMode) {
+    saturationMode = nextSaturationMode;
+    document.body.classList.toggle("accessibility-saturation-low", saturationMode === "low");
+    document.body.classList.toggle("accessibility-saturation-high", saturationMode === "high");
   }
 
   function getBigCursorFrameCss() {
@@ -554,6 +561,51 @@ function createAccessibilityWidget() {
     });
   }
 
+  function setSaturationButtonState(optionButton, nextSaturationMode) {
+    const optionConfig = getAccessibilityOptionConfig("saturation");
+    const optionLabel = optionButton.querySelector(".accessibility-option-label");
+    const optionIcon = optionButton.querySelector(".accessibility-option-icon");
+    const optionLevelDots = optionButton.querySelectorAll(".accessibility-option-levels span");
+    const isActive = nextSaturationMode !== "default";
+
+    optionButton.classList.toggle("is-active", isActive);
+    optionButton.classList.toggle("is-saturation-low", nextSaturationMode === "low");
+    optionButton.classList.toggle("is-saturation-high", nextSaturationMode === "high");
+    optionButton.setAttribute("aria-pressed", String(isActive));
+
+    if (optionLabel) {
+      optionLabel.textContent = nextSaturationMode === "high"
+        ? "High Saturation"
+        : nextSaturationMode === "low"
+          ? "Low Saturation"
+          : optionButton.dataset.defaultLabel || optionConfig?.label || "Saturation";
+    }
+
+    if (optionIcon && optionConfig?.icon) {
+      optionIcon.innerHTML = optionConfig.icon;
+    }
+
+    optionLevelDots.forEach((levelDot, levelIndex) => {
+      levelDot.classList.toggle("is-active", nextSaturationMode === "low" && levelIndex === 0);
+      levelDot.classList.toggle("is-strong-active", nextSaturationMode === "high" && levelIndex <= 1);
+    });
+  }
+
+  function cycleSaturationOption(optionButton) {
+    const nextSaturationMode = saturationMode === "low"
+      ? "high"
+      : saturationMode === "high"
+        ? "default"
+        : "low";
+    if (nextSaturationMode === "default") {
+      activeOptionIds.delete("saturation");
+    } else {
+      activeOptionIds.add("saturation");
+    }
+    setSaturationMode(nextSaturationMode);
+    setSaturationButtonState(optionButton, nextSaturationMode);
+  }
+
   function setAccessibilityOptionActive(optionId, isActive) {
     const optionButton = menu.querySelector(`[data-accessibility-option="${optionId}"]`);
     if (isActive) {
@@ -584,6 +636,9 @@ function createAccessibilityWidget() {
     }
     if (optionId === "text-reader") {
       setTextReaderActive(isActive);
+    }
+    if (optionId === "saturation") {
+      setSaturationMode(isActive ? "low" : "default");
     }
     if (optionId === "tooltips") {
       setTooltipsActive(isActive);
@@ -639,8 +694,12 @@ function createAccessibilityWidget() {
       optionIcon.innerHTML = optionConfig.icon;
     }
 
+    if (optionId === "saturation") {
+      optionButton.classList.remove("is-saturation-low", "is-saturation-high");
+    }
+
     optionLevelDots.forEach((levelDot) => {
-      levelDot.classList.remove("is-active");
+      levelDot.classList.remove("is-active", "is-strong-active");
     });
   }
 
@@ -686,6 +745,7 @@ function createAccessibilityWidget() {
     setHighlightTitlesActive(false);
     setReadableFontsActive(false);
     setTextReaderActive(false);
+    setSaturationMode("default");
     setTooltipsActive(false);
     restoreAccessibilityDefaults();
   }
@@ -779,6 +839,10 @@ function createAccessibilityWidget() {
       if (optionId === "text-reader") {
         const nextActiveState = !activeOptionIds.has(optionId);
         setAccessibilityOptionActive(optionId, nextActiveState);
+        return;
+      }
+      if (optionId === "saturation") {
+        cycleSaturationOption(optionButton);
         return;
       }
       if (optionId === "tooltips") {

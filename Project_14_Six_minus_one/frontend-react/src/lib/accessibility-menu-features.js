@@ -123,6 +123,7 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
   {
     id: "saturation",
     label: "Saturation",
+    activeLabel: "Low Saturation",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10Z" /><path d="M10 14h4" /></svg>',
     levels: 2,
   },
@@ -207,6 +208,8 @@ export function restoreAccessibilityDefaults() {
     "accessibility-highlight-titles-enabled",
     "accessibility-readable-fonts-enabled",
     "accessibility-text-reader-enabled",
+    "accessibility-saturation-low",
+    "accessibility-saturation-high",
   ];
   const restoredDocumentVariables = [
     "--accessibility-reading-mask-y",

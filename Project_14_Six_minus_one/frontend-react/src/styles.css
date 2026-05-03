@@ -3537,6 +3537,51 @@ body.accessibility-stop-animation-enabled .accessibility-widget-button.is-spinni
   animation: none !important;
 }
 
+body.accessibility-saturation-low #root {
+  filter: saturate(0.45);
+}
+
+body.accessibility-saturation-high #root {
+  filter: saturate(1.65);
+}
+
+.accessibility-option-card.is-saturation-low {
+  border-color: #7c8a97;
+  background: #f7f8fa;
+  color: #35404a;
+  box-shadow: 0 8px 18px rgba(71, 85, 105, 0.12);
+}
+
+.accessibility-option-card.is-saturation-high {
+  border-color: #c026d3;
+  background: #fff7ff;
+  color: #3b1246;
+  box-shadow: 0 8px 18px rgba(192, 38, 211, 0.16);
+}
+
+.accessibility-option-card.is-saturation-low .accessibility-option-icon {
+  background: #e7eaee;
+  color: #64748b;
+}
+
+.accessibility-option-card.is-saturation-high .accessibility-option-icon {
+  background: #fae8ff;
+  color: #c026d3;
+}
+
+.accessibility-option-card.is-saturation-low .accessibility-option-label {
+  color: #35404a;
+}
+
+.accessibility-option-card.is-saturation-high .accessibility-option-label {
+  color: #3b1246;
+}
+
+.accessibility-option-levels span.is-strong-active {
+  background: #c026d3;
+  opacity: 1;
+}
+
 body.accessibility-readable-fonts-enabled,
 body.accessibility-readable-fonts-enabled * {
   font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
