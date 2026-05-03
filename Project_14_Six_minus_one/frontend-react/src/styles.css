@@ -3291,18 +3291,18 @@ button.dimension-row.is-linked-active {
 
 .accessibility-language-chip.accessibility-language-chip--cn {
   border-width: 8px;
-  background: #ee1c25;
+  background:
+    radial-gradient(circle at 18% 28%, #ffde00 0 7%, transparent 8%),
+    radial-gradient(circle at 34% 16%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 41% 28%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 41% 43%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 34% 55%, #ffde00 0 3%, transparent 4%),
+    #ee1c25;
   position: relative;
 }
 
 .accessibility-language-chip.accessibility-language-chip--cn::before {
-  content: "★";
-  position: absolute;
-  top: 4px;
-  left: 7px;
-  color: #ffde00;
-  font-size: 12px;
-  line-height: 1;
+  content: none;
 }
 
 .accessibility-language-options {
@@ -3364,14 +3364,40 @@ button.dimension-row.is-linked-active {
   position: relative;
 }
 
-.accessibility-language-flag--cn::before {
-  content: "★";
+.accessibility-language-flag-star {
   position: absolute;
-  top: 1px;
-  left: 4px;
   color: #ffde00;
-  font-size: 8px;
   line-height: 1;
+}
+
+.accessibility-language-flag-star--large {
+  top: 3px;
+  left: 4px;
+  font-size: 8px;
+}
+
+.accessibility-language-flag-star--small {
+  font-size: 3.5px;
+}
+
+.accessibility-language-flag-star--one {
+  top: 2px;
+  left: 11px;
+}
+
+.accessibility-language-flag-star--two {
+  top: 5px;
+  left: 14px;
+}
+
+.accessibility-language-flag-star--three {
+  top: 9px;
+  left: 14px;
+}
+
+.accessibility-language-flag-star--four {
+  top: 12px;
+  left: 11px;
 }
 
 .accessibility-language-check {

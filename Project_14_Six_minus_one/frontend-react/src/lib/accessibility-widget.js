@@ -178,7 +178,13 @@ function createAccessibilityWidget() {
                 <span class="accessibility-language-check" aria-hidden="true">✓</span>
               </button>
               <button class="accessibility-language-option" type="button" data-accessibility-language="zh" aria-pressed="false">
-                <span class="accessibility-language-flag accessibility-language-flag--cn" aria-hidden="true"></span>
+                <span class="accessibility-language-flag accessibility-language-flag--cn" aria-hidden="true">
+                  <span class="accessibility-language-flag-star accessibility-language-flag-star--large">★</span>
+                  <span class="accessibility-language-flag-star accessibility-language-flag-star--small accessibility-language-flag-star--one">★</span>
+                  <span class="accessibility-language-flag-star accessibility-language-flag-star--small accessibility-language-flag-star--two">★</span>
+                  <span class="accessibility-language-flag-star accessibility-language-flag-star--small accessibility-language-flag-star--three">★</span>
+                  <span class="accessibility-language-flag-star accessibility-language-flag-star--small accessibility-language-flag-star--four">★</span>
+                </span>
                 <span>中文 (Chinese)</span>
                 <span class="accessibility-language-check" aria-hidden="true">✓</span>
               </button>
