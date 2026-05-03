@@ -19,7 +19,7 @@ const samplesText = document.getElementById("samplesText");
 const coverageText = document.getElementById("coverageText");
 
 const heatCtx = heatmapCanvas.getContext("2d");
-const coverageCtx = coverageCanvas.getContext("2d");
+let coverageCtx = coverageCanvas.getContext("2d");
 const queryParams = new URLSearchParams(window.location.search);
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
@@ -54,6 +54,125 @@ const state = {
 };
 
 let detachFrameScrollListener = null;
+let detachCoverageResizeObserver = null;
+
+/** Visited Map is always this bitmap size; full-page grid pans inside when the iframe scrolls. */
+const COVERAGE_VIEW_W = 300;
+const COVERAGE_VIEW_H = 180;
+
+function ensureCoverageCanvasFixedSize() {
+  if (!coverageCanvas) {
+    return;
+  }
+  if (coverageCanvas.width !== COVERAGE_VIEW_W || coverageCanvas.height !== COVERAGE_VIEW_H) {
+    coverageCanvas.width = COVERAGE_VIEW_W;
+    coverageCanvas.height = COVERAGE_VIEW_H;
+    coverageCtx = coverageCanvas.getContext("2d");
+  }
+}
+
+function getCoveragePanLayout() {
+  const scroll = getFrameScrollOffsets();
+  const { visW, visH, docW, docH } = getFrameVisibleDocSize();
+  const vw = COVERAGE_VIEW_W;
+  const vh = COVERAGE_VIEW_H;
+
+  if (!docW || !docH) {
+    return {
+      mapW: vw,
+      mapH: vh,
+      offsetX: 0,
+      offsetY: 0,
+      visW: 1,
+      visH: 1,
+      docW: 1,
+      docH: 1,
+      scrollX: 0,
+      scrollY: 0
+    };
+  }
+
+  const scaleW = vw / docW;
+  const scaleH = vh / docH;
+  let mapW;
+  let mapH;
+  if (scaleW * docH >= vh) {
+    mapW = vw;
+    mapH = scaleW * docH;
+  } else {
+    mapH = vh;
+    mapW = scaleH * docW;
+  }
+
+  mapW = Math.max(vw, Math.round(mapW));
+  mapH = Math.max(vh, Math.round(mapH));
+
+  const maxScrollX = Math.max(0, docW - visW);
+  const maxScrollY = Math.max(0, docH - visH);
+  const maxPanX = Math.max(0, mapW - vw);
+  const maxPanY = Math.max(0, mapH - vh);
+
+  const offsetX = maxScrollX > 0 ? (scroll.x / maxScrollX) * maxPanX : 0;
+  const offsetY = maxScrollY > 0 ? (scroll.y / maxScrollY) * maxPanY : 0;
+
+  return {
+    mapW,
+    mapH,
+    offsetX,
+    offsetY,
+    visW,
+    visH,
+    docW,
+    docH,
+    scrollX: scroll.x,
+    scrollY: scroll.y
+  };
+}
+
+function attachCoverageDocumentResizeTracking() {
+  if (detachCoverageResizeObserver) {
+    detachCoverageResizeObserver();
+    detachCoverageResizeObserver = null;
+  }
+
+  const doc = getFrameDocument();
+  const root = doc?.documentElement;
+  if (!root) {
+    ensureCoverageCanvasFixedSize();
+    drawCoverageMap();
+    return;
+  }
+
+  let rafId = 0;
+  const schedule = () => {
+    if (rafId) {
+      return;
+    }
+    rafId = window.requestAnimationFrame(() => {
+      rafId = 0;
+      drawCoverageMap();
+    });
+  };
+
+  let observer = null;
+  try {
+    observer = new ResizeObserver(schedule);
+    observer.observe(root);
+  } catch (_) {
+    schedule();
+  }
+
+  detachCoverageResizeObserver = () => {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  };
+}
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
 const HEAT_SAMPLE_INTERVAL_MS = 45;
@@ -223,6 +342,10 @@ function loadTargetUrl(rawInput) {
   }
 
   try {
+    if (detachCoverageResizeObserver) {
+      detachCoverageResizeObserver();
+      detachCoverageResizeObserver = null;
+    }
     if (detachFrameScrollListener) {
       detachFrameScrollListener();
       detachFrameScrollListener = null;
@@ -324,6 +447,26 @@ function getFrameDocumentSize() {
   };
 }
 
+function getFrameVisibleDocSize() {
+  const { width: docW, height: docH } = getFrameDocumentSize();
+  const doc = getFrameDocument();
+  const root = doc?.documentElement;
+  const fw = getFrameWindow();
+  const fallbackW = targetFrame?.clientWidth ?? docW;
+  const fallbackH = targetFrame?.clientHeight ?? docH;
+
+  const visW = Math.max(
+    1,
+    Math.min(docW, root?.clientWidth ?? fw?.innerWidth ?? fallbackW)
+  );
+  const visH = Math.max(
+    1,
+    Math.min(docH, root?.clientHeight ?? fw?.innerHeight ?? fallbackH)
+  );
+
+  return { visW, visH, docW, docH };
+}
+
 function getPointInsideFrame(clientPoint) {
   if (!targetFrame || !clientPoint) {
     return null;
@@ -407,6 +550,7 @@ function attachFrameScrollTracking() {
     rafId = window.requestAnimationFrame(() => {
       rafId = 0;
       renderHeatmap();
+      drawCoverageMap();
     });
   };
 
@@ -565,14 +709,34 @@ function drawHeatPoint(x, y) {
 }
 
 function drawCoverageMap() {
-  const width = coverageCanvas.width;
-  const height = coverageCanvas.height;
-  coverageCtx.clearRect(0, 0, width, height);
-  coverageCtx.fillStyle = "#020617";
-  coverageCtx.fillRect(0, 0, width, height);
+  ensureCoverageCanvasFixedSize();
+  const vw = COVERAGE_VIEW_W;
+  const vh = COVERAGE_VIEW_H;
+  const {
+    mapW,
+    mapH,
+    offsetX,
+    offsetY,
+    visW,
+    visH,
+    docW,
+    docH,
+    scrollX,
+    scrollY
+  } = getCoveragePanLayout();
 
-  const cellWidth = width / state.gridCols;
-  const cellHeight = height / state.gridRows;
+  coverageCtx.clearRect(0, 0, vw, vh);
+  coverageCtx.fillStyle = "#020617";
+  coverageCtx.fillRect(0, 0, vw, vh);
+
+  const cellW = mapW / state.gridCols;
+  const cellH = mapH / state.gridRows;
+
+  coverageCtx.save();
+  coverageCtx.beginPath();
+  coverageCtx.rect(0, 0, vw, vh);
+  coverageCtx.clip();
+  coverageCtx.translate(-offsetX, -offsetY);
 
   for (let row = 0; row < state.gridRows; row += 1) {
     for (let col = 0; col < state.gridCols; col += 1) {
@@ -586,31 +750,36 @@ function drawCoverageMap() {
       const green = Math.round(210 - strength * 110);
       const blue = Math.round(80 - strength * 30);
       coverageCtx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${strength})`;
-      coverageCtx.fillRect(
-        col * cellWidth,
-        row * cellHeight,
-        cellWidth,
-        cellHeight
-      );
+      coverageCtx.fillRect(col * cellW, row * cellH, cellW, cellH);
     }
   }
 
   coverageCtx.strokeStyle = "rgba(148, 163, 184, 0.18)";
   coverageCtx.lineWidth = 1;
   for (let col = 1; col < state.gridCols; col += 1) {
-    const x = Math.round(col * cellWidth) + 0.5;
+    const x = Math.round(col * cellW) + 0.5;
     coverageCtx.beginPath();
     coverageCtx.moveTo(x, 0);
-    coverageCtx.lineTo(x, height);
+    coverageCtx.lineTo(x, mapH);
     coverageCtx.stroke();
   }
   for (let row = 1; row < state.gridRows; row += 1) {
-    const y = Math.round(row * cellHeight) + 0.5;
+    const y = Math.round(row * cellH) + 0.5;
     coverageCtx.beginPath();
     coverageCtx.moveTo(0, y);
-    coverageCtx.lineTo(width, y);
+    coverageCtx.lineTo(mapW, y);
     coverageCtx.stroke();
   }
+
+  const vpLeft = (scrollX / docW) * mapW;
+  const vpTop = (scrollY / docH) * mapH;
+  const vpW = (visW / docW) * mapW;
+  const vpH = (visH / docH) * mapH;
+  coverageCtx.strokeStyle = "rgba(226, 232, 240, 0.95)";
+  coverageCtx.lineWidth = 2;
+  coverageCtx.strokeRect(vpLeft + 0.5, vpTop + 0.5, Math.max(0, vpW - 1), Math.max(0, vpH - 1));
+
+  coverageCtx.restore();
 }
 
 function updateCoverage(x, y, width, height) {
@@ -919,7 +1088,10 @@ urlInput.addEventListener("keydown", (event) => {
 if (targetFrame) {
   targetFrame.addEventListener("load", () => {
     attachFrameScrollTracking();
+    attachCoverageDocumentResizeTracking();
+    ensureCoverageCanvasFixedSize();
     renderHeatmap();
+    drawCoverageMap();
     if (!state.currentTargetUrl) {
       return;
     }
@@ -946,11 +1118,16 @@ if (targetFrame) {
 
 window.addEventListener("resize", () => {
   resizeHeatmapCanvas();
+  ensureCoverageCanvasFixedSize();
   renderHeatmap();
   drawCoverageMap();
 });
 
 window.addEventListener("beforeunload", () => {
+  if (detachCoverageResizeObserver) {
+    detachCoverageResizeObserver();
+    detachCoverageResizeObserver = null;
+  }
   if (detachFrameScrollListener) {
     detachFrameScrollListener();
     detachFrameScrollListener = null;
@@ -961,6 +1138,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 resizeHeatmapCanvas();
+ensureCoverageCanvasFixedSize();
 drawCoverageMap();
 setPreviewVisibility(false);
 setTrackingControlsEnabled(false);

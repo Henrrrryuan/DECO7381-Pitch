@@ -354,7 +354,10 @@ body.gaze-preview-hidden #GazeFlowContainer {
 }
 
 #coverageCanvas {
-  width: 100%;
+  display: block;
+  width: min(100%, 300px);
+  height: auto;
+  aspect-ratio: 300 / 180;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f8fafc;
