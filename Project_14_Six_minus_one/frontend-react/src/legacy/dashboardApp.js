@@ -1784,25 +1784,30 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
 
   return `
-    <article
+    <details
       class="issue-highlight-button issue-summary-card${selectedClass}"
       data-highlight-issue="${escapeHtml(issue.rule_id)}"
       data-highlight-dimension="${escapeHtml(dimensionName)}"
     >
-      <div class="issue-summary-topline">
-        <span class="issue-highlight-rule">Issue ${issueNumber}</span>
+      <summary class="issue-summary-toggle">
+        <div class="issue-summary-topline">
+          <span class="issue-highlight-rule">Issue ${issueNumber}</span>
+          <span class="issue-summary-chevron" aria-hidden="true">▾</span>
+        </div>
+        <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
+      </summary>
+      <div class="issue-summary-body">
+        <div class="issue-summary-row issue-summary-row-standards">
+          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
+          ${wcagMarkup}
+        </div>
+        <div class="issue-summary-row issue-summary-row-standards">
+          <span class="issue-highlight-label">ISO 9241-11</span>
+          ${isoMarkup}
+        </div>
+        ${issueElementListMarkup(issue, dimensionName)}
       </div>
-      <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
-      <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
-        ${wcagMarkup}
-      </div>
-      <div class="issue-summary-row issue-summary-row-standards">
-        <span class="issue-highlight-label">ISO 9241-11</span>
-        ${isoMarkup}
-      </div>
-      ${issueElementListMarkup(issue, dimensionName)}
-    </article>
+    </details>
   `;
 }
 

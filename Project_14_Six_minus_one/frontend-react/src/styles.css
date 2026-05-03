@@ -4721,6 +4721,36 @@ body.accessibility-reading-mask-active .accessibility-menu {
   cursor: default;
 }
 
+.issue-summary-toggle {
+  list-style: none;
+  cursor: pointer;
+}
+
+.issue-summary-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.issue-summary-toggle .issue-summary-title {
+  display: block;
+}
+
+.issue-summary-chevron {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.issue-summary-card[open] .issue-summary-chevron {
+  transform: rotate(180deg);
+}
+
+.issue-summary-body {
+  display: grid;
+  gap: 10px;
+}
+
 .issue-summary-topline {
   display: flex;
   align-items: center;
