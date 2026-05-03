@@ -5443,19 +5443,13 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .docs-timeline {
   position: relative;
   display: grid;
-  gap: 18px;
+  gap: 14px;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .docs-timeline-axis {
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 50%;
-  width: 2px;
-  transform: translateX(-50%);
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.7), rgba(96, 165, 250, 0.36), rgba(59, 130, 246, 0.08));
-  box-shadow: 0 0 14px rgba(96, 165, 250, 0.35);
-  animation: docs-axis-pulse 2.6s ease-in-out infinite;
+  display: none;
 }
 
 .docs-card {
@@ -5474,22 +5468,26 @@ body.accessibility-reading-mask-active .accessibility-menu {
   color: #334155;
 }
 
+.docs-outcome {
+  margin-top: 6px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.86);
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .docs-card-left,
 .docs-card-right {
-  width: min(520px, calc(50% - 20px));
-}
-
-.docs-card-left {
-  justify-self: start;
-}
-
-.docs-card-right {
-  justify-self: end;
+  width: 100%;
+  justify-self: stretch;
 }
 
 .docs-card-core {
-  justify-self: center;
-  width: min(680px, 92%);
+  justify-self: stretch;
+  width: 100%;
   border-color: rgba(147, 197, 253, 0.58);
   box-shadow:
     0 18px 36px rgba(15, 23, 42, 0.11),

@@ -110,9 +110,10 @@ export function DocsPage() {
             <h2>Quick path</h2>
             <p>
               <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a category by risk -&gt; open an
-              issue card -&gt; inspect location -&gt; open guidance.
+              issue card -&gt; click an <strong>Element</strong> chip -&gt; click the highlighted area for guidance.
             </p>
             <p>Use this route when you want a fast first pass before deeper review.</p>
+            <p className="docs-outcome">You should see: the matching page element highlighted on the right preview.</p>
           </article>
 
           <article className="docs-card docs-card-right">
@@ -137,27 +138,28 @@ export function DocsPage() {
               <span className="docs-risk-pill is-medium">Medium risk</span>
               <span className="docs-risk-pill is-low">Low risk</span>
             </div>
-            <p>Each Top Issue Card provides two core actions:</p>
+            <p>Start with <strong>High risk</strong> cards first for faster triage.</p>
+            <p>In each Top Issue Card, use the <strong>Affected elements</strong> list to drive inspection:</p>
             <ul className="docs-list">
               <li>
-                <strong>Show highlighted location</strong> opens the website preview and highlights where the issue
-                appears.
+                Click an <strong>Element</strong> chip to highlight that exact location in the website preview.
               </li>
               <li>
-                <strong>Open guidance</strong> opens the detailed issue workspace with evidence, why it matters, and
-                redesign direction.
+                Click the highlighted element in preview to open in-context guidance.
               </li>
             </ul>
+            <p className="docs-outcome">You should see: one highlighted target and an element list in sync.</p>
           </article>
 
           <article className="docs-card docs-card-left">
             <span className="docs-step">4</span>
             <h2>Use guidance to redesign</h2>
             <p>
-              In issue guidance, review <strong>Page evidence</strong>, <strong>Why this matters</strong>, and{" "}
-              <strong>First redesign move</strong> in order.
+              In the preview popover, review <strong>Why this matters</strong> and <strong>First redesign move</strong>{" "}
+              in order.
             </p>
-            <p>For technical implementation, use the selector details and standards mapping as your engineering checklist.</p>
+            <p>Click the same highlighted element again to close the popover when you are done.</p>
+            <p className="docs-outcome">You should see: guidance open/close directly on the highlighted element.</p>
           </article>
 
           <article className="docs-card docs-card-right">
