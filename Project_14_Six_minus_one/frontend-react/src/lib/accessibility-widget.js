@@ -1084,6 +1084,25 @@ function createAccessibilityWidget() {
     setAccessibilityOptionActive("tooltips", true);
   }
 
+  function applyAutismProfile(profileButton) {
+    if (activeProfileIds.has("autism")) {
+      restoreAccessibilityWidgetDefaults();
+      return;
+    }
+    activeProfileIds.add("autism");
+    setAccessibilityProfileButtonActive(profileButton, true);
+    setAccessibilityOptionActive("stop-animation", true);
+    setAccessibilityOptionActive("tooltips", true);
+    setAccessibilityOptionActive("text-reader", true);
+    setAccessibilityOptionActive("readable-fonts", true);
+    activeOptionIds.add("saturation");
+    setSaturationMode("low");
+    const saturationButton = menu.querySelector('[data-accessibility-option="saturation"]');
+    if (saturationButton) {
+      setSaturationButtonState(saturationButton, "low");
+    }
+  }
+
   function resetAccessibilityOptionButton(optionButton) {
     const optionId = optionButton.dataset.accessibilityOption || "";
     const optionConfig = getAccessibilityOptionConfig(optionId);
@@ -1273,6 +1292,9 @@ function createAccessibilityWidget() {
       const profileId = profileButton.dataset.accessibilityProfile || "";
       if (profileId === "dyslexia") {
         applyDyslexiaProfile(profileButton);
+      }
+      if (profileId === "autism") {
+        applyAutismProfile(profileButton);
       }
       if (profileId === "adhd") {
         applyAdhdProfile(profileButton);
