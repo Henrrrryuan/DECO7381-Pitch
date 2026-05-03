@@ -4717,13 +4717,16 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .issue-summary-card {
   grid-template-columns: 1fr;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 0;
   cursor: default;
 }
 
 .issue-summary-toggle {
   list-style: none;
   cursor: pointer;
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
 }
 
 .issue-summary-toggle::-webkit-details-marker {
@@ -4749,6 +4752,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .issue-summary-body {
   display: grid;
   gap: 10px;
+  padding: 0 16px 14px;
 }
 
 .issue-summary-topline {
@@ -4887,6 +4891,13 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .issue-element-chip-list {
   display: grid;
   gap: 8px;
+}
+
+.issue-element-tip {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #64748b;
 }
 
 .issue-element-chip {
