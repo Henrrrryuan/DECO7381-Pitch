@@ -2020,6 +2020,27 @@ function injectHighlightStyles(doc) {
       color: #0f172a;
     }
 
+    #cognilens-guidance-popover .cognilens-popover-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      border-radius: 999px;
+      background: #fff;
+      color: #475569;
+      font: 800 14px/1 Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close:hover,
+    #cognilens-guidance-popover .cognilens-popover-close:focus-visible {
+      border-color: rgba(37, 99, 235, 0.8);
+      color: #1d4ed8;
+      outline: none;
+    }
+
     #cognilens-guidance-popover h5 {
       margin: 0 0 8px;
       font: 800 12px/1.2 Arial, sans-serif;
@@ -2083,6 +2104,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
     ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
+    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover">×</button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
     <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
@@ -2106,6 +2128,13 @@ function bindPreviewElementClick(doc) {
   }
   doc.body.dataset.cognilensElementClickBound = "true";
   doc.addEventListener("click", (event) => {
+    const closeTrigger = event.target.closest(".cognilens-popover-close");
+    if (closeTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      removeGuidancePopover(doc);
+      return;
+    }
     const insidePopover = event.target.closest("#cognilens-guidance-popover");
     if (insidePopover) {
       // Keep popover pinned while users select/copy guidance text.
