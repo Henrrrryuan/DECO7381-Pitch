@@ -2106,6 +2106,11 @@ function bindPreviewElementClick(doc) {
   }
   doc.body.dataset.cognilensElementClickBound = "true";
   doc.addEventListener("click", (event) => {
+    const insidePopover = event.target.closest("#cognilens-guidance-popover");
+    if (insidePopover) {
+      // Keep popover pinned while users select/copy guidance text.
+      return;
+    }
     const highlightedElement = event.target.closest("[data-cognilens-highlight]");
     if (!highlightedElement) {
       removeGuidancePopover(doc);
