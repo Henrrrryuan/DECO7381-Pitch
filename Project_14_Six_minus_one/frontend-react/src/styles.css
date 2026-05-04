@@ -4895,9 +4895,39 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .issue-element-tip {
   margin: 0;
-  font-size: 11.5px;
-  line-height: 1.4;
-  color: #64748b;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: rgba(248, 250, 252, 0.85);
+  color: #475569;
+}
+
+.issue-element-tip-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #475569;
+}
+
+.issue-element-tip-steps {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.issue-element-tip-steps li {
+  color: #475569;
+}
+
+.issue-element-tip-steps strong {
+  color: #0f172a;
+  font-weight: 800;
 }
 
 .issue-element-chip {

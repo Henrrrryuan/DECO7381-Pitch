@@ -1568,7 +1568,13 @@ function issueElementListMarkup(issue, dimensionName) {
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
-      <p class="issue-element-tip">Tip: Click an element to highlight it in the preview. Click the highlight to view guidance.</p>
+      <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+        <p class="issue-element-tip-title">Tip</p>
+        <ol class="issue-element-tip-steps">
+          <li><strong>Click</strong> an element to <strong>highlight</strong> it in the preview.</li>
+          <li><strong>Click</strong> the highlight to open <strong>guidance</strong>.</li>
+        </ol>
+      </div>
       <div class="issue-element-chip-list">
         ${rows}
       </div>
