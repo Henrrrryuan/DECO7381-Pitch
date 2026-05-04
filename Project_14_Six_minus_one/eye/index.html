@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CogniLens Eye Tracking</title>
-    <link rel="stylesheet" href="./styles.css?v=eye-map-pan-1" />
+    <link rel="stylesheet" href="./styles.css?v=eye-panel-row-4" />
   </head>
   <body>
     <header class="app-nav">
@@ -24,22 +24,27 @@
     </header>
 
     <div class="app-shell">
-      <section class="url-panel" aria-label="Target URL panel">
-        <label for="urlInput">Target URL</label>
-        <input
-          id="urlInput"
-          type="text"
-          inputmode="url"
-          placeholder="https://example.com"
-          value="https://example.com"
-        />
-        <button id="loadUrlBtn">Load URL</button>
-        <div class="controls controls-inline">
-          <button id="startBtn">Start Tracking</button>
-          <button id="pauseBtn" disabled>Pause</button>
-          <button id="clearBtn" disabled>Clear Heatmap</button>
-          <button id="previewBtn" disabled>Show Camera Preview</button>
-          <button id="saveBtn" disabled>Save Session</button>
+      <section class="url-panel" aria-label="Target page and tracking controls">
+        <div class="url-panel-start">
+          <label class="url-panel-label" for="urlInput">URL</label>
+          <input
+            id="urlInput"
+            class="url-panel-url"
+            type="text"
+            inputmode="url"
+            placeholder="https://example.com"
+            value="https://example.com"
+            title="Target page URL"
+          />
+          <button id="loadUrlBtn" type="button">Load URL</button>
+          <input id="loadHtmlInput" type="file" accept=".html,.htm,text/html" hidden />
+          <button id="loadHtmlBtn" type="button">Load HTML…</button>
+        </div>
+        <div class="url-panel-actions">
+          <button id="startBtn" type="button">Start Tracking</button>
+          <button id="pauseBtn" type="button" disabled>Pause</button>
+          <button id="clearBtn" type="button" disabled>Clear Heatmap</button>
+          <button id="saveBtn" type="button" disabled>Save Session</button>
         </div>
       </section>
 
@@ -83,6 +88,6 @@
     </div>
 
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-map-pan-1"></script>
+    <script src="./app.js?v=eye-panel-row-4"></script>
   </body>
 </html>

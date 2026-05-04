@@ -167,20 +167,53 @@ button.nav-cta {
   border-radius: 14px;
   background: var(--panel);
   backdrop-filter: blur(10px);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
   padding: 10px 12px;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.url-panel label {
+.url-panel-start {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.url-panel-start > button {
+  flex-shrink: 0;
+}
+
+.url-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.url-panel-actions > button {
+  flex-shrink: 0;
+}
+
+.url-panel-label {
   color: var(--muted);
   font-size: 0.9rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
-.url-panel input {
-  width: 100%;
+.url-panel-url {
+  flex: 1 1 24rem;
+  min-width: 18rem;
+  max-width: none;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(248, 250, 252, 0.92);
@@ -188,7 +221,7 @@ button.nav-cta {
   padding: 9px 10px;
 }
 
-.url-panel input:focus {
+.url-panel-url:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -377,12 +410,4 @@ body.gaze-preview-hidden #GazeFlowContainer {
     grid-template-rows: auto minmax(45vh, 1fr) auto;
   }
 
-  .url-panel {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .controls-inline {
-    justify-content: flex-start;
-  }
 }

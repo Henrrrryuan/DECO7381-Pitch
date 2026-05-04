@@ -7,6 +7,8 @@ from pydantic import BaseModel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EYE_DIR = PROJECT_ROOT / "eye"
+EYE_TEMP_HTML_DIR = PROJECT_ROOT / "backend" / "data" / "eye_temp_html"
+MAX_EYE_TEMP_HTML_BYTES = 2 * 1024 * 1024  # 2 MiB (UTF-8 encoded body)
 MAX_ZIP_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parents[1] / "sample_input"
 SAMPLE_FILE_MAP = {
@@ -27,6 +29,10 @@ class AnalyzeUrlPayload(BaseModel):
     url: str
     source_name: str | None = None
     baseline_run_id: str | None = None
+
+
+class EyeTempHtmlUploadPayload(BaseModel):
+    html: str
 
 
 class SaveEyeTrackingSessionPayload(BaseModel):

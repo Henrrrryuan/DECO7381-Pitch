@@ -6,7 +6,8 @@ const gazeDot = document.getElementById("gazeDot");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const clearBtn = document.getElementById("clearBtn");
-const previewBtn = document.getElementById("previewBtn");
+const loadHtmlBtn = document.getElementById("loadHtmlBtn");
+const loadHtmlInput = document.getElementById("loadHtmlInput");
 const saveBtn = document.getElementById("saveBtn");
 const urlInput = document.getElementById("urlInput");
 const loadUrlBtn = document.getElementById("loadUrlBtn");
@@ -191,7 +192,6 @@ function setStatus(text) {
 function setTrackingControlsEnabled(enabled) {
   pauseBtn.disabled = !enabled;
   clearBtn.disabled = !enabled;
-  previewBtn.disabled = !enabled;
 }
 
 function updateSaveButtonState() {
@@ -336,28 +336,69 @@ function toProxyUrl(targetUrl) {
   return `/eye/proxy?url=${encodeURIComponent(targetUrl)}`;
 }
 
+function detachFrameListeners() {
+  if (detachCoverageResizeObserver) {
+    detachCoverageResizeObserver();
+    detachCoverageResizeObserver = null;
+  }
+  if (detachFrameScrollListener) {
+    detachFrameScrollListener();
+    detachFrameScrollListener = null;
+  }
+}
+
+function isTempHtmlServicePath(urlString) {
+  try {
+    const u = new URL(urlString, window.location.origin);
+    return u.pathname.startsWith("/eye/temp-html/");
+  } catch (_) {
+    return false;
+  }
+}
+
+function loadTempHtmlPreview(relativePath, uploadLabel) {
+  if (!targetFrame) {
+    return;
+  }
+  const path = relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
+  const absolutePersistUrl = new URL(path, window.location.origin).href;
+  detachFrameListeners();
+  state.currentTargetUrl = absolutePersistUrl;
+  urlInput.value = absolutePersistUrl;
+  persistPreferredTargetUrl(absolutePersistUrl);
+  targetFrame.src = `${path}?t=${Date.now()}`;
+  setFrameHint(
+    uploadLabel
+      ? `Uploaded HTML (${uploadLabel}) is served from temporary backend storage on this origin.`
+      : "Temporary HTML is served from backend storage on this origin (not the remote proxy)."
+  );
+  resetTrackingData();
+  setStatus(uploadLabel ? `Uploaded ${uploadLabel}. Loading…` : "Loading temporary HTML…");
+}
+
 function loadTargetUrl(rawInput) {
   if (!targetFrame) {
     return;
   }
 
   try {
-    if (detachCoverageResizeObserver) {
-      detachCoverageResizeObserver();
-      detachCoverageResizeObserver = null;
-    }
-    if (detachFrameScrollListener) {
-      detachFrameScrollListener();
-      detachFrameScrollListener = null;
-    }
+    detachFrameListeners();
     const normalizedUrl = normalizeTargetUrl(rawInput);
     state.currentTargetUrl = normalizedUrl;
     urlInput.value = normalizedUrl;
     persistPreferredTargetUrl(normalizedUrl);
-    targetFrame.src = toProxyUrl(normalizedUrl);
-    setFrameHint(
-      "Page is loaded through local proxy mode. Some highly dynamic or login-heavy sites may still behave differently."
-    );
+    if (isTempHtmlServicePath(normalizedUrl)) {
+      const u = new URL(normalizedUrl);
+      targetFrame.src = `${u.pathname}${u.search}`;
+      setFrameHint(
+        "Temporary HTML preview (same origin). Re-upload if this link expired."
+      );
+    } else {
+      targetFrame.src = toProxyUrl(normalizedUrl);
+      setFrameHint(
+        "Page is loaded through local proxy mode. Some highly dynamic or login-heavy sites may still behave differently."
+      );
+    }
     resetTrackingData();
     setStatus(`Loading page: ${normalizedUrl}`);
   } catch (error) {
@@ -577,6 +618,9 @@ function deriveSessionSourceName() {
   if (state.currentTargetUrl) {
     try {
       const parsed = new URL(state.currentTargetUrl);
+      if (parsed.pathname.includes("/eye/temp-html/")) {
+        return "Uploaded HTML (temporary)";
+      }
       return parsed.hostname || state.currentTargetUrl;
     } catch (_) {
       return state.currentTargetUrl;
@@ -658,6 +702,49 @@ async function saveCurrentSession() {
   } finally {
     state.saving = false;
     updateSaveButtonState();
+  }
+}
+
+async function uploadHtmlForEyeSession(file) {
+  if (!loadHtmlBtn) {
+    return;
+  }
+  loadHtmlBtn.disabled = true;
+  setStatus("Uploading HTML…");
+  try {
+    const html = await file.text();
+    const response = await fetch("/eye/temp-html", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ html })
+    });
+
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try {
+        const errBody = await response.json();
+        if (errBody?.detail) {
+          detail =
+            typeof errBody.detail === "string"
+              ? errBody.detail
+              : JSON.stringify(errBody.detail);
+        }
+      } catch (_) {
+        // Keep the fallback status text.
+      }
+      throw new Error(detail);
+    }
+
+    const payload = await response.json();
+    const path = payload?.path;
+    if (!path || typeof path !== "string") {
+      throw new Error("Server did not return a preview path.");
+    }
+    loadTempHtmlPreview(path, file.name);
+  } finally {
+    loadHtmlBtn.disabled = false;
   }
 }
 
@@ -801,9 +888,6 @@ function updateCoverage(x, y, width, height) {
 function setPreviewVisibility(visible) {
   state.previewVisible = Boolean(visible);
   document.body.classList.toggle("gaze-preview-hidden", !state.previewVisible);
-  previewBtn.textContent = state.previewVisible
-    ? "Hide Camera Preview"
-    : "Show Camera Preview";
 }
 
 function handleTrackerStop(message) {
@@ -1063,8 +1147,24 @@ clearBtn.addEventListener("click", () => {
   setStatus(state.calibrated ? "Heatmap cleared. Tracking active." : "Heatmap cleared.");
 });
 
-previewBtn.addEventListener("click", () => {
-  setPreviewVisibility(!state.previewVisible);
+loadHtmlBtn?.addEventListener("click", () => {
+  loadHtmlInput?.click();
+});
+
+loadHtmlInput?.addEventListener("change", () => {
+  const file = loadHtmlInput.files && loadHtmlInput.files[0];
+  loadHtmlInput.value = "";
+  if (!file) {
+    return;
+  }
+  const lower = String(file.name || "").toLowerCase();
+  if (!lower.endsWith(".html") && !lower.endsWith(".htm") && file.type !== "text/html") {
+    setStatus("Please choose an .html or .htm file.");
+    return;
+  }
+  uploadHtmlForEyeSession(file).catch((error) => {
+    setStatus(`Upload failed: ${getErrorMessage(error)}`);
+  });
 });
 
 saveBtn?.addEventListener("click", () => {

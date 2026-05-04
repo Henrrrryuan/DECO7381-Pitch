@@ -26,6 +26,8 @@ def api_root() -> dict[str, Any]:
             "/history/{run_id}",
             "/eye/",
             "/eye/proxy",
+            "/eye/temp-html",
+            "/eye/temp-html/{token}",
             "/eye/sessions",
             "/eye/sessions/{session_id}",
         ],

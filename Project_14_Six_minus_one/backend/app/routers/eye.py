@@ -5,13 +5,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Response
 
 from ...adapters.http.eye_proxy import EyeProxyBadRequest, EyeProxyFetchError, fetch_proxied_response
+from ...adapters.persistence.eye_temp_html_store import read_temp_html_bytes, save_temp_html
 from ...adapters.persistence.history_store import (
     get_eye_tracking_session,
     has_history_run,
     list_eye_tracking_sessions,
     save_eye_tracking_session,
 )
-from ..core import SaveEyeTrackingSessionPayload
+from ..core import EyeTempHtmlUploadPayload, SaveEyeTrackingSessionPayload
 
 router = APIRouter()
 
@@ -33,6 +34,31 @@ def eye_proxy(url: str = Query(...)) -> Response:
             "Cache-Control": "no-store",
             "Access-Control-Allow-Origin": "*",
             "X-Proxy-Final-Url": proxied.final_url,
+        },
+    )
+
+
+@router.post("/eye/temp-html")
+def post_eye_temp_html(payload: EyeTempHtmlUploadPayload) -> dict[str, Any]:
+    try:
+        token = save_temp_html(payload.html)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"token": token, "path": f"/eye/temp-html/{token}"}
+
+
+@router.get("/eye/temp-html/{token}")
+def get_eye_temp_html(token: str) -> Response:
+    body = read_temp_html_bytes(token)
+    if body is None:
+        raise HTTPException(status_code=404, detail="Temporary HTML not found or expired.")
+    return Response(
+        content=body,
+        status_code=200,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Cache-Control": "no-store",
+            "Access-Control-Allow-Origin": "*",
         },
     )
 
