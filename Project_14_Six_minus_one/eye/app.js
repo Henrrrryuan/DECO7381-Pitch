@@ -9,10 +9,13 @@ const clearBtn = document.getElementById("clearBtn");
 const loadHtmlBtn = document.getElementById("loadHtmlBtn");
 const loadHtmlInput = document.getElementById("loadHtmlInput");
 const saveBtn = document.getElementById("saveBtn");
+const aboutEyeTrackingBtn = document.getElementById("aboutEyeTrackingBtn");
 const urlInput = document.getElementById("urlInput");
 const loadUrlBtn = document.getElementById("loadUrlBtn");
 const targetFrame = document.getElementById("targetFrame");
 const frameHint = document.getElementById("frameHint");
+const eyeIntroModal = document.getElementById("eyeIntroModal");
+const eyeIntroContinueBtn = document.getElementById("eyeIntroContinueBtn");
 
 const statusText = document.getElementById("statusText");
 const coordsText = document.getElementById("coordsText");
@@ -24,6 +27,8 @@ let coverageCtx = coverageCanvas.getContext("2d");
 const queryParams = new URLSearchParams(window.location.search);
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
+/** Same key as `dashboardApp.js` — latest analysis run to attach behavioral evidence. */
+const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
 
 const state = {
   started: false,
@@ -43,7 +48,7 @@ const state = {
   visitedCellIds: new Set(),
   heatSamples: [],
   currentTargetUrl: "",
-  relatedRunId: queryParams.get("run_id") || "",
+  relatedRunId: "",
   sourceName: queryParams.get("source_name") || "",
   sessionStartPerf: 0,
   sessionStartedAtIso: "",
@@ -53,6 +58,79 @@ const state = {
   savedThisRun: false,
   lastSavedSessionId: ""
 };
+
+function persistEyeLocalContext(runId, sourceName) {
+  const rid = (runId || "").trim();
+  if (!rid) {
+    return;
+  }
+  try {
+    localStorage.setItem(
+      EYE_RELATED_CONTEXT_STORAGE_KEY,
+      JSON.stringify({
+        run_id: rid,
+        source_name: sourceName || "",
+        savedAt: Date.now()
+      })
+    );
+  } catch (_) {
+    // Ignore quota / private mode.
+  }
+}
+
+function updateLinkedRunIndicator() {
+  const row = document.getElementById("linkedRunRow");
+  const text = document.getElementById("linkedRunText");
+  if (!row || !text) {
+    return;
+  }
+  const rid = (state.relatedRunId || "").trim();
+  if (!rid) {
+    row.hidden = true;
+    text.textContent = "—";
+    text.removeAttribute("title");
+    return;
+  }
+  row.hidden = false;
+  const short = rid.length > 14 ? `${rid.slice(0, 10)}…` : rid;
+  text.textContent = short;
+  text.title = rid;
+}
+
+function refreshRelatedRunFromStorage() {
+  const qs = new URLSearchParams(window.location.search);
+  const fromUrl = (qs.get("run_id") || "").trim();
+  if (fromUrl) {
+    state.relatedRunId = fromUrl;
+    const fromUrlSource = (qs.get("source_name") || "").trim();
+    if (fromUrlSource) {
+      state.sourceName = fromUrlSource;
+    }
+    persistEyeLocalContext(state.relatedRunId, state.sourceName);
+    updateLinkedRunIndicator();
+    return;
+  }
+  try {
+    const raw = localStorage.getItem(EYE_RELATED_CONTEXT_STORAGE_KEY);
+    if (!raw) {
+      updateLinkedRunIndicator();
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    const rid = (parsed.run_id || "").trim();
+    if (rid) {
+      state.relatedRunId = rid;
+      if (!String(state.sourceName || "").trim() && parsed.source_name) {
+        state.sourceName = String(parsed.source_name);
+      }
+    }
+  } catch (_) {
+    // Ignore invalid JSON.
+  }
+  updateLinkedRunIndicator();
+}
+
+refreshRelatedRunFromStorage();
 
 let detachFrameScrollListener = null;
 let detachCoverageResizeObserver = null;
@@ -189,6 +267,20 @@ function setStatus(text) {
   statusText.textContent = text;
 }
 
+function showEyeIntroModal() {
+  if (!eyeIntroModal) {
+    return;
+  }
+  eyeIntroModal.hidden = false;
+}
+
+function hideEyeIntroModal() {
+  if (!eyeIntroModal) {
+    return;
+  }
+  eyeIntroModal.hidden = true;
+}
+
 function setTrackingControlsEnabled(enabled) {
   pauseBtn.disabled = !enabled;
   clearBtn.disabled = !enabled;
@@ -198,8 +290,10 @@ function updateSaveButtonState() {
   if (!saveBtn) {
     return;
   }
+  const hasRun = Boolean((state.relatedRunId || "").trim());
   const canSave = (
-    Boolean(state.currentTargetUrl)
+    hasRun
+    && Boolean(state.currentTargetUrl)
     && state.samples > 0
     && !state.saving
     && !state.savedThisRun
@@ -630,8 +724,9 @@ function deriveSessionSourceName() {
 }
 
 function buildEyeSessionPayload() {
+  const runId = (state.relatedRunId || "").trim();
   return {
-    run_id: state.relatedRunId || null,
+    run_id: runId,
     source_name: deriveSessionSourceName(),
     target_url: state.currentTargetUrl || "",
     html_snapshot: captureHtmlSnapshot(),
@@ -658,6 +753,13 @@ async function saveCurrentSession() {
     setStatus("This eye session has already been saved.");
     return;
   }
+  const runId = (state.relatedRunId || "").trim();
+  if (!runId) {
+    setStatus(
+      "Link this session to an analysis first: run an analysis on the dashboard, then open Eye Tracking from the top navigation (or add ?run_id=… to this page URL)."
+    );
+    return;
+  }
   if (!state.currentTargetUrl || state.samples <= 0) {
     setStatus("Track a page first before saving an eye session.");
     return;
@@ -667,6 +769,8 @@ async function saveCurrentSession() {
   updateSaveButtonState();
 
   try {
+    // eslint-disable-next-line no-console
+    console.log("Saving eye session for run:", runId);
     const response = await fetch("/eye/sessions", {
       method: "POST",
       headers: {
@@ -1223,6 +1327,11 @@ window.addEventListener("resize", () => {
   drawCoverageMap();
 });
 
+window.addEventListener("pageshow", () => {
+  refreshRelatedRunFromStorage();
+  updateSaveButtonState();
+});
+
 window.addEventListener("beforeunload", () => {
   if (detachCoverageResizeObserver) {
     detachCoverageResizeObserver();
@@ -1234,6 +1343,26 @@ window.addEventListener("beforeunload", () => {
   }
   if (window.GazeCloudAPI && typeof window.GazeCloudAPI.StopEyeTracking === "function") {
     window.GazeCloudAPI.StopEyeTracking();
+  }
+});
+
+aboutEyeTrackingBtn?.addEventListener("click", () => {
+  showEyeIntroModal();
+});
+
+eyeIntroContinueBtn?.addEventListener("click", () => {
+  hideEyeIntroModal();
+});
+
+eyeIntroModal?.addEventListener("click", (event) => {
+  if (event.target === eyeIntroModal) {
+    hideEyeIntroModal();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && eyeIntroModal && !eyeIntroModal.hidden) {
+    hideEyeIntroModal();
   }
 });
 
@@ -1252,3 +1381,5 @@ if (urlInput && preferredTargetUrl) {
 if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
 }
+
+showEyeIntroModal();

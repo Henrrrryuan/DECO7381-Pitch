@@ -8,6 +8,7 @@ from ...adapters.http.eye_proxy import EyeProxyBadRequest, EyeProxyFetchError, f
 from ...adapters.persistence.eye_temp_html_store import read_temp_html_bytes, save_temp_html
 from ...adapters.persistence.history_store import (
     get_eye_tracking_session,
+    get_latest_eye_tracking_session_for_run,
     has_history_run,
     list_eye_tracking_sessions,
     save_eye_tracking_session,
@@ -78,6 +79,19 @@ def eye_sessions(
     ).to_dict()
 
 
+@router.get("/eye/sessions/by-run/{run_id}")
+def eye_session_detail_for_run(run_id: str) -> dict[str, Any]:
+    if not has_history_run(run_id):
+        raise HTTPException(status_code=404, detail="History run not found.")
+    detail = get_latest_eye_tracking_session_for_run(run_id)
+    if detail is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No behavioral evidence is linked to this analysis.",
+        )
+    return detail.to_dict()
+
+
 @router.get("/eye/sessions/{session_id}")
 def eye_session_detail(session_id: str) -> dict[str, Any]:
     detail = get_eye_tracking_session(session_id)
@@ -88,8 +102,23 @@ def eye_session_detail(session_id: str) -> dict[str, Any]:
 
 @router.post("/eye/sessions")
 def save_eye_session(payload: SaveEyeTrackingSessionPayload) -> dict[str, Any]:
-    if payload.run_id and not has_history_run(payload.run_id):
+    run_id = (payload.run_id or "").strip()
+    if not run_id:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "run_id is required. Link this session to a saved analysis "
+                "(open Eye Tracking from the dashboard after a report is ready, or pass ?run_id=)."
+            ),
+        )
+    if not has_history_run(run_id):
         raise HTTPException(status_code=400, detail="The related analysis run does not exist.")
+
+    print(
+        f"Persisting eye session: run_id={run_id!r} sample_count={payload.sample_count} "
+        f"duration_ms={payload.duration_ms}",
+        flush=True,
+    )
 
     if payload.sample_count < 0 or payload.duration_ms < 0:
         raise HTTPException(status_code=400, detail="Session metrics must be non-negative.")
@@ -104,7 +133,7 @@ def save_eye_session(payload: SaveEyeTrackingSessionPayload) -> dict[str, Any]:
         )
 
     saved_session = save_eye_tracking_session(
-        run_id=payload.run_id,
+        run_id=run_id,
         source_name=payload.source_name,
         target_url=payload.target_url,
         html_snapshot=payload.html_snapshot,

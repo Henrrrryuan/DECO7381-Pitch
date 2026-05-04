@@ -24,6 +24,14 @@ Open:
 http://127.0.0.1:8001/eye/
 ```
 
+**Linking to an analysis:** Behavioral evidence is stored against a history `run_id`. After you run an analysis on the dashboard, use **Eye Tracking** in the top nav (the app sets `?run_id=…` and local storage), or open:
+
+```text
+http://127.0.0.1:8001/eye/?run_id=<your-report-id>
+```
+
+Saving a session **requires** a valid `run_id` that exists in analysis history.
+
 The target webpage iframe is loaded through:
 
 ```text

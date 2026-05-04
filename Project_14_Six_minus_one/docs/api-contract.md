@@ -147,6 +147,31 @@ Response:
 }
 ```
 
+Each item includes heuristic scores plus optional behavioral summary from the latest eye-tracking session linked by `eye_tracking_sessions.run_id` (no report schema change):
+
+```json
+{
+  "run_id": "...",
+  "created_at": "...",
+  "source_name": "...",
+  "overall_score": 74,
+  "weighted_average": 79,
+  "min_dimension_score": 68,
+  "eye_tracking_summary": {
+    "available": true,
+    "coverage_percent": 40.5,
+    "sample_count": 728,
+    "duration_ms": 174000
+  }
+}
+```
+
+When no linked session exists:
+
+```json
+"eye_tracking_summary": { "available": false }
+```
+
 ### 7.2 Detail
 
 `GET /history/{run_id}`
@@ -173,6 +198,7 @@ Not found -> `404` with `{"detail":"History run not found."}`.
 
 - `GET /eye/proxy?url=...` -> proxied page response with `X-Proxy-Final-Url`
 - `GET /eye/sessions?limit=25&offset=0&query=...&run_id=...`
+- `GET /eye/sessions/by-run/{run_id}` -> latest linked session detail (heatmap data) or `404`
 - `GET /eye/sessions/{session_id}`
 - `POST /eye/sessions`
 
@@ -180,7 +206,7 @@ Not found -> `404` with `{"detail":"History run not found."}`.
 
 ```json
 {
-  "run_id": "optional-history-run-id",
+  "run_id": "required-analysis-run-id-matching-history",
   "source_name": "optional-page-name",
   "target_url": "https://example.com",
   "html_snapshot": "<html>...</html>",
@@ -196,6 +222,7 @@ Not found -> `404` with `{"detail":"History run not found."}`.
 
 Validation:
 
+- Missing or blank `run_id` -> `400` (session must link to a saved analysis)
 - Unknown `run_id` -> `400`
 - Negative metrics -> `400`
 - Invalid grid size -> `400`

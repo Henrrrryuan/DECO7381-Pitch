@@ -43,6 +43,8 @@ const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
+/** Shared with `eye/app.js`: latest dashboard report to attach behavioral evidence. */
+const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
 const ASSISTANT_MARGIN = 16;
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
@@ -1566,7 +1568,13 @@ function issueElementListMarkup(issue, dimensionName) {
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
-      <p class="issue-element-tip">Tip: Click an element to highlight it in the preview. Click the highlight to view guidance.</p>
+      <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+        <p class="issue-element-tip-title">Tip</p>
+        <ol class="issue-element-tip-steps">
+          <li><strong>Click</strong> an element to <strong>highlight</strong> it in the preview.</li>
+          <li><strong>Click</strong> the highlight to open <strong>guidance</strong>.</li>
+        </ol>
+      </div>
       <div class="issue-element-chip-list">
         ${rows}
       </div>
@@ -2018,6 +2026,27 @@ function injectHighlightStyles(doc) {
       color: #0f172a;
     }
 
+    #cognilens-guidance-popover .cognilens-popover-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      border-radius: 999px;
+      background: #fff;
+      color: #475569;
+      font: 800 14px/1 Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close:hover,
+    #cognilens-guidance-popover .cognilens-popover-close:focus-visible {
+      border-color: rgba(37, 99, 235, 0.8);
+      color: #1d4ed8;
+      outline: none;
+    }
+
     #cognilens-guidance-popover h5 {
       margin: 0 0 8px;
       font: 800 12px/1.2 Arial, sans-serif;
@@ -2081,6 +2110,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
     ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
+    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover">×</button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
     <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
@@ -2104,6 +2134,18 @@ function bindPreviewElementClick(doc) {
   }
   doc.body.dataset.cognilensElementClickBound = "true";
   doc.addEventListener("click", (event) => {
+    const closeTrigger = event.target.closest(".cognilens-popover-close");
+    if (closeTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      removeGuidancePopover(doc);
+      return;
+    }
+    const insidePopover = event.target.closest("#cognilens-guidance-popover");
+    if (insidePopover) {
+      // Keep popover pinned while users select/copy guidance text.
+      return;
+    }
     const highlightedElement = event.target.closest("[data-cognilens-highlight]");
     if (!highlightedElement) {
       removeGuidancePopover(doc);
@@ -2766,6 +2808,41 @@ function handleAssistantClear() {
   renderAssistantMessages();
 }
 
+function syncEyeTrackingNavAndStorage() {
+  const payload = state.currentPayload;
+  const run = payload?.run;
+  const runId = run?.run_id ? String(run.run_id).trim() : "";
+  const baseEyeHref = `${API_BASE.replace(/\/$/, "")}/eye/`;
+
+  if (!runId) {
+    document.querySelectorAll(".nav-eye-tracking").forEach((anchor) => {
+      anchor.setAttribute("href", baseEyeHref);
+    });
+    return;
+  }
+
+  const sourceName = run?.source_name ? String(run.source_name) : "";
+  try {
+    localStorage.setItem(
+      EYE_RELATED_CONTEXT_STORAGE_KEY,
+      JSON.stringify({ run_id: runId, source_name: sourceName, savedAt: Date.now() }),
+    );
+  } catch (_) {
+    // Ignore storage quota / private mode.
+  }
+
+  const params = new URLSearchParams();
+  params.set("run_id", runId);
+  if (sourceName) {
+    params.set("source_name", sourceName);
+  }
+  const hrefWithRun = `${baseEyeHref}?${params.toString()}`;
+
+  document.querySelectorAll(".nav-eye-tracking").forEach((anchor) => {
+    anchor.setAttribute("href", hrefWithRun);
+  });
+}
+
 function renderResult(result, html, options = {}) {
   const previousSelectedIssueId = state.selectedIssueId;
   state.currentResult = result;
@@ -2783,6 +2860,7 @@ function renderResult(result, html, options = {}) {
   renderPrintableProfileReport(result);
   renderExplanation(result);
   renderAssistantMessages();
+  syncEyeTrackingNavAndStorage();
 }
 
 function buildRenderedDomAnalysisKey(doc) {
@@ -3434,6 +3512,8 @@ async function init(lifecycleSnapshot) {
   if (sourceNode) {
     sourceNode.textContent = state.sourceName;
   }
+
+  syncEyeTrackingNavAndStorage();
 
   renderResult(
     currentResult,

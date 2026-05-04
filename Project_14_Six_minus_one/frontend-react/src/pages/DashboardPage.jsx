@@ -58,7 +58,9 @@ export function DashboardPage() {
             ) : (
               <>
                 <Link to={spaGuideAnalysisHref}>Guide</Link>
-                <a href={eyeTrackingHref}>Eye Tracking</a>
+                <a className="nav-eye-tracking" href={eyeTrackingHref}>
+                  Eye Tracking
+                </a>
                 <Link to={spaHistoryHref}>History</Link>
                 <Link className="nav-cta" to="/">
                   New Analysis
