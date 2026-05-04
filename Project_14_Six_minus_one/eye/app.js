@@ -29,7 +29,6 @@ const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 /** Same key as `dashboardApp.js` — latest analysis run to attach behavioral evidence. */
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
-const EYE_INTRO_DISMISSED_KEY = "cognilens.eye.intro.dismissed.v1";
 
 const state = {
   started: false,
@@ -275,26 +274,11 @@ function showEyeIntroModal() {
   eyeIntroModal.hidden = false;
 }
 
-function hideEyeIntroModal({ persist = false } = {}) {
+function hideEyeIntroModal() {
   if (!eyeIntroModal) {
     return;
   }
   eyeIntroModal.hidden = true;
-  if (persist) {
-    try {
-      localStorage.setItem(EYE_INTRO_DISMISSED_KEY, "1");
-    } catch (_) {
-      // Ignore storage errors in private mode.
-    }
-  }
-}
-
-function shouldAutoShowEyeIntro() {
-  try {
-    return localStorage.getItem(EYE_INTRO_DISMISSED_KEY) !== "1";
-  } catch (_) {
-    return true;
-  }
 }
 
 function setTrackingControlsEnabled(enabled) {
@@ -1367,18 +1351,18 @@ aboutEyeTrackingBtn?.addEventListener("click", () => {
 });
 
 eyeIntroContinueBtn?.addEventListener("click", () => {
-  hideEyeIntroModal({ persist: true });
+  hideEyeIntroModal();
 });
 
 eyeIntroModal?.addEventListener("click", (event) => {
   if (event.target === eyeIntroModal) {
-    hideEyeIntroModal({ persist: true });
+    hideEyeIntroModal();
   }
 });
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && eyeIntroModal && !eyeIntroModal.hidden) {
-    hideEyeIntroModal({ persist: true });
+    hideEyeIntroModal();
   }
 });
 
@@ -1398,6 +1382,4 @@ if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
 }
 
-if (shouldAutoShowEyeIntro()) {
-  showEyeIntroModal();
-}
+showEyeIntroModal();

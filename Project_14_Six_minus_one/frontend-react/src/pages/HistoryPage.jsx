@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { API_BASE, fetchJson, formatDate } from "../lib/common.js";
+import { API_BASE, fetchJson, formatDate, formatReportTimestamp } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
@@ -243,7 +243,8 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
   return items.map((item) => (
     <article className="history-row" key={item.run_id}>
       <span className="history-cell history-analysis" title={item.source_name}>
-        {item.source_name}
+        <strong className="history-analysis-name">{item.source_name}</strong>
+        <small className="history-analysis-trace-id">ID: {formatReportTimestamp(item.created_at)}</small>
       </span>
       <span className="history-cell">{formatDate(item.created_at)}</span>
       <span className="history-cell score">{item.overall_score}</span>

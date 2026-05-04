@@ -6096,6 +6096,26 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .history-cell.title,
 .history-cell.history-analysis {
   overflow: hidden;
+  display: grid;
+  gap: 3px;
+}
+
+.history-analysis-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.history-analysis-trace-id {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #94a3b8;
+  font-weight: 500;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
