@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CogniLens Eye Tracking</title>
-    <link rel="stylesheet" href="./styles.css?v=eye-panel-row-4" />
+    <link rel="stylesheet" href="./styles.css?v=eye-onboarding-modal-1" />
   </head>
   <body>
     <header class="app-nav">
@@ -16,7 +16,7 @@
 
         <nav class="app-nav-links" aria-label="Primary">
           <a href="http://127.0.0.1:5173/docs?source=analysis">Guide</a>
-          <a class="active-link" href="/eye/">Eye Tracking</a>
+          <a class="active-link" href="./" title="Stay on Eye Tracking (keeps ?run_id= in the URL)">Eye Tracking</a>
           <a href="/history">History</a>
           <button id="backToAnalysisButton" class="nav-cta" type="button" hidden>Back to analysis</button>
         </nav>
@@ -45,6 +45,7 @@
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="clearBtn" type="button" disabled>Clear Heatmap</button>
           <button id="saveBtn" type="button" disabled>Save Session</button>
+          <button id="aboutEyeTrackingBtn" type="button" class="about-eye-btn">About Eye Tracking</button>
         </div>
       </section>
 
@@ -81,13 +82,39 @@
           <span class="label">Coverage</span>
           <span id="coverageText">0%</span>
         </div>
+        <div class="status-row status-row-linked-run" id="linkedRunRow" hidden>
+          <span class="label">Linked report</span>
+          <span id="linkedRunText" class="linked-run-text" title="">—</span>
+        </div>
 
         <h2>Visited Map</h2>
         <canvas id="coverageCanvas" width="300" height="180"></canvas>
       </aside>
     </div>
 
+    <div id="eyeIntroModal" class="eye-intro-modal" role="dialog" aria-modal="true" aria-labelledby="eyeIntroTitle" hidden>
+      <div class="eye-intro-card">
+        <h2 id="eyeIntroTitle">Behavioral Evidence Collection</h2>
+        <p>
+          CogniLens can optionally collect lightweight gaze data to provide supporting behavioral context
+          for an analysis.
+        </p>
+        <p>
+          This feature visualizes approximate attention distribution.
+          It does not directly measure usability or cognitive load.
+        </p>
+        <ol class="eye-intro-steps">
+          <li>Load a page</li>
+          <li>Start tracking</li>
+          <li>Save behavioral evidence</li>
+        </ol>
+        <div class="eye-intro-actions">
+          <button id="eyeIntroContinueBtn" type="button">I Understand</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-panel-row-4"></script>
+    <script src="./app.js?v=eye-onboarding-modal-1"></script>
   </body>
 </html>

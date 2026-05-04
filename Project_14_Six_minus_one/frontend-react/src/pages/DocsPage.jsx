@@ -67,7 +67,12 @@ export function DocsPage() {
             <Link className="active-link" to={spaGuideAnalysisHref} hidden={!showAnalysisNav} data-analysis-nav>
               Guide
             </Link>
-            <a href={eyeTrackingHref} hidden={!showAnalysisNav} data-analysis-nav>
+            <a
+              className="nav-eye-tracking"
+              href={eyeTrackingHref}
+              hidden={!showAnalysisNav}
+              data-analysis-nav
+            >
               Eye Tracking
             </a>
             <Link to={spaHistoryHref} hidden={!showAnalysisNav} data-analysis-nav>

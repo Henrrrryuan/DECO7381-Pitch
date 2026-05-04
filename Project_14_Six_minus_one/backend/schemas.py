@@ -137,6 +137,28 @@ class AnalysisResult:
 
 
 @dataclass
+class EyeTrackingSummaryForHistory:
+    """Lightweight behavioral-evidence summary for history list (no quality scores)."""
+
+    available: bool = False
+    coverage_percent: float | None = None
+    sample_count: int | None = None
+    duration_ms: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        if not self.available:
+            return {"available": False}
+        return {
+            "available": True,
+            "coverage_percent": float(self.coverage_percent)
+            if self.coverage_percent is not None
+            else None,
+            "sample_count": int(self.sample_count) if self.sample_count is not None else None,
+            "duration_ms": int(self.duration_ms) if self.duration_ms is not None else None,
+        }
+
+
+@dataclass
 class HistoryRunSummary:
     run_id: str
     created_at: str
@@ -144,9 +166,20 @@ class HistoryRunSummary:
     overall_score: int
     weighted_average: int
     min_dimension_score: int
+    eye_tracking_summary: EyeTrackingSummaryForHistory = field(
+        default_factory=lambda: EyeTrackingSummaryForHistory(available=False),
+    )
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "run_id": self.run_id,
+            "created_at": self.created_at,
+            "source_name": self.source_name,
+            "overall_score": self.overall_score,
+            "weighted_average": self.weighted_average,
+            "min_dimension_score": self.min_dimension_score,
+            "eye_tracking_summary": self.eye_tracking_summary.to_dict(),
+        }
 
 
 @dataclass

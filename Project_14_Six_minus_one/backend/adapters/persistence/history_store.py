@@ -14,6 +14,7 @@ from ...schemas import (
     EyeTrackingSessionDetail,
     EyeTrackingSessionListResponse,
     EyeTrackingSessionSummary,
+    EyeTrackingSummaryForHistory,
     HistoryListResponse,
     HistoryRunDetail,
     HistoryRunSummary,
@@ -132,7 +133,65 @@ def save_analysis_run(
         overall_score=analysis.overall_score,
         weighted_average=analysis.weighted_average,
         min_dimension_score=analysis.min_dimension_score,
+        eye_tracking_summary=EyeTrackingSummaryForHistory(available=False),
     )
+
+
+def _fetch_latest_eye_summary_by_run_ids(
+    connection: sqlite3.Connection,
+    run_ids: list[str],
+) -> dict[str, EyeTrackingSummaryForHistory]:
+    if not run_ids:
+        return {}
+    placeholders = ",".join("?" * len(run_ids))
+    rows = connection.execute(
+        f"""
+        WITH ranked AS (
+            SELECT
+                run_id,
+                coverage_percent,
+                sample_count,
+                duration_ms,
+                ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY rowid DESC) AS rn
+            FROM eye_tracking_sessions
+            WHERE run_id IS NOT NULL AND run_id IN ({placeholders})
+        )
+        SELECT run_id, coverage_percent, sample_count, duration_ms
+        FROM ranked
+        WHERE rn = 1
+        """,
+        run_ids,
+    ).fetchall()
+    result: dict[str, EyeTrackingSummaryForHistory] = {}
+    for row in rows:
+        rid = str(row["run_id"])
+        result[rid] = EyeTrackingSummaryForHistory(
+            available=True,
+            coverage_percent=float(row["coverage_percent"]),
+            sample_count=int(row["sample_count"]),
+            duration_ms=int(row["duration_ms"]),
+        )
+    return result
+
+
+def get_latest_eye_tracking_session_for_run(
+    run_id: str,
+    db_path: Path | None = None,
+) -> EyeTrackingSessionDetail | None:
+    with _connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT id
+            FROM eye_tracking_sessions
+            WHERE run_id = ?
+            ORDER BY rowid DESC
+            LIMIT 1
+            """,
+            (run_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    return get_eye_tracking_session(str(row["id"]), db_path=db_path)
 
 
 def list_history_runs(
@@ -185,8 +244,14 @@ def list_history_runs(
             (*params, safe_limit, safe_offset),
         ).fetchall()
 
+        run_ids = [str(row["id"]) for row in rows]
+        eye_map = _fetch_latest_eye_summary_by_run_ids(connection, run_ids)
+
     return HistoryListResponse(
-        items=[_row_to_run_summary(row) for row in rows],
+        items=[
+            _row_to_run_summary(row, eye_tracking_summary=eye_map.get(str(row["id"])))
+            for row in rows
+        ],
         total=int(total),
         limit=safe_limit,
         offset=safe_offset,
@@ -291,6 +356,8 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
             (run_id,),
         ).fetchall()
 
+        eye_map = _fetch_latest_eye_summary_by_run_ids(connection, [run_id])
+
     eye_evidence = calculate_eye_evidence_for_sessions(
         [_row_to_eye_evidence_input(row) for row in eye_session_rows]
     )
@@ -301,7 +368,10 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
         dimensions=dimensions,
         profile_scores=calculate_profile_scores(dimensions, eye_evidence=eye_evidence),
     )
-    run = _row_to_run_summary(run_row)
+    run = _row_to_run_summary(
+        run_row,
+        eye_tracking_summary=eye_map.get(run_id),
+    )
 
     return HistoryRunDetail(
         run=run,
@@ -540,7 +610,11 @@ def _connect(db_path: Path | None = None) -> sqlite3.Connection:
     return connection
 
 
-def _row_to_run_summary(row: sqlite3.Row) -> HistoryRunSummary:
+def _row_to_run_summary(
+    row: sqlite3.Row,
+    *,
+    eye_tracking_summary: EyeTrackingSummaryForHistory | None = None,
+) -> HistoryRunSummary:
     return HistoryRunSummary(
         run_id=row["id"],
         created_at=row["created_at"],
@@ -548,6 +622,8 @@ def _row_to_run_summary(row: sqlite3.Row) -> HistoryRunSummary:
         overall_score=row["overall_score"],
         weighted_average=row["weighted_average"],
         min_dimension_score=row["min_dimension_score"],
+        eye_tracking_summary=eye_tracking_summary
+        or EyeTrackingSummaryForHistory(available=False),
     )
 
 

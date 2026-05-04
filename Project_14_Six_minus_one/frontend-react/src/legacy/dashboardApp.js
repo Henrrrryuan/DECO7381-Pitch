@@ -43,6 +43,8 @@ const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
+/** Shared with `eye/app.js`: latest dashboard report to attach behavioral evidence. */
+const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
 const ASSISTANT_MARGIN = 16;
 
 const INFORMATION_OVERLOAD_NAME = "Information Overload";
@@ -2766,6 +2768,41 @@ function handleAssistantClear() {
   renderAssistantMessages();
 }
 
+function syncEyeTrackingNavAndStorage() {
+  const payload = state.currentPayload;
+  const run = payload?.run;
+  const runId = run?.run_id ? String(run.run_id).trim() : "";
+  const baseEyeHref = `${API_BASE.replace(/\/$/, "")}/eye/`;
+
+  if (!runId) {
+    document.querySelectorAll(".nav-eye-tracking").forEach((anchor) => {
+      anchor.setAttribute("href", baseEyeHref);
+    });
+    return;
+  }
+
+  const sourceName = run?.source_name ? String(run.source_name) : "";
+  try {
+    localStorage.setItem(
+      EYE_RELATED_CONTEXT_STORAGE_KEY,
+      JSON.stringify({ run_id: runId, source_name: sourceName, savedAt: Date.now() }),
+    );
+  } catch (_) {
+    // Ignore storage quota / private mode.
+  }
+
+  const params = new URLSearchParams();
+  params.set("run_id", runId);
+  if (sourceName) {
+    params.set("source_name", sourceName);
+  }
+  const hrefWithRun = `${baseEyeHref}?${params.toString()}`;
+
+  document.querySelectorAll(".nav-eye-tracking").forEach((anchor) => {
+    anchor.setAttribute("href", hrefWithRun);
+  });
+}
+
 function renderResult(result, html, options = {}) {
   const previousSelectedIssueId = state.selectedIssueId;
   state.currentResult = result;
@@ -2783,6 +2820,7 @@ function renderResult(result, html, options = {}) {
   renderPrintableProfileReport(result);
   renderExplanation(result);
   renderAssistantMessages();
+  syncEyeTrackingNavAndStorage();
 }
 
 function buildRenderedDomAnalysisKey(doc) {
@@ -3434,6 +3472,8 @@ async function init(lifecycleSnapshot) {
   if (sourceNode) {
     sourceNode.textContent = state.sourceName;
   }
+
+  syncEyeTrackingNavAndStorage();
 
   renderResult(
     currentResult,
