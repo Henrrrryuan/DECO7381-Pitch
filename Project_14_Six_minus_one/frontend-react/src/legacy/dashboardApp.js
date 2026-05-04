@@ -1571,8 +1571,8 @@ function issueElementListMarkup(issue, dimensionName) {
       <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
         <p class="issue-element-tip-title">Tip</p>
         <ol class="issue-element-tip-steps">
-          <li><strong>Click</strong> an element to <strong>highlight</strong> it in the preview.</li>
-          <li><strong>Click</strong> the highlight to open <strong>guidance</strong>.</li>
+          <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
+          <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
         </ol>
       </div>
       <div class="issue-element-chip-list">
