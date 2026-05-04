@@ -100,7 +100,7 @@ The backend was restructured to make ownership and interview storytelling cleare
 Install the backend dependencies before starting the app:
 
 ```bash
-python -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 ## Run As A Unified App
@@ -108,7 +108,7 @@ python -m pip install -r requirements.txt
 Start only the FastAPI app from this folder:
 
 ```bash
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
+python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
 ```
 
 Open:

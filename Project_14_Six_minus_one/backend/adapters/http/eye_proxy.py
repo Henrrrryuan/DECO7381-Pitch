@@ -3,9 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 import html
 import re
+import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
+
+try:
+    import certifi
+except ImportError:  # pragma: no cover
+    certifi = None
 
 HOP_BY_HOP_HEADERS = {
     "connection",
@@ -123,8 +129,16 @@ def fetch_proxied_response(raw_url: str) -> ProxiedResponse:
         },
     )
 
+    ssl_context: ssl.SSLContext | None = None
+    if certifi is not None:
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+
     try:
-        with urllib.request.urlopen(req, timeout=15) as upstream:
+        with urllib.request.urlopen(
+            req,
+            timeout=15,
+            context=ssl_context,
+        ) as upstream:
             final_url = upstream.geturl()
             status = upstream.status
             body = upstream.read()

@@ -45,6 +45,7 @@ const proxy = {
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Bind IPv4 explicitly so http://127.0.0.1:5173 works (not only [::1]).
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,

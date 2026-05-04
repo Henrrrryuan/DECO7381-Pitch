@@ -13,8 +13,10 @@ In the unified project setup, this tool is served by the main FastAPI app under 
 From the `Project_14_Six_minus_one` folder, start the main FastAPI app:
 
 ```powershell
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
+python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
 ```
+
+(On macOS/Linux, use `python3` if `python` is not on your PATH.)
 
 Open:
 
