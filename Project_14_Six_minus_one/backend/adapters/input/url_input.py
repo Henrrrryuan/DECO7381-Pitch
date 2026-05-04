@@ -200,3 +200,41 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
 
     return str(soup)
 
+
+INLINE_SCRIPT_MAX_BLOCKS = 24
+INLINE_SCRIPT_MAX_CHARS_PER_BLOCK = 150_000
+
+
+def collect_inline_script_texts(html: str) -> list[str]:
+    """Return text of inline <script> blocks for heuristic JS scanning (e.g. Interaction rules).
+
+    External scripts are collected separately via ``_extract_linked_resources``; many SPAs
+    and dev servers also ship bootstrapping or framework glue as inline scripts.
+    """
+
+    soup = BeautifulSoup(html or "", "html.parser")
+    collected: list[str] = []
+    for tag in soup.find_all("script"):
+        if tag.get("src"):
+            continue
+        type_attr = (tag.get("type") or "").strip().lower()
+        if type_attr in {"application/ld+json", "application/json", "importmap"}:
+            continue
+        if type_attr and not any(
+            token in type_attr
+            for token in ("javascript", "ecmascript", "module", "jscript", "babel")
+        ):
+            continue
+        raw = tag.string
+        if raw is None:
+            raw = tag.get_text("\n", strip=False)
+        normalized = (raw or "").strip()
+        if len(normalized) < 8:
+            continue
+        if len(normalized) > INLINE_SCRIPT_MAX_CHARS_PER_BLOCK:
+            normalized = normalized[:INLINE_SCRIPT_MAX_CHARS_PER_BLOCK]
+        collected.append(normalized)
+        if len(collected) >= INLINE_SCRIPT_MAX_BLOCKS:
+            break
+    return collected
+

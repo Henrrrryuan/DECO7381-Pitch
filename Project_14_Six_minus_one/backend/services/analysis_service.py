@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..adapters.input.url_input import collect_inline_script_texts
 from ..analyzers import (
     analyze_consistency,
     analyze_information_overload,
@@ -19,14 +20,17 @@ def analyze_html(
     css_sources: list[str] | None = None,
     js_sources: list[str] | None = None,
 ) -> AnalysisResult:
+    merged_js_sources = list(js_sources or [])
+    merged_js_sources.extend(collect_inline_script_texts(html))
+
     dimensions = [
         analyze_readability(html),
         analyze_information_overload(
             html,
             css_sources=css_sources,
-            js_sources=js_sources,
+            js_sources=merged_js_sources,
         ),
-        analyze_interaction(html, js_sources=js_sources),
+        analyze_interaction(html, js_sources=merged_js_sources),
         analyze_consistency(html),
     ]
     return calculate_overall_score(dimensions)

@@ -56,28 +56,46 @@ def visual_complexity_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
 
 @router.post("/analyze-url")
 def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
+    """Prefer a Playwright-rendered DOM so SPA frameworks expose post-hydration markup.
+
+    Falls back to the existing proxied HTML fetch when Playwright is unavailable or fails.
+    """
+
+    rendered_snapshot_used = False
+    html_content = ""
+    final_url = ""
+
     try:
-        proxied = fetch_proxied_response(payload.url)
-    except EyeProxyBadRequest as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except EyeProxyFetchError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        snapshot = capture_rendered_snapshot(payload.url)
+        html_content = snapshot.html
+        final_url = snapshot.final_url or payload.url
+        rendered_snapshot_used = True
+    except SnapshotInputError:
+        try:
+            proxied = fetch_proxied_response(payload.url)
+        except EyeProxyBadRequest as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except EyeProxyFetchError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    if proxied.status_code >= 400:
-        raise HTTPException(
-            status_code=proxied.status_code,
-            detail=f"Target URL returned status {proxied.status_code}.",
-        )
+        if proxied.status_code >= 400:
+            raise HTTPException(
+                status_code=proxied.status_code,
+                detail=f"Target URL returned status {proxied.status_code}.",
+            )
 
-    if "text/html" not in proxied.content_type.lower():
-        raise HTTPException(
-            status_code=400,
-            detail="The target URL did not return an HTML page.",
-        )
+        if "text/html" not in proxied.content_type.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="The target URL did not return an HTML page.",
+            )
 
-    html_content = proxied.body.decode("utf-8", errors="replace")
+        html_content = proxied.body.decode("utf-8", errors="replace")
+        final_url = proxied.final_url
+        rendered_snapshot_used = False
+
     try:
-        bundle = extract_web_bundle_from_url_html(html_content, proxied.final_url)
+        bundle = extract_web_bundle_from_url_html(html_content, final_url)
     except UrlInputError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -89,7 +107,7 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
     payload_dict = build_analysis_response(
         analysis,
         html_content=html_content,
-        source_name=proxied.final_url or payload.source_name,
+        source_name=final_url or payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
     for dimension in payload_dict.get("dimensions", []):
@@ -100,12 +118,15 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
         metadata["out_of_scope"] = [
             item for item in metadata.get("out_of_scope", []) if item != "live_url_fetch"
         ]
+        metadata["rendered_snapshot_used"] = rendered_snapshot_used
+    payload_dict["rendered_snapshot_used"] = rendered_snapshot_used
     payload_dict["resource_bundle"] = {
-        "entry_name": proxied.final_url,
+        "entry_name": final_url,
         "css_file_count": len(bundle.css_files),
         "js_file_count": len(bundle.js_files),
         "css_files": sorted(bundle.css_files.keys()),
         "js_files": sorted(bundle.js_files.keys()),
+        "rendered_snapshot_used": rendered_snapshot_used,
     }
     return payload_dict
 
