@@ -223,6 +223,31 @@ const RULE_FRAMEWORK_MAP = {
   },
 };
 
+const COGA_OBJECTIVE_BY_RULE = {
+  "IO-1": "Help Users Focus",
+  "IO-2": "Help Users Focus",
+  "IO-3": "Help Users Focus",
+  "IO-4": "Help Users Find What They Need",
+  "IO-5": "Help Users Understand What Things are and How to Use Them",
+  "RD-1": "Use Clear and Understandable Content",
+  "RD-2": "Use Clear and Understandable Content",
+  "RD-3": "Help Users Understand What Things are and How to Use Them",
+  "RD-4": "Use Clear and Understandable Content",
+  "RD-5": "Help Users Avoid Mistakes and Know How to Correct Them",
+  "RD-6": "Use Clear and Understandable Content",
+  "ID-1": "Help Users Focus",
+  "ID-2": "Help Users Focus",
+  "ID-3": "Help Users Focus",
+  "CS-1": "Help Users Understand What Things are and How to Use Them",
+  "CS-2": "Ensure Processes Do Not Rely on Memory",
+  "CS-3": "Ensure Processes Do Not Rely on Memory",
+  "CS-4": "Help Users Understand What Things are and How to Use Them",
+  "CS-5": "Help Users Find What They Need",
+  "CS-6": "Help Users Find What They Need",
+  "CS-7": "Help Users Understand What Things are and How to Use Them",
+  "CS-8": "Help Users Understand What Things are and How to Use Them",
+};
+
 const HIGHLIGHT_CONFIG = {
   [INFORMATION_OVERLOAD_NAME]: {
     color: "#df3e53",
@@ -898,6 +923,7 @@ function frameworkStandardsForRule(ruleId) {
 function issueCardStandardsSummary(ruleId) {
   const standards = frameworkStandardsForRule(ruleId);
   return {
+    coga: COGA_OBJECTIVE_BY_RULE[ruleId] || standards.coga.replace(/^COGA:\s*/i, ""),
     wcag: standards.wcagCriteria.join("; "),
     iso: standards.isoClauses.join("; "),
   };
@@ -924,18 +950,11 @@ function standardsPillsMarkup(summaryText, fallbackText) {
   `;
 }
 
-function wcagStandardsMarkup(summaryText) {
-  const items = splitStandardItems(summaryText, "SC 2.4.6 Headings and Labels");
-  const normalizedItems = items.map((item) => (
-    item.replace(/^WCAG\s*2\.2\s*/i, "").replace(/^WCAG\s*/i, "").trim()
-  ));
-  const criteria = normalizedItems.filter(Boolean).map((item) => (
-    /^SC\s+/i.test(item) ? item : `SC ${item}`
-  ));
-  const visibleCriteria = criteria.length ? criteria : ["SC 2.4.6 Headings and Labels"];
+function cogaGuidanceMarkup(summaryText) {
+  const items = splitStandardItems(summaryText, "Help Users Focus");
   return `
     <div class="issue-standards-list">
-      ${visibleCriteria.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
+      ${items.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
     </div>
   `;
 }
@@ -1788,8 +1807,8 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const issueId = issueDomId(dimensionName, issue.rule_id);
   const isSelected = issueId === state.selectedIssueId;
   const selectedClass = isSelected ? " is-selected is-active" : "";
-  const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
-  const wcagMarkup = wcagStandardsMarkup(wcagSummary);
+  const { coga: cogaSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
+  const cogaMarkup = cogaGuidanceMarkup(cogaSummary);
   const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
 
   return `
@@ -1807,8 +1826,8 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
       </summary>
       <div class="issue-summary-body">
         <div class="issue-summary-row issue-summary-row-standards">
-          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
-          ${wcagMarkup}
+          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA Guidance Objective</span>
+          ${cogaMarkup}
         </div>
         <div class="issue-summary-row issue-summary-row-standards">
           <span class="issue-highlight-label">ISO 9241-11</span>
