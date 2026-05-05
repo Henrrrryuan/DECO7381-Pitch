@@ -664,6 +664,127 @@ def _load_json(raw_value: str | None, fallback: object) -> object:
     return json.loads(raw_value)
 
 
+ATTENTION_RISK_SEVERITY = {
+    "high": 0,
+    "medium": 1,
+    "low": 2,
+}
+
+
+def _attention_risk_for_item(key: str, share: float) -> tuple[str, str]:
+    normalized_key = key.strip().lower()
+
+    if normalized_key == "main_text":
+        if share < 0.2:
+            return (
+                "high",
+                "Main content attention is too low: users may miss the core information.",
+            )
+        if share > 0.65:
+            return (
+                "medium",
+                "Main content attention is very high: users may need extra effort to read or understand it.",
+            )
+        if share < 0.35:
+            return (
+                "medium",
+                "Main content attention is limited: the core information may need stronger visual priority.",
+            )
+        return (
+            "low",
+            "Main content attention is balanced: users can focus on the core information.",
+        )
+
+    if normalized_key == "headings":
+        if share < 0.05:
+            return (
+                "high",
+                "Heading attention is too low: users may not understand the page structure quickly.",
+            )
+        if share > 0.25:
+            return (
+                "medium",
+                "Heading attention is high: users may be relying on headings to recover orientation.",
+            )
+        if share < 0.1:
+            return (
+                "medium",
+                "Heading attention is limited: the visual hierarchy may need to be clearer.",
+            )
+        return (
+            "low",
+            "Heading attention is balanced: the page structure supports quick scanning.",
+        )
+
+    if normalized_key == "interactive":
+        if share < 0.05:
+            return (
+                "high",
+                "Interactive element attention is too low: important actions may not be visible enough.",
+            )
+        if share < 0.12:
+            return (
+                "medium",
+                "Interactive element attention is limited: key actions may need stronger priority.",
+            )
+        return (
+            "low",
+            "Interactive element attention is clear: users can identify available actions.",
+        )
+
+    if normalized_key == "navigation":
+        if share < 0.03:
+            return (
+                "high",
+                "Navigation attention is too low: users may not have noticed the page path.",
+            )
+        if share > 0.3:
+            return (
+                "high",
+                "Navigation attention is too high: users may be finding their way, suggesting page orientation is unclear.",
+            )
+        if share > 0.15:
+            return (
+                "medium",
+                "Navigation attention needs checking: users may need extra orientation before reaching the main content.",
+            )
+        return (
+            "low",
+            "Navigation attention is balanced: navigation is visible without distracting from the main content.",
+        )
+
+    if normalized_key == "media":
+        if share > 0.25:
+            return (
+                "high",
+                "Media attention is too high: visual content may be competing with the main task.",
+            )
+        if share > 0.1:
+            return (
+                "medium",
+                "Media attention is noticeable: check whether visuals distract from the core content.",
+            )
+        return (
+            "low",
+            "Media attention is limited: visuals do not strongly distract users from the main task.",
+        )
+
+    if share > 0.25:
+        return (
+            "high",
+            "Unclassified attention is too high: users may be drawn to clutter or unclear areas.",
+        )
+    if share > 0.12:
+        return (
+            "medium",
+            "Unclassified attention needs checking: some attention falls outside recognised content areas.",
+        )
+    return (
+        "low",
+        "Unclassified attention is low: most attention maps to recognised content areas.",
+    )
+
+
 def _extract_attention_summary(summary_json: str | None) -> list[dict[str, object]]:
     raw = _load_json(summary_json, {})
     if not isinstance(raw, dict):
@@ -682,17 +803,28 @@ def _extract_attention_summary(summary_json: str | None) -> list[dict[str, objec
             continue
         if hit_count <= 0:
             continue
+        safe_share = max(0.0, min(1.0, share))
+        key = str(item.get("key") or "")
+        risk_level, risk_reason = _attention_risk_for_item(key, safe_share)
         cleaned.append(
             {
-                "key": str(item.get("key") or ""),
+                "key": key,
                 "label": str(item.get("label") or "Other"),
                 "hit_count": hit_count,
                 "dwell_ms": int(item.get("dwell_ms") or 0),
                 "first_fixation_ms": item.get("first_fixation_ms"),
-                "share": max(0.0, min(1.0, share)),
+                "share": safe_share,
+                "risk_level": risk_level,
+                "risk_label": f"{risk_level.title()} risk",
+                "risk_reason": risk_reason,
             }
         )
-    cleaned.sort(key=lambda row: float(row.get("share") or 0), reverse=True)
+    cleaned.sort(
+        key=lambda row: (
+            ATTENTION_RISK_SEVERITY.get(str(row.get("risk_level") or ""), 3),
+            -float(row.get("share") or 0),
+        )
+    )
     return cleaned
 
 

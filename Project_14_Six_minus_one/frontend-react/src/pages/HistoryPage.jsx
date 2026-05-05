@@ -11,6 +11,26 @@ const MOBILE_MAX_PAGE_SIZE = 9;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
+const ATTENTION_RISK_ORDER = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
+function normalizeAttentionRiskLevel(value) {
+  const riskLevel = String(value || "").toLowerCase();
+  return Object.prototype.hasOwnProperty.call(ATTENTION_RISK_ORDER, riskLevel)
+    ? riskLevel
+    : "medium";
+}
+
+function formatAttentionRiskLabel(riskLevel, fallback) {
+  const cleanedFallback = String(fallback || "").trim();
+  if (cleanedFallback) {
+    return cleanedFallback;
+  }
+  return `${riskLevel.charAt(0).toUpperCase()}${riskLevel.slice(1)} risk`;
+}
 
 function formatDuration(ms) {
   const totalSeconds = Math.max(0, Math.round((Number(ms) || 0) / 1000));
@@ -204,13 +224,22 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
   }
   const attentionItems = Array.isArray(summary.attention_summary)
     ? summary.attention_summary
-        .map((item) => ({
-          label: String(item?.label || "Other"),
-          share: Math.max(0, Math.min(1, Number(item?.share || 0))),
-          hitCount: Math.max(0, Number(item?.hit_count || 0)),
-        }))
+        .map((item) => {
+          const riskLevel = normalizeAttentionRiskLevel(item?.risk_level);
+          return {
+            key: String(item?.key || item?.label || "other"),
+            label: String(item?.label || "Other"),
+            hitCount: Math.max(0, Number(item?.hit_count || 0)),
+            riskLevel,
+            riskLabel: formatAttentionRiskLabel(riskLevel, item?.risk_label),
+            riskReason: String(
+              item?.risk_reason ||
+                "Attention pattern needs checking against the page's intended user journey.",
+            ),
+          };
+        })
         .filter((item) => item.hitCount > 0)
-        .sort((a, b) => b.share - a.share)
+        .sort((a, b) => ATTENTION_RISK_ORDER[a.riskLevel] - ATTENTION_RISK_ORDER[b.riskLevel])
     : [];
 
   return (
@@ -219,8 +248,18 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
       <ul className="history-supporting-metrics">
         {attentionItems.length ? (
           attentionItems.map((item) => (
-            <li key={item.label}>
-              {item.label}: {(item.share * 100).toFixed(1)}%
+            <li key={`${item.key}-${item.label}`} className="history-supporting-metric">
+              <span className="history-supporting-label">{item.label}</span>
+              <span className={`history-risk-pill is-${item.riskLevel}`}>{item.riskLabel}</span>
+              <span
+                className="history-risk-info"
+                role="img"
+                tabIndex={0}
+                aria-label={item.riskReason}
+                title={item.riskReason}
+              >
+                i
+              </span>
             </li>
           ))
         ) : (
