@@ -223,6 +223,31 @@ const RULE_FRAMEWORK_MAP = {
   },
 };
 
+const COGA_OBJECTIVE_BY_RULE = {
+  "IO-1": "Help Users Focus",
+  "IO-2": "Help Users Focus",
+  "IO-3": "Help Users Focus",
+  "IO-4": "Help Users Find What They Need",
+  "IO-5": "Help Users Understand What Things are and How to Use Them",
+  "RD-1": "Use Clear and Understandable Content",
+  "RD-2": "Use Clear and Understandable Content",
+  "RD-3": "Help Users Understand What Things are and How to Use Them",
+  "RD-4": "Use Clear and Understandable Content",
+  "RD-5": "Help Users Avoid Mistakes and Know How to Correct Them",
+  "RD-6": "Use Clear and Understandable Content",
+  "ID-1": "Help Users Focus",
+  "ID-2": "Help Users Focus",
+  "ID-3": "Help Users Focus",
+  "CS-1": "Help Users Understand What Things are and How to Use Them",
+  "CS-2": "Ensure Processes Do Not Rely on Memory",
+  "CS-3": "Ensure Processes Do Not Rely on Memory",
+  "CS-4": "Help Users Understand What Things are and How to Use Them",
+  "CS-5": "Help Users Find What They Need",
+  "CS-6": "Help Users Find What They Need",
+  "CS-7": "Help Users Understand What Things are and How to Use Them",
+  "CS-8": "Help Users Understand What Things are and How to Use Them",
+};
+
 const HIGHLIGHT_CONFIG = {
   [INFORMATION_OVERLOAD_NAME]: {
     color: "#df3e53",
@@ -898,6 +923,7 @@ function frameworkStandardsForRule(ruleId) {
 function issueCardStandardsSummary(ruleId) {
   const standards = frameworkStandardsForRule(ruleId);
   return {
+    coga: COGA_OBJECTIVE_BY_RULE[ruleId] || standards.coga.replace(/^COGA:\s*/i, ""),
     wcag: standards.wcagCriteria.join("; "),
     iso: standards.isoClauses.join("; "),
   };
@@ -924,18 +950,11 @@ function standardsPillsMarkup(summaryText, fallbackText) {
   `;
 }
 
-function wcagStandardsMarkup(summaryText) {
-  const items = splitStandardItems(summaryText, "SC 2.4.6 Headings and Labels");
-  const normalizedItems = items.map((item) => (
-    item.replace(/^WCAG\s*2\.2\s*/i, "").replace(/^WCAG\s*/i, "").trim()
-  ));
-  const criteria = normalizedItems.filter(Boolean).map((item) => (
-    /^SC\s+/i.test(item) ? item : `SC ${item}`
-  ));
-  const visibleCriteria = criteria.length ? criteria : ["SC 2.4.6 Headings and Labels"];
+function cogaGuidanceMarkup(summaryText) {
+  const items = splitStandardItems(summaryText, "Help Users Focus");
   return `
     <div class="issue-standards-list">
-      ${visibleCriteria.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
+      ${items.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
     </div>
   `;
 }
@@ -1568,7 +1587,13 @@ function issueElementListMarkup(issue, dimensionName) {
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
-      <p class="issue-element-tip">Tip: Click an element to highlight it in the preview. Click the highlight to view guidance.</p>
+      <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+        <p class="issue-element-tip-title">Tip</p>
+        <ol class="issue-element-tip-steps">
+          <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
+          <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+        </ol>
+      </div>
       <div class="issue-element-chip-list">
         ${rows}
       </div>
@@ -1782,8 +1807,8 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
   const issueId = issueDomId(dimensionName, issue.rule_id);
   const isSelected = issueId === state.selectedIssueId;
   const selectedClass = isSelected ? " is-selected is-active" : "";
-  const { wcag: wcagSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
-  const wcagMarkup = wcagStandardsMarkup(wcagSummary);
+  const { coga: cogaSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
+  const cogaMarkup = cogaGuidanceMarkup(cogaSummary);
   const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
 
   return `
@@ -1801,8 +1826,8 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
       </summary>
       <div class="issue-summary-body">
         <div class="issue-summary-row issue-summary-row-standards">
-          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
-          ${wcagMarkup}
+          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA Guidance Objective</span>
+          ${cogaMarkup}
         </div>
         <div class="issue-summary-row issue-summary-row-standards">
           <span class="issue-highlight-label">ISO 9241-11</span>
@@ -2020,6 +2045,27 @@ function injectHighlightStyles(doc) {
       color: #0f172a;
     }
 
+    #cognilens-guidance-popover .cognilens-popover-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      border-radius: 999px;
+      background: #fff;
+      color: #475569;
+      font: 800 14px/1 Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close:hover,
+    #cognilens-guidance-popover .cognilens-popover-close:focus-visible {
+      border-color: rgba(37, 99, 235, 0.8);
+      color: #1d4ed8;
+      outline: none;
+    }
+
     #cognilens-guidance-popover h5 {
       margin: 0 0 8px;
       font: 800 12px/1.2 Arial, sans-serif;
@@ -2083,6 +2129,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
     ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
+    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover">×</button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
     <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
@@ -2106,6 +2153,13 @@ function bindPreviewElementClick(doc) {
   }
   doc.body.dataset.cognilensElementClickBound = "true";
   doc.addEventListener("click", (event) => {
+    const closeTrigger = event.target.closest(".cognilens-popover-close");
+    if (closeTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      removeGuidancePopover(doc);
+      return;
+    }
     const insidePopover = event.target.closest("#cognilens-guidance-popover");
     if (insidePopover) {
       // Keep popover pinned while users select/copy guidance text.
