@@ -56,9 +56,17 @@ def capture_rendered_snapshot(
         raise SnapshotInputError("Timed out while rendering the page snapshot.") from exc
     except PlaywrightError as exc:
         raise SnapshotInputError(f"Could not render the page snapshot: {exc}") from exc
+    except Exception as exc:  # noqa: BLE001
+        raise SnapshotInputError(
+            f"Could not render the page snapshot due to an unexpected error: {exc}"
+        ) from exc
     finally:
         if browser is not None:
-            browser.close()
+            try:
+                browser.close()
+            except Exception:  # noqa: BLE001
+                # Preserve the primary snapshot failure so callers can gracefully fall back.
+                pass
 
     return RenderedSnapshot(
         final_url=final_url,

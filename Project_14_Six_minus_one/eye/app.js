@@ -59,6 +59,33 @@ const state = {
   lastSavedSessionId: ""
 };
 
+const ATTENTION_BUCKETS = [
+  { key: "main_text", label: "Main text" },
+  { key: "headings", label: "Headings" },
+  { key: "interactive", label: "Interactive elements" },
+  { key: "navigation", label: "Navigation" },
+  { key: "media", label: "Images/media" },
+  { key: "other", label: "Other" }
+];
+
+function createAttentionSummaryState() {
+  const buckets = {};
+  for (const bucket of ATTENTION_BUCKETS) {
+    buckets[bucket.key] = {
+      key: bucket.key,
+      label: bucket.label,
+      hit_count: 0,
+      dwell_ms: 0,
+      first_fixation_ms: null
+    };
+  }
+  return {
+    total_hit_count: 0,
+    total_dwell_ms: 0,
+    buckets
+  };
+}
+
 function persistEyeLocalContext(runId, sourceName) {
   const rid = (runId || "").trim();
   if (!rid) {
@@ -254,6 +281,7 @@ function attachCoverageDocumentResizeTracking() {
 }
 
 state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
+state.attentionSummary = createAttentionSummaryState();
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
 
@@ -535,6 +563,124 @@ function getFrameDocument() {
   }
 }
 
+function getFrameElementFromClientPoint(clientPoint, sampleRadius = 12) {
+  const frameDocument = getFrameDocument();
+  const framePoint = getPointInsideFrame(clientPoint);
+  if (!frameDocument || !framePoint) {
+    return null;
+  }
+  const probeOffsets = [
+    [0, 0],
+    [sampleRadius, 0],
+    [-sampleRadius, 0],
+    [0, sampleRadius],
+    [0, -sampleRadius]
+  ];
+  for (const [dx, dy] of probeOffsets) {
+    const element = frameDocument.elementFromPoint(framePoint.x + dx, framePoint.y + dy);
+    if (element) {
+      return element;
+    }
+  }
+  return null;
+}
+
+function normalizeTagName(element) {
+  return String(element?.tagName || "").toLowerCase();
+}
+
+function classifyAttentionBucket(hitElement) {
+  if (!hitElement) {
+    return "other";
+  }
+  let current = hitElement;
+  let fallbackTag = normalizeTagName(hitElement);
+  while (current && current.nodeType === 1) {
+    const tag = normalizeTagName(current);
+    if (tag) {
+      fallbackTag = tag;
+    }
+    const role = String(current.getAttribute?.("role") || "").toLowerCase();
+    const ariaLabel = String(
+      current.getAttribute?.("aria-label") || current.getAttribute?.("aria-labelledby") || ""
+    ).toLowerCase();
+    const className = String(current.className || "").toLowerCase();
+    const idName = String(current.id || "").toLowerCase();
+    const marker = String(current.getAttribute?.("data-track-region") || "").toLowerCase();
+    const textContent = String(current.textContent || "").trim();
+
+    if (
+      tag === "nav" ||
+      role === "navigation" ||
+      marker.includes("nav") ||
+      className.includes("nav") ||
+      idName.includes("nav")
+    ) {
+      return "navigation";
+    }
+    if (
+      tag === "button" ||
+      tag === "a" ||
+      tag === "input" ||
+      tag === "select" ||
+      tag === "textarea" ||
+      role === "button" ||
+      role === "link" ||
+      role === "menuitem" ||
+      role === "tab" ||
+      role === "switch" ||
+      role === "checkbox" ||
+      role === "radio" ||
+      current.hasAttribute?.("onclick")
+    ) {
+      return "interactive";
+    }
+    if (tag === "h1" || tag === "h2" || tag === "h3" || tag === "h4" || tag === "h5" || tag === "h6") {
+      return "headings";
+    }
+    if (tag === "img" || tag === "video" || tag === "canvas" || tag === "svg" || role === "img") {
+      return "media";
+    }
+    if (
+      tag === "p" ||
+      tag === "article" ||
+      tag === "section" ||
+      role === "article" ||
+      marker.includes("text") ||
+      marker.includes("content") ||
+      ariaLabel.includes("content") ||
+      (textContent.length >= 40 && !["button", "a", "input"].includes(tag))
+    ) {
+      return "main_text";
+    }
+    current = current.parentElement;
+  }
+
+  if (fallbackTag === "img" || fallbackTag === "video" || fallbackTag === "canvas" || fallbackTag === "svg") {
+    return "media";
+  }
+  if (fallbackTag === "a" || fallbackTag === "button" || fallbackTag === "input") {
+    return "interactive";
+  }
+  return "other";
+}
+
+function updateAttentionSummary(clientPoint, elapsedDurationMs) {
+  const hitElement = getFrameElementFromClientPoint(clientPoint);
+  const bucketKey = classifyAttentionBucket(hitElement);
+  const bucket = state.attentionSummary.buckets[bucketKey];
+  if (!bucket) {
+    return;
+  }
+  bucket.hit_count += 1;
+  if (bucket.first_fixation_ms == null) {
+    bucket.first_fixation_ms = Math.max(0, Math.round(elapsedDurationMs));
+  }
+  bucket.dwell_ms += HEAT_SAMPLE_INTERVAL_MS;
+  state.attentionSummary.total_hit_count += 1;
+  state.attentionSummary.total_dwell_ms += HEAT_SAMPLE_INTERVAL_MS;
+}
+
 function getFrameWindow() {
   if (!targetFrame) {
     return null;
@@ -725,6 +871,19 @@ function deriveSessionSourceName() {
 
 function buildEyeSessionPayload() {
   const runId = (state.relatedRunId || "").trim();
+  const totalDwell = Math.max(1, state.attentionSummary.total_dwell_ms);
+  const attentionSummary = ATTENTION_BUCKETS.map((bucket) => {
+    const data = state.attentionSummary.buckets[bucket.key];
+    return {
+      key: bucket.key,
+      label: bucket.label,
+      hit_count: data.hit_count,
+      dwell_ms: data.dwell_ms,
+      first_fixation_ms: data.first_fixation_ms,
+      share: Number((data.dwell_ms / totalDwell).toFixed(4))
+    };
+  }).filter((item) => item.hit_count > 0);
+
   return {
     run_id: runId,
     source_name: deriveSessionSourceName(),
@@ -740,7 +899,10 @@ function buildEyeSessionPayload() {
       saved_at: new Date().toISOString(),
       session_started_at: state.sessionStartedAtIso || null,
       visited_cells: state.visitedCellIds.size,
-      last_saved_session_id: state.lastSavedSessionId || null
+      last_saved_session_id: state.lastSavedSessionId || null,
+      attention_summary: attentionSummary,
+      attention_total_hits: state.attentionSummary.total_hit_count,
+      attention_total_dwell_ms: state.attentionSummary.total_dwell_ms
     }
   };
 }
@@ -876,6 +1038,7 @@ function resetTrackingData() {
   state.sessionStartedAtIso = state.started ? new Date().toISOString() : "";
   state.lastSavedSessionId = "";
   state.savedThisRun = false;
+  state.attentionSummary = createAttentionSummaryState();
   state.cellCounts.fill(0);
   state.visitedCellIds.clear();
   samplesText.textContent = "0";
@@ -1144,6 +1307,7 @@ function handleGaze(data) {
     };
 
     renderHeatmap();
+    updateAttentionSummary(point, currentDurationMs());
     updateCoverage(
       coveragePoint.x,
       coveragePoint.y,

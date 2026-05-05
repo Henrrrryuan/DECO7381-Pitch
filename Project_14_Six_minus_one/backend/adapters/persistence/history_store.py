@@ -146,30 +146,32 @@ def _fetch_latest_eye_summary_by_run_ids(
     placeholders = ",".join("?" * len(run_ids))
     rows = connection.execute(
         f"""
-        WITH ranked AS (
-            SELECT
-                run_id,
-                coverage_percent,
-                sample_count,
-                duration_ms,
-                ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY rowid DESC) AS rn
-            FROM eye_tracking_sessions
-            WHERE run_id IS NOT NULL AND run_id IN ({placeholders})
-        )
-        SELECT run_id, coverage_percent, sample_count, duration_ms
-        FROM ranked
-        WHERE rn = 1
+        SELECT
+            run_id,
+            coverage_percent,
+            sample_count,
+            duration_ms,
+            summary_json
+        FROM eye_tracking_sessions
+        WHERE run_id IS NOT NULL AND run_id IN ({placeholders})
+        ORDER BY rowid DESC
         """,
         run_ids,
     ).fetchall()
     result: dict[str, EyeTrackingSummaryForHistory] = {}
     for row in rows:
         rid = str(row["run_id"])
+        attention_summary = _extract_attention_summary(row["summary_json"])
+        if rid in result and result[rid].attention_summary:
+            continue
+        if rid in result and not attention_summary:
+            continue
         result[rid] = EyeTrackingSummaryForHistory(
             available=True,
             coverage_percent=float(row["coverage_percent"]),
             sample_count=int(row["sample_count"]),
             duration_ms=int(row["duration_ms"]),
+            attention_summary=attention_summary,
         )
     return result
 
@@ -660,6 +662,38 @@ def _load_json(raw_value: str | None, fallback: object) -> object:
     if not raw_value:
         return fallback
     return json.loads(raw_value)
+
+
+def _extract_attention_summary(summary_json: str | None) -> list[dict[str, object]]:
+    raw = _load_json(summary_json, {})
+    if not isinstance(raw, dict):
+        return []
+    items = raw.get("attention_summary")
+    if not isinstance(items, list):
+        return []
+    cleaned: list[dict[str, object]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            hit_count = int(item.get("hit_count") or 0)
+            share = float(item.get("share") or 0)
+        except (TypeError, ValueError):
+            continue
+        if hit_count <= 0:
+            continue
+        cleaned.append(
+            {
+                "key": str(item.get("key") or ""),
+                "label": str(item.get("label") or "Other"),
+                "hit_count": hit_count,
+                "dwell_ms": int(item.get("dwell_ms") or 0),
+                "first_fixation_ms": item.get("first_fixation_ms"),
+                "share": max(0.0, min(1.0, share)),
+            }
+        )
+    cleaned.sort(key=lambda row: float(row.get("share") or 0), reverse=True)
+    return cleaned
 
 
 def _apply_schema(connection: sqlite3.Connection) -> None:

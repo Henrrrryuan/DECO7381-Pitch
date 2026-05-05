@@ -202,20 +202,30 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
   if (!summary?.available) {
     return <div className="history-supporting-none">No behavioral evidence</div>;
   }
-
-  const coverage = Number(summary.coverage_percent ?? 0).toFixed(1);
-  const samples = Number(summary.sample_count ?? 0);
-  const duration = formatDuration(summary.duration_ms ?? 0);
+  const attentionItems = Array.isArray(summary.attention_summary)
+    ? summary.attention_summary
+        .map((item) => ({
+          label: String(item?.label || "Other"),
+          share: Math.max(0, Math.min(1, Number(item?.share || 0))),
+          hitCount: Math.max(0, Number(item?.hit_count || 0)),
+        }))
+        .filter((item) => item.hitCount > 0)
+        .sort((a, b) => b.share - a.share)
+    : [];
 
   return (
     <div className="history-supporting-cell">
-      <p className="history-supporting-available">Behavioral evidence available</p>
+      <p className="history-supporting-available">Element hits</p>
       <ul className="history-supporting-metrics">
-        <li>
-          Attention coverage: {coverage}%
-        </li>
-        <li>Gaze samples: {samples}</li>
-        <li>Duration: {duration}</li>
+        {attentionItems.length ? (
+          attentionItems.map((item) => (
+            <li key={item.label}>
+              {item.label}: {(item.share * 100).toFixed(1)}%
+            </li>
+          ))
+        ) : (
+          <li>No element hits recorded</li>
+        )}
       </ul>
       <button
         className="history-heatmap-btn"

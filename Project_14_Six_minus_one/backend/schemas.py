@@ -144,6 +144,7 @@ class EyeTrackingSummaryForHistory:
     coverage_percent: float | None = None
     sample_count: int | None = None
     duration_ms: int | None = None
+    attention_summary: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         if not self.available:
@@ -155,6 +156,7 @@ class EyeTrackingSummaryForHistory:
             else None,
             "sample_count": int(self.sample_count) if self.sample_count is not None else None,
             "duration_ms": int(self.duration_ms) if self.duration_ms is not None else None,
+            "attention_summary": self.attention_summary,
         }
 
 
