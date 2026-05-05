@@ -3080,8 +3080,8 @@ button.dimension-row.is-linked-active {
 
 .accessibility-widget-button {
   position: fixed;
-  right: 28px;
-  bottom: 104px;
+  right: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom));
   z-index: 120;
   width: 88px;
   height: 88px;
@@ -6469,7 +6469,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
   .accessibility-widget-button {
     right: 16px;
-    bottom: 92px;
+    bottom: max(16px, env(safe-area-inset-bottom));
     width: 74px;
     height: 74px;
   }

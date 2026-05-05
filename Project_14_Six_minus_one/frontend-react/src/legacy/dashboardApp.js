@@ -3225,15 +3225,11 @@ function initHistoryContextPanel() {
 
 function bindEvents() {
   const printButton = document.getElementById("printReportBtn");
-  const assistantForm = document.getElementById("assistantForm");
-  const assistantInput = document.getElementById("assistantInput");
-  const clearButton = document.getElementById("clearAssistantButton");
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
-  initAssistantFloating();
   initPreviewMessageBridge();
   initDimensionInfoTooltip();
   initBackToAnalysisButton();
@@ -3242,23 +3238,6 @@ function bindEvents() {
     printButton.addEventListener("click", () => {
       printDashboardReport({ restoreMode: state.workspaceMode });
     });
-  }
-
-  if (assistantForm) {
-    assistantForm.addEventListener("submit", handleAssistantSubmit);
-  }
-
-  if (assistantInput) {
-    assistantInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        assistantForm?.requestSubmit();
-      }
-    });
-  }
-
-  if (clearButton) {
-    clearButton.addEventListener("click", handleAssistantClear);
   }
 
   if (sidebarToggleButton) {

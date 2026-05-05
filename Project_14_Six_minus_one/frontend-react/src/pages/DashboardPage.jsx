@@ -167,56 +167,10 @@ export function DashboardPage() {
                 </div>
               </article>
 
-              <article
-                id="assistantFloatingWindow"
-                className="workspace-pane suggestion-pane assistant-floating-window"
-                aria-label="AI Assistant"
-                hidden
-              >
-                <div id="assistantDragHandle" className="pane-header assistant-floating-header">
-                  <h2>AI Assistant</h2>
-                  <div className="assistant-header-actions">
-                    <button id="clearAssistantButton" className="assistant-clear-button" type="button">
-                      Clear
-                    </button>
-                    <button id="assistantMinimizeButton" className="assistant-clear-button" type="button">
-                      Minimize
-                    </button>
-                  </div>
-                </div>
-                <div id="assistantMessages" className="assistant-messages" aria-live="polite">
-                  <article className="assistant-message assistant-message-assistant">
-                    <p>Ask me how to reduce information overload, improve readability, or fix specific issues.</p>
-                  </article>
-                </div>
-                <form id="assistantForm" className="assistant-input-area">
-                  <input
-                    id="assistantInput"
-                    className="assistant-input"
-                    type="text"
-                    placeholder="Ask how to improve this page…"
-                    autoComplete="off"
-                  />
-                  <button id="assistantSendButton" className="assistant-send-button" type="submit">
-                    Send
-                  </button>
-                </form>
-              </article>
             </section>
           </section>
         </div>
       </main>
-
-      <button
-        id="assistantFloatingButton"
-        className="assistant-floating-button"
-        type="button"
-        aria-controls="assistantFloatingWindow"
-        aria-expanded="false"
-      >
-        <span>AI</span>
-        <strong>Assistant</strong>
-      </button>
     </>
   );
 }
