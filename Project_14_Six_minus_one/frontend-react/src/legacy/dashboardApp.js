@@ -1,6 +1,7 @@
 import {
   API_BASE,
   analyzeHtmlText,
+  analyzeRenderedView,
   analyzeVisualComplexityHtml,
   buildAnalysisView,
   chatWithAssistant,
@@ -32,6 +33,8 @@ const state = {
   renderedDomAnalysisKey: "",
   renderedDomAnalysisPending: false,
   renderedDomAnalysisTimer: null,
+  renderedViewStale: false,
+  renderedViewBaselineKey: "",
   previousResult: null,
   previousSourceName: "",
   activeProfile: "Dyslexia",
@@ -590,8 +593,16 @@ function renderDashboardSummary(result) {
     return count + (dimension.issues || []).length;
   }, 0);
 
+  const renderedNotice = state.currentPayload?.analysis_mode === "rendered_current_view"
+    ? `<div class="summary-line summary-rendered-mode${state.renderedViewStale ? " is-stale" : ""}">
+        ${state.renderedViewStale
+          ? "Preview state changed. Re-run Analyze current view to update issues and highlights."
+          : "This report is based on the current visible page state. Interact with the preview and re-run analysis to check another state."}
+      </div>`
+    : "";
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
+    ${renderedNotice}
   `;
 }
 
@@ -1171,6 +1182,9 @@ function locationMetaText(location, elementNumber = null) {
   if (location.block_index) {
     return `${elementPrefix}Text block ${location.block_index} in page reading order${textHint}`;
   }
+  if (location.selector) {
+    return `${elementPrefix}CSS selector: ${location.selector}${textHint}`;
+  }
   if (location.summary) {
     const summaryType = looksLikeTechnicalSelector(location.summary) ? "CSS selector" : "Page area";
     return `${elementPrefix}${summaryType}: ${location.summary}${textHint}`;
@@ -1180,9 +1194,6 @@ function locationMetaText(location, elementNumber = null) {
   }
   if (location.tag) {
     return `${elementPrefix}HTML <${location.tag}> element${textHint}`;
-  }
-  if (location.selector) {
-    return `${elementPrefix}CSS selector: ${location.selector}${textHint}`;
   }
   return `${elementPrefix}Location detail${textHint}`;
 }
@@ -1559,15 +1570,29 @@ function issueElementListMarkup(issue, dimensionName) {
   const inferredCount = Math.max(1, locations.length || 0);
   const selectedIssueId = issueDomId(dimensionName, issue.rule_id);
   const activeElementNumber = state.selectedIssueId === selectedIssueId ? state.selectedElementNumber : 0;
-  const visibleLocations = locations.length ? locations : [{ label: issue?.title || "Affected page area" }];
+  const visibleLocations = locations.length ? locations : [{
+    label: "Structural evidence, not directly highlightable",
+    highlightable: false,
+    status: "No visible target found",
+  }];
   const rows = visibleLocations.slice(0, 12).map((location, index) => {
     const elementNumber = index + 1;
     const isActive = activeElementNumber === elementNumber;
     const label = location?.label || friendlyLocationLabel(location);
+    const isHighlightable = location?.highlightable !== false && locations.length > 0;
     const meta = locationMetaText(location, null)
       .replace(/^Location: /, "")
       .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
     const showMeta = meta && meta !== label;
+    if (!isHighlightable) {
+      return `
+        <div class="issue-element-chip is-disabled" role="note">
+          <strong>Evidence</strong>
+          <span>${escapeHtml(label || "Structural evidence, not directly highlightable")}</span>
+          <small>${escapeHtml(location?.status || "No visible target found")}</small>
+        </div>
+      `;
+    }
     return `
       <button
         class="issue-element-chip${isActive ? " is-active" : ""}"
@@ -1964,7 +1989,7 @@ function loadWebsitePreview() {
   if (previewUrl) {
     const proxiedUrl = isPreviewRouteUrl(previewUrl)
       ? previewUrl
-      : `${API_BASE}/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
+      : `/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
     if (frame.dataset.previewUrl !== proxiedUrl) {
       frame.removeAttribute("srcdoc");
       frame.src = proxiedUrl;
@@ -2006,6 +2031,140 @@ function getPreviewDocument() {
   } catch (error) {
     return null;
   }
+}
+
+function previewDebugState(doc = getPreviewDocument()) {
+  if (!doc) {
+    return { accessible: false };
+  }
+  const win = doc.defaultView;
+  const sections = Array.from(doc.querySelectorAll("section[id], main[id], [data-section], [class*='active' i]"))
+    .filter((element) => isElementVisibleForHighlight(element))
+    .slice(0, 8)
+    .map((element) => ({
+      tag: element.tagName?.toLowerCase(),
+      id: element.id || "",
+      className: String(element.className || ""),
+      text: elementTextPreview(element),
+      rect: element.getBoundingClientRect(),
+    }));
+  return {
+    accessible: true,
+    url: doc.location?.href || "",
+    hash: doc.location?.hash || win?.location?.hash || "",
+    activeElement: doc.activeElement ? {
+      tag: doc.activeElement.tagName?.toLowerCase(),
+      id: doc.activeElement.id || "",
+      className: String(doc.activeElement.className || ""),
+      text: elementTextPreview(doc.activeElement),
+    } : null,
+    visibleSections: sections,
+  };
+}
+
+const RENDERED_VIEW_TARGET_SELECTOR = [
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "p",
+  "a",
+  "button",
+  "label",
+  "li",
+  "img",
+  "input",
+  "textarea",
+  "select",
+  "nav",
+  "form",
+  "video",
+  "audio",
+  "[role='button']",
+  "[role='link']",
+].join(", ");
+
+function selectorForRenderedElement(element) {
+  if (element.id) {
+    return `#${cssEscape(element.id)}`;
+  }
+  const cognilensId = element.getAttribute("data-cognilens-id");
+  if (cognilensId) {
+    return `[data-cognilens-id="${cssEscape(cognilensId)}"]`;
+  }
+  const tag = element.tagName?.toLowerCase() || "";
+  const classNames = String(element.className || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (tag && classNames.length) {
+    return `${tag}.${classNames.map(cssEscape).join(".")}`;
+  }
+  return tag;
+}
+
+function ensureCognilensElementId(element, index) {
+  const existing = element.getAttribute("data-cognilens-id");
+  if (existing) {
+    return existing;
+  }
+  const id = `cl-${Date.now().toString(36)}-${index.toString(36)}`;
+  element.setAttribute("data-cognilens-id", id);
+  return id;
+}
+
+function isRenderedViewExtractable(element) {
+  if (!element || element.nodeType !== 1) {
+    return false;
+  }
+  const tagName = element.tagName?.toLowerCase();
+  if (["script", "style", "meta", "link", "head", "html", "body", "noscript", "template", "defs", "path"].includes(tagName)) {
+    return false;
+  }
+  return isElementVisibleForHighlight(element);
+}
+
+function extractRenderedCurrentViewPayload(doc) {
+  if (!doc?.body) {
+    throw new Error("The preview document is not available yet.");
+  }
+  const win = doc.defaultView;
+  const elements = Array.from(doc.body.querySelectorAll(RENDERED_VIEW_TARGET_SELECTOR))
+    .filter(isRenderedViewExtractable)
+    .slice(0, 300)
+    .map((element, index) => {
+      const rect = element.getBoundingClientRect();
+      const tagName = element.tagName?.toLowerCase() || "";
+      return {
+        cognilensId: ensureCognilensElementId(element, index + 1),
+        tagName,
+        role: element.getAttribute("role") || "",
+        text: elementTextPreview(element),
+        alt: element.getAttribute("alt") || "",
+        ariaLabel: element.getAttribute("aria-label") || "",
+        href: element.getAttribute("href") || "",
+        selector: selectorForRenderedElement(element),
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        },
+        visible: true,
+      };
+    });
+  return {
+    mode: "rendered_current_view",
+    previewUrl: getPreviewUrl() || doc.location?.href || "",
+    source_name: `${state.sourceName || "preview"} (current view)`,
+    viewport: {
+      width: win?.innerWidth || doc.documentElement.clientWidth || 0,
+      height: win?.innerHeight || doc.documentElement.clientHeight || 0,
+    },
+    elements,
+  };
 }
 
 function injectHighlightStyles(doc) {
@@ -2209,12 +2368,38 @@ function cssEscape(value) {
 
 function summaryToSelector(summary) {
   const value = String(summary || "").trim();
-  if (!value || value === "script" || value.includes(" ")) {
+  if (!value || value.includes(" ") || isGenericOrBadSelector(value)) {
     return "";
   }
   return value
     .replace(/#([A-Za-z0-9_-]+)/g, (_match, id) => `#${cssEscape(id)}`)
     .replace(/\.([A-Za-z0-9_-]+)/g, (_match, className) => `.${cssEscape(className)}`);
+}
+
+function isGenericOrBadSelector(selector) {
+  const value = String(selector || "").trim().toLowerCase();
+  return [
+    "a",
+    "button",
+    "div",
+    "section",
+    "p",
+    "li",
+    "img",
+    "input",
+    "article",
+    "nav",
+    "main",
+    "html",
+    "head",
+    "body",
+    "script",
+    "style",
+    "meta",
+    "link",
+    "noscript",
+    "template",
+  ].includes(value);
 }
 
 function collectTextBlocks(doc) {
@@ -2310,6 +2495,70 @@ function isElementVisibleForHighlight(element) {
   return !elementHiddenReason(element);
 }
 
+function elementTextPreview(element) {
+  return normalizeInlineText([
+    element?.textContent,
+    element?.getAttribute?.("aria-label"),
+    element?.getAttribute?.("title"),
+    element?.getAttribute?.("alt"),
+  ].filter(Boolean).join(" ")).slice(0, 120);
+}
+
+function elementDebugSnapshot(element, frameDoc = null) {
+  if (!element || element.nodeType !== 1) {
+    return { exists: false };
+  }
+  const rect = element.getBoundingClientRect();
+  const viewportWidth = frameDoc?.documentElement?.clientWidth || element.ownerDocument?.documentElement?.clientWidth || 0;
+  const viewportHeight = frameDoc?.documentElement?.clientHeight || element.ownerDocument?.documentElement?.clientHeight || 0;
+  const inViewport = rect.bottom >= 0
+    && rect.right >= 0
+    && (!viewportWidth || rect.left <= viewportWidth)
+    && (!viewportHeight || rect.top <= viewportHeight);
+  return {
+    exists: true,
+    tag: element.tagName?.toLowerCase(),
+    id: element.id || "",
+    className: String(element.className || ""),
+    text: elementTextPreview(element),
+    visible: isElementVisibleForHighlight(element),
+    hiddenReason: elementHiddenReason(element),
+    rect,
+    inViewport,
+    highlightAttr: element.getAttribute("data-cognilens-highlight") || "",
+  };
+}
+
+function debugCandidateList(source, elements, frameDoc = null) {
+  debugHighlight(`${source} candidate detail`, Array.from(elements || []).slice(0, 10).map((element) => (
+    elementDebugSnapshot(element, frameDoc)
+  )));
+}
+
+function validateHighlightTarget(element, location = null, frameDoc = null) {
+  if (!element || element.nodeType !== 1) {
+    return { ok: false, reason: "No visible target found" };
+  }
+  const tagName = element.tagName?.toLowerCase();
+  if (["html", "head", "body", "script", "style", "meta", "link", "noscript", "template", "defs", "path"].includes(tagName)) {
+    return { ok: false, reason: `Bad target tag: ${tagName}` };
+  }
+  const hiddenReason = elementHiddenReason(element);
+  if (hiddenReason) {
+    return { ok: false, reason: hiddenReason };
+  }
+  const rect = element.getBoundingClientRect();
+  const viewportWidth = frameDoc?.documentElement?.clientWidth || element.ownerDocument?.documentElement?.clientWidth || 0;
+  const viewportHeight = frameDoc?.documentElement?.clientHeight || element.ownerDocument?.documentElement?.clientHeight || 0;
+  if (viewportWidth && viewportHeight && rect.width * rect.height > viewportWidth * viewportHeight * 0.6) {
+    return { ok: false, reason: "Target is a large structural container" };
+  }
+  if (location?.selector && isGenericOrBadSelector(location.selector)) {
+    return { ok: false, reason: `Selector is too broad: ${location.selector}` };
+  }
+  return { ok: true, reason: "" };
+}
+
 function sortHighlightCandidates(elements) {
   const unique = Array.from(new Set(elements.filter((element) => element?.nodeType === 1)));
   return unique.sort((left, right) => {
@@ -2329,16 +2578,30 @@ function findElementsForLocation(doc, location) {
     return [];
   }
 
+  if (location.cognilensId) {
+    const selector = `[data-cognilens-id="${cssEscape(location.cognilensId)}"]`;
+    const matched = Array.from(doc.querySelectorAll(selector));
+    debugHighlight("cognilensId lookup", location.cognilensId, "matches", matched.length);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
   if (location.selector) {
-    try {
-      const matched = Array.from(doc.querySelectorAll(location.selector));
-      debugHighlight("selector lookup", location.selector, "matches", matched.length);
-      if (matched.length) {
-        return sortHighlightCandidates(matched);
+    if (isGenericOrBadSelector(location.selector)) {
+      debugHighlight("skip broad/bad selector", location.selector);
+    } else {
+      try {
+        const matched = Array.from(doc.querySelectorAll(location.selector));
+        debugHighlight("selector lookup", location.selector, "matches", matched.length);
+        debugCandidateList(`selector ${location.selector}`, matched, doc);
+        if (matched.length) {
+          return sortHighlightCandidates(matched);
+        }
+      } catch (error) {
+        debugHighlight("selector lookup failed", location.selector, error);
+        return [];
       }
-    } catch (error) {
-      debugHighlight("selector lookup failed", location.selector, error);
-      return [];
     }
   }
 
@@ -2347,6 +2610,7 @@ function findElementsForLocation(doc, location) {
     try {
       const matched = Array.from(doc.querySelectorAll(summarySelector));
       debugHighlight("summary selector lookup", summarySelector, "matches", matched.length);
+      debugCandidateList(`summary selector ${summarySelector}`, matched, doc);
       if (matched.length) {
         return sortHighlightCandidates(matched);
       }
@@ -2365,6 +2629,7 @@ function findElementsForLocation(doc, location) {
   if (location.text) {
     const matched = findByText(doc, location.tag, location.text);
     debugHighlight("text fallback", location.text, "matches", matched.length);
+    debugCandidateList("text fallback", matched, doc);
     if (matched.length) {
       return sortHighlightCandidates(matched);
     }
@@ -2373,6 +2638,7 @@ function findElementsForLocation(doc, location) {
   if (location.preview) {
     const matched = findByText(doc, location.tag, location.preview);
     debugHighlight("preview fallback", location.preview, "matches", matched.length);
+    debugCandidateList("preview fallback", matched, doc);
     if (matched.length) {
       return sortHighlightCandidates(matched);
     }
@@ -2381,6 +2647,7 @@ function findElementsForLocation(doc, location) {
   if (location.sentence_preview) {
     const matched = findByText(doc, location.tag, location.sentence_preview);
     debugHighlight("sentence preview fallback", location.sentence_preview, "matches", matched.length);
+    debugCandidateList("sentence preview fallback", matched, doc);
     if (matched.length) {
       return sortHighlightCandidates(matched);
     }
@@ -2390,6 +2657,7 @@ function findElementsForLocation(doc, location) {
     const text = location.label || location.summary;
     const matched = findByText(doc, location.tag, text);
     debugHighlight("label/summary fallback", text, "matches", matched.length);
+    debugCandidateList("label/summary fallback", matched, doc);
     if (matched.length) {
       return sortHighlightCandidates(matched);
     }
@@ -2458,6 +2726,28 @@ function tryExpandHiddenElement(element) {
   return true;
 }
 
+function moreSpecificHighlightTarget(element, location = null, frameDoc = null) {
+  const validation = validateHighlightTarget(element, location, frameDoc);
+  if (validation.ok) {
+    return element;
+  }
+  const childSelectors = "a, button, input, select, textarea, img, h1, h2, h3, h4, p, li, video, audio, iframe, [role='button']";
+  const children = Array.from(element?.querySelectorAll?.(childSelectors) || []);
+  const child = sortHighlightCandidates(children).find((candidate) => (
+    validateHighlightTarget(candidate, null, frameDoc).ok
+  ));
+  if (child) {
+    debugHighlight("using more specific child target", {
+      originalReason: validation.reason,
+      originalTag: element?.tagName?.toLowerCase(),
+      childTag: child.tagName?.toLowerCase(),
+      childText: elementTextPreview(child),
+    });
+    return child;
+  }
+  return element;
+}
+
 function fallbackSelectorsForIssue(issue, dimensionName) {
   const ruleId = issue?.rule_id || "";
   if (ruleId === "IO-1") {
@@ -2508,8 +2798,14 @@ function applyHighlights(elements, color, label) {
     if (!element || element.nodeType !== 1 || highlighted.size >= 30 || highlighted.has(element)) {
       return;
     }
-    if (!isElementVisibleForHighlight(element)) {
-      debugHighlight("skip invisible highlight candidate", elementHiddenReason(element), element);
+    const validation = validateHighlightTarget(element, null, element.ownerDocument);
+    if (!validation.ok) {
+      debugHighlight("skip invalid highlight candidate", validation.reason, {
+        tag: element.tagName?.toLowerCase(),
+        className: element.className,
+        text: elementTextPreview(element),
+        rect: element.getBoundingClientRect(),
+      });
       return;
     }
     const rect = element.getBoundingClientRect();
@@ -2533,6 +2829,13 @@ function applyHighlights(elements, color, label) {
     element.setAttribute("data-cognilens-highlight", highlightLabel);
     element.style.setProperty("--cognilens-highlight-color", color);
     highlighted.add(element);
+    debugHighlight("highlight attribute applied", {
+      label: highlightLabel,
+      color,
+      element: elementDebugSnapshot(element, element.ownerDocument),
+      styleInjected: Boolean(element.ownerDocument?.getElementById("cognilens-highlight-style")),
+      note: "Highlight is CSS outline/background inside iframe, not a separate overlay element.",
+    });
   });
   return highlighted;
 }
@@ -2586,6 +2889,16 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
   clearWebsiteHighlights(frameDoc);
 
   const location = issue.locations?.[elementNumber - 1];
+  debugHighlight("affected element click diagnosis", {
+    issueTitle: issue.title,
+    dimensionName,
+    ruleId,
+    elementNumber,
+    location,
+    preview: previewDebugState(frameDoc),
+    selector: location?.selector || "",
+    cognilensId: location?.cognilensId || "",
+  });
   const exactLocationElements = location ? findElementsForLocation(frameDoc, location) : [];
   const elements = exactLocationElements.length
     ? exactLocationElements
@@ -2600,7 +2913,8 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     location,
     candidates: elements.length,
     exactLocation: exactLocationElements.length > 0,
-    target,
+    candidatesDetail: sortHighlightCandidates(elements).slice(0, 10).map((element) => elementDebugSnapshot(element, frameDoc)),
+    target: elementDebugSnapshot(target, frameDoc),
     visible: isElementVisibleForHighlight(target),
     hiddenReason: elementHiddenReason(target),
   });
@@ -2609,14 +2923,18 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     return;
   }
 
-  let finalTarget = target;
+  let finalTarget = moreSpecificHighlightTarget(target, location, frameDoc);
   if (!isElementVisibleForHighlight(finalTarget)) {
     const expanded = tryExpandHiddenElement(finalTarget);
     if (expanded) {
       setWebsiteStatus(`Element ${elementNumber} is inside hidden content. Opening its section...`);
       await waitForPreviewUpdate();
       const retry = location ? findElementsForLocation(frameDoc, location) : issueHighlightElements(frameDoc, issue, dimensionName).elements;
-      finalTarget = sortHighlightCandidates(retry)[exactLocationElements.length ? 0 : elementNumber - 1] || finalTarget;
+      finalTarget = moreSpecificHighlightTarget(
+        sortHighlightCandidates(retry)[exactLocationElements.length ? 0 : elementNumber - 1] || finalTarget,
+        location,
+        frameDoc,
+      );
       debugHighlight("after auto expand retry", {
         candidates: retry.length,
         finalTarget,
@@ -2626,9 +2944,29 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     }
   }
 
+  const targetValidation = validateHighlightTarget(finalTarget, location, frameDoc);
+  debugHighlight("final target validation", {
+    ok: targetValidation.ok,
+    reason: targetValidation.reason,
+    tag: finalTarget?.tagName?.toLowerCase(),
+    className: finalTarget?.className,
+    text: elementTextPreview(finalTarget),
+    rect: finalTarget?.getBoundingClientRect?.(),
+  });
+  if (!targetValidation.ok) {
+    setWebsiteStatus(`Element ${elementNumber} cannot be highlighted: ${targetValidation.reason}.`, true);
+    return;
+  }
+
   const highlighted = applyHighlights([finalTarget], config.color, `Element ${elementNumber}`);
+  debugHighlight("highlight result", {
+    highlightedCount: highlighted.size,
+    targetHasHighlightAttr: finalTarget?.hasAttribute?.("data-cognilens-highlight"),
+    target: elementDebugSnapshot(finalTarget, frameDoc),
+    previewAfterHighlight: previewDebugState(frameDoc),
+  });
   if (!highlighted.size) {
-    setWebsiteStatus(`Element ${elementNumber} was found but is still hidden in the current page state.`, true);
+    setWebsiteStatus(`Element ${elementNumber} was found but is not a directly highlightable visible target.`, true);
     return;
   }
   finalTarget.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
@@ -3114,6 +3452,107 @@ function saveTransientDashboardState(payload, html) {
   });
 }
 
+function renderedViewAnalysisKeyFromPayload(payload) {
+  const ids = (payload?.elements || []).map((element) => `${element.cognilensId}:${element.tagName}:${element.text}`).join("|");
+  return `${payload?.previewUrl || ""}::${payload?.viewport?.width || 0}x${payload?.viewport?.height || 0}::${ids}`;
+}
+
+function setRenderedViewStale(isStale) {
+  state.renderedViewStale = Boolean(isStale);
+  const button = document.getElementById("analyzeCurrentViewBtn");
+  if (button) {
+    button.classList.toggle("is-stale", state.renderedViewStale);
+    button.title = state.renderedViewStale
+      ? "Preview state changed. Re-run Analyze current view to update issues and highlights."
+      : "Analyze the current visible preview state";
+  }
+  if (state.currentResult) {
+    renderDashboardSummary(state.currentResult);
+  }
+  if (state.renderedViewStale && state.currentPayload?.analysis_mode === "rendered_current_view") {
+    setWebsiteStatus("Preview state changed. Re-run Analyze current view to update issues and highlights.", true);
+  }
+}
+
+function markRenderedViewStaleFromPreviewInteraction() {
+  if (state.currentPayload?.analysis_mode === "rendered_current_view") {
+    window.setTimeout(() => {
+      const doc = getPreviewDocument();
+      if (!doc) {
+        return;
+      }
+      const nextPayload = extractRenderedCurrentViewPayload(doc);
+      const nextKey = renderedViewAnalysisKeyFromPayload(nextPayload);
+      if (state.renderedViewBaselineKey && nextKey !== state.renderedViewBaselineKey) {
+        setRenderedViewStale(true);
+      }
+    }, 250);
+  }
+}
+
+async function analyzeCurrentRenderedView() {
+  const doc = getPreviewDocument();
+  if (!doc?.body) {
+    setWebsiteStatus("The preview iframe is not accessible yet. Wait for it to load, then try Analyze current view.", true);
+    return;
+  }
+
+  let payload;
+  try {
+    payload = extractRenderedCurrentViewPayload(doc);
+  } catch (error) {
+    setWebsiteStatus(`Could not read the current preview state: ${error.message || String(error)}`, true);
+    return;
+  }
+
+  if (!payload.elements.length) {
+    setWebsiteStatus("No visible analyzable elements were found in the current preview state.", true);
+    return;
+  }
+
+  const button = document.getElementById("analyzeCurrentViewBtn");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Analyzing current view...";
+  }
+  state.renderedDomAnalysisPending = true;
+  setWebsiteStatus(`Analyzing ${payload.elements.length} visible element${payload.elements.length === 1 ? "" : "s"} from the current preview state...`);
+
+  try {
+    const baselineRunId = state.currentPayload?.run?.run_id || null;
+    const renderedPayload = await analyzeRenderedView({
+      ...payload,
+      baseline_run_id: baselineRunId,
+      persist_result: true,
+    });
+    const html = renderedPayload.html_content || "";
+    state.currentPayload = {
+      ...(state.currentPayload || {}),
+      ...renderedPayload,
+      preview_url: state.currentPayload?.preview_url || renderedPayload.preview_url,
+      resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
+    };
+    state.currentHtml = html;
+    state.renderedViewBaselineKey = renderedViewAnalysisKeyFromPayload(payload);
+    setRenderedViewStale(false);
+    saveTransientDashboardState(state.currentPayload, html);
+    renderResult(buildAnalysisView(state.currentPayload), html);
+    renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+    setWorkspaceMode("website");
+    injectHighlightStyles(doc);
+    clearWebsiteHighlights(doc);
+    setWebsiteStatus("This report is based on the current visible page state. Interact with the preview and re-run analysis to check another state.");
+  } catch (error) {
+    setWebsiteStatus(`Analyze current view failed: ${error.message || String(error)}`, true);
+  } finally {
+    state.renderedDomAnalysisPending = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Analyze current view";
+    }
+  }
+}
+
 async function analyzeRenderedPreviewDocument(doc) {
   if (!shouldAnalyzeRenderedPreview(doc)) {
     return;
@@ -3466,6 +3905,7 @@ function initHistoryContextPanel() {
 
 function bindEvents() {
   const printButton = document.getElementById("printReportBtn");
+  const analyzeCurrentViewButton = document.getElementById("analyzeCurrentViewBtn");
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const dimensionBars = document.getElementById("dimensionBars");
@@ -3479,6 +3919,10 @@ function bindEvents() {
     printButton.addEventListener("click", () => {
       printDashboardReport({ restoreMode: state.workspaceMode });
     });
+  }
+
+  if (analyzeCurrentViewButton) {
+    analyzeCurrentViewButton.addEventListener("click", analyzeCurrentRenderedView);
   }
 
   if (sidebarToggleButton) {
@@ -3575,6 +4019,9 @@ function bindEvents() {
       }
       injectHighlightStyles(doc);
       bindPreviewElementClick(doc);
+      doc.addEventListener("click", markRenderedViewStaleFromPreviewInteraction, true);
+      doc.addEventListener("change", markRenderedViewStaleFromPreviewInteraction, true);
+      doc.addEventListener("input", markRenderedViewStaleFromPreviewInteraction, true);
       updatePreviewIssueHeader();
       if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
         const selected = selectedIssueRecord();
@@ -3598,7 +4045,6 @@ function bindEvents() {
       } else if (state.activeHighlightDimension) {
         highlightDimension(state.activeHighlightDimension);
       }
-      queueRenderedDomAnalysis();
     });
   }
 }

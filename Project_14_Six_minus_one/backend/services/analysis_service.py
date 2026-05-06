@@ -9,6 +9,7 @@ from ..analyzers import (
     analyze_interaction,
     analyze_readability,
 )
+from ..analyzers.location_utils import sanitize_analysis_locations
 from ..adapters.persistence.history_store import has_history_run, record_compare_pair, save_analysis_run
 from ..scoring import calculate_overall_score
 from ..schemas import AnalysisResult
@@ -33,7 +34,8 @@ def analyze_html(
         analyze_interaction(html, js_sources=merged_js_sources),
         analyze_consistency(html),
     ]
-    return calculate_overall_score(dimensions)
+    analysis = calculate_overall_score(dimensions)
+    return sanitize_analysis_locations(analysis, html)
 
 
 def build_analysis_response(

@@ -114,6 +114,14 @@ async function analyzeUrl(url, baselineRunId = null) {
   });
 }
 
+async function analyzeRenderedView(payload) {
+  return fetchJson(`${API_BASE}/analyze-rendered-view`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 async function analyzeVisualComplexityHtml(html) {
   return fetchJson(`${API_BASE}/visual-complexity`, {
     method: "POST",
@@ -239,6 +247,7 @@ export {
   API_BASE,
   STORAGE_KEY,
   analyzeHtmlText,
+  analyzeRenderedView,
   analyzeUrl,
   analyzeVisualComplexityHtml,
   analyzeVisualComplexityUrl,
