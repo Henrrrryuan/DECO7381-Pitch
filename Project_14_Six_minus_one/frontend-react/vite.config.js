@@ -37,6 +37,7 @@ const proxy = {
   "/api": { target: BACKEND, changeOrigin: true },
   "/samples": { target: BACKEND, changeOrigin: true },
   "/sample-input": { target: BACKEND, changeOrigin: true },
+  "/preview": { target: BACKEND, changeOrigin: true },
   "/eye": { target: BACKEND, changeOrigin: true },
   "/history": { target: BACKEND, changeOrigin: true, bypass: historyBypass },
 };

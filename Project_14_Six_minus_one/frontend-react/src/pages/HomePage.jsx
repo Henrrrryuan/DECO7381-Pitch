@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { isHtmlFile, isZipFile, loadDashboardSession } from "../lib/common.js";
+import {
+  analyzeUploadFile,
+  isHtmlFile,
+  isZipFile,
+  loadDashboardSession,
+  saveDashboardSession,
+} from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { spaGuideLandingHref } from "../lib/siteUrls.js";
 
@@ -66,15 +72,6 @@ function normalizeUrl(rawUrl) {
   }
 
   return parsed.href;
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => resolve(String(reader.result || "")));
-    reader.addEventListener("error", () => reject(reader.error || new Error("Could not read the selected file.")));
-    reader.readAsDataURL(file);
-  });
 }
 
 function savePendingAnalysis(payload) {
@@ -217,21 +214,29 @@ export function HomePage() {
     try {
       const previousSession = loadDashboardSession();
       const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
-      const pendingPayload = {
-        mode: "file",
-        fileName: file.name,
-        fileType: file.type || "",
-        sourceType: isZipFile(file) ? "zip" : "html",
-        baselineRunId,
-        createdAt: new Date().toISOString(),
-      };
-      if (isZipFile(file)) {
-        pendingPayload.fileDataUrl = await readFileAsDataUrl(file);
-      } else {
-        pendingPayload.html = await file.text();
-      }
-      savePendingAnalysis(pendingPayload);
-      navigate("/loading");
+      const payload = await analyzeUploadFile(file, baselineRunId);
+      const sourceType = isZipFile(file) ? "zip" : "html";
+      const sourceName = payload.resource_bundle?.entry_name || file.name;
+      const sourceUrl = payload.preview_url || "";
+      const html = payload.html_content || "";
+
+      const savedAt = new Date().toISOString();
+      saveDashboardSession({
+        current: {
+          payload,
+          html,
+          sourceName,
+          sourceType,
+          sourceUrl,
+          savedAt,
+        },
+        previous: previousSession?.current || null,
+        html,
+        sourceName,
+        sourceUrl,
+        savedAt,
+      });
+      navigate("/dashboard");
     } catch (err) {
       setStatusMessage(err.message, true);
       setLoading(false);

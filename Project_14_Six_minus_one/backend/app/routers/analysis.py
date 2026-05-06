@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import io
+import mimetypes
+import re
+from pathlib import Path, PurePosixPath
 from typing import Any
+from uuid import uuid4
+from zipfile import BadZipFile, ZipFile
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response
 
 from ...analyzers import analyze_rendered_visual_complexity, analyze_visual_complexity
 from ...adapters.http.eye_proxy import EyeProxyBadRequest, EyeProxyFetchError, fetch_proxied_response
@@ -10,9 +17,119 @@ from ...adapters.input.snapshot_input import SnapshotInputError, capture_rendere
 from ...adapters.input.url_input import UrlInputError, extract_web_bundle_from_url_html
 from ...adapters.input.zip_input import ZipInputError, extract_web_bundle_from_zip_bytes
 from ...services.analysis_service import analyze_html, build_analysis_response
-from ..core import MAX_ZIP_UPLOAD_BYTES, AnalyzePayload, AnalyzeUrlPayload
+from ..core import MAX_ZIP_UPLOAD_BYTES, AnalyzePayload, AnalyzeUrlPayload, PROJECT_ROOT
 
 router = APIRouter()
+PREVIEW_ROOT_DIR = PROJECT_ROOT / "backend" / "data" / "uploaded_previews"
+ABSOLUTE_ASSET_ATTR_PATTERN = re.compile(
+    r"""(?P<attr>(?:href|src|action))=(?P<quote>["'])/(?P<asset>[^"']+) (?P=quote)""".replace(" ", ""),
+    re.IGNORECASE,
+)
+
+
+def _is_safe_zip_member(member_name: str) -> bool:
+    path = PurePosixPath(member_name.replace("\\", "/"))
+    if path.is_absolute():
+        return False
+    return all(part not in {"", ".", ".."} for part in path.parts)
+
+
+def _extract_zip_to_preview_dir(zip_bytes: bytes, preview_dir: Path) -> None:
+    try:
+        with ZipFile(io.BytesIO(zip_bytes)) as archive:
+            for info in archive.infolist():
+                if info.is_dir():
+                    continue
+                normalized = info.filename.replace("\\", "/")
+                if not _is_safe_zip_member(normalized):
+                    continue
+                target_path = preview_dir / normalized
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(info, "r") as source, target_path.open("wb") as target:
+                    target.write(source.read())
+    except BadZipFile as exc:
+        raise ZipInputError("The uploaded file is not a valid ZIP archive.") from exc
+
+
+def _find_preview_entry_file(preview_dir: Path) -> Path:
+    root_index = preview_dir / "index.html"
+    if root_index.exists():
+        return root_index
+
+    top_level_dirs = [item for item in preview_dir.iterdir() if item.is_dir()]
+    for folder in top_level_dirs:
+        nested_index = folder / "index.html"
+        if nested_index.exists():
+            return nested_index
+
+    all_indexes = list(preview_dir.rglob("index.html"))
+    if all_indexes:
+        return sorted(all_indexes)[0]
+    raise ZipInputError("No index.html file was found after extracting the ZIP package.")
+
+
+def _rel_preview_path(preview_dir: Path, file_path: Path) -> str:
+    return file_path.relative_to(preview_dir).as_posix()
+
+
+def _preview_url(preview_id: str, rel_path: str) -> str:
+    return f"/preview/{preview_id}/{rel_path}"
+
+
+def _rewrite_html_for_preview(html: str, preview_id: str, rel_path: str) -> str:
+    current_dir = PurePosixPath(rel_path).parent
+    current_dir_text = "" if current_dir.as_posix() == "." else current_dir.as_posix().strip("/")
+    asset_base = f"/preview/{preview_id}/"
+    if current_dir_text:
+        asset_base = f"{asset_base}{current_dir_text}/"
+
+    def _replace(match: re.Match[str]) -> str:
+        attr = match.group("attr")
+        quote = match.group("quote")
+        asset = match.group("asset")
+        rewritten = f"{asset_base}{asset}"
+        return f"{attr}={quote}{rewritten}{quote}"
+
+    rewritten = ABSOLUTE_ASSET_ATTR_PATTERN.sub(_replace, html)
+    base_href = asset_base
+    if "<head" in rewritten.lower():
+        rewritten = re.sub(
+            r"<head([^>]*)>",
+            lambda match: f"<head{match.group(1)}><base href=\"{base_href}\">",
+            rewritten,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+    else:
+        rewritten = f"<base href=\"{base_href}\">{rewritten}"
+    return rewritten
+
+
+@router.get("/preview/{preview_id}/{asset_path:path}")
+def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
+    preview_dir = PREVIEW_ROOT_DIR / preview_id
+    if not preview_dir.exists():
+        raise HTTPException(status_code=404, detail="Preview not found.")
+
+    normalized = PurePosixPath(asset_path)
+    if normalized.is_absolute() or any(part in {"", ".", ".."} for part in normalized.parts):
+        raise HTTPException(status_code=400, detail="Invalid preview asset path.")
+
+    target = (preview_dir / normalized.as_posix()).resolve()
+    preview_root_resolved = preview_dir.resolve()
+    if preview_root_resolved not in target.parents and target != preview_root_resolved:
+        raise HTTPException(status_code=400, detail="Invalid preview asset path.")
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="Preview asset not found.")
+
+    suffix = target.suffix.lower()
+    if suffix in {".html", ".htm"}:
+        html = target.read_text(encoding="utf-8", errors="replace")
+        rewritten = _rewrite_html_for_preview(html, preview_id, normalized.as_posix())
+        return Response(content=rewritten, media_type="text/html; charset=utf-8")
+
+    media_type, _ = mimetypes.guess_type(str(target))
+    return FileResponse(target, media_type=media_type)
 
 
 @router.post("/analyze")
@@ -152,19 +269,39 @@ async def analyze_zip(
             ),
         )
 
+    preview_id = uuid4().hex
+    preview_dir = PREVIEW_ROOT_DIR / preview_id
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        _extract_zip_to_preview_dir(zip_bytes, preview_dir)
+        entry_file = _find_preview_entry_file(preview_dir)
+        entry_rel = _rel_preview_path(preview_dir, entry_file)
+        preview_url = _preview_url(preview_id, entry_rel)
+    except ZipInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     try:
         bundle = extract_web_bundle_from_zip_bytes(zip_bytes)
     except ZipInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    # Prefer analyzing the same entry HTML that is used for the preview, so the
+    # report and the iframe share a consistent DOM snapshot. Fall back to the
+    # original inlined HTML if the entry file cannot be read.
+    try:
+        entry_html = entry_file.read_text(encoding="utf-8", errors="replace")
+        analysis_html = _rewrite_html_for_preview(entry_html, preview_id, entry_rel)
+    except OSError:
+        analysis_html = bundle.inlined_html
+
     analysis = analyze_html(
-        bundle.inlined_html,
+        analysis_html,
         css_sources=list(bundle.css_files.values()),
         js_sources=list(bundle.js_files.values()),
     )
     payload = build_analysis_response(
         analysis,
-        html_content=bundle.html,
+        html_content=analysis_html,
         source_name=file.filename or "uploaded.zip",
         baseline_run_id=baseline_run_id,
     )
@@ -174,6 +311,11 @@ async def analyze_zip(
         "js_file_count": len(bundle.js_files),
         "css_files": sorted(bundle.css_files.keys()),
         "js_files": sorted(bundle.js_files.keys()),
+        "preview_id": preview_id,
+        "preview_url": preview_url,
     }
+    payload["analysis_id"] = payload.get("run", {}).get("run_id")
+    payload["preview_id"] = preview_id
+    payload["preview_url"] = preview_url
     return payload
 

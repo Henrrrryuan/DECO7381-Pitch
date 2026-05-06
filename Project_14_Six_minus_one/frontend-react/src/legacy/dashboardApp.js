@@ -1893,6 +1893,10 @@ function isProbablyUrl(value) {
   return /^https?:\/\//i.test(String(value || ""));
 }
 
+function isPreviewRouteUrl(value) {
+  return String(value || "").startsWith("/preview/");
+}
+
 function setWebsiteStatus(message, isError = false) {
   const status = document.getElementById("websitePreviewStatus");
   if (!status) {
@@ -1925,14 +1929,18 @@ function setWorkspaceMode(mode) {
 }
 
 function getPreviewUrl() {
-  if (isProbablyUrl(state.sourceUrl)) {
+  if (isProbablyUrl(state.sourceUrl) || isPreviewRouteUrl(state.sourceUrl)) {
     return state.sourceUrl;
   }
-  if (isProbablyUrl(state.sourceName)) {
+  if (isProbablyUrl(state.sourceName) || isPreviewRouteUrl(state.sourceName)) {
     return state.sourceName;
   }
   const runSourceName = state.currentPayload?.run?.source_name;
-  return isProbablyUrl(runSourceName) ? runSourceName : "";
+  if (isProbablyUrl(runSourceName) || isPreviewRouteUrl(runSourceName)) {
+    return runSourceName;
+  }
+  const payloadPreviewUrl = state.currentPayload?.preview_url || state.currentPayload?.resource_bundle?.preview_url;
+  return isProbablyUrl(payloadPreviewUrl) || isPreviewRouteUrl(payloadPreviewUrl) ? payloadPreviewUrl : "";
 }
 
 function buildPreviewHtml(html) {
@@ -1954,7 +1962,9 @@ function loadWebsitePreview() {
 
   const previewUrl = getPreviewUrl();
   if (previewUrl) {
-    const proxiedUrl = `${API_BASE}/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
+    const proxiedUrl = isPreviewRouteUrl(previewUrl)
+      ? previewUrl
+      : `${API_BASE}/eye/proxy?url=${encodeURIComponent(previewUrl)}`;
     if (frame.dataset.previewUrl !== proxiedUrl) {
       frame.removeAttribute("srcdoc");
       frame.src = proxiedUrl;
@@ -2255,6 +2265,65 @@ function findByText(doc, tag, text) {
   });
 }
 
+function debugHighlight(...args) {
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+    console.info("[CogniLens highlight]", ...args);
+  }
+}
+
+function elementHiddenReason(element) {
+  if (!element || element.nodeType !== 1) {
+    return "not an element";
+  }
+  let current = element;
+  while (current && current.nodeType === 1) {
+    const style = current.ownerDocument?.defaultView?.getComputedStyle(current);
+    if (!style) {
+      return "no computed style";
+    }
+    if (current.hasAttribute("hidden")) {
+      return `hidden attribute on <${current.tagName.toLowerCase()}>`;
+    }
+    if (current.getAttribute("aria-hidden") === "true") {
+      return `aria-hidden on <${current.tagName.toLowerCase()}>`;
+    }
+    if (style.display === "none") {
+      return `display:none on <${current.tagName.toLowerCase()}>`;
+    }
+    if (style.visibility === "hidden" || style.visibility === "collapse") {
+      return `visibility:${style.visibility} on <${current.tagName.toLowerCase()}>`;
+    }
+    if (Number(style.opacity) === 0) {
+      return `opacity:0 on <${current.tagName.toLowerCase()}>`;
+    }
+    current = current.parentElement;
+  }
+
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    return `zero-size rect ${Math.round(rect.width)}x${Math.round(rect.height)}`;
+  }
+  return "";
+}
+
+function isElementVisibleForHighlight(element) {
+  return !elementHiddenReason(element);
+}
+
+function sortHighlightCandidates(elements) {
+  const unique = Array.from(new Set(elements.filter((element) => element?.nodeType === 1)));
+  return unique.sort((left, right) => {
+    const leftVisible = isElementVisibleForHighlight(left) ? 1 : 0;
+    const rightVisible = isElementVisibleForHighlight(right) ? 1 : 0;
+    if (leftVisible !== rightVisible) {
+      return rightVisible - leftVisible;
+    }
+    const leftRect = left.getBoundingClientRect();
+    const rightRect = right.getBoundingClientRect();
+    return (leftRect.top - rightRect.top) || (leftRect.left - rightRect.left);
+  });
+}
+
 function findElementsForLocation(doc, location) {
   if (!location || typeof location !== "object") {
     return [];
@@ -2262,8 +2331,13 @@ function findElementsForLocation(doc, location) {
 
   if (location.selector) {
     try {
-      return Array.from(doc.querySelectorAll(location.selector));
+      const matched = Array.from(doc.querySelectorAll(location.selector));
+      debugHighlight("selector lookup", location.selector, "matches", matched.length);
+      if (matched.length) {
+        return sortHighlightCandidates(matched);
+      }
     } catch (error) {
+      debugHighlight("selector lookup failed", location.selector, error);
       return [];
     }
   }
@@ -2272,8 +2346,9 @@ function findElementsForLocation(doc, location) {
   if (summarySelector) {
     try {
       const matched = Array.from(doc.querySelectorAll(summarySelector));
+      debugHighlight("summary selector lookup", summarySelector, "matches", matched.length);
       if (matched.length) {
-        return matched;
+        return sortHighlightCandidates(matched);
       }
     } catch (error) {
       // Fall through to other location strategies.
@@ -2289,34 +2364,98 @@ function findElementsForLocation(doc, location) {
 
   if (location.text) {
     const matched = findByText(doc, location.tag, location.text);
+    debugHighlight("text fallback", location.text, "matches", matched.length);
     if (matched.length) {
-      return matched;
+      return sortHighlightCandidates(matched);
     }
   }
 
   if (location.preview) {
     const matched = findByText(doc, location.tag, location.preview);
+    debugHighlight("preview fallback", location.preview, "matches", matched.length);
     if (matched.length) {
-      return matched;
+      return sortHighlightCandidates(matched);
     }
   }
 
   if (location.sentence_preview) {
     const matched = findByText(doc, location.tag, location.sentence_preview);
+    debugHighlight("sentence preview fallback", location.sentence_preview, "matches", matched.length);
     if (matched.length) {
-      return matched;
+      return sortHighlightCandidates(matched);
     }
   }
 
   if (location.label || location.summary) {
     const text = location.label || location.summary;
     const matched = findByText(doc, location.tag, text);
+    debugHighlight("label/summary fallback", text, "matches", matched.length);
     if (matched.length) {
-      return matched;
+      return sortHighlightCandidates(matched);
     }
   }
 
   return [];
+}
+
+function clickableText(element) {
+  return normalizeInlineText([
+    element?.textContent,
+    element?.getAttribute?.("aria-label"),
+    element?.getAttribute?.("title"),
+    element?.getAttribute?.("value"),
+  ].filter(Boolean).join(" ")).toLowerCase();
+}
+
+function looksLikeExpander(element) {
+  const text = clickableText(element);
+  const className = String(element?.className || "").toLowerCase();
+  return (
+    className.includes("btn-link")
+    || className.includes("learn")
+    || className.includes("more")
+    || ["learn more", "open", "show", "show more", "details", "view details", "read more"].some((phrase) => text.includes(phrase))
+  );
+}
+
+function findExpanderForHiddenElement(element) {
+  if (!element) {
+    return null;
+  }
+
+  const section = element.closest("section, article, [class*='card' i], [class*='panel' i], [class*='item' i], [class*='container' i]");
+  const scopes = [
+    section,
+    element.closest(".text-full")?.closest("section"),
+    element.parentElement,
+    element.ownerDocument?.body,
+  ].filter(Boolean);
+
+  for (const scope of scopes) {
+    const preferredPortfolioButton = scope.querySelector?.(".text .btn-link, .visible .btn-link, a.btn-link, button.btn-link");
+    if (preferredPortfolioButton && isElementVisibleForHighlight(preferredPortfolioButton)) {
+      return preferredPortfolioButton;
+    }
+
+    const candidates = Array.from(scope.querySelectorAll?.("button, a, [role='button'], .btn-link") || [])
+      .filter((candidate) => candidate !== element && isElementVisibleForHighlight(candidate));
+    const expander = candidates.find(looksLikeExpander);
+    if (expander) {
+      return expander;
+    }
+  }
+  return null;
+}
+
+function tryExpandHiddenElement(element) {
+  const expander = findExpanderForHiddenElement(element);
+  if (!expander) {
+    debugHighlight("no expander found for hidden element", elementHiddenReason(element), element);
+    return false;
+  }
+  debugHighlight("clicking expander for hidden element", clickableText(expander), expander);
+  expander.click();
+  return true;
 }
 
 function fallbackSelectorsForIssue(issue, dimensionName) {
@@ -2365,8 +2504,12 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
 
 function applyHighlights(elements, color, label) {
   const highlighted = new Set();
-  elements.forEach((element) => {
+  sortHighlightCandidates(elements).forEach((element) => {
     if (!element || element.nodeType !== 1 || highlighted.size >= 30 || highlighted.has(element)) {
+      return;
+    }
+    if (!isElementVisibleForHighlight(element)) {
+      debugHighlight("skip invisible highlight candidate", elementHiddenReason(element), element);
       return;
     }
     const rect = element.getBoundingClientRect();
@@ -2392,6 +2535,12 @@ function applyHighlights(elements, color, label) {
     highlighted.add(element);
   });
   return highlighted;
+}
+
+function waitForPreviewUpdate(ms = 350) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function updateActiveHighlightButtons() {
@@ -2424,7 +2573,7 @@ function updateActiveHighlightButtons() {
   });
 }
 
-function highlightIssueElementInPreview(dimensionName, ruleId, elementNumber) {
+async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumber) {
   const frameDoc = getPreviewDocument();
   const dimension = findDimension(state.currentResult, dimensionName);
   const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
@@ -2436,15 +2585,53 @@ function highlightIssueElementInPreview(dimensionName, ruleId, elementNumber) {
   injectHighlightStyles(frameDoc);
   clearWebsiteHighlights(frameDoc);
 
-  const { elements } = issueHighlightElements(frameDoc, issue, dimensionName);
-  const target = elements[elementNumber - 1];
+  const location = issue.locations?.[elementNumber - 1];
+  const exactLocationElements = location ? findElementsForLocation(frameDoc, location) : [];
+  const elements = exactLocationElements.length
+    ? exactLocationElements
+    : issueHighlightElements(frameDoc, issue, dimensionName).elements;
+  const target = exactLocationElements.length
+    ? sortHighlightCandidates(elements)[0]
+    : sortHighlightCandidates(elements)[elementNumber - 1];
+  debugHighlight("click issue element", {
+    dimensionName,
+    ruleId,
+    elementNumber,
+    location,
+    candidates: elements.length,
+    exactLocation: exactLocationElements.length > 0,
+    target,
+    visible: isElementVisibleForHighlight(target),
+    hiddenReason: elementHiddenReason(target),
+  });
   if (!target) {
     setWebsiteStatus(`Element ${elementNumber} is not available on this rendered page view.`, true);
     return;
   }
 
-  applyHighlights([target], config.color, `Element ${elementNumber}`);
-  target.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  let finalTarget = target;
+  if (!isElementVisibleForHighlight(finalTarget)) {
+    const expanded = tryExpandHiddenElement(finalTarget);
+    if (expanded) {
+      setWebsiteStatus(`Element ${elementNumber} is inside hidden content. Opening its section...`);
+      await waitForPreviewUpdate();
+      const retry = location ? findElementsForLocation(frameDoc, location) : issueHighlightElements(frameDoc, issue, dimensionName).elements;
+      finalTarget = sortHighlightCandidates(retry)[exactLocationElements.length ? 0 : elementNumber - 1] || finalTarget;
+      debugHighlight("after auto expand retry", {
+        candidates: retry.length,
+        finalTarget,
+        visible: isElementVisibleForHighlight(finalTarget),
+        hiddenReason: elementHiddenReason(finalTarget),
+      });
+    }
+  }
+
+  const highlighted = applyHighlights([finalTarget], config.color, `Element ${elementNumber}`);
+  if (!highlighted.size) {
+    setWebsiteStatus(`Element ${elementNumber} was found but is still hidden in the current page state.`, true);
+    return;
+  }
+  finalTarget.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
   setWebsiteStatus(`Element ${elementNumber} highlighted for ${issue.title || "this issue"}. Click it to open guidance.`);
 }
 
