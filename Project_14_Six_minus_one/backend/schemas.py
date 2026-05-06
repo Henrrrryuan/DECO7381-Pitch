@@ -138,13 +138,18 @@ class AnalysisResult:
 
 @dataclass
 class EyeTrackingSummaryForHistory:
-    """Lightweight behavioral-evidence summary for history list (no quality scores)."""
+    """Lightweight behavioral-evidence summary for history list.
+
+    Eye evidence risk describes possible cognitive-accessibility friction.
+    Confidence describes gaze-data reliability and must not change the risk index.
+    """
 
     available: bool = False
     coverage_percent: float | None = None
     sample_count: int | None = None
     duration_ms: int | None = None
     attention_summary: list[dict[str, Any]] = field(default_factory=list)
+    eye_evidence: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         if not self.available:
@@ -157,6 +162,7 @@ class EyeTrackingSummaryForHistory:
             "sample_count": int(self.sample_count) if self.sample_count is not None else None,
             "duration_ms": int(self.duration_ms) if self.duration_ms is not None else None,
             "attention_summary": self.attention_summary,
+            "eye_evidence": self.eye_evidence,
         }
 
 
@@ -237,6 +243,7 @@ class EyeTrackingSessionDetail:
     grid_rows: int
     cell_counts: list[int]
     summary: dict[str, Any] = field(default_factory=dict)
+    eye_evidence: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -246,6 +253,7 @@ class EyeTrackingSessionDetail:
             "grid_rows": self.grid_rows,
             "cell_counts": self.cell_counts,
             "summary": self.summary,
+            "eye_evidence": self.eye_evidence,
         }
 
 

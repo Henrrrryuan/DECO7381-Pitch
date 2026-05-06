@@ -67,6 +67,64 @@ const ATTENTION_BUCKETS = [
   { key: "media", label: "Images/media" },
   { key: "other", label: "Other" }
 ];
+const MEANINGFUL_ATTENTION_BUCKETS = new Set([
+  "headings",
+  "interactive",
+  "main_text",
+  "navigation",
+  "media"
+]);
+const ATTENTION_BUCKET_PRIORITY = {
+  interactive: 5,
+  headings: 4,
+  navigation: 3,
+  main_text: 2,
+  media: 1,
+  other: 0
+};
+const NEAR_HIT_RADIUS_BY_BUCKET = {
+  headings: 24,
+  interactive: 32,
+  main_text: 24,
+  navigation: 24,
+  media: 20
+};
+const NEAR_HIT_WEIGHT = 0.5;
+const HIT_DETECTION_METHOD = "dom_element_with_near_hit_fallback";
+const ATTENTION_GROUP_SELECTORS = {
+  headings: "h1, h2, h3, h4, h5, h6",
+  interactive: [
+    "button",
+    "a[href]",
+    "input",
+    "select",
+    "textarea",
+    "[role='button']",
+    "[role='link']",
+    "[role='menuitem']",
+    "[role='tab']",
+    "[role='switch']",
+    "[role='checkbox']",
+    "[role='radio']",
+    "[onclick]"
+  ].join(", "),
+  main_text: [
+    "p",
+    "article",
+    "section",
+    "[role='article']",
+    "[data-track-region*='text']",
+    "[data-track-region*='content']"
+  ].join(", "),
+  navigation: [
+    "nav",
+    "[role='navigation']",
+    "[data-track-region*='nav']",
+    "[class*='nav']",
+    "[id*='nav']"
+  ].join(", "),
+  media: "img, video, canvas, svg, [role='img']"
+};
 
 function createAttentionSummaryState() {
   const buckets = {};
@@ -75,13 +133,20 @@ function createAttentionSummaryState() {
       key: bucket.key,
       label: bucket.label,
       hit_count: 0,
+      exact_hit_count: 0,
+      near_hit_count: 0,
+      weighted_hit_score: 0,
       dwell_ms: 0,
+      weighted_dwell_ms: 0,
       first_fixation_ms: null
     };
   }
   return {
     total_hit_count: 0,
+    total_near_hit_count: 0,
+    total_weighted_hit_score: 0,
     total_dwell_ms: 0,
+    total_weighted_dwell_ms: 0,
     buckets
   };
 }
@@ -563,28 +628,6 @@ function getFrameDocument() {
   }
 }
 
-function getFrameElementFromClientPoint(clientPoint, sampleRadius = 12) {
-  const frameDocument = getFrameDocument();
-  const framePoint = getPointInsideFrame(clientPoint);
-  if (!frameDocument || !framePoint) {
-    return null;
-  }
-  const probeOffsets = [
-    [0, 0],
-    [sampleRadius, 0],
-    [-sampleRadius, 0],
-    [0, sampleRadius],
-    [0, -sampleRadius]
-  ];
-  for (const [dx, dy] of probeOffsets) {
-    const element = frameDocument.elementFromPoint(framePoint.x + dx, framePoint.y + dy);
-    if (element) {
-      return element;
-    }
-  }
-  return null;
-}
-
 function normalizeTagName(element) {
   return String(element?.tagName || "").toLowerCase();
 }
@@ -665,20 +708,165 @@ function classifyAttentionBucket(hitElement) {
   return "other";
 }
 
+function isMeaningfulAttentionBucket(bucketKey) {
+  return MEANINGFUL_ATTENTION_BUCKETS.has(bucketKey);
+}
+
+function getAttentionGroupAvailability() {
+  const frameDocument = getFrameDocument();
+  const availability = {};
+  for (const bucketKey of MEANINGFUL_ATTENTION_BUCKETS) {
+    const selector = ATTENTION_GROUP_SELECTORS[bucketKey];
+    let elementCount = 0;
+    if (frameDocument && selector) {
+      try {
+        elementCount = frameDocument.querySelectorAll(selector).length;
+      } catch (_) {
+        elementCount = 0;
+      }
+    }
+    availability[bucketKey] = {
+      available: elementCount > 0,
+      element_count: elementCount
+    };
+  }
+  return availability;
+}
+
+function getNearHitProbeOffsets() {
+  return [
+    [8, 0],
+    [-8, 0],
+    [0, 8],
+    [0, -8],
+    [16, 0],
+    [-16, 0],
+    [0, 16],
+    [0, -16],
+    [16, 16],
+    [-16, 16],
+    [16, -16],
+    [-16, -16],
+    [24, 0],
+    [-24, 0],
+    [0, 24],
+    [0, -24],
+    [32, 0],
+    [-32, 0],
+    [0, 32],
+    [0, -32],
+    [24, 24],
+    [-24, 24],
+    [24, -24],
+    [-24, -24]
+  ];
+}
+
+function getBestNearHitFromPoint(frameDocument, framePoint) {
+  const candidates = new Map();
+  const viewport = frameDocument.defaultView;
+  for (const [dx, dy] of getNearHitProbeOffsets()) {
+    const distance = Math.hypot(dx, dy);
+    const probeX = framePoint.x + dx;
+    const probeY = framePoint.y + dy;
+    const elements =
+      typeof frameDocument.elementsFromPoint === "function"
+        ? frameDocument.elementsFromPoint(probeX, probeY)
+        : [frameDocument.elementFromPoint(probeX, probeY)].filter(Boolean);
+    for (const element of elements) {
+      const bucketKey = classifyAttentionBucket(element);
+      if (!isMeaningfulAttentionBucket(bucketKey)) {
+        continue;
+      }
+      const radius = NEAR_HIT_RADIUS_BY_BUCKET[bucketKey] || 20;
+      if (distance > radius) {
+        continue;
+      }
+      const rect = element.getBoundingClientRect?.();
+      if (rect && viewport) {
+        const clampedX = Math.max(rect.left, Math.min(framePoint.x, rect.right));
+        const clampedY = Math.max(rect.top, Math.min(framePoint.y, rect.bottom));
+        if (Math.hypot(framePoint.x - clampedX, framePoint.y - clampedY) > radius) {
+          continue;
+        }
+      }
+      const existing = candidates.get(bucketKey);
+      if (!existing || distance < existing.distance) {
+        candidates.set(bucketKey, { element, bucketKey, distance });
+      }
+    }
+  }
+  return [...candidates.values()].sort((a, b) => {
+    const priorityDelta =
+      (ATTENTION_BUCKET_PRIORITY[b.bucketKey] || 0) -
+      (ATTENTION_BUCKET_PRIORITY[a.bucketKey] || 0);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+    return a.distance - b.distance;
+  })[0] || null;
+}
+
+function resolveAttentionHit(clientPoint) {
+  const frameDocument = getFrameDocument();
+  const framePoint = getPointInsideFrame(clientPoint);
+  if (!frameDocument || !framePoint) {
+    return { bucketKey: "other", hitType: "exact", weight: 1 };
+  }
+
+  const exactElement = frameDocument.elementFromPoint(framePoint.x, framePoint.y);
+  const exactBucketKey = classifyAttentionBucket(exactElement);
+  if (isMeaningfulAttentionBucket(exactBucketKey)) {
+    return {
+      bucketKey: exactBucketKey,
+      hitType: "exact",
+      weight: 1,
+      element: exactElement
+    };
+  }
+
+  const nearHit = getBestNearHitFromPoint(frameDocument, framePoint);
+  if (nearHit) {
+    return {
+      bucketKey: nearHit.bucketKey,
+      hitType: "near",
+      weight: NEAR_HIT_WEIGHT,
+      element: nearHit.element
+    };
+  }
+
+  return {
+    bucketKey: exactBucketKey || "other",
+    hitType: "exact",
+    weight: 1,
+    element: exactElement
+  };
+}
+
 function updateAttentionSummary(clientPoint, elapsedDurationMs) {
-  const hitElement = getFrameElementFromClientPoint(clientPoint);
-  const bucketKey = classifyAttentionBucket(hitElement);
+  const hit = resolveAttentionHit(clientPoint);
+  const bucketKey = hit.bucketKey;
   const bucket = state.attentionSummary.buckets[bucketKey];
   if (!bucket) {
     return;
   }
   bucket.hit_count += 1;
+  if (hit.hitType === "near") {
+    bucket.near_hit_count += 1;
+    state.attentionSummary.total_near_hit_count += 1;
+  } else {
+    bucket.exact_hit_count += 1;
+  }
+  bucket.weighted_hit_score += hit.weight;
   if (bucket.first_fixation_ms == null) {
     bucket.first_fixation_ms = Math.max(0, Math.round(elapsedDurationMs));
   }
   bucket.dwell_ms += HEAT_SAMPLE_INTERVAL_MS;
+  bucket.weighted_dwell_ms += HEAT_SAMPLE_INTERVAL_MS * hit.weight;
   state.attentionSummary.total_hit_count += 1;
+  state.attentionSummary.total_weighted_hit_score += hit.weight;
   state.attentionSummary.total_dwell_ms += HEAT_SAMPLE_INTERVAL_MS;
+  state.attentionSummary.total_weighted_dwell_ms += HEAT_SAMPLE_INTERVAL_MS * hit.weight;
 }
 
 function getFrameWindow() {
@@ -872,17 +1060,29 @@ function deriveSessionSourceName() {
 function buildEyeSessionPayload() {
   const runId = (state.relatedRunId || "").trim();
   const totalDwell = Math.max(1, state.attentionSummary.total_dwell_ms);
+  const totalWeightedDwell = Math.max(1, state.attentionSummary.total_weighted_dwell_ms);
+  const totalWeightedHits = Math.max(1, state.attentionSummary.total_weighted_hit_score);
+  const groupAvailability = getAttentionGroupAvailability();
   const attentionSummary = ATTENTION_BUCKETS.map((bucket) => {
     const data = state.attentionSummary.buckets[bucket.key];
     return {
       key: bucket.key,
       label: bucket.label,
+      hit_detection_method: HIT_DETECTION_METHOD,
+      element_available: Boolean(groupAvailability[bucket.key]?.available),
+      element_count: groupAvailability[bucket.key]?.element_count || 0,
       hit_count: data.hit_count,
+      exact_hit_count: data.exact_hit_count,
+      near_hit_count: data.near_hit_count,
+      weighted_hit_score: Number(data.weighted_hit_score.toFixed(2)),
       dwell_ms: data.dwell_ms,
+      weighted_dwell_ms: Math.round(data.weighted_dwell_ms),
       first_fixation_ms: data.first_fixation_ms,
-      share: Number((data.dwell_ms / totalDwell).toFixed(4))
+      share: Number((data.dwell_ms / totalDwell).toFixed(4)),
+      weighted_share: Number((data.weighted_dwell_ms / totalWeightedDwell).toFixed(4)),
+      weighted_hit_share: Number((data.weighted_hit_score / totalWeightedHits).toFixed(4))
     };
-  }).filter((item) => item.hit_count > 0);
+  }).filter((item) => item.hit_count > 0 || item.element_available);
 
   return {
     run_id: runId,
@@ -900,9 +1100,18 @@ function buildEyeSessionPayload() {
       session_started_at: state.sessionStartedAtIso || null,
       visited_cells: state.visitedCellIds.size,
       last_saved_session_id: state.lastSavedSessionId || null,
+      hit_detection_method: HIT_DETECTION_METHOD,
+      attention_group_availability: groupAvailability,
       attention_summary: attentionSummary,
       attention_total_hits: state.attentionSummary.total_hit_count,
-      attention_total_dwell_ms: state.attentionSummary.total_dwell_ms
+      attention_total_near_hits: state.attentionSummary.total_near_hit_count,
+      attention_total_weighted_hit_score: Number(
+        state.attentionSummary.total_weighted_hit_score.toFixed(2)
+      ),
+      attention_total_dwell_ms: state.attentionSummary.total_dwell_ms,
+      attention_total_weighted_dwell_ms: Math.round(
+        state.attentionSummary.total_weighted_dwell_ms
+      )
     }
   };
 }

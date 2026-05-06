@@ -5769,6 +5769,18 @@ body.accessibility-reading-mask-active .accessibility-menu {
   letter-spacing: 0.01em;
 }
 
+.history-supporting-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.history-supporting-heading .history-risk-pill {
+  min-height: 20px;
+  padding: 0 8px;
+}
+
 .history-supporting-summary {
   margin: 0;
   color: #64748b;
@@ -6008,6 +6020,21 @@ body.accessibility-reading-mask-active .accessibility-menu {
   font-weight: 700;
 }
 
+.history-eye-confidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+}
+
+.history-eye-confidence strong {
+  color: #334155;
+  font-weight: 800;
+}
+
 .history-eye-detail-section {
   display: grid;
   gap: 6px;
@@ -6022,6 +6049,18 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .history-eye-detail-copy,
 .history-eye-detail-empty {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.history-eye-feedback-lines {
+  display: grid;
+  gap: 5px;
+}
+
+.history-eye-feedback-lines p {
   margin: 0;
   color: #475569;
   font-size: 13px;
@@ -6064,6 +6103,11 @@ body.accessibility-reading-mask-active .accessibility-menu {
   color: #64748b;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.history-eye-risk-item .history-eye-risk-meta {
+  color: #7890b2;
+  font-size: 11px;
 }
 
 @media (max-width: 760px) {
@@ -6261,6 +6305,10 @@ body.accessibility-reading-mask-active .accessibility-menu {
   padding-left: 8px;
 }
 
+.history-table-head > span:nth-child(5) {
+  text-align: center;
+}
+
 .history-row {
   border-bottom: 1px solid var(--border);
 }
@@ -6405,7 +6453,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  justify-content: flex-start;
+  justify-content: center;
   flex-wrap: nowrap;
   white-space: nowrap;
 }
@@ -6418,9 +6466,9 @@ body.accessibility-reading-mask-active .accessibility-menu {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--accent);
   background: #fff;
-  color: var(--muted);
+  color: var(--accent);
   padding: 8px 12px;
   cursor: pointer;
 }

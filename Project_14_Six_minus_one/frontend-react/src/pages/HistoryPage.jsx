@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_BASE, fetchJson, formatDate, formatReportTimestamp } from "../lib/common.js";
+import {
+  EYE_EVIDENCE_DETAIL_FALLBACK,
+  formatAttentionRiskLabel,
+  getHeatmapEvidenceSummary,
+  getHistoryEvidenceSummary,
+  getOverallEvidenceRisk,
+  getRiskDrivers,
+} from "../lib/eyeEvidenceSummary.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
@@ -11,220 +19,47 @@ const MOBILE_MAX_PAGE_SIZE = 9;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
-const ATTENTION_RISK_ORDER = {
-  high: 0,
-  medium: 1,
-  low: 2,
-};
-const EYE_EVIDENCE_DETAIL_FALLBACK =
-  "Eye evidence is available, but detailed element risk data is not available for this run.";
-const ELEMENT_TYPE_ALIASES = {
-  heading: "headings",
-  headings: "headings",
-  interactive: "interactive",
-  "interactive elements": "interactive",
-  button: "interactive",
-  link: "interactive",
-  main: "main_text",
-  "main text": "main_text",
-  main_text: "main_text",
-  text: "main_text",
-  media: "media",
-  image: "media",
-  images: "media",
-  "images/media": "media",
-  navigation: "navigation",
-  nav: "navigation",
-};
-const ELEMENT_EVIDENCE_COPY = {
-  headings: {
-    label: "Headings",
-    historyIdea: "understand the structure",
-    detailIdea: "understand the page structure",
-    interpretations: {
-      high: "Users may not notice the page structure clearly.",
-      medium: "The page structure may not be immediately clear to users.",
-      low: "Users appear to notice the page structure appropriately.",
-    },
-  },
-  interactive: {
-    label: "Interactive elements",
-    historyIdea: "find the next action",
-    detailIdea: "find the next action",
-    interpretations: {
-      high: "Users may struggle to find the next action.",
-      medium: "Key actions may need stronger visual cues.",
-      low: "Interactive elements appear to receive appropriate attention.",
-    },
-  },
-  main_text: {
-    label: "Main text",
-    historyIdea: "process key content",
-    detailIdea: "process key content without missing information or extra reading effort",
-    interpretations: {
-      high: "Users may not process the core content effectively.",
-      medium: "Users may either miss key content or spend too much effort reading.",
-      low: "Users appear to process the main content within a balanced attention range.",
-    },
-  },
-  media: {
-    label: "Images/media",
-    historyIdea: "avoid media distraction",
-    detailIdea: "keep media attention aligned with the main task",
-    interpretations: {
-      high: "Media may be drawing attention away from the main task.",
-      medium: "Media may be attracting attention but not necessarily supporting the task.",
-      low: "Media does not appear to create a major attention risk.",
-    },
-  },
-  navigation: {
-    label: "Navigation",
-    historyIdea: "stay oriented on the page",
-    detailIdea: "stay oriented on the page",
-    interpretations: {
-      high: "Users may miss the page path or spend effort trying to find their way.",
-      medium: "Users may need extra orientation before reaching the main content.",
-      low: "Navigation appears visible without distracting from the main content.",
-    },
-  },
-};
-
-function normalizeAttentionRiskLevel(value) {
-  const riskLevel = String(value || "").toLowerCase();
-  return Object.prototype.hasOwnProperty.call(ATTENTION_RISK_ORDER, riskLevel)
-    ? riskLevel
-    : "medium";
-}
-
-function formatAttentionRiskLabel(riskLevel, fallback) {
-  const cleanedFallback = String(fallback || "").trim();
-  if (cleanedFallback) {
-    return cleanedFallback;
-  }
-  return `${riskLevel.charAt(0).toUpperCase()}${riskLevel.slice(1)} risk`;
-}
-
-function normalizeElementType(item) {
-  const rawKey = String(item?.key || "").trim().toLowerCase();
-  const rawLabel = String(item?.label || "").trim().toLowerCase();
-  return ELEMENT_TYPE_ALIASES[rawKey] || ELEMENT_TYPE_ALIASES[rawLabel] || rawKey || rawLabel || "other";
-}
-
-function deriveRiskLevelFromShare(elementType, rawShare) {
-  const share = Math.max(0, Math.min(1, Number(rawShare) || 0));
-  if (elementType === "headings") {
-    if (share < 0.05) return "high";
-    if (share < 0.1 || share > 0.25) return "medium";
-    return "low";
-  }
-  if (elementType === "interactive") {
-    if (share < 0.05) return "high";
-    if (share < 0.12) return "medium";
-    return "low";
-  }
-  if (elementType === "main_text") {
-    if (share < 0.2) return "high";
-    if (share < 0.35 || share > 0.65) return "medium";
-    return "low";
-  }
-  if (elementType === "media") {
-    if (share > 0.25) return "high";
-    if (share > 0.1) return "medium";
-    return "low";
-  }
-  if (elementType === "navigation") {
-    if (share < 0.03 || share > 0.3) return "high";
-    if (share > 0.15) return "medium";
-    return "low";
-  }
-  if (share > 0.25) return "high";
-  if (share > 0.12) return "medium";
-  return "low";
-}
-
-function getElementInterpretation(elementType, riskLevel, fallback = "") {
-  const configured = ELEMENT_EVIDENCE_COPY[elementType]?.interpretations?.[riskLevel];
-  return configured || String(fallback || "").trim() || "Attention pattern needs checking against the page's intended user journey.";
-}
-
-function getRiskDrivers(summary) {
-  const items = Array.isArray(summary?.attention_summary) ? summary.attention_summary : [];
-  return items
-    .map((item) => {
-      const hitCount = Math.max(0, Number(item?.hit_count || 0));
-      if (!hitCount) {
-        return null;
-      }
-      const elementType = normalizeElementType(item);
-      const configured = ELEMENT_EVIDENCE_COPY[elementType];
-      const riskLevel = item?.risk_level
-        ? normalizeAttentionRiskLevel(item.risk_level)
-        : deriveRiskLevelFromShare(elementType, item?.share);
-      return {
-        elementType,
-        label: configured?.label || String(item?.label || "Other"),
-        riskLevel,
-        riskLabel: formatAttentionRiskLabel(riskLevel, item?.risk_label),
-        interpretation: getElementInterpretation(elementType, riskLevel, item?.risk_reason),
-        idea: configured?.historyIdea || "",
-        detailIdea: configured?.detailIdea || "",
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => ATTENTION_RISK_ORDER[a.riskLevel] - ATTENTION_RISK_ORDER[b.riskLevel]);
-}
-
-function getOverallEvidenceRisk(elementRisks) {
-  if (!elementRisks.length) {
-    return null;
-  }
-  if (elementRisks.some((item) => item.riskLevel === "high")) {
-    return "high";
-  }
-  if (elementRisks.some((item) => item.riskLevel === "medium")) {
-    return "medium";
-  }
-  return "low";
-}
-
-function buildEvidenceSummary(elementRisks, { detail = false } = {}) {
-  const actionable = elementRisks.filter((item) => item.riskLevel === "high");
-  const mediumRisks = elementRisks.filter((item) => item.riskLevel === "medium");
-  const selected = [...actionable, ...mediumRisks]
-    .filter((item) => (detail ? item.detailIdea : item.idea))
-    .slice(0, 2);
-
-  if (!selected.length) {
-    return elementRisks.length
-      ? "Eye evidence does not show a major element-level attention risk."
-      : EYE_EVIDENCE_DETAIL_FALLBACK;
-  }
-
-  const ideas = selected.map((item) => (detail ? item.detailIdea : item.idea));
-  if (ideas.includes(detail ? "understand the page structure" : "understand the structure") && ideas.includes("find the next action")) {
-    return detail
-      ? "Users may struggle to understand the page structure and find the next action."
-      : "Users may struggle to understand the structure and find the next action.";
-  }
-  if (ideas.length === 1) {
-    return `Users may struggle to ${ideas[0]}.`;
-  }
-  return `Users may struggle to ${ideas[0]} and ${ideas[1]}.`;
-}
-
-function getHistoryEvidenceSummary(elementRisks) {
-  return buildEvidenceSummary(elementRisks, { detail: false });
-}
-
-function getHeatmapEvidenceSummary(elementRisks) {
-  return buildEvidenceSummary(elementRisks, { detail: true });
-}
+const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
+const DASHBOARD_PRINT_IFRAME_ID = "historyPrintProxyFrame";
 
 function formatDuration(ms) {
   const totalSeconds = Math.max(0, Math.round((Number(ms) || 0) / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+function formatEvidenceConfidence(value) {
+  const confidence = String(value || "").trim().toLowerCase();
+  if (!confidence) {
+    return "";
+  }
+  return `${confidence.charAt(0).toUpperCase()}${confidence.slice(1)}`;
+}
+
+function formatWeightedShare(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "";
+  }
+  return `${(numeric * 100).toFixed(1)}%`;
+}
+
+function getRiskDriverMeta(item) {
+  const rows = [];
+  const exactHits = Number(item.exactHitCount || 0);
+  const nearHits = Number(item.nearHitCount || 0);
+  const weightedShare = formatWeightedShare(item.weightedShare);
+  if (exactHits > 0 || nearHits > 0) {
+    rows.push(`Exact hits ${exactHits}, near hits ${nearHits}`);
+  }
+  if (weightedShare) {
+    rows.push(`Weighted share ${weightedShare}`);
+  }
+  if (item.firstFixationMs != null) {
+    rows.push(`First fixation ${formatDuration(item.firstFixationMs)}`);
+  }
+  return rows;
 }
 
 function getTotalPages(total, pageSize) {
@@ -340,10 +175,13 @@ function HeatmapGrid({ gridCols, gridRows, cellCounts }) {
   );
 }
 
-function EyeEvidenceDetailPanel({ summary }) {
+function EyeEvidenceDetailPanel({ summary, eyeEvidence }) {
   const riskDrivers = getRiskDrivers(summary);
-  const overallRisk = getOverallEvidenceRisk(riskDrivers);
-  const interpretation = getHeatmapEvidenceSummary(riskDrivers);
+  const overallRisk = getOverallEvidenceRisk(riskDrivers, eyeEvidence);
+  const balancedSummary = getHeatmapEvidenceSummary(riskDrivers, eyeEvidence);
+  const evidenceConfidence = formatEvidenceConfidence(
+    eyeEvidence?.evidence_confidence || eyeEvidence?.confidence,
+  );
 
   return (
     <aside className="history-eye-detail-panel" aria-label="Eye evidence detail">
@@ -357,26 +195,41 @@ function EyeEvidenceDetailPanel({ summary }) {
             </span>
           </p>
         ) : null}
+        {evidenceConfidence ? (
+          <p className="history-eye-confidence">
+            <span>Evidence confidence:</span>
+            <strong>{evidenceConfidence}</strong>
+          </p>
+        ) : null}
       </div>
 
       <div className="history-eye-detail-section">
         <p className="history-eye-detail-label">Interpretation:</p>
-        <p className="history-eye-detail-copy">{interpretation}</p>
+        <div className="history-eye-feedback-lines">
+          <p>Overall: {balancedSummary.overall}</p>
+          <p>Positive: {balancedSummary.positive}</p>
+          <p>Risk: {balancedSummary.risk}</p>
+          <p>Priority: {balancedSummary.priority}</p>
+        </div>
       </div>
 
       {riskDrivers.length ? (
         <div className="history-eye-detail-section">
           <p className="history-eye-detail-label">Risk drivers:</p>
           <ul className="history-eye-risk-list">
-            {riskDrivers.map((item) => (
-              <li key={`${item.elementType}-${item.label}`} className="history-eye-risk-item">
-                <div className="history-eye-risk-title">
-                  <span>{item.label}</span>
-                  <span className={`history-risk-pill is-${item.riskLevel}`}>{item.riskLabel}</span>
-                </div>
-                <p>{item.interpretation}</p>
-              </li>
-            ))}
+            {riskDrivers.map((item) => {
+              const meta = getRiskDriverMeta(item);
+              return (
+                <li key={`${item.elementType}-${item.label}`} className="history-eye-risk-item">
+                  <div className="history-eye-risk-title">
+                    <span>{item.label}</span>
+                    <span className={`history-risk-pill is-${item.riskLevel}`}>{item.riskLabel}</span>
+                  </div>
+                  <p>{item.interpretation}</p>
+                  {meta.length ? <p className="history-eye-risk-meta">{meta.join(" | ")}</p> : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : (
@@ -405,7 +258,11 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
   }
 
   const session = detail?.session;
-  const evidenceSummary = detail?.summary || {};
+  const eyeEvidence = detail?.eye_evidence || {};
+  const evidenceSummary = {
+    ...(detail?.summary || {}),
+    eye_evidence: eyeEvidence,
+  };
 
   return (
     <div
@@ -447,7 +304,7 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
                   cellCounts={detail.cell_counts}
                 />
               </div>
-              <EyeEvidenceDetailPanel summary={evidenceSummary} />
+              <EyeEvidenceDetailPanel summary={evidenceSummary} eyeEvidence={eyeEvidence} />
             </div>
           ) : null}
         </div>
@@ -461,11 +318,20 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
     return <div className="history-supporting-none">No behavioral evidence</div>;
   }
   const riskDrivers = getRiskDrivers(summary);
-  const evidenceSummary = getHistoryEvidenceSummary(riskDrivers);
+  const eyeEvidence = summary.eye_evidence || {};
+  const overallRisk = getOverallEvidenceRisk(riskDrivers, eyeEvidence);
+  const evidenceSummary = getHistoryEvidenceSummary(riskDrivers, eyeEvidence);
 
   return (
     <div className="history-supporting-cell">
-      <p className="history-supporting-available">Eye evidence available</p>
+      <div className="history-supporting-heading">
+        <p className="history-supporting-available">Eye evidence available</p>
+        {overallRisk ? (
+          <span className={`history-risk-pill is-${overallRisk}`}>
+            {formatAttentionRiskLabel(overallRisk)}
+          </span>
+        ) : null}
+      </div>
       <p className="history-supporting-summary">{evidenceSummary}</p>
       <button
         className="history-heatmap-btn"
@@ -479,7 +345,7 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
   );
 }
 
-function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, heatmapLoading }) {
+function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, onPrintReport, heatmapLoading }) {
   if (status.loading) {
     return <p className="history-empty">Loading analysis history…</p>;
   }
@@ -508,6 +374,15 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
       <span className="history-cell action">
         <div className="history-actions">
           <button
+            className="history-print-btn"
+            type="button"
+            title="Open printable report view"
+            aria-label="Open printable report view"
+            onClick={() => onPrintReport(item.run_id)}
+          >
+            <span aria-hidden="true">⬇</span>
+          </button>
+          <button
             className="history-open-btn"
             type="button"
             data-run-id={item.run_id}
@@ -531,6 +406,7 @@ function ReportHistoryPanel({
   onPageChange,
   onOpenReport,
   onOpenHeatmap,
+  onPrintReport,
   heatmapLoading,
 }) {
   const emptyMessage = query
@@ -553,6 +429,7 @@ function ReportHistoryPanel({
           emptyMessage={emptyMessage}
           onOpenReport={onOpenReport}
           onOpenHeatmap={onOpenHeatmap}
+          onPrintReport={onPrintReport}
           heatmapLoading={heatmapLoading}
         />
       </div>
@@ -696,6 +573,35 @@ export function HistoryPage() {
       });
   }, []);
 
+  const printReport = useCallback((runId) => {
+    if (!runId) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
+    } catch {
+      // keep
+    }
+    const target = `/dashboard?from=history&run=${encodeURIComponent(runId)}&autoprint=1`;
+    let frame = document.getElementById(DASHBOARD_PRINT_IFRAME_ID);
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = DASHBOARD_PRINT_IFRAME_ID;
+      frame.title = "print-proxy";
+      frame.setAttribute("aria-hidden", "true");
+      frame.style.position = "fixed";
+      frame.style.width = "1px";
+      frame.style.height = "1px";
+      frame.style.opacity = "0";
+      frame.style.pointerEvents = "none";
+      frame.style.border = "0";
+      frame.style.bottom = "0";
+      frame.style.right = "0";
+      document.body.appendChild(frame);
+    }
+    frame.src = target;
+  }, []);
+
   useEffect(() => {
     const backButton = document.getElementById("backToAnalysisButtonHistory");
     if (!backButton) {
@@ -796,6 +702,7 @@ export function HistoryPage() {
             onPageChange={setReportPage}
             onOpenReport={openReport}
             onOpenHeatmap={openHeatmap}
+            onPrintReport={printReport}
             heatmapLoading={heatmapLoading}
           />
         </div>

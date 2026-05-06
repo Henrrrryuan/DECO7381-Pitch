@@ -7,7 +7,10 @@ import sqlite3
 from uuid import uuid4
 
 from ...scoring import calculate_profile_scores
-from ...services.eye_evidence_service import calculate_eye_evidence_for_sessions
+from ...services.eye_evidence_service import (
+    calculate_eye_evidence_for_session,
+    calculate_eye_evidence_for_sessions,
+)
 from ...schemas import (
     AnalysisResult,
     DimensionResult,
@@ -147,10 +150,14 @@ def _fetch_latest_eye_summary_by_run_ids(
     rows = connection.execute(
         f"""
         SELECT
+            id,
             run_id,
             coverage_percent,
             sample_count,
             duration_ms,
+            grid_cols,
+            grid_rows,
+            cell_counts_json,
             summary_json
         FROM eye_tracking_sessions
         WHERE run_id IS NOT NULL AND run_id IN ({placeholders})
@@ -162,6 +169,7 @@ def _fetch_latest_eye_summary_by_run_ids(
     for row in rows:
         rid = str(row["run_id"])
         attention_summary = _extract_attention_summary(row["summary_json"])
+        eye_evidence = calculate_eye_evidence_for_session(_row_to_eye_evidence_input(row)) or {}
         if rid in result and result[rid].attention_summary:
             continue
         if rid in result and not attention_summary:
@@ -172,6 +180,7 @@ def _fetch_latest_eye_summary_by_run_ids(
             sample_count=int(row["sample_count"]),
             duration_ms=int(row["duration_ms"]),
             attention_summary=attention_summary,
+            eye_evidence=eye_evidence,
         )
     return result
 
@@ -350,7 +359,8 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 coverage_percent,
                 grid_cols,
                 grid_rows,
-                cell_counts_json
+                cell_counts_json,
+                summary_json
             FROM eye_tracking_sessions
             WHERE run_id = ?
             ORDER BY rowid DESC
@@ -599,6 +609,7 @@ def get_eye_tracking_session(
         grid_rows=row["grid_rows"],
         cell_counts=_load_json(row["cell_counts_json"], []),
         summary=_load_json(row["summary_json"], {}),
+        eye_evidence=calculate_eye_evidence_for_session(_row_to_eye_evidence_input(row)) or {},
     )
 
 
@@ -651,6 +662,7 @@ def _row_to_eye_evidence_input(row: sqlite3.Row) -> dict[str, object]:
         "grid_cols": row["grid_cols"],
         "grid_rows": row["grid_rows"],
         "cell_counts": _load_json(row["cell_counts_json"], []),
+        "summary": _load_json(row["summary_json"], {}),
     }
 
 
@@ -717,12 +729,7 @@ def _attention_risk_for_item(key: str, share: float) -> tuple[str, str]:
         )
 
     if normalized_key == "interactive":
-        if share < 0.05:
-            return (
-                "high",
-                "Interactive element attention is too low: important actions may not be visible enough.",
-            )
-        if share < 0.12:
+        if share < 0.08:
             return (
                 "medium",
                 "Interactive element attention is limited: key actions may need stronger priority.",
@@ -798,7 +805,7 @@ def _extract_attention_summary(summary_json: str | None) -> list[dict[str, objec
             continue
         try:
             hit_count = int(item.get("hit_count") or 0)
-            share = float(item.get("share") or 0)
+            share = float(item.get("weighted_share", item.get("share") or 0) or 0)
         except (TypeError, ValueError):
             continue
         if hit_count <= 0:
@@ -811,9 +818,17 @@ def _extract_attention_summary(summary_json: str | None) -> list[dict[str, objec
                 "key": key,
                 "label": str(item.get("label") or "Other"),
                 "hit_count": hit_count,
+                "exact_hit_count": _safe_int(item.get("exact_hit_count"), 0),
+                "near_hit_count": _safe_int(item.get("near_hit_count"), 0),
+                "weighted_hit_score": _safe_float(item.get("weighted_hit_score"), hit_count),
                 "dwell_ms": int(item.get("dwell_ms") or 0),
+                "weighted_dwell_ms": _safe_int(
+                    item.get("weighted_dwell_ms"),
+                    _safe_int(item.get("dwell_ms"), 0),
+                ),
                 "first_fixation_ms": item.get("first_fixation_ms"),
-                "share": safe_share,
+                "share": max(0.0, min(1.0, _safe_float(item.get("share"), safe_share))),
+                "weighted_share": safe_share,
                 "risk_level": risk_level,
                 "risk_label": f"{risk_level.title()} risk",
                 "risk_reason": risk_reason,
@@ -826,6 +841,20 @@ def _extract_attention_summary(summary_json: str | None) -> list[dict[str, objec
         )
     )
     return cleaned
+
+
+def _safe_int(value: object, fallback: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _safe_float(value: object, fallback: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return fallback
 
 
 def _apply_schema(connection: sqlite3.Connection) -> None:
