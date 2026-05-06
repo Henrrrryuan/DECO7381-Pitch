@@ -3702,8 +3702,8 @@ button.dimension-row.is-linked-active {
 
 .accessibility-profile-options-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   padding: 24px 20px 10px;
   border-bottom: 1px solid #e4e1ef;
   background: #f4f7fd;
@@ -6825,6 +6825,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
   }
 
   .accessibility-profile-options-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     padding: 20px 16px 10px;
   }

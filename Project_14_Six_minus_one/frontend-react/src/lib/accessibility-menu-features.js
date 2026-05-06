@@ -130,11 +130,6 @@ export const ACCESSIBILITY_MAIN_OPTIONS = [
     activeLabel: "Reading Mask",
   },
   {
-    id: "page-structure",
-    label: "Page Structure",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h11v6H5zM5 15h6v4H5zM15 15h4v4h-4z" /></svg>',
-  },
-  {
     id: "tooltips",
     label: "Tooltips",
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H9l-4 4V5Z" /></svg>',

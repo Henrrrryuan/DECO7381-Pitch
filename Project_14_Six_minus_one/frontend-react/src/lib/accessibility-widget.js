@@ -70,7 +70,6 @@ function createAccessibilityWidget() {
         ["Big Cursor", "Enlarge the cursor to improve visibility."],
         ["Stop Animation", "Pause animations and transitions to reduce distractions."],
         ["Reading Aid", "Add a reading mask to help users focus on one horizontal area of content."],
-        ["Page Structure", "Review headings, landmarks, and links for easier page navigation."],
         ["Tooltips", "Show helpful explanations when hovering over interactive controls."],
       ],
       pageStructure: {
@@ -115,7 +114,6 @@ function createAccessibilityWidget() {
         ["大光标", "放大光标，提高可见性。"],
         ["停止动画", "暂停动画和过渡效果，减少干扰。"],
         ["阅读辅助", "添加阅读遮罩，帮助用户聚焦当前横向阅读区域。"],
-        ["页面结构", "查看标题、区域和链接，帮助用户更轻松地导航页面。"],
         ["提示说明", "悬停在交互控件上时显示说明。"],
       ],
       pageStructure: {
@@ -268,7 +266,6 @@ function createAccessibilityWidget() {
                 <li><strong>Big Cursor:</strong> Enlarge the cursor to improve visibility.</li>
                 <li><strong>Stop Animation:</strong> Pause animations and transitions to reduce distractions.</li>
                 <li><strong>Reading Aid:</strong> Add a reading mask to help users focus on one horizontal area of content.</li>
-                <li><strong>Page Structure:</strong> Review headings, landmarks, and links for easier page navigation.</li>
                 <li><strong>Tooltips:</strong> Show helpful explanations when hovering over interactive controls.</li>
               </ul>
             </div>
@@ -1300,6 +1297,7 @@ function createAccessibilityWidget() {
       restoreAccessibilityWidgetDefaults();
       return;
     }
+    setMenuSectionExpanded("main-options", true);
     activeProfileIds.add("adhd");
     setAccessibilityProfileButtonActive(profileButton, true);
     setAccessibilityOptionActive("reading-aid", true);
@@ -1312,6 +1310,7 @@ function createAccessibilityWidget() {
       restoreAccessibilityWidgetDefaults();
       return;
     }
+    setMenuSectionExpanded("main-options", true);
     activeProfileIds.add("dyslexia");
     setAccessibilityProfileButtonActive(profileButton, true);
     setAccessibilityOptionActive("text-reader", true);
@@ -1325,6 +1324,7 @@ function createAccessibilityWidget() {
       restoreAccessibilityWidgetDefaults();
       return;
     }
+    setMenuSectionExpanded("main-options", true);
     activeProfileIds.add("autism");
     setAccessibilityProfileButtonActive(profileButton, true);
     setAccessibilityOptionActive("stop-animation", true);
