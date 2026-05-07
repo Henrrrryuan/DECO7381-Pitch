@@ -349,6 +349,7 @@ state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
 state.attentionSummary = createAttentionSummaryState();
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
+const TRACKING_START_DELAY_MS = 1200;
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -1539,6 +1540,8 @@ function beginTracking() {
     throw new Error("GazeCloudAPI script did not load.");
   }
 
+  // Use the simplified calibration pattern (fewer points) for faster startup.
+  window.GazeCloudAPI.CalibrationType = 1;
   window.GazeCloudAPI.UseClickRecalibration = false;
   window.GazeCloudAPI.OnResult = handleGaze;
   window.GazeCloudAPI.OnCalibrationComplete = () => {
@@ -1573,9 +1576,15 @@ function beginTracking() {
   setTrackingControlsEnabled(true);
   pauseBtn.textContent = "Pause";
   setPreviewVisibility(true);
-  setStatus("Starting GazeCloudAPI. Allow camera access and follow the calibration overlay.");
+  setStatus("Preparing eye tracking...");
   updateSaveButtonState();
-  window.GazeCloudAPI.StartEyeTracking();
+  window.setTimeout(() => {
+    if (!state.started) {
+      return;
+    }
+    setStatus("Starting GazeCloudAPI. Allow camera access and follow the calibration overlay.");
+    window.GazeCloudAPI.StartEyeTracking();
+  }, TRACKING_START_DELAY_MS);
 }
 
 startBtn.addEventListener("click", () => {
