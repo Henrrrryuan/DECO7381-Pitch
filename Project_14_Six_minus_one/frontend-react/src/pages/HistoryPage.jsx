@@ -363,7 +363,6 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
         <small className="history-analysis-trace-id">ID: {formatReportTimestamp(item.created_at)}</small>
       </span>
       <span className="history-cell">{formatDate(item.created_at)}</span>
-      <span className="history-cell score">{item.overall_score}</span>
       <span className="history-cell history-supporting-wrap">
         <SupportingEvidenceCell
           summary={item.eye_tracking_summary}
@@ -418,7 +417,6 @@ function ReportHistoryPanel({
       <div className="history-table-head">
         <span>Analysis</span>
         <span>Date</span>
-        <span>Overall</span>
         <span>Supporting Evidence</span>
         <span>Actions</span>
       </div>

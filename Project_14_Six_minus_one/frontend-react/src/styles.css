@@ -6279,7 +6279,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .history-table-head,
 .history-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(112px, 0.9fr) minmax(76px, 0.55fr) minmax(190px, 1.45fr) minmax(120px, 136px);
+  grid-template-columns: minmax(0, 1.35fr) minmax(112px, 0.9fr) minmax(190px, 1.45fr) minmax(120px, 136px);
   gap: 16px;
   align-items: center;
   padding: 10px 14px;
@@ -6301,11 +6301,11 @@ body.accessibility-reading-mask-active .accessibility-menu {
   padding-inline: 2px;
 }
 
-.history-table-head > span:nth-child(4) {
+.history-table-head > span:nth-child(3) {
   padding-left: 8px;
 }
 
-.history-table-head > span:nth-child(5) {
+.history-table-head > span:nth-child(4) {
   text-align: center;
 }
 
@@ -6362,7 +6362,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .history-grid .history-table-head,
 .history-grid .history-row {
-  grid-template-columns: minmax(0, 1.2fr) minmax(94px, 0.84fr) minmax(70px, 0.52fr) minmax(172px, 1.25fr) minmax(100px, 118px);
+  grid-template-columns: minmax(0, 1.2fr) minmax(94px, 0.84fr) minmax(172px, 1.25fr) minmax(100px, 118px);
   gap: 9px;
   padding: 9px 12px;
 }
@@ -6430,10 +6430,6 @@ body.accessibility-reading-mask-active .accessibility-menu {
   white-space: nowrap;
   font-family: Consolas, "Courier New", monospace;
   font-size: 13px;
-}
-
-.history-cell.score {
-  font-weight: 700;
 }
 
 .history-row .history-cell:nth-child(2) {
