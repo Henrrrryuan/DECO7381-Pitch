@@ -26,11 +26,16 @@ from ...schemas import (
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "analysis_history.sqlite3"
 DIMENSION_ORDER = {
-    "Information Overload": 0,
-    "Visual Complexity": 0,
-    "Readability": 1,
-    "Interaction & Distraction": 2,
-    "Consistency": 3,
+    "Dense Text Detection": 0,
+    "Language Complexity": 1,
+    "Sentence Complexity": 2,
+    "Long Content Without Chunking": 3,
+    "Poor Heading Structure": 4,
+    "Navigation Complexity": 5,
+    "Weak Information Prominence": 6,
+    "Visual Overload": 7,
+    "Auto-Moving Content": 8,
+    "Excessive Interruptions": 9,
 }
 
 
@@ -110,9 +115,10 @@ def save_analysis_run(
                         description,
                         suggestion,
                         evidence_json,
-                        locations_json
+                        locations_json,
+                        issue_json
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         uuid4().hex,
@@ -126,6 +132,7 @@ def save_analysis_run(
                         issue.suggestion,
                         _dump_json(issue.evidence),
                         _dump_json(issue.locations),
+                        _dump_json(issue.to_issue_object()),
                     ),
                 )
 
@@ -618,6 +625,7 @@ def _connect(db_path: Path | None = None) -> sqlite3.Connection:
     resolved_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(resolved_path)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA journal_mode = MEMORY;")
     connection.execute("PRAGMA foreign_keys = ON;")
     _apply_schema(connection)
     return connection
@@ -891,6 +899,7 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
             suggestion TEXT NOT NULL,
             evidence_json TEXT NOT NULL,
             locations_json TEXT NOT NULL,
+            issue_json TEXT NOT NULL DEFAULT '{}',
             FOREIGN KEY (dimension_result_id) REFERENCES dimension_results(id) ON DELETE CASCADE
         );
 
@@ -936,4 +945,19 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
         ON eye_tracking_sessions(run_id);
         """
     )
+    _ensure_column(connection, "issues", "issue_json", "TEXT NOT NULL DEFAULT '{}'")
+
+
+def _ensure_column(
+    connection: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    definition: str,
+) -> None:
+    columns = {
+        str(row["name"])
+        for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 

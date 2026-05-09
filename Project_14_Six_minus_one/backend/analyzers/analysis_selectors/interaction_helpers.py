@@ -1,33 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
-import sys
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
-if __package__ in {None, ""}:
-    project_root = Path(__file__).resolve().parents[2]
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
-    from backend.schemas import DimensionResult, Issue, Severity
-    from backend.scoring import (
-        PENALTY_FORMULA_TEXT,
-        SCORING_FORMULA_TEXT,
-        calculate_dimension_score,
-        calculate_penalty,
-    )
-else:
-    from ..schemas import DimensionResult, Issue, Severity
-    from ..scoring import (
-        PENALTY_FORMULA_TEXT,
-        SCORING_FORMULA_TEXT,
-        calculate_dimension_score,
-        calculate_penalty,
-    )
-
-DIMENSION_NAME = "Interaction & Distraction"
+from ...schemas import Issue, Severity
+from ...scoring import calculate_penalty
 
 REGULAR_BASE_PENALTY = 3
 SERIOUS_BASE_PENALTY = 4
@@ -114,59 +93,6 @@ STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
 CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
 ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
 SEVERITY_RANK: dict[Severity, int] = {"minor": 1, "major": 2, "critical": 3}
-
-
-def analyze_interaction(html: str, js_sources: list[str] | None = None) -> DimensionResult:
-    """Analyze interaction and distraction risks for HTML input.
-
-    Scope limits:
-    - Supports HTML files or HTML snippets only
-    - Detects proxy indicators of distraction and cognitive load
-    - Does not model human cognition or provide compliance certification
-    """
-
-    soup = BeautifulSoup(html or "", "html.parser")
-
-    candidate_regions = get_candidate_regions(soup)
-    style_hints = extract_style_hints(soup)
-    js_hints = extract_js_hints(js_sources or [])
-
-    issues = [
-        issue
-        for issue in (
-            detect_id1_autoplay_media(soup, js_hints)
-            + detect_id2_too_many_animated_elements(candidate_regions, style_hints, js_hints)
-            + detect_id3_dynamic_interruptions(soup, candidate_regions, style_hints, js_hints)
-        )
-        if issue is not None
-    ]
-
-    total_penalty = sum(issue.penalty for issue in issues)
-    score = calculate_dimension_score(DIMENSION_NAME, total_penalty)
-
-    return DimensionResult(
-        dimension=DIMENSION_NAME,
-        score=score,
-        issues=issues,
-        metadata={
-            "implemented_rules": ["ID-1", "ID-2", "ID-3"],
-            "pending_rules": [],
-            "input_scope": ["html_file", "html_snippet"],
-            "out_of_scope": ["pdf", "image", "live_url_fetch", "multi_source_mixed_input"],
-            "region_count": len(candidate_regions),
-            "js_signal_summary": {
-                "autoplay_signals": js_hints["autoplay_count"],
-                "motion_signals": js_hints["motion_count"],
-                "interruption_signals": js_hints["interruption_count"],
-            },
-            "total_penalty": total_penalty,
-            "scoring_model": {
-                "formula": SCORING_FORMULA_TEXT,
-                "penalty_formula": PENALTY_FORMULA_TEXT,
-                "dimension_penalty_cap": 30,
-            },
-        },
-    )
 
 
 def build_issue(
@@ -955,35 +881,3 @@ def extract_js_hints(js_sources: list[str]) -> dict[str, Any]:
         "motion_samples": motion_samples,
         "interruption_samples": interruption_samples,
     }
-
-
-def load_html_from_file(path: str | Path) -> str:
-    return Path(path).read_text(encoding="utf-8")
-
-
-def main() -> None:
-    import argparse
-    import json
-
-    parser = argparse.ArgumentParser(
-        description="Analyze the Interaction & Distraction dimension for an HTML file."
-    )
-    parser.add_argument("html_file", help="Path to an HTML file")
-    parser.add_argument(
-        "--pretty",
-        action="store_true",
-        help="Pretty-print JSON output",
-    )
-    args = parser.parse_args()
-
-    html = load_html_from_file(args.html_file)
-    result = analyze_interaction(html).to_dict()
-
-    if args.pretty:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-    else:
-        print(json.dumps(result, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-    main()

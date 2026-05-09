@@ -157,15 +157,18 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
 
 RENDERED_VIEW_ALLOWED_TAGS = {
     "h1", "h2", "h3", "h4", "h5", "h6",
-    "p", "a", "button", "label", "li", "img", "input", "textarea",
-    "select", "nav", "form", "video", "audio",
+    "p", "main", "article", "section", "nav", "header", "footer",
+    "a", "button", "label", "li", "ul", "ol",
+    "table", "caption", "th", "td", "abbr", "acronym",
+    "img", "input", "textarea", "select", "form", "fieldset", "legend",
+    "video", "audio", "dialog",
 }
 
 
 def _rendered_element_to_html(element: Any) -> str:
     tag = str(element.tagName or "").lower()
     role = str(element.role or "").lower()
-    if tag not in RENDERED_VIEW_ALLOWED_TAGS and role not in {"button", "link"}:
+    if tag not in RENDERED_VIEW_ALLOWED_TAGS and role not in {"button", "link", "alert", "status"}:
         return ""
 
     safe_tag = tag if tag in RENDERED_VIEW_ALLOWED_TAGS else "span"

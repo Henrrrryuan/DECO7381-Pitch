@@ -16,46 +16,59 @@ SCORING_FORMULA_TEXT = (
 PENALTY_FORMULA_TEXT = "Penalty = Base Penalty * Severity"
 
 DIMENSION_WEIGHTS: dict[str, float] = {
-    "Information Overload": 0.30,
-    "Visual Complexity": 0.30,
-    "Readability": 0.25,
-    "Interaction & Distraction": 0.25,
-    "Consistency": 0.20,
+    "Dense Text Detection": 0.10,
+    "Language Complexity": 0.10,
+    "Sentence Complexity": 0.10,
+    "Long Content Without Chunking": 0.10,
+    "Poor Heading Structure": 0.10,
+    "Navigation Complexity": 0.10,
+    "Weak Information Prominence": 0.10,
+    "Visual Overload": 0.10,
+    "Auto-Moving Content": 0.10,
+    "Excessive Interruptions": 0.10,
 }
 
 DIMENSION_PENALTY_CAPS: dict[str, int] = {
-    "Information Overload": 57,
-    "Visual Complexity": 57,
-    "Readability": 54,
-    "Interaction & Distraction": 30,
-    "Consistency": 54,
+    "Dense Text Detection": 18,
+    "Language Complexity": 18,
+    "Sentence Complexity": 18,
+    "Long Content Without Chunking": 18,
+    "Poor Heading Structure": 18,
+    "Navigation Complexity": 18,
+    "Weak Information Prominence": 18,
+    "Visual Overload": 18,
+    "Auto-Moving Content": 18,
+    "Excessive Interruptions": 18,
 }
 
 PROFILE_LENS_CONFIG: dict[str, dict[str, object]] = {
     "Reading Difficulties Lens": {
         "weights": {
-            "Information Overload": 0.35,
-            "Readability": 0.40,
-            "Interaction & Distraction": 0.10,
-            "Consistency": 0.15,
+            "Dense Text Detection": 0.25,
+            "Language Complexity": 0.25,
+            "Sentence Complexity": 0.25,
+            "Long Content Without Chunking": 0.15,
+            "Visual Overload": 0.10,
         },
         "summary": "Emphasises dense language and overload in the reading path, so reading-heavy pages can score lower here even when animation is limited.",
     },
     "Attention Regulation Lens": {
         "weights": {
-            "Information Overload": 0.35,
-            "Readability": 0.10,
-            "Interaction & Distraction": 0.35,
-            "Consistency": 0.20,
+            "Visual Overload": 0.20,
+            "Weak Information Prominence": 0.15,
+            "Auto-Moving Content": 0.30,
+            "Excessive Interruptions": 0.25,
+            "Navigation Complexity": 0.10,
         },
         "summary": "Emphasises interruption, distraction, and attention fragmentation across the page.",
     },
     "Autistic Support Lens": {
         "weights": {
-            "Information Overload": 0.20,
-            "Readability": 0.10,
-            "Interaction & Distraction": 0.25,
-            "Consistency": 0.45,
+            "Poor Heading Structure": 0.30,
+            "Navigation Complexity": 0.25,
+            "Auto-Moving Content": 0.20,
+            "Excessive Interruptions": 0.15,
+            "Visual Overload": 0.10,
         },
         "summary": "Emphasises predictability, sensory calm, and consistency, so text-heavy pages may score higher here than pages with unstable or distracting patterns.",
     },
@@ -71,17 +84,13 @@ def clamp_score(score: float) -> int:
 
 
 def calculate_dimension_score(dimension_name: str, total_penalty: int) -> int:
-    penalty_cap = DIMENSION_PENALTY_CAPS[dimension_name]
+    penalty_cap = DIMENSION_PENALTY_CAPS.get(dimension_name, 18)
     normalized_score = 100 * (1 - (total_penalty / penalty_cap))
     return clamp_score(normalized_score)
 
 
 def resolve_dimension_score(dimensions: Iterable[DimensionResult], dimension_name: str) -> int:
-    aliases = {
-        "Information Overload": {"Information Overload", "Visual Complexity"},
-        "Visual Complexity": {"Visual Complexity", "Information Overload"},
-    }
-    valid_names = aliases.get(dimension_name, {dimension_name})
+    valid_names = {dimension_name}
     for dimension in dimensions:
         if dimension.dimension in valid_names:
             return dimension.score
@@ -91,7 +100,7 @@ def resolve_dimension_score(dimensions: Iterable[DimensionResult], dimension_nam
 def calculate_weighted_average(dimensions: Iterable[DimensionResult]) -> int:
     weighted_total = 0.0
     for dimension in dimensions:
-        weighted_total += dimension.score * DIMENSION_WEIGHTS[dimension.dimension]
+        weighted_total += dimension.score * DIMENSION_WEIGHTS.get(dimension.dimension, 0.0)
     return clamp_score(weighted_total)
 
 

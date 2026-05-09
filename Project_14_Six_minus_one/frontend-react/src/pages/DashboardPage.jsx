@@ -87,14 +87,29 @@ export function DashboardPage() {
           </button>
           <aside id="toolSidebar" className="tool-sidebar">
             <div className="tool-sidebar-inner">
-              <section className="overall-panel">
-                <div className="overall-copy">
-                  <div id="profileScores" className="profile-scores">
-                    <p className="profile-scores-empty">Score lenses will appear after analysis.</p>
-                  </div>
-                  <p className="risk-level-hint">Risk levels indicate which issue categories may need attention first.</p>
-                  <div id="dimensionBars" className="dimension-bars" />
+              <section className="patient-profile-panel" aria-label="Patient profile">
+                <div className="patient-profile-heading">
+                  <span>Patient profile</span>
+                  <strong>Priority lens</strong>
                 </div>
+                <div className="patient-profile-tabs" role="group" aria-label="Choose patient profile">
+                  <button type="button" className="patient-profile-tab is-active" data-patient-profile="Alison" aria-pressed="true">
+                    Alison
+                  </button>
+                  <button type="button" className="patient-profile-tab" data-patient-profile="Amy" aria-pressed="false">
+                    Amy
+                  </button>
+                  <button type="button" className="patient-profile-tab" data-patient-profile="Tal" aria-pressed="false">
+                    Tal
+                  </button>
+                  <button type="button" className="patient-profile-tab" data-patient-profile="Yuki" aria-pressed="false">
+                    Yuki
+                  </button>
+                </div>
+                <p id="patientProfileSummary" className="patient-profile-summary">
+                  <strong>Mild cognitive impairment</strong>
+                  <span>Needs familiar controls, clear navigation, low clutter, and forgiving task flow.</span>
+                </p>
               </section>
 
               <section className="sidebar-section sidebar-explanation-section">

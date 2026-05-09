@@ -4,53 +4,156 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
 Severity = Literal["minor", "major", "critical"]
+IssueCategory = Literal["content", "structure", "motion", "forms"]
 DimensionName = Literal[
-    "Readability",
-    "Information Overload",
-    "Visual Complexity",
-    "Interaction & Distraction",
-    "Consistency",
+    "Dense Text Detection",
+    "Language Complexity",
+    "Sentence Complexity",
+    "Long Content Without Chunking",
+    "Poor Heading Structure",
+    "Navigation Complexity",
+    "Weak Information Prominence",
+    "Visual Overload",
+    "Auto-Moving Content",
+    "Excessive Interruptions",
 ]
 
 ISSUE_CATEGORY_LABELS = {
-    "RD": "Readability Issues",
-    "IO": "Information Overload Issues",
-    "ID": "Interaction & Distraction Issues",
-    "CS": "Consistency & Predictability Issues",
+    "content": "Content Issues",
+    "structure": "Structure Issues",
+    "motion": "Motion Issues",
+    "forms": "Forms Issues",
 }
 
 DIMENSION_ISSUE_CATEGORY_KEYS = {
-    "Readability": "RD",
-    "Information Overload": "IO",
-    "Visual Complexity": "IO",
-    "Interaction & Distraction": "ID",
-    "Consistency": "CS",
+    "Dense Text Detection": "content",
+    "Language Complexity": "content",
+    "Sentence Complexity": "content",
+    "Long Content Without Chunking": "content",
+    "Poor Heading Structure": "structure",
+    "Navigation Complexity": "structure",
+    "Weak Information Prominence": "structure",
+    "Visual Overload": "structure",
+    "Auto-Moving Content": "motion",
+    "Excessive Interruptions": "motion",
 }
 
 COGNITIVE_DIMENSION_LABELS = {
-    "Readability": "Reading Load / Comprehension",
-    "Information Overload": "Information Filtering / Visual Prioritisation",
-    "Visual Complexity": "Information Filtering / Visual Prioritisation",
-    "Interaction & Distraction": "Attention Regulation / Task Continuity",
-    "Consistency": "Predictability / Wayfinding",
+    "Dense Text Detection": "Reading Load / Working Memory",
+    "Language Complexity": "Comprehension Speed",
+    "Sentence Complexity": "Comprehension Burden",
+    "Long Content Without Chunking": "Scanning / Memory Support",
+    "Poor Heading Structure": "Orientation / Page Understanding",
+    "Navigation Complexity": "Wayfinding / Decision Load",
+    "Weak Information Prominence": "Task Discovery",
+    "Visual Overload": "Attention / Focus",
+    "Auto-Moving Content": "Attention Regulation",
+    "Excessive Interruptions": "Task Continuity",
+}
+
+FINAL_CATEGORY_BY_RULE_PREFIX = {
+    "DT": "content",
+    "LC": "content",
+    "SC": "content",
+    "LCC": "content",
+    "PHS": "structure",
+    "NC": "structure",
+    "WIP": "structure",
+    "VO": "structure",
+    "AMC": "motion",
+    "EI": "motion",
+}
+
+DETECTOR_BY_RULE_ID = {
+    "DT-1": "Dense Text Detection",
+    "LC-1": "Language Complexity",
+    "SC-1": "Sentence Complexity",
+    "LCC-1": "Long Content Without Chunking",
+    "PHS-1": "Poor Heading Structure",
+    "NC-1": "Navigation Complexity",
+    "WIP-1": "Weak Information Prominence",
+    "VO-1": "Visual Overload",
+    "AMC-1": "Auto-Moving Content",
+    "EI-1": "Excessive Interruptions",
+}
+
+COGA_PATTERNS_BY_RULE_PREFIX = {
+    "DT": ["Clear Language", "Chunking"],
+    "LC": ["Use Clear Words"],
+    "SC": ["Avoid Nested Clauses"],
+    "LCC": ["Provide Summaries", "Separate Content"],
+    "PHS": ["Clear Navigation", "Structure"],
+    "NC": ["Findable", "Clear Navigation"],
+    "WIP": ["Make Important Tasks Easy to Find"],
+    "VO": ["Avoid Too Much Content"],
+    "AMC": ["Limit Interruptions"],
+    "EI": ["Limit Interruptions"],
+}
+
+ISO_PRINCIPLES_BY_RULE_PREFIX = {
+    "DT": ["Efficiency", "Satisfaction"],
+    "LC": ["Efficiency"],
+    "SC": ["Efficiency"],
+    "LCC": ["Efficiency", "Satisfaction"],
+    "PHS": ["Effectiveness"],
+    "NC": ["Effectiveness"],
+    "WIP": ["Effectiveness"],
+    "VO": ["Efficiency", "Satisfaction"],
+    "AMC": ["Satisfaction"],
+    "EI": ["Satisfaction"],
+}
+
+THRESHOLD_BY_RULE_ID: dict[str, dict[str, int | float]] = {
+    "DT-1": {"maxWords": 120, "maxSentences": 4},
+    "LC-1": {"maxComplexWordRatio": 0.15},
+    "SC-1": {"maxSentenceWords": 25, "maxCommas": 3, "maxConjunctions": 3},
+    "LCC-1": {"maxSectionWordsWithoutChunking": 300, "maxArticleWordsWithoutChunking": 600},
+    "PHS-1": {"maxSkippedHeadingLevels": 1},
+    "NC-1": {"maxNavLinks": 12, "maxNestingDepth": 2},
+    "WIP-1": {"maxCompetingCtasNearby": 3},
+    "VO-1": {"maxVisibleElements": 20, "maxInteractiveElements": 8},
+    "AMC-1": {"maxAutoplayElements": 0, "maxInfiniteAnimations": 0},
+    "EI-1": {"maxOverlayViewportShare": 0.2},
 }
 
 
 def issue_category_key_for_rule(rule_id: str) -> str:
     prefix = str(rule_id or "").split("-")[0]
-    return prefix if prefix in ISSUE_CATEGORY_LABELS else "IO"
+    return FINAL_CATEGORY_BY_RULE_PREFIX.get(prefix, "structure")
 
 
 def issue_category_key_for_dimension(dimension: str) -> str:
-    return DIMENSION_ISSUE_CATEGORY_KEYS.get(dimension, "IO")
+    return DIMENSION_ISSUE_CATEGORY_KEYS.get(dimension, "structure")
 
 
 def issue_category_label(category_key: str) -> str:
-    return ISSUE_CATEGORY_LABELS.get(category_key, "Information Overload Issues")
+    return ISSUE_CATEGORY_LABELS.get(category_key, "Structure Issues")
 
 
 def issue_category_label_for_dimension(dimension: str) -> str:
     return issue_category_label(issue_category_key_for_dimension(dimension))
+
+
+def final_category_for_rule(rule_id: str) -> IssueCategory:
+    prefix = str(rule_id or "").split("-")[0]
+    return FINAL_CATEGORY_BY_RULE_PREFIX.get(prefix, "structure")  # type: ignore[return-value]
+
+
+def detector_name_for_rule(rule_id: str, fallback_title: str) -> str:
+    return DETECTOR_BY_RULE_ID.get(rule_id, fallback_title or "Cognitive Accessibility Detector")
+
+
+def standards_for_rule(rule_id: str) -> dict[str, list[str]]:
+    prefix = str(rule_id or "").split("-")[0]
+    return {
+        "cogaPatterns": COGA_PATTERNS_BY_RULE_PREFIX.get(prefix, ["Cognitive Accessibility"]),
+        "isoPrinciples": ISO_PRINCIPLES_BY_RULE_PREFIX.get(prefix, ["Effectiveness"]),
+    }
+
+
+def issue_id_for_rule(rule_id: str) -> str:
+    safe = str(rule_id or "issue").lower().replace("-", "_")
+    return f"issue_{safe}"
 
 
 @dataclass
@@ -65,10 +168,59 @@ class Issue:
     evidence: dict[str, Any] = field(default_factory=dict)
     locations: list[dict[str, Any]] = field(default_factory=list)
 
+    def to_issue_object(self) -> dict[str, Any]:
+        locations = self.locations if isinstance(self.locations, list) else []
+        first_location = locations[0] if locations and isinstance(locations[0], dict) else {}
+        metrics = self.evidence if isinstance(self.evidence, dict) else {}
+        recommendations = [self.suggestion] if self.suggestion else []
+        detector = detector_name_for_rule(self.rule_id, self.title)
+        final_category = final_category_for_rule(self.rule_id)
+
+        return {
+            "id": issue_id_for_rule(self.rule_id),
+            "detector": detector,
+            "rule": {
+                "id": self.rule_id,
+                "name": self.title,
+            },
+            "category": final_category,
+            "target": {
+                "selector": str(first_location.get("selector") or ""),
+                "elementType": str(first_location.get("tag") or ""),
+                "textSnippet": str(first_location.get("preview") or first_location.get("label") or "")[:220],
+                "boundingBox": first_location.get("boundingBox"),
+            },
+            "metrics": metrics,
+            "threshold": THRESHOLD_BY_RULE_ID.get(self.rule_id, {}),
+            "evidence": detected_evidence_text(metrics, first_location),
+            "explanation": self.description,
+            "recommendations": recommendations,
+            "standards": standards_for_rule(self.rule_id),
+            "highlight": {
+                "strategy": "outline",
+                "color": "#f59e0b" if final_category == "content" else "#3b82f6",
+            },
+        }
+
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         category_key = issue_category_key_for_rule(self.rule_id)
         category_label = issue_category_label(category_key)
+        issue_object = self.to_issue_object()
+
+        payload["id"] = issue_object["id"]
+        payload["detector"] = issue_object["detector"]
+        payload["rule"] = issue_object["rule"]
+        payload["category"] = issue_object["category"]
+        payload["target"] = issue_object["target"]
+        payload["metrics"] = issue_object["metrics"]
+        payload["threshold"] = issue_object["threshold"]
+        payload["evidence_text"] = issue_object["evidence"]
+        payload["explanation"] = issue_object["explanation"]
+        payload["recommendations"] = issue_object["recommendations"]
+        payload["standards"] = issue_object["standards"]
+        payload["highlight"] = issue_object["highlight"]
+        payload["issue_object"] = issue_object
         payload["issue_category_key"] = category_key
         payload["issue_category_label"] = category_label
         payload["issue_category"] = {
@@ -76,6 +228,18 @@ class Issue:
             "label": category_label,
         }
         return payload
+
+
+def detected_evidence_text(metrics: dict[str, Any], location: dict[str, Any]) -> str:
+    readable_pairs = []
+    for key, value in metrics.items():
+        if isinstance(value, (str, int, float, bool)):
+            readable_pairs.append(f"{key}: {value}")
+    if readable_pairs:
+        return "; ".join(readable_pairs[:4])
+    if location.get("selector"):
+        return f"Element matched selector {location['selector']}."
+    return "Detector evidence is available in the metrics object."
 
 
 @dataclass

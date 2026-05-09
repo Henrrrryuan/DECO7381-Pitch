@@ -1017,6 +1017,7 @@ body.analysis-loading-active {
 
 .sidebar-header,
 .overall-panel,
+.patient-profile-panel,
 .sidebar-section,
 .workspace-pane {
   border-bottom: 1px solid var(--border);
@@ -1028,6 +1029,7 @@ body.analysis-loading-active {
 
 .sidebar-header,
 .overall-panel,
+.patient-profile-panel,
 .sidebar-section,
 .workspace-pane {
   padding: 18px 20px;
@@ -1081,6 +1083,76 @@ body.analysis-loading-active {
 
 .sidebar-section:first-of-type {
   padding-top: 4px;
+}
+
+.patient-profile-panel {
+  display: grid;
+  gap: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.patient-profile-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.patient-profile-heading span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.patient-profile-heading strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.patient-profile-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.patient-profile-tab {
+  min-height: 34px;
+  border: 1px solid #c8d7f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #2f63c7;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.patient-profile-tab:hover {
+  border-color: #79a7ff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+}
+
+.patient-profile-tab.is-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #2f63f5 0%, #4b8fff 100%);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(47, 99, 245, 0.24);
+}
+
+.patient-profile-summary {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.patient-profile-summary strong {
+  color: #0f172a;
+  font-size: 13px;
 }
 
 .sidebar-section:first-of-type .dimension-bars {
@@ -1525,18 +1597,10 @@ body.is-history-report-view .back-to-history-button {
   gap: 12px;
 }
 
-.risk-level-hint {
-  margin: 10px 0 0;
-  color: #6b7280;
-  font-size: 11.5px;
-  line-height: 1.35;
-  text-align: left;
-}
-
 .dimension-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "label risk";
+  grid-template-areas: "label count";
   align-items: center;
   gap: 6px 10px;
   font-size: 14px;
@@ -1546,39 +1610,6 @@ body.is-history-report-view .back-to-history-button {
   grid-area: label;
   min-width: 0;
   line-height: 1.25;
-}
-
-.risk-badge {
-  grid-area: risk;
-  justify-self: end;
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.risk-badge.risk-low {
-  border-color: rgba(22, 101, 52, 0.18);
-  background: #eaf8ef;
-  color: #166534;
-}
-
-.risk-badge.risk-medium {
-  border-color: rgba(120, 53, 15, 0.22);
-  background: #fff7d6;
-  color: #78350f;
-}
-
-.risk-badge.risk-high {
-  border-color: rgba(153, 27, 27, 0.18);
-  background: #feeaea;
-  color: #991b1b;
 }
 
 .visual-complexity-card {

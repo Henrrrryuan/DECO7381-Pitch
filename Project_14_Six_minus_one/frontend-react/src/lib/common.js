@@ -1,5 +1,6 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
 const FALLBACK_API_BASE = "http://127.0.0.1:8001";
+const MAX_STORED_HTML_CHARS = 750000;
 const isHttpPage = window.location.protocol === "http:" || window.location.protocol === "https:";
 const host = window.location.hostname || "127.0.0.1";
 
@@ -154,6 +155,56 @@ function isHtmlFile(file) {
   return Boolean(file?.name?.toLowerCase().match(/\.html?$/));
 }
 
+function withoutLargeInlineHtml(value) {
+  if (Array.isArray(value)) {
+    return value.map(withoutLargeInlineHtml);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const next = {};
+  Object.entries(value).forEach(([key, entryValue]) => {
+    if (key === "html_content") {
+      return;
+    }
+    next[key] = withoutLargeInlineHtml(entryValue);
+  });
+  return next;
+}
+
+function trimDashboardSessionForStorage(payload, includeHtml) {
+  const currentHtml = includeHtml ? payload?.current?.html || payload?.html || "" : "";
+  const previous = payload?.previous
+    ? {
+        ...payload.previous,
+        payload: withoutLargeInlineHtml(payload.previous.payload),
+        html: "",
+      }
+    : null;
+
+  return {
+    ...payload,
+    current: payload?.current
+      ? {
+          ...payload.current,
+          payload: withoutLargeInlineHtml(payload.current.payload),
+          html: currentHtml,
+        }
+      : payload?.current,
+    previous,
+    html: currentHtml,
+  };
+}
+
+function trySetStorage(storage, key, value) {
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 async function analyzeUploadFile(file, baselineRunId = null) {
   if (isZipFile(file)) {
     const formData = new FormData();
@@ -176,17 +227,40 @@ async function analyzeUploadFile(file, baselineRunId = null) {
 }
 
 function saveDashboardSession(payload) {
-  const serialized = JSON.stringify(payload);
-  sessionStorage.setItem(STORAGE_KEY, serialized);
-  try {
-    localStorage.setItem(STORAGE_KEY, serialized);
-  } catch (error) {
-    // localStorage may be blocked in private or embedded contexts.
+  const html = payload?.current?.html || payload?.html || "";
+  const candidates = [
+    trimDashboardSessionForStorage(payload, html.length <= MAX_STORED_HTML_CHARS),
+    trimDashboardSessionForStorage(payload, false),
+  ];
+
+  for (const candidate of candidates) {
+    const serialized = JSON.stringify(candidate);
+    if (trySetStorage(sessionStorage, STORAGE_KEY, serialized)) {
+      trySetStorage(localStorage, STORAGE_KEY, serialized);
+      return true;
+    }
   }
+
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    // Ignore storage cleanup failures.
+  }
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    // Ignore storage cleanup failures.
+  }
+  return false;
 }
 
 function loadDashboardSession() {
-  let raw = sessionStorage.getItem(STORAGE_KEY);
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(STORAGE_KEY);
+  } catch (error) {
+    raw = null;
+  }
   if (!raw) {
     try {
       raw = localStorage.getItem(STORAGE_KEY);
@@ -199,12 +273,20 @@ function loadDashboardSession() {
   }
   try {
     const parsed = JSON.parse(raw);
-    if (!sessionStorage.getItem(STORAGE_KEY)) {
-      sessionStorage.setItem(STORAGE_KEY, raw);
+    try {
+      if (!sessionStorage.getItem(STORAGE_KEY)) {
+        sessionStorage.setItem(STORAGE_KEY, raw);
+      }
+    } catch (storageError) {
+      // The dashboard can continue without mirroring the session.
     }
     return parsed;
   } catch (error) {
-    sessionStorage.removeItem(STORAGE_KEY);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch (storageError) {
+      // Ignore storage cleanup failures.
+    }
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch (storageError) {
@@ -235,12 +317,7 @@ function buildAnalysisView(payload) {
 }
 
 function findDimension(result, name) {
-  const aliases = {
-    "Information Overload": ["Information Overload", "Visual Complexity"],
-    "Visual Complexity": ["Visual Complexity", "Information Overload"],
-  };
-  const validNames = aliases[name] || [name];
-  return result?.dimensions?.find((dimension) => validNames.includes(dimension.dimension));
+  return result?.dimensions?.find((dimension) => dimension.dimension === name);
 }
 
 export {

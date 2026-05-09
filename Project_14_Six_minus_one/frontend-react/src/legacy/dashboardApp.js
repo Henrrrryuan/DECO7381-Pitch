@@ -37,7 +37,7 @@ const state = {
   renderedViewBaselineKey: "",
   previousResult: null,
   previousSourceName: "",
-  activeProfile: "Dyslexia",
+  activeProfile: "Alison",
 };
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
@@ -50,258 +50,216 @@ const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
 const ASSISTANT_MARGIN = 16;
 
-const INFORMATION_OVERLOAD_NAME = "Information Overload";
-const LEGACY_INFORMATION_OVERLOAD_NAME = "Visual Complexity";
-const ISSUE_CATEGORY_CONFIG = {
-  IO: {
-    displayName: "Information Overload Issue",
-  },
-  RD: {
-    displayName: "Readability Issue",
-  },
-  ID: {
-    displayName: "Interaction & Distraction Issue",
-  },
-  CS: {
-    displayName: "Consistency & Predictability Issue",
-  },
-};
-const DIMENSION_CATEGORY_KEYS = {
-  [INFORMATION_OVERLOAD_NAME]: "IO",
-  [LEGACY_INFORMATION_OVERLOAD_NAME]: "IO",
-  Readability: "RD",
-  "Interaction & Distraction": "ID",
-  Consistency: "CS",
-};
-const PROFILE_DISPLAY_CONFIG = {
-  "Reading Difficulties Lens": {
-    label: "Dyslexia",
-    subtitle: "Reading load sensitivity",
-    weights: {
-      [INFORMATION_OVERLOAD_NAME]: 0.35,
-      Readability: 0.40,
-      "Interaction & Distraction": 0.10,
-      Consistency: 0.15,
-    },
-  },
-  "Attention Regulation Lens": {
-    label: "ADHD",
-    subtitle: "Attention and distraction sensitivity",
-    weights: {
-      [INFORMATION_OVERLOAD_NAME]: 0.35,
-      Readability: 0.10,
-      "Interaction & Distraction": 0.35,
-      Consistency: 0.20,
-    },
-  },
-  "Autistic Support Lens": {
-    label: "Autism",
-    subtitle: "Predictability and sensory stability",
-    weights: {
-      [INFORMATION_OVERLOAD_NAME]: 0.20,
-      Readability: 0.10,
-      "Interaction & Distraction": 0.25,
-      Consistency: 0.45,
-    },
-  },
-};
-
-const DIMENSION_CONFIG = [
-  { name: INFORMATION_OVERLOAD_NAME, className: "visual" },
-  { name: "Readability", className: "readability" },
-  { name: "Interaction & Distraction", className: "interaction" },
-  { name: "Consistency", className: "consistency" },
+const DETECTOR_NAMES = [
+  "Dense Text Detection",
+  "Language Complexity",
+  "Sentence Complexity",
+  "Long Content Without Chunking",
+  "Poor Heading Structure",
+  "Navigation Complexity",
+  "Weak Information Prominence",
+  "Visual Overload",
+  "Auto-Moving Content",
+  "Excessive Interruptions",
 ];
 
+const PATIENT_PROFILES = {
+  Alison: {
+    label: "Alison",
+    condition: "Mild cognitive impairment",
+    summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
+    detectorOrder: [
+      "Weak Information Prominence",
+      "Navigation Complexity",
+      "Poor Heading Structure",
+      "Visual Overload",
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Excessive Interruptions",
+      "Language Complexity",
+      "Long Content Without Chunking",
+      "Auto-Moving Content",
+    ],
+  },
+  Amy: {
+    label: "Amy",
+    condition: "Autistic user",
+    summary: "Needs predictable layouts, literal wording, clear structure, and user-controlled motion.",
+    detectorOrder: [
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Language Complexity",
+      "Weak Information Prominence",
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Long Content Without Chunking",
+    ],
+  },
+  Tal: {
+    label: "Tal",
+    condition: "Dyslexia",
+    summary: "Needs scannable text, simple language, clear headings, and easy-to-find key information.",
+    detectorOrder: [
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Language Complexity",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Weak Information Prominence",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+  },
+  Yuki: {
+    label: "Yuki",
+    condition: "ADHD",
+    summary: "Needs reduced motion, fewer interruptions, strong key points, and short clear task paths.",
+    detectorOrder: [
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Visual Overload",
+      "Weak Information Prominence",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Dense Text Detection",
+      "Navigation Complexity",
+      "Sentence Complexity",
+      "Language Complexity",
+    ],
+  },
+};
+const ISSUE_CATEGORY_CONFIG = {
+  content: { displayName: "Content Issue", cognitiveDimension: "Reading load and comprehension" },
+  structure: { displayName: "Structure Issue", cognitiveDimension: "Orientation, hierarchy, and task discovery" },
+  motion: { displayName: "Motion Issue", cognitiveDimension: "Attention regulation and task continuity" },
+  forms: { displayName: "Forms Issue", cognitiveDimension: "Input clarity and completion support" },
+};
+const DIMENSION_CATEGORY_KEYS = {
+  "Dense Text Detection": "content",
+  "Language Complexity": "content",
+  "Sentence Complexity": "content",
+  "Long Content Without Chunking": "content",
+  "Poor Heading Structure": "structure",
+  "Navigation Complexity": "structure",
+  "Weak Information Prominence": "structure",
+  "Visual Overload": "structure",
+  "Auto-Moving Content": "motion",
+  "Excessive Interruptions": "motion",
+};
+const DIMENSION_CONFIG = DETECTOR_NAMES.map((name) => ({
+  name,
+  className: DIMENSION_CATEGORY_KEYS[name] || "structure",
+}));
+
 const RULE_FRAMEWORK_MAP = {
-  "IO-1": {
-    coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
-    wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
-  },
-  "IO-2": {
-    coga: "COGA: Reduce cognitive load from dense regions",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
-    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
-  },
-  "IO-3": {
-    coga: "COGA: Minimize competing peripheral content",
-    iso: "ISO 9241-11:2018 6.4.3 Cognitive responses; 6.4.4 Emotional responses",
-    wcag: "WCAG SC 2.4.3 Focus Order; SC 3.2.3 Consistent Navigation",
-  },
-  "IO-4": {
-    coga: "COGA: Make the next action obvious",
-    iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
-    wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
-  },
-  "IO-5": {
-    coga: "COGA: Keep a clear information hierarchy",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
-    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
-  },
-  "RD-1": {
-    coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
-  },
-  "RD-2": {
+  "DT-1": {
     coga: "COGA: Break content into manageable chunks",
     iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
-  "RD-3": {
-    coga: "COGA: Use clear action labels",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG SC 2.4.6 Headings and Labels; SC 3.3.2 Labels or Instructions",
-  },
-  "RD-4": {
+  "LC-1": {
     coga: "COGA: Prefer familiar vocabulary",
     iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.4.3 Cognitive responses",
     wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
-  "RD-5": {
-    coga: "COGA: Keep instructions explicit and direct",
-    iso: "ISO 9241-11:2018 6.2.3 Completeness",
-    wcag: "WCAG SC 3.3.2 Labels or Instructions; SC 3.3.5 Help (AAA)",
+  "SC-1": {
+    coga: "COGA: Use shorter, easier language",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
-  "RD-6": {
+  "LCC-1": {
     coga: "COGA: Support scanning with chunking",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
-  "ID-1": {
-    coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
-    wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
-  },
-  "ID-2": {
-    coga: "COGA: Reduce distracting motion",
-    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.3 Cognitive responses",
-    wcag: "WCAG SC 2.3.3 Animation from Interactions; SC 2.2.2 Pause, Stop, Hide",
-  },
-  "ID-3": {
-    coga: "COGA: Avoid interruptive overlays",
-    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
-    wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
-  },
-  "CS-1": {
+  "PHS-1": {
     coga: "COGA: Keep structure predictable",
     iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
-  "CS-2": {
-    coga: "COGA: Keep users oriented in multi-step tasks",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG SC 2.4.8 Location (AAA)",
-  },
-  "CS-3": {
-    coga: "COGA: Keep users oriented during multi-step processes",
-    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.3.3 Human effort expended",
-    wcag: "WCAG SC 3.3.2 Labels or Instructions; SC 2.4.6 Headings and Labels",
-  },
-  "CS-4": {
-    coga: "COGA: Clear component purpose",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG SC 2.4.2 Page Titled; SC 2.4.6 Headings and Labels",
-  },
-  "CS-5": {
+  "NC-1": {
     coga: "COGA: Predictable navigation cues",
     iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
     wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
-  "CS-6": {
-    coga: "COGA: Provide direct lookup for content-heavy pages",
-    iso: "ISO 9241-11:2018 6.3.2 Time used",
-    wcag: "WCAG SC 2.4.5 Multiple Ways; SC 3.3.2 Labels or Instructions",
+  "WIP-1": {
+    coga: "COGA: Make the next action obvious",
+    iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
+    wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
-  "CS-7": {
-    coga: "COGA: Explicit labels and instructions",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
-    wcag: "WCAG SC 4.1.2 Name, Role, Value; SC 3.3.2 Labels or Instructions",
+  "VO-1": {
+    coga: "COGA: Help users focus on the primary task",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
+    wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
-  "CS-8": {
-    coga: "COGA: Predictable interactions",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.3.3 Human effort expended",
-    wcag: "WCAG SC 3.2.4 Consistent Identification",
+  "AMC-1": {
+    coga: "COGA: Avoid unexpected autoplay triggers",
+    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
+    wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
+  },
+  "EI-1": {
+    coga: "COGA: Avoid interruptive overlays",
+    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
+    wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
 };
 
 const COGA_OBJECTIVE_BY_RULE = {
-  "IO-1": "Help Users Focus",
-  "IO-2": "Help Users Focus",
-  "IO-3": "Help Users Focus",
-  "IO-4": "Help Users Find What They Need",
-  "IO-5": "Help Users Understand What Things are and How to Use Them",
-  "RD-1": "Use Clear and Understandable Content",
-  "RD-2": "Use Clear and Understandable Content",
-  "RD-3": "Help Users Understand What Things are and How to Use Them",
-  "RD-4": "Use Clear and Understandable Content",
-  "RD-5": "Help Users Avoid Mistakes and Know How to Correct Them",
-  "RD-6": "Use Clear and Understandable Content",
-  "ID-1": "Help Users Focus",
-  "ID-2": "Help Users Focus",
-  "ID-3": "Help Users Focus",
-  "CS-1": "Help Users Understand What Things are and How to Use Them",
-  "CS-2": "Ensure Processes Do Not Rely on Memory",
-  "CS-3": "Ensure Processes Do Not Rely on Memory",
-  "CS-4": "Help Users Understand What Things are and How to Use Them",
-  "CS-5": "Help Users Find What They Need",
-  "CS-6": "Help Users Find What They Need",
-  "CS-7": "Help Users Understand What Things are and How to Use Them",
-  "CS-8": "Help Users Understand What Things are and How to Use Them",
+  "DT-1": "Use Clear and Understandable Content",
+  "LC-1": "Use Clear and Understandable Content",
+  "SC-1": "Use Clear and Understandable Content",
+  "LCC-1": "Use Clear and Understandable Content",
+  "PHS-1": "Help Users Understand What Things are and How to Use Them",
+  "NC-1": "Help Users Find What They Need",
+  "WIP-1": "Help Users Find What They Need",
+  "VO-1": "Help Users Focus",
+  "AMC-1": "Help Users Focus",
+  "EI-1": "Help Users Focus",
 };
 
 const HIGHLIGHT_CONFIG = {
-  [INFORMATION_OVERLOAD_NAME]: {
-    color: "#df3e53",
-    selectors: [
-      "main",
-      "section",
-      "article",
-      "aside",
-      "nav",
-      "header",
-      "h1",
-      "h2",
-      "button",
-      "a",
-      ".card",
-      "[class*='card' i]",
-      "[class*='grid' i]",
-      "[class*='banner' i]",
-      "[class*='sidebar' i]",
-      "[class*='cta' i]",
-      "[class*='hero' i]",
-    ],
-  },
-  [LEGACY_INFORMATION_OVERLOAD_NAME]: {
-    color: "#df3e53",
-    selectors: [
-      "main",
-      "section",
-      "article",
-      "aside",
-      "nav",
-      "header",
-      ".card",
-      "[class*='card' i]",
-      "[class*='grid' i]",
-      "[class*='banner' i]",
-      "[class*='sidebar' i]",
-    ],
-  },
-  Readability: {
+  "Dense Text Detection": {
     color: "#2493dd",
-    selectors: [
-      "p",
-      "li",
-      "article",
-      "section p",
-      "button",
-      "a",
-    ],
+    selectors: ["p", "li", "td", "th"],
   },
-  "Interaction & Distraction": {
+  "Language Complexity": {
+    color: "#2493dd",
+    selectors: ["p", "li", "td", "th", "label", "button", "a"],
+  },
+  "Sentence Complexity": {
+    color: "#2493dd",
+    selectors: ["p", "li", "td", "th"],
+  },
+  "Long Content Without Chunking": {
+    color: "#2493dd",
+    selectors: ["main", "article", "section"],
+  },
+  "Poor Heading Structure": {
+    color: "#8d28df",
+    selectors: ["h1", "h2", "h3", "h4", "h5", "h6", "title"],
+  },
+  "Navigation Complexity": {
+    color: "#8d28df",
+    selectors: ["nav", "nav a", "[role='navigation']", "[class*='menu' i]", "[class*='breadcrumb' i]"],
+  },
+  "Weak Information Prominence": {
+    color: "#8d28df",
+    selectors: ["main", "section", "button", "a", "[class*='cta' i]", "[class*='hero' i]", "[class*='primary' i]"],
+  },
+  "Visual Overload": {
+    color: "#df3e53",
+    selectors: ["main", "section", "article", "aside", "nav", "header", ".card", "[class*='card' i]", "[class*='grid' i]", "[class*='banner' i]"],
+  },
+  "Auto-Moving Content": {
+    color: "#f0c400",
+    selectors: ["video", "audio", "iframe", "[autoplay]", "marquee", "[class*='carousel' i]", "[class*='slider' i]", "[class*='marquee' i]", "[class*='animate' i]"],
+  },
+  "Excessive Interruptions": {
     color: "#f0c400",
     selectors: [
       "dialog",
@@ -309,10 +267,6 @@ const HIGHLIGHT_CONFIG = {
       "[role='alertdialog']",
       "[aria-modal='true']",
       "[aria-live]",
-      "video",
-      "audio",
-      "iframe",
-      "[autoplay]",
       "[class*='modal' i]",
       "[class*='popup' i]",
       "[class*='overlay' i]",
@@ -322,264 +276,65 @@ const HIGHLIGHT_CONFIG = {
       "[class*='chat' i]",
       "[class*='cookie' i]",
       "[class*='consent' i]",
-      "[class*='carousel' i]",
-      "[class*='slider' i]",
-      "[class*='marquee' i]",
-    ],
-  },
-  Consistency: {
-    color: "#8d28df",
-    selectors: [
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "nav",
-      "[aria-label*='breadcrumb' i]",
-      "[class*='breadcrumb' i]",
-      "progress",
-      "[aria-current='page']",
     ],
   },
 };
 
-function profileDisplayMeta(name) {
-  const meta = PROFILE_DISPLAY_CONFIG[name];
-  if (meta) {
-    return meta;
-  }
-
-  return {
-    label: name,
-    subtitle: "Audience lens",
-  };
-}
-
-function displayProfileName(name) {
-  return profileDisplayMeta(name).label;
-}
-
 function canonicalDimensionName(name) {
-  return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
+  return String(name || "");
+}
+
+function activePatientProfile() {
+  return PATIENT_PROFILES[state.activeProfile] || PATIENT_PROFILES.Alison;
+}
+
+function patientDetectorOrderIndex(name) {
+  const order = activePatientProfile().detectorOrder || DETECTOR_NAMES;
+  const index = order.indexOf(canonicalDimensionName(name));
+  return index === -1 ? dimensionBaseOrderIndex(name) : index;
 }
 
 function dimensionBaseOrderIndex(name) {
-  const order = [
-    INFORMATION_OVERLOAD_NAME,
-    "Readability",
-    "Interaction & Distraction",
-    "Consistency",
-  ];
-  const index = order.indexOf(canonicalDimensionName(name));
+  const index = DETECTOR_NAMES.indexOf(canonicalDimensionName(name));
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-function compareDimensionEntriesByRisk(left, right) {
-  const scoreDelta = normalizedScore(left?.score) - normalizedScore(right?.score);
-  if (scoreDelta !== 0) {
-    return scoreDelta;
+function renderPatientSwitcher() {
+  const summaryNode = document.getElementById("patientProfileSummary");
+  if (summaryNode) {
+    const profile = activePatientProfile();
+    summaryNode.innerHTML = `
+      <strong>${escapeHtml(profile.condition)}</strong>
+      <span>${escapeHtml(profile.summary)}</span>
+    `;
   }
-  const issueDelta = (right?.issueCount || 0) - (left?.issueCount || 0);
-  if (issueDelta !== 0) {
-    return issueDelta;
-  }
-  return dimensionBaseOrderIndex(left?.name) - dimensionBaseOrderIndex(right?.name);
-}
 
-function activeProfileDimensionScoreMap(result) {
-  const profileSourceName = profileSourceNameForLabel(result, state.activeProfile);
-  const entries = buildProfileDimensionEntries(result, profileSourceName);
-  const scoreMap = new Map();
-  entries.forEach((entry) => {
-    scoreMap.set(canonicalDimensionName(entry.name), normalizedScore(entry.score));
-  });
-  return scoreMap;
-}
-
-function compareDimensionsByActiveProfileRisk(left, right, scoreMap) {
-  const leftKey = canonicalDimensionName(left?.dimension);
-  const rightKey = canonicalDimensionName(right?.dimension);
-  const leftScore = scoreMap.get(leftKey);
-  const rightScore = scoreMap.get(rightKey);
-  const scoreDelta = (Number.isFinite(leftScore) ? leftScore : normalizedScore(left?.score))
-    - (Number.isFinite(rightScore) ? rightScore : normalizedScore(right?.score));
-  if (scoreDelta !== 0) {
-    return scoreDelta;
-  }
-  const issueDelta = (right?.issues?.length || 0) - (left?.issues?.length || 0);
-  if (issueDelta !== 0) {
-    return issueDelta;
-  }
-  return dimensionBaseOrderIndex(left?.dimension) - dimensionBaseOrderIndex(right?.dimension);
-}
-
-function buildProfileDimensionEntries(result, profileName) {
-  const weights = profileDisplayMeta(profileName).weights || {};
-  return DIMENSION_CONFIG.map(({ name, className }) => {
-    const dimension = findDimension(result, name);
-    const rawScore = dimension ? dimension.score : 0;
-    const issueCount = dimension?.issues?.length || 0;
-    const weight = weights[canonicalDimensionName(name)] ?? 0.25;
-    const sensitivityMultiplier = weight / 0.25;
-    const adjustedScore = Math.max(
-      0,
-      Math.min(100, Math.round(100 - ((100 - rawScore) * sensitivityMultiplier))),
-    );
-
-    return {
-      name,
-      className,
-      score: adjustedScore,
-      issueCount,
-    };
+  document.querySelectorAll("[data-patient-profile]").forEach((button) => {
+    const active = button.dataset.patientProfile === state.activeProfile;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
   });
 }
 
-function buildScoreSlides(result) {
-  const slides = [];
-
-  (result.profile_scores || []).forEach((profile) => {
-    const meta = profileDisplayMeta(profile.name);
-    slides.push({
-      label: meta.label,
-      dimensionEntries: buildProfileDimensionEntries(result, profile.name),
-    });
-  });
-
-  return slides;
+function setActivePatientProfile(profileName) {
+  if (!PATIENT_PROFILES[profileName] || state.activeProfile === profileName) {
+    return;
+  }
+  state.activeProfile = profileName;
+  resetIssueWorkspaceForProfileChange();
+  renderPatientSwitcher();
+  if (state.currentResult) {
+    renderExplanation(state.currentResult);
+    renderDashboardSummary(state.currentResult);
+    if (state.workspaceMode === "explanation") {
+      renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
+    }
+  }
 }
 
 function renderScoreSlider(result) {
-  const profileNode = document.getElementById("profileScores");
-  if (!profileNode) {
-    return;
-  }
-
-  const slides = buildScoreSlides(result);
-  if (!slides.length) {
-    profileNode.innerHTML = `<p class="profile-scores-empty">Score lenses will appear after analysis.</p>`;
-    return;
-  }
-
-  profileNode.innerHTML = `
-    <div class="score-slider-tabs" aria-label="Score lens navigation">
-      ${slides.map((slide, index) => `
-        <button
-          type="button"
-          class="score-slider-tab${index === 0 ? " is-active" : ""}"
-          data-score-dot="${index}"
-          aria-label="Select ${escapeHtml(slide.label)} lens"
-          aria-pressed="${index === 0 ? "true" : "false"}"
-        >${escapeHtml(slide.label)}</button>
-      `).join("")}
-    </div>
-  `;
-
-  const dotNodes = [...profileNode.querySelectorAll("[data-score-dot]")];
-
-  if (!dotNodes.length) {
-    return;
-  }
-
-  let currentIndex = 0;
-
-  const profileLabelForSlide = (slide) => (
-    slide?.label === "ADHD" || slide?.label === "Autism" ? slide.label : "Dyslexia"
-  );
-
-  const updateControls = () => {
-    const currentSlide = slides[currentIndex] || null;
-    state.activeProfile = profileLabelForSlide(currentSlide);
-    dotNodes.forEach((dot, index) => {
-      const active = index === currentIndex;
-      dot.classList.toggle("is-active", active);
-      dot.setAttribute("aria-pressed", active ? "true" : "false");
-    });
-    renderDimensionBars(currentSlide?.dimensionEntries || []);
-    if (state.currentResult) {
-      renderExplanation(state.currentResult);
-      renderDashboardSummary(state.currentResult);
-      if (state.workspaceMode === "explanation") {
-        renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
-      }
-    }
-  };
-
-  const goToSlide = (targetIndex) => {
-    const previousProfile = state.activeProfile;
-    currentIndex = Math.max(0, Math.min(dotNodes.length - 1, targetIndex));
-    const nextProfile = profileLabelForSlide(slides[currentIndex]);
-    if (nextProfile !== previousProfile) {
-      resetIssueWorkspaceForProfileChange();
-    }
-    updateControls();
-  };
-
-  dotNodes.forEach((dot) => {
-    dot.addEventListener("click", () => goToSlide(Number(dot.dataset.scoreDot)));
-  });
-
-  updateControls();
-}
-
-function normalizedScore(score) {
-  return Math.max(0, Math.min(100, Number(score) || 0));
-}
-
-function riskMetaFromScore(score) {
-  const riskIndex = 100 - normalizedScore(score);
-  if (riskIndex <= 25) {
-    return {
-      level: "Low risk",
-      className: "risk-low",
-    };
-  }
-  if (riskIndex <= 60) {
-    return {
-      level: "Medium risk",
-      className: "risk-medium",
-    };
-  }
-  return {
-    level: "High risk",
-    className: "risk-high",
-  };
-}
-
-function renderDimensionBars(dimensionEntries) {
-  const dimensionBars = document.getElementById("dimensionBars");
-  if (!dimensionBars) {
-    return;
-  }
-
-  const dimensionRows = [...(dimensionEntries || [])]
-    .sort(compareDimensionEntriesByRisk)
-    .map(({ name, score }) => {
-    const riskMeta = riskMetaFromScore(score);
-    const dimensionKey = displayDimensionName(name);
-    const issueCategoryName = displayIssueCategoryName(name);
-    const tooltipCopy = tooltipCopyForDimension(dimensionKey);
-    return `
-      <button class="dimension-row dimension-highlight-trigger" type="button" data-highlight-dimension="${escapeHtml(name)}" data-dimension-key="${escapeHtml(dimensionKey)}" data-risk-level="${escapeHtml(riskMeta.level)}" aria-label="${escapeHtml(`${issueCategoryName}: ${riskMeta.level}. Highlight this category on the website.`)}">
-        <span class="dimension-label-with-info">
-          <span>${escapeHtml(issueCategoryName)}</span>
-          <span
-            class="dimension-info-icon"
-            tabindex="0"
-            role="button"
-            aria-label="${escapeHtml(`${issueCategoryName} info`)}"
-            data-tip-issue="${escapeHtml(tooltipCopy.issue)}"
-            data-tip-impact="${escapeHtml(tooltipCopy.impact)}"
-          >i</span>
-        </span>
-        <span class="risk-badge ${riskMeta.className}">${riskMeta.level}</span>
-      </button>
-    `;
-    }).join("");
-
-  dimensionBars.innerHTML = dimensionRows;
+  // Left detector navigation has been removed; keep the function as a no-op
+  // because the dashboard refresh flow still calls it after analysis.
 }
 
 function renderDashboardSummary(result) {
@@ -623,25 +378,33 @@ const SEVERITY_RANK = {
   minor: 1,
 };
 
-function isInformationOverloadDimension(name) {
-  return name === INFORMATION_OVERLOAD_NAME || name === LEGACY_INFORMATION_OVERLOAD_NAME;
-}
-
 function displayDimensionName(name) {
-  return isInformationOverloadDimension(name) ? INFORMATION_OVERLOAD_NAME : name;
+  return String(name || "");
 }
 
 function issueCategoryKeyForRule(ruleId) {
   const prefix = String(ruleId || "").split("-")[0];
-  return ISSUE_CATEGORY_CONFIG[prefix] ? prefix : "IO";
+  const byPrefix = {
+    DT: "content",
+    LC: "content",
+    SC: "content",
+    LCC: "content",
+    PHS: "structure",
+    NC: "structure",
+    WIP: "structure",
+    VO: "structure",
+    AMC: "motion",
+    EI: "motion",
+  };
+  return byPrefix[prefix] || "structure";
 }
 
 function issueCategoryKeyForDimension(dimensionName) {
-  return DIMENSION_CATEGORY_KEYS[displayDimensionName(dimensionName)] || "IO";
+  return DIMENSION_CATEGORY_KEYS[displayDimensionName(dimensionName)] || "structure";
 }
 
 function issueCategoryMetaForDimension(dimensionName) {
-  return ISSUE_CATEGORY_CONFIG[issueCategoryKeyForDimension(dimensionName)] || ISSUE_CATEGORY_CONFIG.IO;
+  return ISSUE_CATEGORY_CONFIG[issueCategoryKeyForDimension(dimensionName)] || ISSUE_CATEGORY_CONFIG.structure;
 }
 
 function issueCategoryMetaForIssue(issue, dimensionName) {
@@ -679,26 +442,20 @@ function setActiveDimensionBar(dimensionName) {
 function tooltipCopyForDimension(dimensionName) {
   const normalized = normalizedDimensionName(dimensionName);
   const tooltipMap = {
-    [INFORMATION_OVERLOAD_NAME]: {
-      issue: "Too many competing elements make the primary task hard to identify.",
-      impact: "We check first-screen focal density, competing CTAs, sidebar or promo interference, and hierarchy clarity.",
-    },
-    Readability: {
-      issue: "Text is harder to read, scan, or understand quickly.",
-      impact: "We measure sentence and paragraph length, wording complexity, instruction clarity, and chunking quality.",
-    },
-    "Interaction & Distraction": {
-      issue: "Motion, autoplay, or interruptions pull attention away from the current task.",
-      impact: "We detect autoplay media, excessive animation, and interruptive overlays or popups.",
-    },
-    Consistency: {
-      issue: "Structure and controls are not consistent enough for fast orientation.",
-      impact: "We check heading hierarchy, location and progress cues, control naming, and label consistency.",
-    },
+    "Dense Text Detection": { issue: "Text blocks may be too dense to scan.", impact: "We check paragraph word count and sentence count." },
+    "Language Complexity": { issue: "Vocabulary may be harder to understand quickly.", impact: "We check complex or uncommon word density." },
+    "Sentence Complexity": { issue: "Sentences may be too long or heavily connected.", impact: "We check sentence length, commas, and conjunctions." },
+    "Long Content Without Chunking": { issue: "Long sections may lack structure.", impact: "We check long main/article/section content without headings or lists." },
+    "Poor Heading Structure": { issue: "Heading hierarchy may make orientation harder.", impact: "We check missing h1, multiple h1s, empty headings, duplicates, and skipped levels." },
+    "Navigation Complexity": { issue: "Navigation may create too many choices.", impact: "We check link count and nesting depth." },
+    "Weak Information Prominence": { issue: "The next important action may be hard to identify.", impact: "We check competing CTA density." },
+    "Visual Overload": { issue: "The viewport may contain too many competing elements.", impact: "We check visible element count and interactive density." },
+    "Auto-Moving Content": { issue: "Automatic movement may distract users.", impact: "We check autoplay media and continuously moving components." },
+    "Excessive Interruptions": { issue: "Overlays or popups may interrupt the task.", impact: "We check dialogs, modals, sticky prompts, and interruption scripts." },
   };
   return tooltipMap[normalized] || {
-    issue: "This dimension reflects cognitive-accessibility risk in task flow.",
-    impact: "We score structural clarity, readability, interaction stability, and predictability signals.",
+    issue: "This detector reflects cognitive-accessibility risk.",
+    impact: "We score the specific selector signals for this detector.",
   };
 }
 
@@ -787,7 +544,7 @@ function issueEvidenceNumber(issue, key) {
 }
 
 function issuePriority(issue, dimensionName = "") {
-  if (isInformationOverloadDimension(dimensionName)) {
+  if (dimensionName === "Visual Overload" || dimensionName === "Weak Information Prominence") {
     return (
       (issue?.evidence?.blocks_primary_task ? 400 : 0)
       + (issueEvidenceNumber(issue, "confusion_distraction_level") * 100)
@@ -814,10 +571,13 @@ function affectedUsersCopy(issue, dimensionName) {
   if (issue?.evidence?.affected_users) {
     return issue.evidence.affected_users;
   }
-  if (isInformationOverloadDimension(dimensionName)) {
-    return "People with reading difficulties or dyslexia may need clearer chunking, calmer layouts, and a more obvious reading path.";
+  if (DIMENSION_CATEGORY_KEYS[dimensionName] === "content") {
+    return "People with reading difficulties may need clearer wording, shorter text, and stronger chunking.";
   }
-  return "Users with cognitive or communication needs may need clearer guidance and lower mental effort.";
+  if (DIMENSION_CATEGORY_KEYS[dimensionName] === "motion") {
+    return "People with attention regulation or sensory sensitivities may need calmer, user-controlled interactions.";
+  }
+  return "Users with cognitive or executive-function needs may need clearer structure and lower decision effort.";
 }
 
 function displayIssueCategorySingular(issue, dimensionName) {
@@ -973,18 +733,24 @@ function cogaGuidanceMarkup(summaryText) {
 function beneficiaryTags(ruleId, dimensionName) {
   const prefix = String(ruleId || "").split("-")[0] || "";
   const byPrefix = {
-    IO: ["Reading difficulties", "Attention regulation"],
-    RD: ["Reading difficulties", "Communication differences"],
-    ID: ["Attention regulation", "Autistic users"],
-    CS: ["Autistic users", "Executive function support"],
+    DT: ["Reading difficulties", "Communication differences"],
+    LC: ["Reading difficulties", "Communication differences"],
+    SC: ["Reading difficulties", "Communication differences"],
+    LCC: ["Reading difficulties", "Executive function support"],
+    PHS: ["Autistic users", "Executive function support"],
+    NC: ["Autistic users", "Executive function support"],
+    WIP: ["Attention regulation", "Executive function support"],
+    VO: ["Attention regulation", "Autistic users"],
+    AMC: ["Attention regulation", "Autistic users"],
+    EI: ["Attention regulation", "Executive function support"],
   };
   if (byPrefix[prefix]) {
     return byPrefix[prefix];
   }
-  if (dimensionName === "Readability") return byPrefix.RD;
-  if (dimensionName === "Interaction & Distraction") return byPrefix.ID;
-  if (dimensionName === "Consistency") return byPrefix.CS;
-  return byPrefix.IO;
+  const category = DIMENSION_CATEGORY_KEYS[dimensionName];
+  if (category === "content") return byPrefix.DT;
+  if (category === "motion") return byPrefix.AMC;
+  return byPrefix.PHS;
 }
 
 function renderComparison(currentResult, previousResult, previousSourceName) {
@@ -1270,116 +1036,64 @@ function issueRuleFixStepText(issue, dimensionName) {
   // Use rule-level guidance first. Broad category fallbacks made unrelated
   // issues share the same advice, e.g. vague button labels getting sentence advice.
   const ruleSteps = {
-    "RD-1": [
-      "Split long sentences into shorter, direct statements.",
-      "Keep each sentence focused on one main idea.",
-    ],
-    "RD-2": [
+    "DT-1": [
       "Break long paragraphs or list items into smaller chunks.",
       "Add subheadings, lists, or spacing so readers can scan before reading in full.",
     ],
-    "RD-3": [
-      "Replace vague labels with specific action labels that state what will happen.",
-      "Use labels such as \"View event details\" or \"Continue to payment\" instead of \"Click here\" or \"Learn more\".",
-    ],
-    "RD-4": [
+    "LC-1": [
       "Replace dense or specialist words with familiar terms where possible.",
       "Keep necessary technical terms, but explain them in plain language.",
     ],
-    "RD-5": [
-      "Rewrite instructions as short, direct steps.",
-      "Separate conditions or exceptions into small, easy-to-scan chunks.",
+    "SC-1": [
+      "Split long sentences into shorter, direct statements.",
+      "Keep each sentence focused on one main idea.",
     ],
-    "RD-6": [
+    "LCC-1": [
       "Break long prose into smaller grouped chunks.",
       "Use lists, short sub-sections, or clearly separated steps to reduce scanning effort.",
     ],
-    "IO-1": [
-      "Choose one primary reading path or task for the first screen.",
-      "Reduce or demote competing headings, media, panels, and calls to action.",
-    ],
-    "IO-2": [
-      "Split the dense region into smaller chunks.",
-      "Reveal secondary content progressively instead of showing every item at once.",
-    ],
-    "IO-3": [
-      "Demote or remove non-essential side panels and promotional blocks.",
-      "Keep supporting content visually quieter than the main reading path.",
-    ],
-    "IO-4": [
-      "Make one primary call to action visually dominant.",
-      "Group secondary actions together so users do not compare too many same-level choices.",
-    ],
-    "IO-5": [
-      "Strengthen one top-level heading and one obvious next step.",
-      "Reduce competing headings or equally prominent actions near the start of the page.",
-    ],
-    "ID-1": [
-      "Disable autoplay by default.",
-      "Use a user-initiated play control when motion or media is part of the main task.",
-    ],
-    "ID-2": [
-      "Reduce non-essential motion and continuously moving components.",
-      "Keep each main region to only one or two animated elements where motion is necessary.",
-    ],
-    "ID-3": [
-      "Avoid showing popups, sticky prompts, or overlay CTAs on initial load.",
-      "Keep optional prompts collapsed until the user asks for them.",
-    ],
-    "CS-1": [
+    "PHS-1": [
       "Add one clear h1 that describes the page purpose.",
       "Use lower-level headings in order to mark major sections.",
     ],
-    "CS-2": [
-      "Add breadcrumbs or mark the active navigation item.",
-      "Use aria-current where it helps users confirm their current location.",
+    "NC-1": [
+      "Reduce the number of top-level navigation links.",
+      "Flatten deeply nested menus and group related links clearly.",
     ],
-    "CS-3": [
-      "Add progress text such as \"Step 2 of 4\" or a visible stepper.",
-      "Keep the active step clearly marked before users continue.",
+    "WIP-1": [
+      "Make one primary call to action visually dominant.",
+      "Move or demote nearby competing calls to action.",
     ],
-    "CS-4": [
-      "Use a specific document title and descriptive h1.",
-      "Add a short introductory cue that explains the page purpose or primary task.",
+    "VO-1": [
+      "Reduce competing visible elements in the viewport.",
+      "Group related content and remove non-essential cards, banners, or controls.",
     ],
-    "CS-5": [
-      "Provide a clear primary navigation landmark.",
-      "Label multiple navigation regions and keep link names specific.",
+    "AMC-1": [
+      "Disable autoplay by default.",
+      "Reduce non-essential continuous motion or make it user initiated.",
     ],
-    "CS-6": [
-      "Add a clearly labelled search landmark or search field.",
-      "Pair the search input with a clear search submit button.",
-    ],
-    "CS-7": [
-      "Give every control a clear accessible name.",
-      "Connect tabs, accordions, menus, or expand controls to the content they affect.",
-    ],
-    "CS-8": [
-      "Use one consistent label for each repeated action pattern.",
-      "Avoid switching terms for the same action across the page.",
+    "EI-1": [
+      "Avoid showing popups, sticky prompts, or overlays on initial load.",
+      "Provide a clear dismiss control and keep prompts out of the primary task flow.",
     ],
   };
 
   const fallbackSteps = {
-    "Readability": [
+    content: [
       "Rewrite the affected content so it is shorter and easier to scan.",
       "Use familiar wording and clear structure around the affected area.",
     ],
-    "Interaction & Distraction": [
+    motion: [
       "Remove automatic interruptions or motion that starts before users choose it.",
       "Keep the primary task visible and stable while users are reading or deciding.",
     ],
-    "Consistency": [
+    structure: [
       "Make headings, labels, and navigation patterns consistent.",
       "Make the next step predictable before asking users to act.",
     ],
-    "Information Overload": [
-      "Choose one primary reading path or task for this area.",
-      "Demote secondary banners, panels, media, or calls to action that compete with it.",
-    ],
   };
 
-  const selectedSteps = ruleSteps[ruleId] || fallbackSteps[category] || fallbackSteps["Information Overload"];
+  const selectedSteps = ruleSteps[ruleId] || fallbackSteps[DIMENSION_CATEGORY_KEYS[category]] || fallbackSteps.structure;
   const steps = backendSuggestion
     ? [backendSuggestion, ...selectedSteps.filter((step) => step !== backendSuggestion)]
     : selectedSteps;
@@ -1415,43 +1129,28 @@ function issueGoalText(issue, dimensionName) {
 
   // The goal is a short design outcome, not another generic category summary.
   const goals = {
-    "RD-1": "Make each sentence short enough to understand without re-reading.",
-    "RD-2": "Turn dense text blocks into smaller, scannable chunks.",
-    "RD-3": "Make every action label clearly describe the next result.",
-    "RD-4": "Use familiar wording that users can decode quickly.",
-    "RD-5": "Make instructions direct, sequential, and easy to scan.",
-    "RD-6": "Break long prose into clear sections that users can scan.",
-    "IO-1": "Reduce competing focal points and support one dominant task path.",
-    "IO-2": "Reduce the amount users must compare in one region.",
-    "IO-3": "Keep the main reading path stronger than supporting content.",
-    "IO-4": "Make one primary action clearly more important than secondary actions.",
-    "IO-5": "Make the page purpose and first next step obvious.",
-    "ID-1": "Keep media under user control instead of starting automatically.",
-    "ID-2": "Use motion only when it supports the current task.",
-    "ID-3": "Avoid interruptions before users finish the main reading or task path.",
-    "CS-1": "Create a predictable heading hierarchy.",
-    "CS-2": "Make the current page location visible.",
-    "CS-3": "Make multi-step progress visible and predictable.",
-    "CS-4": "Make the page purpose clear before users act.",
-    "CS-5": "Make navigation landmarks and link groups easy to recognise.",
-    "CS-6": "Make search easy to find and understand.",
-    "CS-7": "Make controls announce what they affect.",
-    "CS-8": "Use stable wording for repeated actions.",
+    "DT-1": "Turn dense text blocks into smaller, scannable chunks.",
+    "LC-1": "Use familiar wording that users can decode quickly.",
+    "SC-1": "Make each sentence short enough to understand without re-reading.",
+    "LCC-1": "Break long content into clear sections that users can scan.",
+    "PHS-1": "Create a predictable heading hierarchy.",
+    "NC-1": "Make navigation choices easier to scan and understand.",
+    "WIP-1": "Make one primary action clearly more important than secondary actions.",
+    "VO-1": "Reduce competing focal points and support one dominant task path.",
+    "AMC-1": "Keep motion under user control instead of starting automatically.",
+    "EI-1": "Avoid interruptions before users finish the main reading or task path.",
   };
 
   if (goals[ruleId]) {
     return goals[ruleId];
   }
-  if (category === "Readability") {
+  if (DIMENSION_CATEGORY_KEYS[category] === "content") {
     return "Make the affected content easier to read and scan.";
   }
-  if (category === "Interaction & Distraction") {
+  if (DIMENSION_CATEGORY_KEYS[category] === "motion") {
     return "Keep users in control of motion and interruptions.";
   }
-  if (category === "Consistency") {
-    return "Make navigation, labels, and next actions predictable.";
-  }
-  return "Reduce competing focal points and support one dominant task path.";
+  return "Make navigation, labels, and next actions predictable.";
 }
 
 function issueDoneWhenText(issue, dimensionName) {
@@ -1460,43 +1159,28 @@ function issueDoneWhenText(issue, dimensionName) {
 
   // Success checks make the guidance testable for designers after redesigning.
   const checks = {
-    "RD-1": "Done when each sentence communicates one idea without forcing re-reading.",
-    "RD-2": "Done when long text is split into shorter chunks with clear scan points.",
-    "RD-3": "Done when each button or link can be understood without surrounding context.",
-    "RD-4": "Done when key wording is familiar or briefly explained.",
-    "RD-5": "Done when instructions can be followed step by step without rereading conditions.",
-    "RD-6": "Done when users can scan section headings or chunks before reading in full.",
-    "IO-1": "Done when one clear primary focus is visible above the fold.",
-    "IO-2": "Done when users do not need to compare many same-level items at once.",
-    "IO-3": "Done when side content no longer competes with the main reading path.",
-    "IO-4": "Done when the primary action is visually dominant and secondary actions are grouped.",
-    "IO-5": "Done when the page purpose and next step are clear on first scan.",
-    "ID-1": "Done when media starts only after the user chooses it.",
-    "ID-2": "Done when non-essential motion is removed or reduced.",
-    "ID-3": "Done when popups or sticky prompts no longer interrupt the first task path.",
-    "CS-1": "Done when headings follow a clear order from the main page heading down.",
-    "CS-2": "Done when users can tell where they are in the site or flow.",
-    "CS-3": "Done when the current step and remaining progress are visible.",
-    "CS-4": "Done when title, heading, and intro all describe the same page purpose.",
-    "CS-5": "Done when primary navigation is easy to find and each nav group is labelled.",
-    "CS-6": "Done when search has a clear label and action.",
-    "CS-7": "Done when each control name and affected content relationship is clear.",
-    "CS-8": "Done when repeated actions use the same wording everywhere.",
+    "DT-1": "Done when long text is split into shorter chunks with clear scan points.",
+    "LC-1": "Done when key wording is familiar or briefly explained.",
+    "SC-1": "Done when each sentence communicates one idea without forcing re-reading.",
+    "LCC-1": "Done when users can scan section headings or chunks before reading in full.",
+    "PHS-1": "Done when headings follow a clear order from the main page heading down.",
+    "NC-1": "Done when navigation has fewer choices and shallow, clear grouping.",
+    "WIP-1": "Done when the primary action is visually dominant and secondary actions are grouped.",
+    "VO-1": "Done when one clear primary focus is visible above the fold.",
+    "AMC-1": "Done when media or animation starts only after the user chooses it.",
+    "EI-1": "Done when popups or sticky prompts no longer interrupt the first task path.",
   };
 
   if (checks[ruleId]) {
     return checks[ruleId];
   }
-  if (category === "Readability") {
+  if (DIMENSION_CATEGORY_KEYS[category] === "content") {
     return "Done when key passages are short, clear, and scannable without re-reading.";
   }
-  if (category === "Interaction & Distraction") {
+  if (DIMENSION_CATEGORY_KEYS[category] === "motion") {
     return "Done when non-essential autoplay or pop-up interruptions are removed.";
   }
-  if (category === "Consistency") {
-    return "Done when repeated UI patterns use consistent labels and interaction flow.";
-  }
-  return "Done when one clear primary focus is visible above the fold.";
+  return "Done when repeated UI patterns use consistent labels and interaction flow.";
 }
 
 function advancedDetailsMarkup(issue, ruleId, standards, isoClauses) {
@@ -1870,19 +1554,17 @@ function renderExplanation(result) {
     return;
   }
 
-  const scoreMap = activeProfileDimensionScoreMap(result);
   const orderedDimensions = [...result.dimensions]
-    .sort((left, right) => compareDimensionsByActiveProfileRisk(left, right, scoreMap));
+    .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
 
   let globalIssueIndex = 0;
   const blocks = orderedDimensions.map((dimension) => {
     const filteredIssues = prioritizedIssuesForProfile(dimension);
     const issueCount = filteredIssues.length;
     const displayName = displayDimensionName(dimension.dimension);
-    const issueCategoryName = displayIssueCategoryName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
     const summary = issueCount === 0
-      ? "No triggered issues in this category."
+      ? "No triggered issue for this detector."
       : cognitiveDimension;
 
     const issues = issueCount
@@ -1895,7 +1577,7 @@ function renderExplanation(result) {
     return `
       <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
         <summary class="explanation-accordion-summary">
-          <span class="explanation-accordion-title">${escapeHtml(issueCategoryName)}</span>
+          <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
           <span class="explanation-accordion-meta">
             <span class="explanation-accordion-issue-count">${issueCount}</span>
             <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
@@ -2005,7 +1687,7 @@ function loadWebsitePreview() {
       frame.srcdoc = buildPreviewHtml(state.currentHtml);
       frame.dataset.previewHtml = state.currentHtml;
       frame.dataset.previewGuardVersion = "3";
-      setWebsiteStatus("Loaded uploaded HTML preview. Choose a dimension to highlight related areas.");
+      setWebsiteStatus("Loaded uploaded HTML preview. Choose a detector to highlight related areas.");
     }
     return;
   }
@@ -2070,20 +1752,39 @@ const RENDERED_VIEW_TARGET_SELECTOR = [
   "h5",
   "h6",
   "p",
+  "main",
+  "article",
+  "section",
+  "nav",
+  "header",
+  "footer",
   "a",
   "button",
   "label",
   "li",
+  "ul",
+  "ol",
+  "table",
+  "caption",
+  "th",
+  "td",
+  "abbr",
+  "acronym",
   "img",
   "input",
   "textarea",
   "select",
-  "nav",
   "form",
+  "fieldset",
+  "legend",
   "video",
   "audio",
+  "dialog",
   "[role='button']",
   "[role='link']",
+  "[role='alert']",
+  "[role='status']",
+  "[aria-live]",
 ].join(", ");
 
 function selectorForRenderedElement(element) {
@@ -2414,29 +2115,6 @@ function countMeaningfulElements(doc) {
   return doc.body.querySelectorAll("button, a, input, textarea, select, section, article, nav, aside, dialog, [role='dialog'], [role='button'], [class*='card' i], [class*='modal' i], [class*='popup' i]").length;
 }
 
-function isLegacyCtaCompetitionIssue(issue) {
-  if (!issue || issue.rule_id !== "ID-3") {
-    return false;
-  }
-
-  const text = normalizeInlineText([
-    issue.title,
-    issue.description,
-    issue.suggestion,
-  ].filter(Boolean).join(" "));
-
-  return [
-    "primary-looking actions",
-    "decision hierarchy",
-    "what to do next",
-    "next action",
-    "multiple buttons",
-    "competing ctas",
-    "competing actions",
-    "primary action buttons",
-  ].some((keyword) => text.includes(keyword));
-}
-
 function findByText(doc, tag, text) {
   const normalizedText = normalizeInlineText(text);
   if (!normalizedText) {
@@ -2750,44 +2428,26 @@ function moreSpecificHighlightTarget(element, location = null, frameDoc = null) 
 
 function fallbackSelectorsForIssue(issue, dimensionName) {
   const ruleId = issue?.rule_id || "";
-  if (ruleId === "IO-1") {
-    return ["main > *", "header > *", "section", "article", "nav", "button", "a", "img", "h1", "h2"];
-  }
-  if (ruleId === "IO-2") {
-    return ["section", "article", "ul", "ol", ".card", "[class*='card' i]", "[class*='grid' i]"];
-  }
-  if (ruleId === "IO-3") {
-    return ["aside", "[class*='sidebar' i]", "[class*='banner' i]", "[class*='promo' i]", "[class*='support' i]"];
-  }
-  if (ruleId === "IO-4") {
-    return ["button", "a", "[role='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='hero' i]", "[class*='btn' i]"];
-  }
-  if (ruleId === "IO-5") {
-    return ["h1", "h2", "button", "a", "[role='button']", "main", "header"];
-  }
-  if (ruleId === "RD-1" || ruleId === "RD-2" || ruleId === "RD-4" || ruleId === "RD-5" || ruleId === "RD-6") {
+  if (ruleId === "DT-1" || ruleId === "LC-1" || ruleId === "SC-1" || ruleId === "LCC-1") {
     return ["p", "li", "article", "section", "label", "legend", "small"];
   }
-  if (ruleId === "RD-3") {
-    return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "input[type='reset']"];
-  }
-  if (ruleId === "ID-1") {
-    return ["video[autoplay]", "audio[autoplay]", "iframe"];
-  }
-  if (ruleId === "ID-2") {
-    return ["[style*='animation' i]", "[style*='transition' i]", "marquee", "video", "iframe", "[class*='animate' i]", "[class*='motion' i]"];
-  }
-  if (ruleId === "ID-3") {
-    if (isLegacyCtaCompetitionIssue(issue)) {
-      return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "[class*='cta' i]", "[class*='primary' i]", "[class*='btn' i]", "[class*='action' i]"];
-    }
-    return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
-  }
-  if (ruleId === "CS-1") {
+  if (ruleId === "PHS-1") {
     return ["h1", "h2", "h3", "h4", "h5", "h6"];
   }
-  if (ruleId === "CS-2") {
-    return ["nav", "header", "main", "form", "[class*='step' i]", "[class*='breadcrumb' i]"];
+  if (ruleId === "NC-1") {
+    return ["nav", "[role='navigation']", "[class*='menu' i]", "[class*='breadcrumb' i]"];
+  }
+  if (ruleId === "WIP-1") {
+    return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "input[type='reset']"];
+  }
+  if (ruleId === "VO-1") {
+    return ["main > *", "header > *", "section", "article", "nav", "button", "a", "img", "h1", "h2", ".card", "[class*='card' i]"];
+  }
+  if (ruleId === "AMC-1") {
+    return ["video[autoplay]", "audio[autoplay]", "iframe"];
+  }
+  if (ruleId === "EI-1") {
+    return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
   }
   return HIGHLIGHT_CONFIG[dimensionName]?.selectors || [];
 }
@@ -3006,7 +2666,7 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
 }
 
 function highlightDimension(dimensionName) {
-  const issueCategoryName = displayIssueCategoryName(dimensionName);
+  const detectorName = displayDimensionName(dimensionName);
   if (
     state.workspaceMode === "website"
     && state.activeHighlightDimension === dimensionName
@@ -3040,7 +2700,7 @@ function highlightDimension(dimensionName) {
   clearWebsiteHighlights(frameDoc);
 
   if (!dimension?.issues?.length) {
-    setWebsiteStatus(`${issueCategoryName} has no triggered issues in this analysis.`);
+    setWebsiteStatus(`${detectorName} has no triggered issue in this analysis.`);
     return;
   }
 
@@ -3050,15 +2710,15 @@ function highlightDimension(dimensionName) {
       candidateElements.push(element);
     });
   });
-  const highlighted = applyHighlights(candidateElements, config.color, issueCategoryName);
+  const highlighted = applyHighlights(candidateElements, config.color, detectorName);
 
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
-    setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueCategoryName}.`);
+    setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${detectorName}.`);
   } else {
-    setWebsiteStatus(`No directly highlightable elements were found for ${issueCategoryName}; this issue may describe a missing or page-level pattern.`, true);
+    setWebsiteStatus(`No directly highlightable elements were found for ${detectorName}; this issue may describe a missing or page-level pattern.`, true);
   }
 }
 
@@ -3122,7 +2782,7 @@ function renderPrintSummary(result) {
   sourceNode.textContent = state.sourceName || "Uploaded file";
   summaryNode.textContent = [
     `Overall score ${result.overall_score}.`,
-    `Lowest dimension ${result.min_dimension_score}.`,
+    `Lowest detector score ${result.min_dimension_score}.`,
     `${result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0)} issues detected in this report.`,
   ].filter(Boolean).join(" ");
 
@@ -3131,7 +2791,7 @@ function renderPrintSummary(result) {
     const score = dimension ? dimension.score : 0;
     return `
       <article class="print-dimension-card">
-        <span>${escapeHtml(displayIssueCategoryName(name))}</span>
+        <span>${escapeHtml(displayDimensionName(name))}</span>
         <strong>${score}</strong>
       </article>
     `;
@@ -3139,25 +2799,17 @@ function renderPrintSummary(result) {
 }
 
 function printProfileLabels(result) {
-  const labels = buildScoreSlides(result).map((slide) => slide.label);
-  const preferredOrder = ["Dyslexia", "ADHD", "Autism"];
-  return preferredOrder.filter((label) => labels.includes(label));
-}
-
-function profileSourceNameForLabel(result, profileLabel) {
-  return (result.profile_scores || []).find((profile) => (
-    displayProfileName(profile.name) === profileLabel
-  ))?.name || profileLabel;
+  return result ? ["Detectors"] : [];
 }
 
 function printProfileDimensionRows(result, profileLabel) {
-  const profileSourceName = profileSourceNameForLabel(result, profileLabel);
-  return buildProfileDimensionEntries(result, profileSourceName).map(({ name, score }) => {
-    const riskMeta = riskMetaFromScore(score);
+  return DIMENSION_CONFIG.map(({ name }) => {
+    const dimension = findDimension(result, name);
+    const issueCount = dimension?.issues?.length || 0;
     return `
       <div class="print-profile-risk-row">
-        <span>${escapeHtml(displayIssueCategoryName(name))}</span>
-        <span class="risk-badge ${riskMeta.className}">${escapeHtml(riskMeta.level)}</span>
+        <span>${escapeHtml(displayDimensionName(name))}</span>
+        <span>${Number(issueCount || 0)} issue${Number(issueCount || 0) === 1 ? "" : "s"}</span>
       </div>
     `;
   }).join("");
@@ -3194,11 +2846,11 @@ function printProfileDimensionCards(result, profileLabel) {
     return `
       <details class="print-profile-dimension-card" open>
         <summary>
-          <span>${escapeHtml(displayIssueCategoryName(name))}</span>
+          <span>${escapeHtml(displayDimensionName(name))}</span>
           <strong>${issues.length}</strong>
         </summary>
         <div class="print-profile-dimension-body">
-          ${issues.length ? issueCards : `<p class="print-empty-note">No triggered issues for this profile in this dimension.</p>`}
+          ${issues.length ? issueCards : `<p class="print-empty-note">No triggered issue for this profile in this detector.</p>`}
         </div>
       </details>
     `;
@@ -3608,7 +3260,7 @@ async function analyzeRenderedPreviewDocument(doc) {
       } else if (state.activeHighlightDimension) {
         highlightDimension(state.activeHighlightDimension);
       } else {
-        setWebsiteStatus("Live DOM analysis updated. Choose a dimension or issue to highlight related areas.");
+        setWebsiteStatus("Live DOM analysis updated. Choose a detector or issue to highlight related areas.");
       }
     }
   } catch (error) {
@@ -3908,9 +3560,9 @@ function bindEvents() {
   const analyzeCurrentViewButton = document.getElementById("analyzeCurrentViewBtn");
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
-  const dimensionBars = document.getElementById("dimensionBars");
   const explanationContent = document.getElementById("explanationContent");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
+  renderPatientSwitcher();
   initPreviewMessageBridge();
   initDimensionInfoTooltip();
   initBackToAnalysisButton();
@@ -3928,6 +3580,12 @@ function bindEvents() {
   if (sidebarToggleButton) {
     sidebarToggleButton.addEventListener("click", handleSidebarToggle);
   }
+
+  document.querySelectorAll("[data-patient-profile]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActivePatientProfile(button.dataset.patientProfile || "Alison");
+    });
+  });
 
   navLinks.forEach((link) => {
     const href = link.getAttribute("href") || "";
@@ -3958,15 +3616,6 @@ function bindEvents() {
       }
     });
   });
-
-  if (dimensionBars) {
-    dimensionBars.addEventListener("click", (event) => {
-      const trigger = event.target.closest("[data-highlight-dimension]");
-      if (trigger) {
-        focusExplanationDimension(trigger.dataset.dimensionKey || trigger.dataset.highlightDimension);
-      }
-    });
-  }
 
   if (explanationContent) {
     explanationContent.addEventListener("toggle", (event) => {
@@ -4087,6 +3736,33 @@ function buildDashboardSessionFromHistoryDetail(detail) {
   };
 }
 
+async function hydrateStoredDashboardSession(storedSession) {
+  const current = storedSession?.current;
+  const hasHtml = Boolean(current?.html || current?.payload?.html_content);
+  const runId = current?.payload?.run?.run_id || current?.payload?.run?.id || current?.payload?.run_id;
+  if (!current?.payload || hasHtml || !runId) {
+    return storedSession;
+  }
+
+  try {
+    const detail = await fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`);
+    const hydrated = buildDashboardSessionFromHistoryDetail(detail);
+    return {
+      ...storedSession,
+      current: {
+        ...current,
+        ...hydrated.current,
+        payload: {
+          ...current.payload,
+          ...hydrated.current.payload,
+        },
+      },
+    };
+  } catch (error) {
+    return storedSession;
+  }
+}
+
 async function loadDashboardSessionWithHistoryFallback() {
   const runId = getHistoryReportRunIdFromUrl();
   if (runId) {
@@ -4095,7 +3771,7 @@ async function loadDashboardSessionWithHistoryFallback() {
   }
 
   const storedSession = loadDashboardSession();
-  return storedSession;
+  return hydrateStoredDashboardSession(storedSession);
 }
 
 function renderMissingAnalysisState() {

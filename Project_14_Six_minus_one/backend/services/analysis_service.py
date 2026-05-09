@@ -3,12 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..adapters.input.url_input import collect_inline_script_texts
-from ..analyzers import (
-    analyze_consistency,
-    analyze_information_overload,
-    analyze_interaction,
-    analyze_readability,
-)
+from ..analyzers import analyze_detector_rules
 from ..analyzers.location_utils import sanitize_analysis_locations
 from ..adapters.persistence.history_store import has_history_run, record_compare_pair, save_analysis_run
 from ..scoring import calculate_overall_score
@@ -24,16 +19,11 @@ def analyze_html(
     merged_js_sources = list(js_sources or [])
     merged_js_sources.extend(collect_inline_script_texts(html))
 
-    dimensions = [
-        analyze_readability(html),
-        analyze_information_overload(
-            html,
-            css_sources=css_sources,
-            js_sources=merged_js_sources,
-        ),
-        analyze_interaction(html, js_sources=merged_js_sources),
-        analyze_consistency(html),
-    ]
+    dimensions = analyze_detector_rules(
+        html,
+        css_sources=css_sources,
+        js_sources=merged_js_sources,
+    )
     analysis = calculate_overall_score(dimensions)
     return sanitize_analysis_locations(analysis, html)
 

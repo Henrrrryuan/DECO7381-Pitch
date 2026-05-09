@@ -11,11 +11,15 @@ BAD_TARGET_TAGS = {
     "html", "head", "body", "script", "style", "meta", "link",
     "noscript", "template", "defs", "path", "symbol", "clippath", "mask", "title",
 }
-STRUCTURAL_TAGS = {"div", "section", "article", "main", "header", "footer", "nav", "aside", "ul", "ol", "form"}
+STRUCTURAL_TAGS = {"section", "article", "main", "header", "footer", "nav", "ul", "ol", "form", "fieldset", "table"}
 GENERIC_SELECTOR_TAGS = {"a", "button", "div", "section", "p", "li", "img", "input", "article", "nav", "main"}
-READABILITY_TAGS = {"p", "li", "blockquote", "dd", "dt", "label", "legend", "h1", "h2", "h3", "h4", "h5", "h6"}
-INTERACTION_TAGS = {"a", "button", "input", "select", "textarea", "video", "audio", "iframe", "dialog"}
-FOCAL_POINT_TAGS = INTERACTION_TAGS | {"img", "h1", "h2", "h3", "nav", "header"}
+READABILITY_TAGS = {
+    "p", "li", "td", "th", "caption", "figcaption", "label", "legend",
+    "h1", "h2", "h3", "h4", "h5", "h6", "abbr", "acronym",
+}
+INTERACTION_TAGS = {"a", "button", "input", "select", "textarea", "dialog"}
+MEDIA_TAGS = {"img", "video", "audio"}
+FOCAL_POINT_TAGS = INTERACTION_TAGS | MEDIA_TAGS | {"h1", "h2", "h3", "nav", "header", "section", "article"}
 
 SUMMARY_SELECTOR_PATTERN = re.compile(r"^[a-z][a-z0-9-]*(?:#[A-Za-z0-9_-]+)?(?:\.[A-Za-z0-9_-]+)*$", re.I)
 
@@ -105,9 +109,8 @@ def find_candidate_tags(
     if location.get("block_index"):
         block = block_by_index(soup, int(location.get("block_index") or 0))
         if block is not None:
-            # Readability rules index their own text block stream. Keep that
-            # exact block ahead of fuzzy text matches, which can otherwise
-            # latch onto short nav labels contained in a longer preview.
+            # Text selectors index their own block stream. Keep that exact
+            # block ahead of fuzzy matches against short nested labels.
             return [block]
 
     for text_key in ("text", "preview", "sentence_preview", "label"):
@@ -115,7 +118,7 @@ def find_candidate_tags(
         if text:
             candidates.extend(find_by_text(soup, tag_name, text, dimension_name, rule_id))
 
-    if not candidates and rule_id == "IO-1":
+    if not candidates and rule_id == "VO-1":
         candidates.extend(first_screen_focal_points(soup))
 
     return dedupe_tags(candidates)
@@ -162,7 +165,7 @@ def block_by_index(soup: BeautifulSoup, block_index: int) -> Tag | None:
     if block_index <= 0:
         return None
     blocks = [
-        tag for tag in soup.select("p, li, blockquote, dd, dt")
+        tag for tag in soup.select("p, li, td, th, caption, figcaption")
         if isinstance(tag, Tag) and text_preview(tag)
     ]
     return blocks[block_index - 1] if block_index <= len(blocks) else None
@@ -218,12 +221,12 @@ def first_screen_focal_points(soup: BeautifulSoup) -> list[Tag]:
             break
         if tag.name in BAD_TARGET_TAGS:
             continue
-        if tag.name in {"a", "button", "input", "select", "textarea", "img", "h1", "h2", "h3", "video", "iframe"}:
+        if tag.name in {"a", "button", "input", "select", "textarea", "img", "h1", "h2", "h3", "video", "audio"}:
             matches.append(tag)
             continue
         attrs_blob = " ".join([tag.get("id", ""), " ".join(tag.get("class", [])), tag.get("role", "")]).lower()
         if any(keyword in attrs_blob for keyword in ("logo", "hero", "cta", "button", "card", "tile", "nav")):
-            better_child = first_highlightable_child(tag, "Information Overload", "IO-1")
+            better_child = first_highlightable_child(tag, "Visual Overload", "VO-1")
             matches.append(better_child or tag)
     return dedupe_tags(matches)
 
@@ -238,13 +241,23 @@ def is_candidate_highlightable(tag: Tag, dimension_name: str, rule_id: str) -> b
         return False
     if tag_name == "svg":
         return bool(tag.get("aria-label") or tag.get("role") == "img")
-    if dimension_name == "Readability":
-        return tag_name in READABILITY_TAGS or tag_name in {"a", "button"}
-    if dimension_name == "Interaction & Distraction":
-        return tag_name in INTERACTION_TAGS or looks_like_visual_component(tag)
-    if dimension_name == "Consistency":
-        return tag_name in (READABILITY_TAGS | INTERACTION_TAGS) or looks_like_visual_component(tag)
-    if rule_id == "IO-1":
+    if dimension_name in {
+        "Dense Text Detection",
+        "Language Complexity",
+        "Sentence Complexity",
+        "Long Content Without Chunking",
+        "Poor Heading Structure",
+        "Navigation Complexity",
+        "Weak Information Prominence",
+        "Visual Overload",
+        "Auto-Moving Content",
+        "Excessive Interruptions",
+    }:
+        return (
+            tag_name in (READABILITY_TAGS | INTERACTION_TAGS | MEDIA_TAGS | STRUCTURAL_TAGS)
+            or looks_like_visual_component(tag)
+        )
+    if rule_id == "VO-1":
         return tag_name in FOCAL_POINT_TAGS or looks_like_visual_component(tag)
     if tag_name in STRUCTURAL_TAGS:
         return first_highlightable_child(tag, dimension_name, rule_id) is None or looks_like_visual_component(tag)
@@ -252,7 +265,7 @@ def is_candidate_highlightable(tag: Tag, dimension_name: str, rule_id: str) -> b
 
 
 def first_highlightable_child(tag: Tag, dimension_name: str, rule_id: str) -> Tag | None:
-    for child in tag.find_all(["a", "button", "input", "img", "h1", "h2", "h3", "p", "li", "video", "audio", "iframe"]):
+    for child in tag.find_all(["a", "button", "input", "img", "h1", "h2", "h3", "p", "li", "td", "th", "video", "audio"]):
         if isinstance(child, Tag) and is_candidate_highlightable(child, dimension_name, rule_id):
             return child
     return None
@@ -270,6 +283,9 @@ def build_location_payload(tag: Tag, original: dict[str, Any], selector: str) ->
     }
     if tag.get("data-cognilens-id"):
         payload["cognilensId"] = str(tag.get("data-cognilens-id"))
+    bounding_box = original.get("boundingBox") or original.get("rect") or parse_rendered_rect(tag)
+    if isinstance(bounding_box, dict):
+        payload["boundingBox"] = bounding_box
     for key in (
         "average_sentence_length",
         "sentence_count",
@@ -365,15 +381,15 @@ def select_in_root(tag: Tag, selector: str) -> list[Tag]:
 
 
 def allowed_tags_for_dimension(dimension_name: str, rule_id: str) -> set[str]:
-    if dimension_name == "Readability":
+    if dimension_name in {"Dense Text Detection", "Language Complexity", "Sentence Complexity"}:
         return READABILITY_TAGS | {"a", "button"}
-    if dimension_name == "Interaction & Distraction":
-        return INTERACTION_TAGS | {"marquee"}
-    if dimension_name == "Consistency":
+    if dimension_name in {"Auto-Moving Content", "Excessive Interruptions"}:
+        return INTERACTION_TAGS | MEDIA_TAGS | {"marquee"}
+    if dimension_name in {"Poor Heading Structure", "Navigation Complexity", "Weak Information Prominence"}:
         return READABILITY_TAGS | INTERACTION_TAGS | {"nav"}
-    if rule_id == "IO-1":
+    if rule_id == "VO-1":
         return FOCAL_POINT_TAGS
-    return FOCAL_POINT_TAGS | {"p", "li", "article", "section"}
+    return FOCAL_POINT_TAGS | {"p", "li", "td", "th", "article", "section"}
 
 
 def is_usable_summary_selector(value: str) -> bool:
@@ -399,7 +415,7 @@ def is_hidden_static(tag: Tag) -> bool:
 
 def structural_penalty(tag: Tag, dimension_name: str, rule_id: str) -> int:
     tag_name = normalized_tag(tag.name)
-    if tag_name in {"a", "button", "input", "img", "h1", "h2", "h3", "p", "li", "video", "audio", "iframe"}:
+    if tag_name in {"a", "button", "input", "img", "h1", "h2", "h3", "p", "li", "td", "th", "video", "audio"}:
         return 0
     if tag_name in STRUCTURAL_TAGS:
         return 2
@@ -445,6 +461,23 @@ def human_tag_label(tag: Tag) -> str:
         "audio": "Audio",
         "iframe": "Embedded frame",
     }.get(tag.name or "", (tag.name or "Element").title())
+
+
+def parse_rendered_rect(tag: Tag) -> dict[str, float] | None:
+    raw = str(tag.get("data-rendered-rect") or "").strip()
+    if not raw:
+        return None
+    rect: dict[str, float] = {}
+    for part in raw.split(","):
+        key, _, value = part.partition(":")
+        key = key.strip()
+        if key not in {"x", "y", "width", "height"}:
+            continue
+        try:
+            rect[key] = float(value)
+        except ValueError:
+            return None
+    return rect if {"x", "y", "width", "height"}.issubset(rect) else None
 
 
 def get_tag_summary(tag: Tag) -> str:

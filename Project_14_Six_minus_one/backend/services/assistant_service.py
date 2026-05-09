@@ -175,8 +175,8 @@ def call_openai_assistant(payload: AssistantChatPayload) -> str:
     system_prompt = (
         "You are an AI accessibility assistant inside CogniLens. "
         "Answer briefly and concretely for a developer. Focus on cognitive accessibility, readability, "
-        "visual clutter, interaction distraction, and consistency. Prioritize the most important fix first. "
-        "Use issue category names such as Readability Issues and Information Overload Issues; do not expose internal rule IDs like RD-1 or IO-1 unless the user explicitly asks for implementation details. "
+        "visual clutter, interaction distraction, and structure. Prioritize the most important fix first. "
+        "Use the detector names and content, structure, or motion categories; do not expose internal rule IDs like DT-1 or VO-1 unless the user explicitly asks for implementation details. "
         "If the user asks for multiple points, cover every point in order (do not omit items). "
         "Keep each point short and avoid markdown tables."
     )
@@ -263,8 +263,8 @@ def call_claude_assistant(payload: AssistantChatPayload) -> str:
     system_prompt = (
         "You are an AI accessibility assistant inside CogniLens. "
         "Answer briefly and concretely for a developer. Focus on cognitive accessibility, readability, "
-        "visual clutter, interaction distraction, and consistency. Prioritize the most important fix first. "
-        "Use issue category names such as Readability Issues and Information Overload Issues; do not expose internal rule IDs like RD-1 or IO-1 unless the user explicitly asks for implementation details. "
+        "visual clutter, interaction distraction, and structure. Prioritize the most important fix first. "
+        "Use the detector names and content, structure, or motion categories; do not expose internal rule IDs like DT-1 or VO-1 unless the user explicitly asks for implementation details. "
         "If the user asks for multiple points, cover every point in order (do not omit items). "
         "Keep each point short and avoid markdown tables."
     )
