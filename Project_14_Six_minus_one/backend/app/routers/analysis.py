@@ -12,7 +12,6 @@ from zipfile import BadZipFile, ZipFile
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from ...analyzers import analyze_rendered_visual_complexity, analyze_visual_complexity
 from ...adapters.http.eye_proxy import EyeProxyBadRequest, EyeProxyFetchError, fetch_proxied_response
 from ...adapters.input.snapshot_input import SnapshotInputError, capture_rendered_snapshot
 from ...adapters.input.url_input import UrlInputError, extract_web_bundle_from_url_html
@@ -239,29 +238,6 @@ def analyze_rendered_view(payload: AnalyzeRenderedViewPayload) -> dict[str, Any]
         "element_count": len(payload.elements),
     }
     return response_payload
-
-
-@router.post("/visual-complexity")
-def visual_complexity(payload: AnalyzePayload) -> dict[str, Any]:
-    return analyze_visual_complexity(payload.html)
-
-
-@router.post("/visual-complexity-url")
-def visual_complexity_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
-    try:
-        snapshot = capture_rendered_snapshot(payload.url)
-    except SnapshotInputError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-    return analyze_rendered_visual_complexity(
-        {
-            "final_url": snapshot.final_url,
-            "title": snapshot.title,
-            "html": snapshot.html,
-            "viewport": snapshot.viewport,
-            "elements": snapshot.elements,
-        }
-    )
 
 
 @router.post("/analyze-url")

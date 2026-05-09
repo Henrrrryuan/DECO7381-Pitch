@@ -4,8 +4,6 @@ import {
   analyzeHtmlText,
   analyzeUrl,
   analyzeUploadFile,
-  analyzeVisualComplexityHtml,
-  analyzeVisualComplexityUrl,
   loadDashboardSession,
   saveDashboardSession,
 } from "../lib/common.js";
@@ -146,32 +144,6 @@ export function LoadingPage() {
       };
     }
 
-    async function attachVisualComplexity(result, pending) {
-      ensureNotCancelled();
-      setProgress(68);
-      setMessage("Checking visual complexity");
-      try {
-        if (pending.mode === "url" && pending.url) {
-          result.payload.visual_complexity = await analyzeVisualComplexityUrl(pending.url);
-          ensureNotCancelled();
-          return;
-        }
-        result.payload.visual_complexity = await analyzeVisualComplexityHtml(result.html || "");
-        ensureNotCancelled();
-      } catch (error) {
-        ensureNotCancelled();
-        result.payload.visual_complexity_error = error.message || String(error);
-        if (pending.mode === "url" && result.html) {
-          try {
-            result.payload.visual_complexity = await analyzeVisualComplexityHtml(result.html);
-            ensureNotCancelled();
-          } catch (fallbackError) {
-            result.payload.visual_complexity_error = fallbackError.message || String(fallbackError);
-          }
-        }
-      }
-    }
-
     function saveResult(result) {
       ensureNotCancelled();
       setProgress(92);
@@ -214,8 +186,6 @@ export function LoadingPage() {
         const result =
           pending.mode === "url" ? await analyzePendingUrl(pending) : await analyzePendingFile(pending);
 
-        ensureNotCancelled();
-        await attachVisualComplexity(result, pending);
         ensureNotCancelled();
         setProgress(86);
         setMessage("Preparing the report");

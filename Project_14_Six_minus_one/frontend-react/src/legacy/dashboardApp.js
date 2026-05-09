@@ -2,7 +2,6 @@ import {
   API_BASE,
   analyzeHtmlText,
   analyzeRenderedView,
-  analyzeVisualComplexityHtml,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
@@ -3232,13 +3231,6 @@ async function analyzeRenderedPreviewDocument(doc) {
       resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
       html_content: renderedHtml,
     };
-    try {
-      mergedPayload.visual_complexity = await analyzeVisualComplexityHtml(renderedHtml);
-      delete mergedPayload.visual_complexity_error;
-    } catch (error) {
-      mergedPayload.visual_complexity_error = error.message || String(error);
-    }
-
     state.currentPayload = mergedPayload;
     state.renderedDomAnalysisKey = analysisKey;
     saveTransientDashboardState(mergedPayload, renderedHtml);

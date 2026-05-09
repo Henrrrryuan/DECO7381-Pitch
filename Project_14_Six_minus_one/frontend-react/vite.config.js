@@ -31,8 +31,6 @@ const proxy = {
   "/analyze-rendered-view": { target: BACKEND, changeOrigin: true },
   "/analyze-url": { target: BACKEND, changeOrigin: true },
   "/analyze-zip": { target: BACKEND, changeOrigin: true },
-  "/visual-complexity": { target: BACKEND, changeOrigin: true },
-  "/visual-complexity-url": { target: BACKEND, changeOrigin: true },
   "/assistant": { target: BACKEND, changeOrigin: true },
   "/health": { target: BACKEND, changeOrigin: true },
   "/api": { target: BACKEND, changeOrigin: true },

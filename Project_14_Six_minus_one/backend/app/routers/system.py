@@ -20,8 +20,6 @@ def api_root() -> dict[str, Any]:
             "/analyze",
             "/analyze-url",
             "/analyze-zip",
-            "/visual-complexity",
-            "/visual-complexity-url",
             "/history",
             "/history/{run_id}",
             "/eye/",
