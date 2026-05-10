@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { DetectionGauge } from "../components/DetectionGauge.jsx";
 import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
+
+  const [gauge, setGauge] = useState({ detected: null, total: null });
 
   useEffect(() => {
     document.body.classList.add("dashboard-body");
@@ -16,15 +19,30 @@ export function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let legacyApi = null;
     (async () => {
-      const module = await import("../legacy/dashboardApp.js");
-      if (!cancelled) {
-        await module.initDashboard();
+      legacyApi = await import("../legacy/dashboardApp.js");
+      if (cancelled) {
+        return;
       }
+      await legacyApi.initDashboard({
+          onDetectionGaugeUpdate: (payload) => {
+            if (cancelled) {
+              return;
+            }
+            setGauge(
+              payload ?? {
+                detected: null,
+                total: null,
+              },
+            );
+          },
+        });
     })();
     return () => {
       cancelled = true;
       bumpDashboardLifecycle();
+      legacyApi?.notifyDashboardUnmount?.();
     };
   }, []);
 
@@ -112,54 +130,7 @@ export function DashboardPage() {
                 </p>
               </section>
 
-              <section
-                className="detection-gauge-panel"
-                id="detectionGaugePanel"
-                aria-label="Detectors with issues"
-              >
-                <div className="detection-gauge">
-                  <svg
-                    className="detection-gauge-svg"
-                    viewBox="0 0 200 112"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    {/* Faint full arc for scale; green/red draw inward from each end */}
-                    <path
-                      className="detection-gauge-base"
-                      d="M 24 96 A 76 76 0 0 1 176 96"
-                      fill="none"
-                      pathLength="100"
-                    />
-                    {/* Path starts at right: green “grows” from the right end */}
-                    <path
-                      id="detectionGaugeGreen"
-                      className="detection-gauge-green"
-                      d="M 176 96 A 76 76 0 0 0 24 96"
-                      fill="none"
-                      pathLength="100"
-                      strokeDasharray="100"
-                      strokeDashoffset="100"
-                    />
-                    {/* Path starts at left: red “grows” from the left end */}
-                    <path
-                      id="detectionGaugeFill"
-                      className="detection-gauge-fill"
-                      d="M 24 96 A 76 76 0 0 1 176 96"
-                      fill="none"
-                      pathLength="100"
-                      strokeDasharray="100"
-                      strokeDashoffset="100"
-                    />
-                  </svg>
-                  <div className="detection-gauge-value" aria-live="polite">
-                    <strong id="detectionGaugeFraction">— / —</strong>
-                  </div>
-                  <p className="detection-gauge-caption">
-                    Target to meet: <span id="detectionGaugeTarget">—</span>
-                  </p>
-                </div>
-              </section>
+              <DetectionGauge detected={gauge.detected} total={gauge.total} />
 
               <section className="sidebar-section sidebar-explanation-section">
                 <div className="pane-header">

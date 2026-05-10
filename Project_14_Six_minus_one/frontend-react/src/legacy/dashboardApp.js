@@ -410,35 +410,22 @@ function detectorsWithIssuesCount(result) {
   ).length;
 }
 
+/** Set by React via initDashboard({ onDetectionGaugeUpdate }); SVG lives in DetectionGauge.jsx */
+let onDetectionGaugeUpdate = null;
+
 function renderDetectionGauge(result) {
-  const panel = document.getElementById("detectionGaugePanel");
-  const fractionEl = document.getElementById("detectionGaugeFraction");
-  const targetEl = document.getElementById("detectionGaugeTarget");
-  const fillEl = document.getElementById("detectionGaugeFill");
-  const greenEl = document.getElementById("detectionGaugeGreen");
-  if (!panel || !fractionEl || !targetEl || !fillEl || !greenEl) {
+  if (typeof onDetectionGaugeUpdate !== "function") {
     return;
   }
 
   if (!result?.dimensions) {
-    fractionEl.textContent = "— / —";
-    targetEl.textContent = "—";
-    fillEl.setAttribute("stroke-dashoffset", "100");
-    greenEl.setAttribute("stroke-dashoffset", "100");
-    panel.classList.add("is-placeholder");
+    onDetectionGaugeUpdate({ detected: null, total: null });
     return;
   }
 
-  panel.classList.remove("is-placeholder");
   const total = TOTAL_POSSIBLE_DETECTION_POINTS;
   const detected = detectorsWithIssuesCount(result);
-  const ratio = total > 0 ? Math.min(1, Math.max(0, detected / total)) : 0;
-
-  fractionEl.textContent = `${detected}/${total}`;
-  targetEl.textContent = String(total);
-  /* Red path L→R: reveal length ratio×100 from the left. Green path R→L: reveal (1−ratio)×100 from the right. */
-  fillEl.setAttribute("stroke-dashoffset", String(100 - ratio * 100));
-  greenEl.setAttribute("stroke-dashoffset", String(ratio * 100));
+  onDetectionGaugeUpdate({ detected, total });
 }
 
 function renderReportId() {
@@ -3848,10 +3835,14 @@ async function init(lifecycleSnapshot) {
 }
 
 export function notifyDashboardUnmount() {
+  onDetectionGaugeUpdate = null;
   bumpDashboardLifecycle();
 }
 
-export async function initDashboard() {
+export async function initDashboard(options = {}) {
+  onDetectionGaugeUpdate =
+    typeof options.onDetectionGaugeUpdate === "function" ? options.onDetectionGaugeUpdate : null;
+
   const snapshot = getDashboardLifecycleSnapshot();
   try {
     await init(snapshot);
