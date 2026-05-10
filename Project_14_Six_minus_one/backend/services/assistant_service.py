@@ -18,8 +18,6 @@ def format_analysis_context(context: dict[str, Any] | None) -> str:
 
     lines = [
         f"Source: {context.get('source_name') or 'Uploaded file'}",
-        f"Overall score: {context.get('overall_score', 'n/a')}",
-        f"Lowest dimension score: {context.get('min_dimension_score', 'n/a')}",
     ]
 
     for dimension in context.get("dimensions", []):
@@ -29,9 +27,7 @@ def format_analysis_context(context: dict[str, Any] | None) -> str:
             or dimension.get("display_name")
             or issue_category_label_for_dimension(dimension.get("dimension", ""))
         )
-        lines.append(
-            f"- {issue_category}: score {dimension.get('score', 'n/a')}, issues {issue_count}"
-        )
+        lines.append(f"- {issue_category}: issues {issue_count}")
         for issue in dimension.get("issues", [])[:2]:
             issue_label = issue.get("issue_category_label") or issue_category
             lines.append(
@@ -159,7 +155,7 @@ def build_fallback_assistant_reply(payload: AssistantChatPayload) -> str:
         f"{opening}\n\n"
         f"Based on your question: \"{payload.message}\", the most urgent area is "
         f"{first_category} "
-        f"(score {first_dimension.get('score', 'n/a')}).\n\n"
+        ".\n\n"
         "Recommended first fixes:\n"
         + "\n".join(bullets)
     )

@@ -2269,7 +2269,9 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   setRightPanelMode(state, "preview");
   setActiveHighlightDimension(state, selected.dimension.dimension);
   setActiveHighlightIssueId(state, issueDomId(selected.dimension.dimension, selected.issue.rule_id));
-  setWorkspaceMode("website");
+  if (state.workspaceMode !== "website") {
+    setWorkspaceMode("website");
+  }
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => highlightSelectedIssueInPreview());
 }
@@ -3485,12 +3487,32 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
   if (!selected) {
     return;
   }
+
+  const issue = selected.issue;
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const location = locations[elementNumber - 1] || null;
+  const isNonHighlightableClick = location?.highlightable === false
+    || (String(location?.tag || "").toLowerCase() === "audio" && /autoplay/i.test(String(location?.label || "")));
+  if (isNonHighlightableClick) {
+    // Keep click behavior (selection), but do not switch to preview / reload the iframe.
+    setRightPanelMode(state, "detail");
+    setWorkspaceMode("explanation");
+    setSelectedElementNumber(state, elementNumber);
+    clearActiveHighlight(state);
+    setActiveGuidancePopoverKey(state, "");
+    updateActiveHighlightButtons();
+    setWebsiteStatus("This evidence cannot be highlighted in the website preview (e.g. autoplay audio).");
+    return;
+  }
+
   setRightPanelMode(state, "preview");
   setActiveHighlightDimension(state, selected.dimension.dimension);
   setActiveHighlightIssueId(state, issueDomId(selected.dimension.dimension, selected.issue.rule_id));
   setSelectedElementNumber(state, elementNumber);
   setActiveGuidancePopoverKey(state, "");
-  setWorkspaceMode("website");
+  if (state.workspaceMode !== "website") {
+    setWorkspaceMode("website");
+  }
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => {
     void highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
@@ -3645,15 +3667,10 @@ function buildAssistantContext() {
 
   return {
     source_name: state.sourceName || "Uploaded file",
-    overall_score: result.overall_score,
-    weighted_average: result.weighted_average,
-    min_dimension_score: result.min_dimension_score,
-    profile_scores: result.profile_scores || [],
     dimensions: result.dimensions.map((dimension) => ({
       dimension: dimension.dimension,
       issue_category_label: displayIssueCategoryName(dimension.dimension),
       cognitive_dimension: cognitiveDimensionLabel(dimension.dimension),
-      score: dimension.score,
       issues: dimension.issues.map((issue) => ({
         rule_id: issue.rule_id,
         issue_category_label: displayIssueCategoryNameForIssue(issue, dimension.dimension),

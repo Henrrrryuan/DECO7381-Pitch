@@ -365,11 +365,7 @@ function clearDashboardSession() {
 
 function buildAnalysisView(payload) {
   return {
-    overall_score: payload.overall_score,
-    weighted_average: payload.weighted_average,
-    min_dimension_score: payload.min_dimension_score,
     dimensions: payload.dimensions || [],
-    profile_scores: payload.profile_scores || [],
   };
 }
 

@@ -312,7 +312,6 @@ def detected_evidence_text(metrics: dict[str, Any], location: dict[str, Any]) ->
 @dataclass
 class DimensionResult:
     dimension: DimensionName
-    score: int
     issues: list[Issue] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -333,37 +332,17 @@ class DimensionResult:
                 self.dimension,
                 "Cognitive Accessibility",
             ),
-            "score": self.score,
             "issues": [issue.to_dict() for issue in self.issues],
             "metadata": self.metadata,
         }
 
-
-@dataclass
-class AudienceLensScore:
-    name: str
-    score: int
-    summary: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
 @dataclass
 class AnalysisResult:
-    overall_score: int
-    weighted_average: int
-    min_dimension_score: int
     dimensions: list[DimensionResult]
-    profile_scores: list[AudienceLensScore] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "overall_score": self.overall_score,
-            "weighted_average": self.weighted_average,
-            "min_dimension_score": self.min_dimension_score,
             "dimensions": [dimension.to_dict() for dimension in self.dimensions],
-            "profile_scores": [profile.to_dict() for profile in self.profile_scores],
         }
 
 
@@ -402,9 +381,6 @@ class HistoryRunSummary:
     run_id: str
     created_at: str
     source_name: str
-    overall_score: int
-    weighted_average: int
-    min_dimension_score: int
     eye_tracking_summary: EyeTrackingSummaryForHistory = field(
         default_factory=lambda: EyeTrackingSummaryForHistory(available=False),
     )
@@ -414,9 +390,6 @@ class HistoryRunSummary:
             "run_id": self.run_id,
             "created_at": self.created_at,
             "source_name": self.source_name,
-            "overall_score": self.overall_score,
-            "weighted_average": self.weighted_average,
-            "min_dimension_score": self.min_dimension_score,
             "eye_tracking_summary": self.eye_tracking_summary.to_dict(),
         }
 

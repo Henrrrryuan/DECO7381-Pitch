@@ -5,11 +5,6 @@ from typing import Any
 from bs4 import BeautifulSoup
 
 from ..schemas import DimensionResult
-from ..scoring import (
-    PENALTY_FORMULA_TEXT,
-    SCORING_FORMULA_TEXT,
-    calculate_dimension_score,
-)
 from .analysis_selectors import SELECTORS
 from .analysis_selectors.interaction_helpers import extract_js_hints, extract_style_hints, get_candidate_regions
 from .analysis_selectors.visual_parser import VisualHTMLParser
@@ -45,18 +40,12 @@ def analyze_detector_rules(
         dimensions.append(
             DimensionResult(
                 dimension=detector_name,  # type: ignore[arg-type]
-                score=calculate_dimension_score(detector_name, total_penalty),
                 issues=issues,
                 metadata={
                     "detector": detector_name,
                     "selector_file": f"{detector_name.lower().replace(' ', '_').replace('-', '_')}.py",
                     "implemented_rules": [rule_id],
                     "total_penalty": total_penalty,
-                    "scoring_model": {
-                        "formula": SCORING_FORMULA_TEXT,
-                        "penalty_formula": PENALTY_FORMULA_TEXT,
-                        "dimension_penalty_cap": 18,
-                    },
                 },
             )
         )

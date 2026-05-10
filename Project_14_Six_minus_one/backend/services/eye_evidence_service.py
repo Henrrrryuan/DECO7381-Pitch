@@ -3,7 +3,8 @@ from __future__ import annotations
 from math import log
 from typing import Any, Iterable
 
-from ..scoring import clamp_score
+def clamp_score(score: float) -> int:
+    return max(0, min(100, round(score)))
 
 PRIMARY_ELEMENT_WEIGHTS = {
     "headings": 0.25,

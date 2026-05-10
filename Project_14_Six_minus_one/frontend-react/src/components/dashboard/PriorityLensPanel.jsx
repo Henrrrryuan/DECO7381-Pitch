@@ -8,11 +8,11 @@ function PriorityLensPanelInner() {
   const alison = PATIENT_PROFILES.Alison;
 
   return (
-    <section className="patient-profile-panel" aria-label="Priority Lens">
+    <section className="patient-profile-panel" aria-label="Target audience">
       <div className="patient-profile-heading">
-        <h2 className="patient-profile-title">Priority Lens</h2>
+        <h2 className="patient-profile-title">Target audience</h2>
       </div>
-      <div className="patient-profile-tabs" role="group" aria-label="Choose priority lens">
+      <div className="patient-profile-tabs" role="group" aria-label="Choose target audience">
         {PRIORITY_LENS_KEYS.map((key) => {
           const profile = PATIENT_PROFILES[key];
           const isAlison = key === "Alison";

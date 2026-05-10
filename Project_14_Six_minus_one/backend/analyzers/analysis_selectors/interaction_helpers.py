@@ -7,7 +7,6 @@ from typing import Any
 from bs4 import BeautifulSoup, Tag
 
 from ...schemas import Issue
-from ...scoring import calculate_penalty
 
 REGULAR_BASE_PENALTY = 3
 SERIOUS_BASE_PENALTY = 4
@@ -126,7 +125,7 @@ def build_issue(
         rule_id=rule_id,
         title=title,
         base_penalty=base_penalty,
-        penalty=calculate_penalty(base_penalty),
+        penalty=base_penalty,
         description=description,
         suggestion=suggestion,
         evidence=evidence,

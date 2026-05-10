@@ -113,16 +113,11 @@ export function DashboardPage() {
                   <div id="dashboardSummaryText" className="overall-summary" />
                   <section id="printSummary" className="print-summary" aria-label="Printable summary">
                     <div className="print-summary-top">
-                      <div className="print-summary-score">
-                        <span className="print-summary-score-label">Overall</span>
-                        <strong id="printOverallScore">-</strong>
-                      </div>
                       <div className="print-summary-copy">
                         <h3 id="printSourceName">Waiting for upload</h3>
                         <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
                       </div>
                     </div>
-                    <div id="printDimensionSummary" className="print-dimension-summary" />
                   </section>
                   <section id="printProfileReport" className="print-profile-report" aria-label="Printable profile report" />
                   <div id="explanationContent" className="pane-scroll rich-text empty">

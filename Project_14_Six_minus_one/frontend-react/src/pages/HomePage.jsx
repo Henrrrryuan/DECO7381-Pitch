@@ -464,10 +464,9 @@ export function HomePage() {
                   <div className="input-card-copy">
                     <h3>Check a website</h3>
                     <p>
-                      Local URL (this machine): quick scans and iteration during development. Prefer{" "}
+                      Prefer{" "}
                       <strong>http://127.0.0.1</strong> with your dev-server port (e.g.{" "}
-                      <strong>http://127.0.0.1:5173</strong>) instead of localhost. Replace{" "}
-                      <strong>5173</strong> with your dev-server port if yours differs.
+                      <strong>http://127.0.0.1:5173</strong>) instead of localhost. 
                     </p>
                   </div>
 

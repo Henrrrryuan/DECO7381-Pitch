@@ -6,7 +6,6 @@ from pathlib import Path
 import sqlite3
 from uuid import uuid4
 
-from ...scoring import calculate_profile_scores
 from ...services.eye_evidence_service import (
     calculate_eye_evidence_for_session,
     calculate_eye_evidence_for_sessions,
@@ -61,21 +60,15 @@ def save_analysis_run(
                 id,
                 created_at,
                 source_name,
-                html_content,
-                overall_score,
-                weighted_average,
-                min_dimension_score
+                html_content
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 run_id,
                 created_at,
                 resolved_source_name,
                 html_content,
-                analysis.overall_score,
-                analysis.weighted_average,
-                analysis.min_dimension_score,
             ),
         )
 
@@ -87,16 +80,14 @@ def save_analysis_run(
                     id,
                     run_id,
                     dimension,
-                    score,
                     metadata_json
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?)
                 """,
                 (
                     dimension_result_id,
                     run_id,
                     dimension.dimension,
-                    dimension.score,
                     _dump_json(dimension.metadata),
                 ),
             )
@@ -140,9 +131,6 @@ def save_analysis_run(
         run_id=run_id,
         created_at=created_at,
         source_name=resolved_source_name,
-        overall_score=analysis.overall_score,
-        weighted_average=analysis.weighted_average,
-        min_dimension_score=analysis.min_dimension_score,
         eye_tracking_summary=EyeTrackingSummaryForHistory(available=False),
     )
 
@@ -250,9 +238,6 @@ def list_history_runs(
                 id,
                 created_at,
                 source_name,
-                overall_score,
-                weighted_average,
-                min_dimension_score
             FROM analysis_runs
             {where_clause}
             ORDER BY rowid DESC
@@ -285,9 +270,6 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 created_at,
                 source_name,
                 html_content,
-                overall_score,
-                weighted_average,
-                min_dimension_score
             FROM analysis_runs
             WHERE id = ?
             """,
@@ -302,7 +284,6 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 id,
                 run_id,
                 dimension,
-                score,
                 metadata_json
             FROM dimension_results
             WHERE run_id = ?
@@ -349,7 +330,6 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
             dimensions.append(
                 DimensionResult(
                     dimension=dimension_row["dimension"],
-                    score=dimension_row["score"],
                     issues=issues,
                     metadata=_load_json(dimension_row["metadata_json"], {}),
                 )
@@ -375,15 +355,8 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
 
         eye_map = _fetch_latest_eye_summary_by_run_ids(connection, [run_id])
 
-    eye_evidence = calculate_eye_evidence_for_sessions(
-        [_row_to_eye_evidence_input(row) for row in eye_session_rows]
-    )
     analysis = AnalysisResult(
-        overall_score=run_row["overall_score"],
-        weighted_average=run_row["weighted_average"],
-        min_dimension_score=run_row["min_dimension_score"],
         dimensions=dimensions,
-        profile_scores=calculate_profile_scores(dimensions, eye_evidence=eye_evidence),
     )
     run = _row_to_run_summary(
         run_row,
@@ -638,9 +611,6 @@ def _row_to_run_summary(
         run_id=row["id"],
         created_at=row["created_at"],
         source_name=row["source_name"],
-        overall_score=row["overall_score"],
-        weighted_average=row["weighted_average"],
-        min_dimension_score=row["min_dimension_score"],
         eye_tracking_summary=eye_tracking_summary
         or EyeTrackingSummaryForHistory(available=False),
     )
@@ -870,17 +840,13 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
             id TEXT PRIMARY KEY,
             created_at TEXT NOT NULL,
             source_name TEXT NOT NULL,
-            html_content TEXT NOT NULL,
-            overall_score INTEGER NOT NULL,
-            weighted_average INTEGER NOT NULL,
-            min_dimension_score INTEGER NOT NULL
+            html_content TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS dimension_results (
             id TEXT PRIMARY KEY,
             run_id TEXT NOT NULL,
             dimension TEXT NOT NULL,
-            score INTEGER NOT NULL,
             metadata_json TEXT NOT NULL,
             FOREIGN KEY (run_id) REFERENCES analysis_runs(id) ON DELETE CASCADE
         );
@@ -944,6 +910,60 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
         """
     )
     _ensure_column(connection, "issues", "issue_json", "TEXT NOT NULL DEFAULT '{}'")
+
+    # Backward-compatible cleanup: older DBs may include scoring columns; remove them.
+    _drop_scoring_columns_if_present(connection)
+
+
+def _drop_scoring_columns_if_present(connection: sqlite3.Connection) -> None:
+    """Remove legacy scoring columns from the SQLite history store.
+
+    SQLite doesn't support DROP COLUMN in all versions, so we rebuild the tables
+    and copy forward only the fields we still use.
+    """
+    run_cols = {
+        str(row["name"])
+        for row in connection.execute("PRAGMA table_info(analysis_runs)").fetchall()
+    }
+    dim_cols = {
+        str(row["name"])
+        for row in connection.execute("PRAGMA table_info(dimension_results)").fetchall()
+    }
+    if not ({"overall_score", "weighted_average", "min_dimension_score"} & run_cols) and "score" not in dim_cols:
+        return
+
+    connection.executescript(
+        """
+        PRAGMA foreign_keys=OFF;
+
+        CREATE TABLE IF NOT EXISTS analysis_runs__v2 (
+            id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            source_name TEXT NOT NULL,
+            html_content TEXT NOT NULL
+        );
+        INSERT OR IGNORE INTO analysis_runs__v2 (id, created_at, source_name, html_content)
+        SELECT id, created_at, source_name, html_content FROM analysis_runs;
+
+        CREATE TABLE IF NOT EXISTS dimension_results__v2 (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            dimension TEXT NOT NULL,
+            metadata_json TEXT NOT NULL,
+            FOREIGN KEY (run_id) REFERENCES analysis_runs__v2(id) ON DELETE CASCADE
+        );
+        INSERT OR IGNORE INTO dimension_results__v2 (id, run_id, dimension, metadata_json)
+        SELECT id, run_id, dimension, metadata_json FROM dimension_results;
+
+        DROP TABLE IF EXISTS dimension_results;
+        DROP TABLE IF EXISTS analysis_runs;
+
+        ALTER TABLE analysis_runs__v2 RENAME TO analysis_runs;
+        ALTER TABLE dimension_results__v2 RENAME TO dimension_results;
+
+        PRAGMA foreign_keys=ON;
+        """
+    )
 
 
 def _ensure_column(

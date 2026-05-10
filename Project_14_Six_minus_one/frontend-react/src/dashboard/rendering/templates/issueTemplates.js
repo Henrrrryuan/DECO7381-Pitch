@@ -403,7 +403,7 @@ function issueSummaryCardMarkup(ctx, issueContext) {
       </summary>
       <div class="issue-summary-body">
         <div class="issue-summary-row issue-summary-row-standards">
-          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA Guidance Objective</span>
+          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
           ${cogaMarkup}
         </div>
         <div class="issue-summary-row issue-summary-row-standards">

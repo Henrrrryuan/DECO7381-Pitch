@@ -6,7 +6,6 @@ from ..adapters.input.url_input import collect_inline_script_texts
 from ..analyzers import analyze_detector_rules
 from ..analyzers.location_utils import sanitize_analysis_locations
 from ..adapters.persistence.history_store import has_history_run, record_compare_pair, save_analysis_run
-from ..scoring import calculate_overall_score
 from ..schemas import AnalysisResult
 
 
@@ -24,7 +23,7 @@ def analyze_html(
         css_sources=css_sources,
         js_sources=merged_js_sources,
     )
-    analysis = calculate_overall_score(dimensions)
+    analysis = AnalysisResult(dimensions=dimensions)
     return sanitize_analysis_locations(analysis, html)
 
 

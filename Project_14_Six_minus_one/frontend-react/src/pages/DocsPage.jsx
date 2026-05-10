@@ -104,8 +104,10 @@ export function DocsPage() {
           <h1>How to use CogniLens</h1>
           <div className="docs-copy">
             <p>
-              CogniLens helps teams detect cognitive accessibility issues, inspect exactly where they appear, and turn
-              findings into practical redesign actions.
+              CogniLens surfaces cognitive accessibility issues with concrete evidence so you can inspect what was
+              detected, see it in context when the page supports it, and turn findings into practical redesign moves.
+              The dashboard does not compute an overall accessibility score—it focuses on detected issues and their
+              explanations.
             </p>
           </div>
         </section>
@@ -117,24 +119,30 @@ export function DocsPage() {
             <span className="docs-step">1</span>
             <h2>Quick path</h2>
             <p>
-              <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a <strong>Priority Lens</strong>{" "}
-              -&gt; open a detected issue -&gt; click an <strong>Element</strong> chip -&gt; inspect the highlighted area
-              for guidance.
+              <strong>New Analysis</strong> → <strong>Analyze</strong> → pick a <strong>Target audience</strong> → open
+              an issue in the workspace → use <strong>Element</strong> evidence (clickable chips when available) → when
+              the preview opens, inspect the numbered highlight and linked guidance.
             </p>
             <p>Use this route when you want a fast first pass before deeper review.</p>
-            <p className="docs-outcome">You should see: the matching page element highlighted on the right preview.</p>
+            <p className="docs-outcome">
+              You should see: for many findings, <strong>Element 1</strong>, <strong>Element 2</strong>, … highlights in
+              the website preview. Some evidence cannot be highlighted (for example document-level structure or autoplay
+              audio)—that context stays in the issue panel instead of switching the preview.
+            </p>
           </article>
 
           <article className="docs-card docs-card-right">
             <span className="docs-step">2</span>
             <h2>Start an analysis</h2>
             <p>
-              Click <strong>New Analysis</strong>, then analyze a local <span className="docs-mono-tag">URL</span>,{" "}
-              <span className="docs-mono-tag">HTML</span> file, or <span className="docs-mono-tag">ZIP</span> package.
+              Click <strong>New Analysis</strong>, then analyze a live <span className="docs-mono-tag">URL</span>, a
+              local <span className="docs-mono-tag">HTML</span> file, or a <span className="docs-mono-tag">ZIP</span>{" "}
+              package.
             </p>
             <p>
-              After processing, CogniLens opens the dashboard with Priority Lens views, detected issue counts, and issue
-              cards.
+              After processing, CogniLens opens the dashboard with the <strong>Target audience</strong> selector, a
+              large <strong>Detected issues</strong> count (detectors that reported at least one issue for the current
+              audience), and the issue workspace.
             </p>
           </article>
 
@@ -142,55 +150,68 @@ export function DocsPage() {
             <span className="docs-step">3</span>
             <h2>Prioritize and inspect issues</h2>
             <p>
-              Use <strong>Priority Lens</strong> to choose the user need you want to review first. The issue list updates
-              to show detected issues that are most relevant to that lens.
+              Under <strong>Target audience</strong>, choose the persona you want the list oriented toward. The workspace
+              reorders and filters so the most relevant detected issues surface first for that audience; the short
+              profile blurb under the tabs reminds you what each persona emphasizes.
             </p>
             <div className="docs-workflow-row" aria-hidden="true">
-              <span>Priority Lens</span>
-              <span>Detected Issues</span>
-              <span>Element chips</span>
+              <span>Target audience</span>
+              <span>Detected issues</span>
+              <span>Element evidence</span>
             </div>
             <p>
-              Start with the lens that matches your target user group, then open issue cards with detected elements
-              first.
+              Expand an issue to read the explanation and evidence. Evidence appears as numbered <strong>Element</strong>{" "}
+              rows (buttons when the preview can drive inspection, or static chips when highlight is not available).
             </p>
-            <p>In each Top Issue Card, use the <strong>Affected elements</strong> list to drive inspection:</p>
+            <p>Use the evidence list to drive inspection:</p>
             <ul className="docs-list">
               <li>
-                Click an <strong>Element</strong> chip to highlight that exact location in the website preview.
+                <strong>Clickable Element chips</strong> switch to the website preview when possible, scroll to the
+                target, and label it with the same element number as the list. The status line under the preview explains
+                loading, hidden content, or mapping limits.
               </li>
               <li>
-                Some structural issues may describe document-level markup and may not have a precise visual target.
+                <strong>Non-highlightable rows</strong> (structural findings, missing visible targets, or cases like
+                autoplay audio) keep you on the issue view so you can read the finding without forcing a preview reload.
               </li>
             </ul>
-            <p className="docs-outcome">You should see: one highlighted target and an element list in sync.</p>
+            <p className="docs-outcome">
+              You should see: list numbers and preview labels stay aligned whenever highlighting succeeds; otherwise the
+              issue text carries the usable detail.
+            </p>
           </article>
 
           <article className="docs-card docs-card-left">
             <span className="docs-step">4</span>
             <h2>Use guidance to redesign</h2>
             <p>
-              In the preview popover, review <strong>Why this matters</strong> and <strong>First redesign move</strong>{" "}
-              in order.
+              When a highlight is active inside the embedded preview, open the guidance popover: read{" "}
+              <strong>Why this matters</strong> and <strong>First redesign move</strong> in order.
             </p>
             <p>
-              Hover a highlighted element to preview guidance. Click it to pin the guidance, then use the{" "}
-              <strong>X</strong> button to close the pinned popover.
+              <strong>Hover</strong> a highlighted region for a lightweight preview of that guidance; <strong>click</strong>{" "}
+              the highlight to pin the panel. Use <strong>X</strong> on the pinned popover to dismiss it. If an evidence
+              row never switches to preview, rely on the issue explanation—that flow is intentional for evidence that does
+              not map to a single on-page target.
             </p>
-            <p className="docs-outcome">You should see: guidance appear near the highlighted element without covering it.</p>
+            <p className="docs-outcome">
+              You should see: guidance anchored beside the highlighted element when preview inspection applies; otherwise
+              full context in the issue workspace.
+            </p>
           </article>
 
           <article className="docs-card docs-card-right">
             <span className="docs-step">5</span>
             <h2>Understand detected signals</h2>
             <p>
-              Use the detected issue count and Priority Lens summary to understand what was found for the selected user
-              need.
+              The sidebar <strong>Detected issues</strong> number counts how many enabled detectors fired for the
+              analyzed page under the current target audience—not a summed severity or pass/fail grade.
             </p>
             <p>
-              Issue details connect findings to cognitive accessibility heuristics and relevant{" "}
-              <span className="docs-mono-tag">WCAG</span> / <span className="docs-mono-tag">ISO</span> /{" "}
-              <span className="docs-mono-tag">COGA</span> references where available.
+              Inside each issue, cognitive heuristics and reference tags (<span className="docs-mono-tag">WCAG</span>,{" "}
+              <span className="docs-mono-tag">ISO</span>, <span className="docs-mono-tag">COGA</span> where applicable)
+              appear as contextual labels; use <strong>Print</strong> in the workspace header when you need an
+              issue-focused report without scores.
             </p>
           </article>
 

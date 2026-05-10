@@ -102,33 +102,19 @@ export function renderPrintableProfileReport(result, deps) {
 }
 
 export function renderPrintSummary(result, deps) {
-  const overallNode = document.getElementById("printOverallScore");
   const sourceNode = document.getElementById("printSourceName");
   const summaryNode = document.getElementById("printSummaryText");
-  const dimensionNode = document.getElementById("printDimensionSummary");
 
-  if (!overallNode || !sourceNode || !summaryNode || !dimensionNode) {
+  if (!sourceNode || !summaryNode) {
     return;
   }
 
-  const { DIMENSION_CONFIG, displayDimensionName, sourceName } = deps;
+  const { sourceName } = deps;
 
-  overallNode.textContent = String(result.overall_score);
   sourceNode.textContent = sourceName || "Uploaded file";
-  summaryNode.textContent = [
-    `Overall score ${result.overall_score}.`,
-    `Lowest detector score ${result.min_dimension_score}.`,
-    `${result.dimensions.reduce((count, dimension) => count + dimension.issues.length, 0)} issues detected in this report.`,
-  ].filter(Boolean).join(" ");
-
-  dimensionNode.innerHTML = DIMENSION_CONFIG.map(({ name }) => {
-    const dimension = findDimension(result, name);
-    const score = dimension ? dimension.score : 0;
-    return `
-      <article class="print-dimension-card">
-        <span>${escapeHtml(displayDimensionName(name))}</span>
-        <strong>${score}</strong>
-      </article>
-    `;
-  }).join("");
+  const totalIssues = (result?.dimensions || []).reduce(
+    (count, dimension) => count + (dimension?.issues?.length || 0),
+    0,
+  );
+  summaryNode.textContent = `${totalIssues} issue${totalIssues === 1 ? "" : "s"} detected in this report.`;
 }
