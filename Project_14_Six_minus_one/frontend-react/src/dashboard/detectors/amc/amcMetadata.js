@@ -2,11 +2,11 @@ const amcMetadata = {
   rule_id: "AMC-1",
   dimension: "Auto-Moving Content",
   frameworks: {
-    coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
+    coga: "COGA: Limit Interruptions",
+    iso: "ISO 9241-11: Satisfaction",
     wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
-  coga_objective: "Help Users Focus",
+  coga_objective: "Limit Interruptions",
   tooltip: {
     issue: "Automatic movement may distract users.",
     impact: "We check autoplay media and continuously moving components.",

@@ -2,11 +2,11 @@ const ncMetadata = {
   rule_id: "NC-1",
   dimension: "Navigation Complexity",
   frameworks: {
-    coga: "COGA: Predictable navigation cues",
-    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    coga: "COGA: Findable / Clear Navigation",
+    iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
-  coga_objective: "Help Users Find What They Need",
+  coga_objective: "Findable / Clear Navigation",
   tooltip: {
     issue: "Navigation may create too many choices.",
     impact: "We check link count and nesting depth.",

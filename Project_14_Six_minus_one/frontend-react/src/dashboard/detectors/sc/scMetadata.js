@@ -2,11 +2,11 @@ const scMetadata = {
   rule_id: "SC-1",
   dimension: "Sentence Complexity",
   frameworks: {
-    coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    coga: "COGA: Avoid Nested Clauses",
+    iso: "ISO 9241-11: Efficiency",
     wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
-  coga_objective: "Use Clear and Understandable Content",
+  coga_objective: "Avoid Nested Clauses",
   tooltip: {
     issue: "Sentences may be too long or heavily connected.",
     impact: "We check sentence length, commas, and conjunctions.",

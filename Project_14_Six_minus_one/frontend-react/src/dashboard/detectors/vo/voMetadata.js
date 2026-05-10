@@ -2,11 +2,11 @@ const voMetadata = {
   rule_id: "VO-1",
   dimension: "Visual Overload",
   frameworks: {
-    coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
+    coga: "COGA: Avoid Too Much Content",
+    iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
-  coga_objective: "Help Users Focus",
+  coga_objective: "Avoid Too Much Content",
   tooltip: {
     issue: "The early-page DOM may contain a high concentration of competing elements.",
     impact: "We use an early-page structural density heuristic (element and interactive counts), not rendered viewport geometry.",

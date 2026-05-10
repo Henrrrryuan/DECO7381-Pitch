@@ -2,11 +2,11 @@ const dtMetadata = {
   rule_id: "DT-1",
   dimension: "Dense Text Detection",
   frameworks: {
-    coga: "COGA: Break content into manageable chunks",
-    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    coga: "COGA: Clear Language / Chunking",
+    iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
-  coga_objective: "Use Clear and Understandable Content",
+  coga_objective: "Clear Language / Chunking",
   tooltip: {
     issue: "Text blocks may be too dense to scan.",
     impact: "We check paragraph word count and sentence count.",

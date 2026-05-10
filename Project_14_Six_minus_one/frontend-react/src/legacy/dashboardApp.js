@@ -720,7 +720,7 @@ function parseStandardsItems(text, prefixRegex) {
 
 function parseIsoClausesFromRule(ruleId) {
   const isoText = getDetectorMetadata(ruleId)?.frameworks?.iso || "";
-  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*/i)
+  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*:?\s*/i)
     .map((item) => item.replace(/^2018\s+/i, "").trim());
   return clauses.length ? clauses : ["Effectiveness"];
 }
