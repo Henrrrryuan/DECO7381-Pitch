@@ -2,10 +2,10 @@ import { memo } from "react";
 
 import { PATIENT_PROFILES } from "../../dashboard/shared/patientProfiles.js";
 
-const PRIORITY_LENS_KEYS = ["Alison", "Amy", "Tal", "Yuki"];
+const PRIORITY_LENS_KEYS = ["General", "Alison", "Amy", "Tal", "Yuki"];
 
 function PriorityLensPanelInner() {
-  const alison = PATIENT_PROFILES.Alison;
+  const general = PATIENT_PROFILES.General;
 
   return (
     <section className="patient-profile-panel" aria-label="Priority Lens">
@@ -15,14 +15,14 @@ function PriorityLensPanelInner() {
       <div className="patient-profile-tabs" role="group" aria-label="Choose priority lens">
         {PRIORITY_LENS_KEYS.map((key) => {
           const profile = PATIENT_PROFILES[key];
-          const isAlison = key === "Alison";
+          const isDefault = key === "General";
           return (
             <button
               key={key}
               type="button"
-              className={`patient-profile-tab${isAlison ? " is-active" : ""}`}
+              className={`patient-profile-tab${isDefault ? " is-active" : ""}`}
               data-patient-profile={key}
-              aria-pressed={isAlison ? "true" : "false"}
+              aria-pressed={isDefault ? "true" : "false"}
             >
               {profile.label}
             </button>
@@ -30,9 +30,9 @@ function PriorityLensPanelInner() {
         })}
       </div>
       <p id="patientProfileSummary" className="patient-profile-summary">
-        <strong>{alison.condition}</strong>
+        <strong>{general.condition}</strong>
         <span>
-          {alison.summary}
+          {general.summary}
         </span>
       </p>
     </section>
