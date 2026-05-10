@@ -115,14 +115,6 @@ async function analyzeUrl(url, baselineRunId = null) {
   });
 }
 
-async function analyzeRenderedView(payload) {
-  return fetchJson(`${API_BASE}/analyze-rendered-view`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-}
-
 async function chatWithAssistant(payload) {
   return fetchJson(`${API_BASE}/assistant/chat`, {
     method: "POST",
@@ -307,7 +299,6 @@ export {
   API_BASE,
   STORAGE_KEY,
   analyzeHtmlText,
-  analyzeRenderedView,
   analyzeUrl,
   analyzeUploadFile,
   buildAnalysisView,

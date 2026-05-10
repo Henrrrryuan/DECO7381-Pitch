@@ -1,6 +1,5 @@
 import {
   API_BASE,
-  analyzeRenderedView,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
@@ -8,7 +7,6 @@ import {
   findDimension,
   formatReportTimestamp,
   loadDashboardSession,
-  saveDashboardSession,
 } from "../lib/common.js";
 
 const state = {
@@ -28,9 +26,6 @@ const state = {
   chatPending: false,
   sidebarCollapsed: false,
   assistantFloatingOpen: false,
-  renderedDomAnalysisPending: false,
-  renderedViewStale: false,
-  renderedViewBaselineKey: "",
   previousResult: null,
   previousSourceName: "",
   activeProfile: "Alison",
@@ -344,16 +339,8 @@ function renderDashboardSummary(result) {
     return count + (dimension.issues || []).length;
   }, 0);
 
-  const renderedNotice = state.currentPayload?.analysis_mode === "rendered_current_view"
-    ? `<div class="summary-line summary-rendered-mode${state.renderedViewStale ? " is-stale" : ""}">
-        ${state.renderedViewStale
-          ? "Preview state changed. Capture current view snapshot again to refresh issues and highlights."
-          : "This report is based on the captured preview snapshot. Change the preview and capture again to analyze another state."}
-      </div>`
-    : "";
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
-    ${renderedNotice}
   `;
 }
 
@@ -1741,134 +1728,6 @@ function previewDebugState(doc = getPreviewDocument()) {
   };
 }
 
-const RENDERED_VIEW_TARGET_SELECTOR = [
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "p",
-  "main",
-  "article",
-  "section",
-  "nav",
-  "header",
-  "footer",
-  "a",
-  "button",
-  "label",
-  "li",
-  "ul",
-  "ol",
-  "table",
-  "caption",
-  "th",
-  "td",
-  "abbr",
-  "acronym",
-  "img",
-  "input",
-  "textarea",
-  "select",
-  "form",
-  "fieldset",
-  "legend",
-  "video",
-  "audio",
-  "dialog",
-  "[role='button']",
-  "[role='link']",
-  "[role='alert']",
-  "[role='status']",
-  "[aria-live]",
-].join(", ");
-
-function selectorForRenderedElement(element) {
-  if (element.id) {
-    return `#${cssEscape(element.id)}`;
-  }
-  const cognilensId = element.getAttribute("data-cognilens-id");
-  if (cognilensId) {
-    return `[data-cognilens-id="${cssEscape(cognilensId)}"]`;
-  }
-  const tag = element.tagName?.toLowerCase() || "";
-  const classNames = String(element.className || "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-  if (tag && classNames.length) {
-    return `${tag}.${classNames.map(cssEscape).join(".")}`;
-  }
-  return tag;
-}
-
-function ensureCognilensElementId(element, index) {
-  const existing = element.getAttribute("data-cognilens-id");
-  if (existing) {
-    return existing;
-  }
-  const id = `cl-${Date.now().toString(36)}-${index.toString(36)}`;
-  element.setAttribute("data-cognilens-id", id);
-  return id;
-}
-
-function isRenderedViewExtractable(element) {
-  if (!element || element.nodeType !== 1) {
-    return false;
-  }
-  const tagName = element.tagName?.toLowerCase();
-  if (["script", "style", "meta", "link", "head", "html", "body", "noscript", "template", "defs", "path"].includes(tagName)) {
-    return false;
-  }
-  return isElementVisibleForHighlight(element);
-}
-
-/**
- * Builds the payload for POST /analyze-rendered-view from the iframe DOM.
- * Used only when the user explicitly captures a snapshot — not for automatic re-analysis.
- */
-function extractRenderedCurrentViewPayload(doc) {
-  if (!doc?.body) {
-    throw new Error("The preview document is not available yet.");
-  }
-  const win = doc.defaultView;
-  const elements = Array.from(doc.body.querySelectorAll(RENDERED_VIEW_TARGET_SELECTOR))
-    .filter(isRenderedViewExtractable)
-    .slice(0, 300)
-    .map((element, index) => {
-      const rect = element.getBoundingClientRect();
-      const tagName = element.tagName?.toLowerCase() || "";
-      return {
-        cognilensId: ensureCognilensElementId(element, index + 1),
-        tagName,
-        role: element.getAttribute("role") || "",
-        text: elementTextPreview(element),
-        alt: element.getAttribute("alt") || "",
-        ariaLabel: element.getAttribute("aria-label") || "",
-        href: element.getAttribute("href") || "",
-        selector: selectorForRenderedElement(element),
-        rect: {
-          x: rect.x,
-          y: rect.y,
-          width: rect.width,
-          height: rect.height,
-        },
-        visible: true,
-      };
-    });
-  return {
-    mode: "rendered_current_view",
-    previewUrl: getPreviewUrl() || doc.location?.href || "",
-    source_name: `${state.sourceName || "preview"} (current view)`,
-    viewport: {
-      width: win?.innerWidth || doc.documentElement.clientWidth || 0,
-      height: win?.innerHeight || doc.documentElement.clientHeight || 0,
-    },
-    elements,
-  };
-}
-
 function injectHighlightStyles(doc) {
   if (!doc || doc.getElementById("cognilens-highlight-style")) {
     return;
@@ -3053,132 +2912,6 @@ function renderResult(result, html, options = {}) {
   syncEyeTrackingNavAndStorage();
 }
 
-function saveTransientDashboardState(payload, html) {
-  const existingSession = loadDashboardSession();
-  if (!existingSession?.current) {
-    return;
-  }
-  saveDashboardSession({
-    ...existingSession,
-    current: {
-      ...existingSession.current,
-      payload,
-      html,
-      savedAt: new Date().toISOString(),
-    },
-    html,
-    sourceName: state.sourceName,
-    sourceUrl: state.sourceUrl,
-    savedAt: new Date().toISOString(),
-  });
-}
-
-function renderedViewAnalysisKeyFromPayload(payload) {
-  const ids = (payload?.elements || []).map((element) => `${element.cognilensId}:${element.tagName}:${element.text}`).join("|");
-  return `${payload?.previewUrl || ""}::${payload?.viewport?.width || 0}x${payload?.viewport?.height || 0}::${ids}`;
-}
-
-function setRenderedViewStale(isStale) {
-  state.renderedViewStale = Boolean(isStale);
-  const button = document.getElementById("analyzeCurrentViewBtn");
-  if (button) {
-    button.classList.toggle("is-stale", state.renderedViewStale);
-    button.title = state.renderedViewStale
-      ? "Preview changed. Capture current view snapshot again to refresh the report."
-      : "Capture a snapshot of the visible preview and send it to the analyzer";
-  }
-  if (state.currentResult) {
-    renderDashboardSummary(state.currentResult);
-  }
-  if (state.renderedViewStale && state.currentPayload?.analysis_mode === "rendered_current_view") {
-    setWebsiteStatus("Preview changed. Capture current view snapshot again to refresh issues and highlights.", true);
-  }
-}
-
-/** Flags UI when iframe DOM diverges from the last snapshot-backed report; does not call the analyzer. */
-function markRenderedViewStaleFromPreviewInteraction() {
-  if (state.currentPayload?.analysis_mode === "rendered_current_view") {
-    window.setTimeout(() => {
-      const doc = getPreviewDocument();
-      if (!doc) {
-        return;
-      }
-      const nextPayload = extractRenderedCurrentViewPayload(doc);
-      const nextKey = renderedViewAnalysisKeyFromPayload(nextPayload);
-      if (state.renderedViewBaselineKey && nextKey !== state.renderedViewBaselineKey) {
-        setRenderedViewStale(true);
-      }
-    }, 250);
-  }
-}
-
-/**
- * User-triggered only: serializes visible iframe elements and POSTs to /analyze-rendered-view.
- * Creates a new authoritative backend run — the frontend does not score issues locally.
- */
-async function captureCurrentViewSnapshotAndAnalyze() {
-  const doc = getPreviewDocument();
-  if (!doc?.body) {
-    setWebsiteStatus("The preview iframe is not ready. Wait for it to load, then capture again.", true);
-    return;
-  }
-
-  let payload;
-  try {
-    payload = extractRenderedCurrentViewPayload(doc);
-  } catch (error) {
-    setWebsiteStatus(`Could not read the preview for snapshot: ${error.message || String(error)}`, true);
-    return;
-  }
-
-  if (!payload.elements.length) {
-    setWebsiteStatus("No visible elements found to include in the snapshot.", true);
-    return;
-  }
-
-  const button = document.getElementById("analyzeCurrentViewBtn");
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Sending snapshot…";
-  }
-  state.renderedDomAnalysisPending = true;
-  setWebsiteStatus(`Sending ${payload.elements.length} visible element${payload.elements.length === 1 ? "" : "s"} to the analyzer…`);
-
-  try {
-    const baselineRunId = state.currentPayload?.run?.run_id || null;
-    const renderedPayload = await analyzeRenderedView({
-      ...payload,
-      baseline_run_id: baselineRunId,
-      persist_result: true,
-    });
-    const html = renderedPayload.html_content || "";
-    state.currentPayload = {
-      ...(state.currentPayload || {}),
-      ...renderedPayload,
-      preview_url: state.currentPayload?.preview_url || renderedPayload.preview_url,
-      resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
-    };
-    state.currentHtml = html;
-    state.renderedViewBaselineKey = renderedViewAnalysisKeyFromPayload(payload);
-    setRenderedViewStale(false);
-    saveTransientDashboardState(state.currentPayload, html);
-    renderResult(buildAnalysisView(state.currentPayload), html);
-    renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
-    setWorkspaceMode("website");
-    injectHighlightStyles(doc);
-    clearWebsiteHighlights(doc);
-    setWebsiteStatus("Report updated from this snapshot. Change the preview and capture again to analyze another state.");
-  } catch (error) {
-    setWebsiteStatus(`Snapshot analysis failed: ${error.message || String(error)}`, true);
-  } finally {
-    state.renderedDomAnalysisPending = false;
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Capture current view snapshot";
-    }
-  }
-}
-
 function applySidebarState() {
   const isCompactViewport = window.matchMedia("(max-width: 1100px)").matches;
   const collapsed = !isCompactViewport && state.sidebarCollapsed;
@@ -3448,7 +3181,6 @@ function initHistoryContextPanel() {
 
 function bindEvents() {
   const printButton = document.getElementById("printReportBtn");
-  const analyzeCurrentViewButton = document.getElementById("analyzeCurrentViewBtn");
   const sidebarToggleButton = document.getElementById("sidebarToggleButton");
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const explanationContent = document.getElementById("explanationContent");
@@ -3461,10 +3193,6 @@ function bindEvents() {
     printButton.addEventListener("click", () => {
       printDashboardReport({ restoreMode: state.workspaceMode });
     });
-  }
-
-  if (analyzeCurrentViewButton) {
-    analyzeCurrentViewButton.addEventListener("click", captureCurrentViewSnapshotAndAnalyze);
   }
 
   if (sidebarToggleButton) {
@@ -3558,9 +3286,6 @@ function bindEvents() {
       }
       injectHighlightStyles(doc);
       bindPreviewElementClick(doc);
-      doc.addEventListener("click", markRenderedViewStaleFromPreviewInteraction, true);
-      doc.addEventListener("change", markRenderedViewStaleFromPreviewInteraction, true);
-      doc.addEventListener("input", markRenderedViewStaleFromPreviewInteraction, true);
       updatePreviewIssueHeader();
       if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
         const selected = selectedIssueRecord();
