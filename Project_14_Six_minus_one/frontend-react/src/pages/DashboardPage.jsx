@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
@@ -23,9 +24,7 @@ export function DashboardPage() {
     })();
     return () => {
       cancelled = true;
-      import("../legacy/dashboardApp.js").then((module) => {
-        module.notifyDashboardUnmount();
-      });
+      bumpDashboardLifecycle();
     };
   }, []);
 
@@ -159,9 +158,6 @@ export function DashboardPage() {
                       hidden
                     >
                       <span aria-hidden="true">Back to History</span>
-                    </button>
-                    <button id="analyzeCurrentViewBtn" className="context-print-button" type="button" title="Capture a snapshot of the visible preview and run a new backend analysis">
-                      <span aria-hidden="true">Capture current view snapshot</span>
                     </button>
                     <button id="printReportBtn" className="context-print-button" type="button" title="Print current report">
                       <span aria-hidden="true">Print</span>

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-from html import escape
 import mimetypes
 import re
 from pathlib import Path, PurePosixPath
@@ -20,7 +19,6 @@ from ...services.analysis_service import analyze_html, build_analysis_response
 from ..core import (
     MAX_ZIP_UPLOAD_BYTES,
     AnalyzePayload,
-    AnalyzeRenderedViewPayload,
     AnalyzeUrlPayload,
     PROJECT_ROOT,
 )
@@ -152,92 +150,6 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
-
-
-RENDERED_VIEW_ALLOWED_TAGS = {
-    "h1", "h2", "h3", "h4", "h5", "h6",
-    "p", "main", "article", "section", "nav", "header", "footer",
-    "a", "button", "label", "li", "ul", "ol",
-    "table", "caption", "th", "td", "abbr", "acronym",
-    "img", "input", "textarea", "select", "form", "fieldset", "legend",
-    "video", "audio", "dialog",
-}
-
-
-def _rendered_element_to_html(element: Any) -> str:
-    tag = str(element.tagName or "").lower()
-    role = str(element.role or "").lower()
-    if tag not in RENDERED_VIEW_ALLOWED_TAGS and role not in {"button", "link", "alert", "status"}:
-        return ""
-
-    safe_tag = tag if tag in RENDERED_VIEW_ALLOWED_TAGS else "span"
-    text = escape((element.text or "")[:500])
-    attrs = [
-        f'data-cognilens-id="{escape(element.cognilensId, quote=True)}"',
-        'data-cognilens-rendered="true"',
-    ]
-    if role:
-        attrs.append(f'role="{escape(role, quote=True)}"')
-    if element.ariaLabel:
-        attrs.append(f'aria-label="{escape(element.ariaLabel[:180], quote=True)}"')
-    if element.href and safe_tag == "a":
-        attrs.append(f'href="{escape(element.href[:300], quote=True)}"')
-    if element.alt and safe_tag == "img":
-        attrs.append(f'alt="{escape(element.alt[:180], quote=True)}"')
-    if element.rect:
-        rect_text = ",".join(
-            f"{key}:{round(float(element.rect.get(key, 0)), 2)}"
-            for key in ("x", "y", "width", "height")
-        )
-        attrs.append(f'data-rendered-rect="{escape(rect_text, quote=True)}"')
-
-    attr_text = " ".join(attrs)
-    if safe_tag in {"img", "input"}:
-        return f"<{safe_tag} {attr_text}>"
-    return f"<{safe_tag} {attr_text}>{text}</{safe_tag}>"
-
-
-def _rendered_view_to_html(payload: AnalyzeRenderedViewPayload) -> str:
-    elements_html = "\n".join(
-        html
-        for html in (_rendered_element_to_html(element) for element in payload.elements)
-        if html
-    )
-    title = escape(payload.source_name or payload.previewUrl or "rendered-current-view", quote=True)
-    return (
-        "<!doctype html><html><head>"
-        f"<title>{title}</title>"
-        '<meta name="cognilens-analysis-mode" content="rendered_current_view">'
-        "</head><body>"
-        '<main data-cognilens-rendered-view="current">'
-        f"{elements_html}"
-        "</main></body></html>"
-    )
-
-
-@router.post("/analyze-rendered-view")
-def analyze_rendered_view(payload: AnalyzeRenderedViewPayload) -> dict[str, Any]:
-    html = _rendered_view_to_html(payload)
-    analysis = analyze_html(html)
-    source_name = payload.source_name or payload.previewUrl or "rendered-current-view.html"
-    if not payload.persist_result:
-        response_payload = analysis.to_dict()
-        response_payload["html_content"] = html
-        response_payload["baseline_run_id"] = None
-    else:
-        response_payload = build_analysis_response(
-            analysis,
-            html_content=html,
-            source_name=source_name,
-            baseline_run_id=payload.baseline_run_id,
-        )
-    response_payload["analysis_mode"] = "rendered_current_view"
-    response_payload["rendered_view"] = {
-        "preview_url": payload.previewUrl,
-        "viewport": payload.viewport or {},
-        "element_count": len(payload.elements),
-    }
-    return response_payload
 
 
 @router.post("/analyze-url")

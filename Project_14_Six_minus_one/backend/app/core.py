@@ -31,29 +31,6 @@ class AnalyzeUrlPayload(BaseModel):
     baseline_run_id: str | None = None
 
 
-class RenderedViewElementPayload(BaseModel):
-    cognilensId: str
-    tagName: str
-    role: str | None = None
-    text: str | None = None
-    alt: str | None = None
-    ariaLabel: str | None = None
-    href: str | None = None
-    selector: str | None = None
-    rect: dict[str, float] | None = None
-    visible: bool = True
-
-
-class AnalyzeRenderedViewPayload(BaseModel):
-    mode: str = "rendered_current_view"
-    previewUrl: str | None = None
-    source_name: str | None = None
-    baseline_run_id: str | None = None
-    persist_result: bool = True
-    viewport: dict[str, float] | None = None
-    elements: list[RenderedViewElementPayload]
-
-
 class EyeTempHtmlUploadPayload(BaseModel):
     html: str
 

@@ -28,7 +28,6 @@ function historyBypass(req) {
 
 const proxy = {
   "/analyze": { target: BACKEND, changeOrigin: true },
-  "/analyze-rendered-view": { target: BACKEND, changeOrigin: true },
   "/analyze-url": { target: BACKEND, changeOrigin: true },
   "/analyze-zip": { target: BACKEND, changeOrigin: true },
   "/assistant": { target: BACKEND, changeOrigin: true },

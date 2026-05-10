@@ -5014,23 +5014,6 @@ body.accessibility-reading-mask-active .accessibility-menu {
   background: rgba(248, 250, 252, 0.9);
 }
 
-.context-print-button.is-stale,
-.summary-rendered-mode.is-stale {
-  border-color: rgba(217, 119, 6, 0.55);
-  background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
-}
-
-.summary-rendered-mode {
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  border-radius: 10px;
-  background: rgba(37, 99, 235, 0.06);
-  color: #1e3a8a;
-  line-height: 1.4;
-}
-
 .issue-element-hidden-count {
   margin: 0;
   font-size: 11px;
