@@ -953,7 +953,8 @@ body.analysis-loading-active {
 .tool-sidebar-inner {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto auto auto;
+  /* Profile + gauge stay intrinsic height; Top Issue Cards fills remaining sidebar height so inner 1fr tracks resolve. */
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow-y: auto;
   transition: opacity 0.2s ease, visibility 0.2s ease;
 }
@@ -1153,6 +1154,86 @@ body.analysis-loading-active {
 .patient-profile-summary strong {
   color: #0f172a;
   font-size: 13px;
+}
+
+.detection-gauge-panel {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  min-height: 0;
+}
+
+.detection-gauge {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.detection-gauge-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Light baseline arc (full semicircle) */
+.detection-gauge-base {
+  stroke: #e5e7eb;
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+/* Green segment grows from the right (path starts at right endpoint) */
+.detection-gauge-green {
+  stroke: #22c55e;
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Red segment grows from the left */
+.detection-gauge-fill {
+  stroke: #dc2626;
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detection-gauge-green,
+  .detection-gauge-fill {
+    transition: none;
+  }
+}
+
+.detection-gauge-value {
+  /* Mild overlap with arc; avoid huge negative margin — it can confuse grid row sizing next to overflow:hidden sidebar. */
+  margin-top: -28px;
+  text-align: center;
+}
+
+.detection-gauge-value strong {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.detection-gauge-caption {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #475569;
+  text-align: center;
+}
+
+.detection-gauge-panel.is-placeholder .detection-gauge-fill {
+  stroke: #dc2626;
+}
+
+.detection-gauge-panel.is-placeholder .detection-gauge-green {
+  stroke: #22c55e;
 }
 
 .sidebar-section:first-of-type .dimension-bars {
@@ -1588,6 +1669,10 @@ body.is-history-report-view .back-to-history-button {
 .rich-text {
   display: grid;
   gap: 12px;
+}
+
+.sidebar-explanation-section .rich-text {
+  justify-items: stretch;
 }
 
 .dimension-bars {
@@ -2926,9 +3011,14 @@ button.dimension-row.is-linked-active {
 }
 
 .sidebar-explanation-section {
+  --sidebar-issue-cards-column-max: 360px;
+
   min-height: 0;
+  min-width: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
 }
 
 .sidebar-explanation-section .pane-header h2 {
@@ -2939,12 +3029,36 @@ button.dimension-row.is-linked-active {
 
 .sidebar-explanation-content {
   min-height: 0;
-  display: block;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
 }
 
 .sidebar-explanation-content .pane-scroll {
-  overflow: visible;
+  flex: 1 1 auto;
+  align-self: center;
+  width: min(100%, var(--sidebar-issue-cards-column-max));
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   padding-right: 0;
+}
+
+/* Capped column width: full-width rows looked sparse on wide sidebars; keep cards comfortably narrow. */
+.sidebar-explanation-content .pane-scroll.rich-text {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.sidebar-explanation-content .overall-summary {
+  align-self: center;
+  width: min(100%, var(--sidebar-issue-cards-column-max));
+  max-width: 100%;
 }
 
 .pane-header-actions-right {
@@ -4579,6 +4693,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
 .issue-highlight-button {
@@ -6923,7 +7039,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
   .assistant-input-area,
   .assistant-clear-button,
   .context-print-button,
-  .placeholder-tag {
+  .placeholder-tag,
+  .detection-gauge-panel {
     display: none !important;
   }
 

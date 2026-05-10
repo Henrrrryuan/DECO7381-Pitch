@@ -336,13 +336,57 @@ function renderDashboardSummary(result) {
     return;
   }
 
-  const totalIssues = result.dimensions.reduce((count, dimension) => {
+  const totalIssues = (result.dimensions || []).reduce((count, dimension) => {
     return count + (dimension.issues || []).length;
   }, 0);
 
   summaryNode.innerHTML = `
     <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
   `;
+}
+
+/**
+ * All possible issue-detection slots (one per cognitive detector rule).
+ * Keep in sync with `backend/analyzers/analysis_selectors/__init__.py` SELECTORS length.
+ */
+const TOTAL_POSSIBLE_DETECTION_POINTS = 10;
+
+function detectorsWithIssuesCount(result) {
+  if (!result?.dimensions?.length) {
+    return 0;
+  }
+  return result.dimensions.filter((dimension) => (dimension.issues || []).length > 0).length;
+}
+
+function renderDetectionGauge(result) {
+  const panel = document.getElementById("detectionGaugePanel");
+  const fractionEl = document.getElementById("detectionGaugeFraction");
+  const targetEl = document.getElementById("detectionGaugeTarget");
+  const fillEl = document.getElementById("detectionGaugeFill");
+  const greenEl = document.getElementById("detectionGaugeGreen");
+  if (!panel || !fractionEl || !targetEl || !fillEl || !greenEl) {
+    return;
+  }
+
+  if (!result?.dimensions) {
+    fractionEl.textContent = "— / —";
+    targetEl.textContent = "—";
+    fillEl.setAttribute("stroke-dashoffset", "100");
+    greenEl.setAttribute("stroke-dashoffset", "100");
+    panel.classList.add("is-placeholder");
+    return;
+  }
+
+  panel.classList.remove("is-placeholder");
+  const total = TOTAL_POSSIBLE_DETECTION_POINTS;
+  const detected = detectorsWithIssuesCount(result);
+  const ratio = total > 0 ? Math.min(1, Math.max(0, detected / total)) : 0;
+
+  fractionEl.textContent = `${detected}/${total}`;
+  targetEl.textContent = String(total);
+  /* Red path L→R: reveal length ratio×100 from the left. Green path R→L: reveal (1−ratio)×100 from the right. */
+  fillEl.setAttribute("stroke-dashoffset", String(100 - ratio * 100));
+  greenEl.setAttribute("stroke-dashoffset", String(ratio * 100));
 }
 
 function renderReportId() {
@@ -1538,27 +1582,26 @@ function renderExplanation(result) {
     return;
   }
 
-  const orderedDimensions = [...result.dimensions]
+  const orderedDimensions = [...(result.dimensions || [])]
     .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
 
   let globalIssueIndex = 0;
-  const blocks = orderedDimensions.map((dimension) => {
+  const blocks = orderedDimensions.flatMap((dimension) => {
     const filteredIssues = prioritizedIssuesForProfile(dimension);
     const issueCount = filteredIssues.length;
+    if (issueCount === 0) {
+      return [];
+    }
+
     const displayName = displayDimensionName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
-    const summary = issueCount === 0
-      ? "No triggered issue for this detector."
-      : cognitiveDimension;
-
-    const issues = issueCount
-      ? `<div class="issue-highlight-list">${filteredIssues.map((issue, issueIndex) => (
-          issueSummaryCardMarkup(issue, dimension.dimension, globalIssueIndex + issueIndex + 1)
-        )).join("")}</div>`
-      : "";
+    const issues = `<div class="issue-highlight-list">${filteredIssues.map((issue, issueIndex) => (
+      issueSummaryCardMarkup(issue, dimension.dimension, globalIssueIndex + issueIndex + 1)
+    )).join("")}</div>`;
     globalIssueIndex += issueCount;
 
-    return `
+    return [
+      `
       <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
         <summary class="explanation-accordion-summary">
           <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
@@ -1568,15 +1611,18 @@ function renderExplanation(result) {
           </span>
         </summary>
         <div class="explanation-accordion-content">
-          <p class="category-helper">${escapeHtml(summary)}</p>
+          <p class="category-helper">${escapeHtml(cognitiveDimension)}</p>
           ${issues}
         </div>
       </details>
-    `;
+    `,
+    ];
   });
 
   explanationContent.className = "pane-scroll rich-text";
-  explanationContent.innerHTML = blocks.join("");
+  explanationContent.innerHTML = blocks.length
+    ? blocks.join("")
+    : `<p class="category-helper">No top issues detected for this scan.</p>`;
   setActiveDimensionBar("");
 }
 
@@ -2996,6 +3042,7 @@ function renderResult(result, html, options = {}) {
   renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
+  renderDetectionGauge(result);
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
   renderExplanation(result);
@@ -3457,6 +3504,7 @@ async function loadDashboardSessionWithHistoryFallback() {
 }
 
 function renderMissingAnalysisState() {
+  renderDetectionGauge(null);
   const comparisonList = document.getElementById("comparisonList");
   if (!comparisonList) {
     return;
