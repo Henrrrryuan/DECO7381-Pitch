@@ -4,7 +4,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
-from .shared import REGULAR_BASE_PENALTY, make_issue, severity_from_count, tag_location
+from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location
 from .visual_parser import VisualHTMLParser
 
 VISIBLE_ELEMENT_THRESHOLD = 20
@@ -30,13 +30,13 @@ def detect_visual_overload(soup: BeautifulSoup, parser: VisualHTMLParser):
     return make_issue(
         rule_id="VO-1",
         title="Visual Overload",
-        severity=severity_from_count(overload_amount, major=8, critical=20),
         base_penalty=REGULAR_BASE_PENALTY,
         description="Excessive visual stimuli divide attention and reduce focus.",
         suggestion="Reduce competing visible elements in the first viewport and group related content into clearer regions.",
         evidence={
             "visible_element_count": len(first_viewport_elements),
             "interactive_element_count": interactive_count,
+            "overload_margin": overload_amount,
             "parser_focus_elements_count": parser.focus_elements_count,
             "threshold": {
                 "maxVisibleElements": VISIBLE_ELEMENT_THRESHOLD,

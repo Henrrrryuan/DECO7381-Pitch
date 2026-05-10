@@ -1,12 +1,6 @@
 // Cognitive Accessibility Assistant - MVP data model
 // For draw.io / dbdiagram import
 
-Enum severity_level {
-  minor
-  major
-  critical
-}
-
 Table analysis_runs {
   id varchar [pk, note: 'UUID or string id']
   created_at timestamp [not null]
@@ -30,7 +24,7 @@ Table issues {
   dimension_result_id varchar [not null]
   rule_id varchar [not null]
   title varchar [not null]
-  severity severity_level [not null]
+  severity varchar [not null, note: 'Legacy column kept for compatibility; app writes empty string. Use issue_json for interpretation metadata.']
   base_penalty int [not null]
   penalty int [not null]
   description text [not null]

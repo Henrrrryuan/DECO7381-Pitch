@@ -4,7 +4,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from .shared import REGULAR_BASE_PENALTY, make_issue, severity_from_count, tag_location, visible_text
+from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
 from .text_utils import split_sentences, tokenize_alpha_words
 
 DENSE_TEXT_WORD_THRESHOLD = 120
@@ -29,7 +29,6 @@ def detect_dense_text(soup: BeautifulSoup):
     return make_issue(
         rule_id="DT-1",
         title="Dense Text Detection",
-        severity=severity_from_count(len(dense_blocks)),
         base_penalty=REGULAR_BASE_PENALTY,
         description="Dense uninterrupted text increases reading effort and working memory load.",
         suggestion="Break dense paragraphs into shorter blocks with clear visual or text breaks.",

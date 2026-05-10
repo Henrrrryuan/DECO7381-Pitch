@@ -5,7 +5,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
-from ...schemas import Issue, Severity
+from ...schemas import Issue
 from ...scoring import calculate_penalty
 
 REGULAR_BASE_PENALTY = 3
@@ -92,14 +92,12 @@ JS_INTERRUPTION_PATTERN = re.compile(
 STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
 CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
 ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
-SEVERITY_RANK: dict[Severity, int] = {"minor": 1, "major": 2, "critical": 3}
 
 
 def build_issue(
     *,
     rule_id: str,
     title: str,
-    severity: Severity,
     base_penalty: int,
     description: str,
     suggestion: str,
@@ -109,9 +107,8 @@ def build_issue(
     return Issue(
         rule_id=rule_id,
         title=title,
-        severity=severity,
         base_penalty=base_penalty,
-        penalty=calculate_penalty(base_penalty, severity),
+        penalty=calculate_penalty(base_penalty),
         description=description,
         suggestion=suggestion,
         evidence=evidence,
@@ -174,12 +171,6 @@ def detect_id1_autoplay_media(
         return []
 
     has_unmuted_video = autoplay_videos > autoplay_muted_videos
-    if autoplay_audios >= 1 or total_autoplay_media >= 3 or has_unmuted_video or js_autoplay_count >= 2:
-        severity: Severity = "critical"
-    elif total_autoplay_media >= 2 or autoplay_iframes >= 1 or js_autoplay_count >= 1:
-        severity = "major"
-    else:
-        severity = "minor"
 
     locations = autoplay_locations[:5]
     for sample in js_hints["autoplay_samples"][:2]:
@@ -195,7 +186,6 @@ def detect_id1_autoplay_media(
         build_issue(
             rule_id="ID-1",
             title="Autoplay media",
-            severity=severity,
             base_penalty=SERIOUS_BASE_PENALTY,
             description="Autoplay media can capture attention before users understand the page structure. Unexpected sound or motion may interrupt comprehension, create sensory distraction, and reduce users' sense of control.",
             suggestion="Disable autoplay by default. Only consider using it when it is directly related to the main task, and prefer a user-initiated trigger instead.",
@@ -206,6 +196,7 @@ def detect_id1_autoplay_media(
                 "autoplay_iframe_count": autoplay_iframes,
                 "total_autoplay_media": total_autoplay_media,
                 "js_autoplay_signal_count": js_autoplay_count,
+                "has_unmuted_autoplay_video": has_unmuted_video,
             },
             locations=locations,
         )
@@ -243,12 +234,6 @@ def detect_id2_too_many_animated_elements(
     max_animated_count = max((item["animated_count"] for item in violating_regions), default=0)
     total_animated_elements = sum(item["animated_count"] for item in violating_regions)
     effective_motion_count = max_animated_count + js_motion_count
-    if effective_motion_count >= 6 or len(violating_regions) >= 3 or js_motion_count >= 3:
-        severity: Severity = "critical"
-    elif effective_motion_count >= 4 or len(violating_regions) >= 2 or js_motion_count >= 2:
-        severity = "major"
-    else:
-        severity = "minor"
 
     locations: list[dict[str, Any]] = []
     region_summaries: list[dict[str, Any]] = []
@@ -281,7 +266,6 @@ def detect_id2_too_many_animated_elements(
         build_issue(
             rule_id="ID-2",
             title="Too many animated elements",
-            severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
             description="Multiple moving elements compete for sustained attention and can repeatedly pull focus away from the main task. This increases task-switching effort and may be especially disruptive for users with attention regulation difficulties.",
             suggestion="Reduce non-essential motion, limit auto-rotating or continuously moving components, and try to keep each main region to 1 or 2 animated elements.",
@@ -328,18 +312,6 @@ def detect_id3_dynamic_interruptions(
         for item in interruption_candidates
     )
 
-    if severe_interrupt_present or max_interrupt_score >= 7 or len(interruption_candidates) >= 3 or js_interrupt_count >= 3:
-        severity: Severity = "critical"
-    elif (
-        max_interrupt_score >= 5
-        or len(interruption_candidates) >= 2
-        or js_interrupt_count >= 2
-        or any(item["overlay_like"] and item["initial_load_visible"] for item in interruption_candidates)
-    ):
-        severity = "major"
-    else:
-        severity = "minor"
-
     locations: list[dict[str, Any]] = []
     candidate_summaries: list[dict[str, Any]] = []
     for item in sorted(interruption_candidates, key=lambda candidate: candidate["interrupt_score"], reverse=True):
@@ -385,7 +357,6 @@ def detect_id3_dynamic_interruptions(
         build_issue(
             rule_id="ID-3",
             title="Dynamic interruptions shift attention away from the main task",
-            severity=severity,
             base_penalty=REGULAR_BASE_PENALTY,
             description="Popups, sticky prompts, overlays, or similar dynamic layers can interrupt the current reading or task path before users are ready. This sudden attention shift can be especially disruptive when it covers the main content, captures focus, or requires dismissal before the page can be used normally.",
             suggestion="Reserve popups, sticky prompts, and overlay CTAs for essential moments only. Avoid showing them on initial load when they cover the main task path, and keep optional prompts collapsed until the user asks for them.",
@@ -394,6 +365,7 @@ def detect_id3_dynamic_interruptions(
                 "interrupting_element_count": len(interruption_candidates),
                 "max_interrupt_score": max_interrupt_score,
                 "js_interruption_signal_count": js_interrupt_count,
+                "severe_interrupt_covers_primary": severe_interrupt_present,
                 "elements": candidate_summaries[:5],
             },
             locations=locations[:5],

@@ -4,7 +4,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
-from .shared import REGULAR_BASE_PENALTY, make_issue, severity_from_count, tag_location
+from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location
 
 NAV_LINK_THRESHOLD = 12
 NAV_NESTING_THRESHOLD = 2
@@ -26,7 +26,6 @@ def detect_navigation_complexity(soup: BeautifulSoup):
     return make_issue(
         rule_id="NC-1",
         title="Navigation Complexity",
-        severity=severity_from_count(len(nav_violations), major=1, critical=3),
         base_penalty=REGULAR_BASE_PENALTY,
         description="Complex navigation increases orientation difficulty and decision load.",
         suggestion="Reduce top-level navigation choices and flatten deeply nested menus.",

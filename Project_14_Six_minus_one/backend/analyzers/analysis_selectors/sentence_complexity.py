@@ -5,7 +5,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from .shared import REGULAR_BASE_PENALTY, make_issue, severity_from_count, tag_location, visible_text
+from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
 from .text_utils import split_sentences, tokenize_alpha_words
 
 SENTENCE_WORD_THRESHOLD = 25
@@ -46,7 +46,6 @@ def detect_sentence_complexity(soup: BeautifulSoup):
     return make_issue(
         rule_id="SC-1",
         title="Sentence Complexity",
-        severity=severity_from_count(len(complex_blocks)),
         base_penalty=REGULAR_BASE_PENALTY,
         description="Long and heavily connected sentences increase comprehension burden.",
         suggestion="Split long sentences and reduce nested clauses so each sentence carries one main idea.",

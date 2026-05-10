@@ -86,28 +86,29 @@ export function DashboardPage() {
           </button>
           <aside id="toolSidebar" className="tool-sidebar">
             <div className="tool-sidebar-inner">
-              <section className="patient-profile-panel" aria-label="Patient profile">
+              <section className="patient-profile-panel" aria-label="Priority Lens">
                 <div className="patient-profile-heading">
-                  <span>Patient profile</span>
-                  <strong>Priority lens</strong>
+                  <h2 className="patient-profile-title">Priority Lens</h2>
                 </div>
-                <div className="patient-profile-tabs" role="group" aria-label="Choose patient profile">
+                <div className="patient-profile-tabs" role="group" aria-label="Choose priority lens">
                   <button type="button" className="patient-profile-tab is-active" data-patient-profile="Alison" aria-pressed="true">
-                    Alison
+                    Mild Cognitive Impairment
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Amy" aria-pressed="false">
-                    Amy
+                    Autism-related Needs
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Tal" aria-pressed="false">
-                    Tal
+                    Dyslexia &amp; Motor Support
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Yuki" aria-pressed="false">
-                    Yuki
+                    ADHD-friendly Focus
                   </button>
                 </div>
                 <p id="patientProfileSummary" className="patient-profile-summary">
-                  <strong>Mild cognitive impairment</strong>
-                  <span>Needs familiar controls, clear navigation, low clutter, and forgiving task flow.</span>
+                  <strong>Mild Cognitive Impairment</strong>
+                  <span>
+                    Needs familiar controls, clear navigation, low clutter, and forgiving task flow.
+                  </span>
                 </p>
               </section>
 

@@ -253,19 +253,18 @@ Response:
 
 ## 10. Scoring Rules (Current)
 
-Severity multipliers:
+Issue penalties are **fixed per detector** when an issue is raised (no severity tiers or multipliers).
 
-- `minor = 1`
-- `major = 2`
-- `critical = 3`
-
-Weighted average:
+Dimension score:
 
 ```text
-Information Overload (or Visual Complexity alias) * 0.30
-Readability * 0.25
-Interaction & Distraction * 0.25
-Consistency * 0.20
+dimension_score = max(0, round(100 * (1 - sum(issue.penalty) / dimension_penalty_cap)))
+```
+
+Weighted average (equal weights across the ten cognitive dimensions by default):
+
+```text
+weighted_average = sum(dimension.score * weight)  # weights from backend DIMENSION_WEIGHTS
 ```
 
 Overall score:
@@ -273,3 +272,5 @@ Overall score:
 ```text
 overall = 0.4 * min_dimension_score + 0.6 * weighted_average
 ```
+
+Issue payloads expose **`interpretation`** (`confidence`, `heuristicBasis`) instead of graded severity labels.

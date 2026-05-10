@@ -29,7 +29,7 @@ def detect_auto_moving_content(
     )
     if not issues:
         return None
-    issue = max(issues, key=lambda item: item.penalty)
+    issue = max(issues, key=lambda item: (item.penalty, item.rule_id))
     issue.rule_id = "AMC-1"
     issue.title = "Auto-Moving Content"
     issue.description = "Automatic movement interrupts concentration and distracts users."

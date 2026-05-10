@@ -125,7 +125,7 @@ def save_analysis_run(
                         dimension_result_id,
                         issue.rule_id,
                         issue.title,
-                        issue.severity,
+                        "",
                         issue.base_penalty,
                         issue.penalty,
                         issue.description,
@@ -320,7 +320,6 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 SELECT
                     rule_id,
                     title,
-                    severity,
                     base_penalty,
                     penalty,
                     description,
@@ -338,7 +337,6 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 Issue(
                     rule_id=issue_row["rule_id"],
                     title=issue_row["title"],
-                    severity=issue_row["severity"],
                     base_penalty=issue_row["base_penalty"],
                     penalty=issue_row["penalty"],
                     description=issue_row["description"],
