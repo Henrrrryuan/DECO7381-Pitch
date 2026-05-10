@@ -80,7 +80,7 @@ export function DocsPage() {
             </Link>
             <button
               id="backToAnalysisButton"
-              className="nav-cta"
+              className="nav-cta nav-cta-return"
               type="button"
               hidden={!showAnalysisNav}
               data-analysis-nav
@@ -90,6 +90,9 @@ export function DocsPage() {
                 }
               }}
             >
+              <span className="nav-cta-icon" aria-hidden="true">
+                ←
+              </span>
               Back to analysis
             </button>
           </nav>

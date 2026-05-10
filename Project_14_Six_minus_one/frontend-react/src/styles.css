@@ -136,25 +136,66 @@ input {
   box-shadow: 0 8px 18px rgba(2, 6, 23, 0.35);
 }
 
+/* Route tabs (Guide / Eye / History): soft “selected” — keep below .nav-cta contrast */
 .app-nav-links a.active-link,
 .app-nav-links a.active,
 .app-nav-links button.active-link,
 .app-nav-links button.active {
-  color: #fff;
-  border-color: rgba(125, 211, 252, 0.72);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.66), rgba(56, 189, 248, 0.62));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 10px 22px rgba(30, 64, 175, 0.38);
+  color: #f1f5f9;
+  border-color: rgba(148, 197, 253, 0.4);
+  background: rgba(148, 197, 253, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.app-nav-links a.active-link:hover,
+.app-nav-links a.active:hover,
+.app-nav-links button.active-link:hover,
+.app-nav-links button.active:hover {
+  transform: translateY(-1px);
+  color: #fff;
+  border-color: rgba(147, 197, 253, 0.55);
+  background: rgba(148, 197, 253, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 8px 18px rgba(2, 6, 23, 0.35);
+}
+
+/* Single high-emphasis actions (e.g. New Analysis, Back to analysis) */
 .nav-cta {
-  border-color: rgba(125, 211, 252, 0.72) !important;
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 56%, #0ea5e9 100%) !important;
+  position: relative;
+  border-color: rgba(125, 211, 252, 0.88) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 48%, #0369a1 100%) !important;
   color: #fff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 10px 20px rgba(30, 64, 175, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 26px rgba(15, 76, 180, 0.5);
+}
+
+.app-nav-links .nav-cta:not(:first-child) {
+  margin-left: 20px;
+}
+
+.app-nav-links .nav-cta:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 22px;
+  background: rgba(148, 163, 184, 0.42);
+  border-radius: 1px;
+}
+
+.nav-cta.nav-cta-return {
+  gap: 8px;
+}
+
+.nav-cta-return .nav-cta-icon {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.95;
 }
 
 button.nav-cta {

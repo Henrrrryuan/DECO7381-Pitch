@@ -656,7 +656,10 @@ export function HistoryPage() {
             <Link className="active-link" to={spaHistoryHref}>
               History
             </Link>
-            <button id="backToAnalysisButtonHistory" className="nav-cta" type="button" hidden>
+            <button id="backToAnalysisButtonHistory" className="nav-cta nav-cta-return" type="button" hidden>
+              <span className="nav-cta-icon" aria-hidden="true">
+                ←
+              </span>
               Back to analysis
             </button>
           </nav>
