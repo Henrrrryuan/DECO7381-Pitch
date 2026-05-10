@@ -25,6 +25,9 @@ function dashboardActionHandlersFactory() {
       if (ctx.state.currentResult) {
         ctx.renderExplanation(ctx.state.currentResult);
         ctx.renderDashboardSummary(ctx.state.currentResult);
+        if (typeof ctx.renderDetectionGauge === "function") {
+          ctx.renderDetectionGauge(ctx.state.currentResult);
+        }
         if (ctx.state.workspaceMode === "explanation") {
           ctx.renderComparison(ctx.state.currentResult, ctx.state.previousResult, ctx.state.previousSourceName);
         }

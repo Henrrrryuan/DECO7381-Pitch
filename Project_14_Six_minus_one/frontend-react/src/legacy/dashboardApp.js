@@ -4218,6 +4218,7 @@ function bindEvents() {
     renderPatientSwitcher,
     renderExplanation,
     renderDashboardSummary,
+    renderDetectionGauge,
     renderComparison,
     highlightIssue,
     highlightDimension,
