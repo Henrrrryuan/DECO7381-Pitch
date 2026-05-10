@@ -99,20 +99,34 @@
 
     <div id="eyeIntroModal" class="eye-intro-modal" role="dialog" aria-modal="true" aria-labelledby="eyeIntroTitle" hidden>
       <div class="eye-intro-card">
-        <h2 id="eyeIntroTitle">Behavioral Evidence Collection</h2>
-        <p>
-          CogniLens can optionally collect lightweight gaze data to provide supporting behavioral context
-          for an analysis.
-        </p>
-        <p>
-          This feature visualizes approximate attention distribution.
-          It does not directly measure usability or cognitive load.
-        </p>
-        <ol class="eye-intro-steps">
-          <li>Load a page</li>
-          <li>Start tracking</li>
-          <li>Save behavioral evidence</li>
-        </ol>
+        <button id="eyeIntroCloseBtn" class="eye-intro-close" type="button" aria-label="Close introduction"></button>
+        <div class="eye-intro-characters" aria-hidden="true">
+          <span class="eye-intro-character eye-intro-character-purple">
+            <span></span>
+          </span>
+          <span class="eye-intro-character eye-intro-character-orange">
+            <span></span>
+          </span>
+          <span class="eye-intro-character eye-intro-character-yellow">
+            <span></span>
+          </span>
+        </div>
+        <div class="eye-intro-content">
+          <h2 id="eyeIntroTitle">Behavioral Evidence Collection</h2>
+          <p>
+            CogniLens can optionally collect lightweight gaze data to provide supporting behavioral context
+            for an analysis.
+          </p>
+          <p>
+            This feature visualizes approximate attention distribution.
+            It does not directly measure usability or cognitive load.
+          </p>
+          <ol class="eye-intro-steps">
+            <li>Load a page</li>
+            <li>Start tracking</li>
+            <li>Save behavioral evidence</li>
+          </ol>
+        </div>
         <div class="eye-intro-actions">
           <button id="eyeIntroContinueBtn" type="button">I Understand</button>
         </div>
