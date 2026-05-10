@@ -270,67 +270,67 @@ const DIMENSION_CONFIG = DETECTOR_NAMES.map((name) => ({
 const RULE_FRAMEWORK_MAP = {
   "DT-1": {
     coga: "COGA: Break content into manageable chunks",
-    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "LC-1": {
     coga: "COGA: Prefer familiar vocabulary",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.4.3 Cognitive responses",
+    iso: "ISO 9241-11: Efficiency",
     wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
   "SC-1": {
     coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
+    iso: "ISO 9241-11: Efficiency",
     wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
   "LCC-1": {
     coga: "COGA: Support scanning with chunking",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
+    iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "PHS-1": {
     coga: "COGA: Keep structure predictable",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
+    iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "NC-1": {
     coga: "COGA: Predictable navigation cues",
-    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
+    iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
   "WIP-1": {
     coga: "COGA: Make the next action obvious",
-    iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
+    iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
   "VO-1": {
     coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
+    iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
   "AMC-1": {
     coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
+    iso: "ISO 9241-11: Satisfaction",
     wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
   "EI-1": {
     coga: "COGA: Avoid interruptive overlays",
-    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
+    iso: "ISO 9241-11: Satisfaction",
     wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
 };
 
 const COGA_OBJECTIVE_BY_RULE = {
-  "DT-1": "Use Clear and Understandable Content",
-  "LC-1": "Use Clear and Understandable Content",
-  "SC-1": "Use Clear and Understandable Content",
-  "LCC-1": "Use Clear and Understandable Content",
-  "PHS-1": "Help Users Understand What Things are and How to Use Them",
-  "NC-1": "Help Users Find What They Need",
-  "WIP-1": "Help Users Find What They Need",
-  "VO-1": "Help Users Focus",
-  "AMC-1": "Help Users Focus",
-  "EI-1": "Help Users Focus",
+  "PHS-1": "Objective 2: Help users find what they need",
+  "WIP-1": "Objective 2: Help users find what they need",
+  "NC-1": "Objective 2: Help users find what they need",
+  "DT-1": "Objective 3: Use clear and understandable content",
+  "LC-1": "Objective 3: Use clear and understandable content",
+  "SC-1": "Objective 3: Use clear and understandable content",
+  "LCC-1": "Objective 3: Use clear and understandable content",
+  "EI-1": "Objective 5: Help users focus",
+  "AMC-1": "Objective 5: Help users focus",
+  "VO-1": "Objective 5: Help users focus",
 };
 
 const HIGHLIGHT_CONFIG = {
@@ -844,9 +844,9 @@ function parseStandardsItems(text, prefixRegex) {
 
 function parseIsoClausesFromRule(ruleId) {
   const isoText = RULE_FRAMEWORK_MAP[ruleId]?.iso || "";
-  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*/i)
+  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*:?\s*/i)
     .map((item) => item.replace(/^2018\s+/i, "").trim());
-  return clauses.length ? clauses : ["6.3.3 Human effort expended"];
+  return clauses.length ? clauses : ["Effectiveness"];
 }
 
 function parseWcagCriteriaFromRule(ruleId) {
@@ -862,9 +862,9 @@ function frameworkStandardsForRule(ruleId) {
     return {
       coga: "COGA: reduce cognitive load in task flow",
       wcagCriteria: ["SC 2.4.6 Headings and Labels"],
-      isoClauses: ["6.3.3 Human effort expended"],
+      isoClauses: ["Effectiveness"],
       wcagDisplay: "WCAG  SC 2.4.6 Headings and Labels",
-      isoDisplay: "ISO 9241-11:2018 6.3.3 Human effort expended",
+      isoDisplay: "ISO 9241-11: Effectiveness",
     };
   }
   const wcagCriteria = parseWcagCriteriaFromRule(ruleId);
@@ -874,7 +874,7 @@ function frameworkStandardsForRule(ruleId) {
     wcagCriteria,
     isoClauses,
     wcagDisplay: `WCAG 2.2 ${wcagCriteria.join("; ")}`,
-    isoDisplay: `ISO 9241-11:2018 ${isoClauses.join("; ")}`,
+    isoDisplay: `ISO 9241-11: ${isoClauses.join("; ")}`,
   };
 }
 
