@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import mimetypes
+import os
 import re
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -138,6 +139,14 @@ def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
 
 @router.post("/analyze")
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
+    if os.environ.get("DT1_FORENSIC") == "1":
+        html = payload.html or ""
+        print("[DT runtime payload]")
+        print(f"source={payload.source_name}")
+        print(f"html_length={len(html)}")
+        print(f"contains_case_li={str('case-li' in html).lower()}")
+        print(f"contains_case_th={str('case-th' in html).lower()}")
+        print(f"contains_case_td={str('case-td' in html).lower()}")
     analysis = analyze_html(payload.html)
     if not payload.persist_result:
         response_payload = analysis.to_dict()

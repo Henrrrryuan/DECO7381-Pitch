@@ -120,7 +120,7 @@ THRESHOLD_BY_RULE_ID: dict[str, dict[str, int | float]] = {
     "WIP-1": {
         "maxCompetingCtasNearby": 3,
         "earlyPageTagWindow": 120,
-        "triggerSummary": "Competing CTA-like elements in early DOM order exceed threshold.",
+        "triggerSummary": "Early-page competing primary-action controls (CTA-shaped tags) exceed threshold; markup-only heuristic.",
     },
     "VO-1": {"maxVisibleElements": 20, "maxInteractiveElements": 8},
     "AMC-1": {"maxAutoplayElements": 0, "maxInfiniteAnimations": 0},
@@ -155,13 +155,13 @@ INTERPRETATION_BY_RULE_ID: dict[str, dict[str, Any]] = {
     },
     "WIP-1": {
         "confidence": "low",
-        "heuristicBasis": "HTML-order CTA density heuristic.",
+        "heuristicBasis": "Early-page CTA density: competing primary-action controls (buttons, links, role/button inputs) in first ~120 DOM positions.",
         "triggerConditions": (
-            "High concentration of CTA-like interactive elements detected in early-page DOM structure."
+            "Competing CTA-like controls in early DOM order exceed threshold; not an assessment of information salience or visual hierarchy."
         ),
         "limitations": [
-            "Does not perform rendered visual saliency analysis.",
-            "Uses DOM-order approximation rather than geometric viewport analysis.",
+            "Does not measure rendered visual prominence, contrast, or viewport geometry.",
+            "DOM-order proxy only; does not infer true user attention or layout.",
         ],
     },
     "VO-1": {

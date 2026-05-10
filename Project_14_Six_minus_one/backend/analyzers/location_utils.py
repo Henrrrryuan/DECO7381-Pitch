@@ -1,11 +1,74 @@
 from __future__ import annotations
 
+import logging
+import math
+import os
 import re
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 from bs4 import BeautifulSoup, Tag
 
 from ..schemas import AnalysisResult
+
+def _coerce_sc_count_metric(raw: Any) -> int | None:
+    """Normalize SC-1 numeric metrics for JSON (ints only; bool and non-finite floats rejected)."""
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, float) and math.isfinite(raw) and raw == int(raw):
+        return int(raw)
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        if not stripped:
+            return None
+        try:
+            return int(stripped, 10)
+        except ValueError:
+            return None
+    return None
+
+
+def _finalize_sc_location_sentence_fields(payload: dict[str, Any], original: dict[str, Any]) -> None:
+    """Re-apply SC sentence-level fields after base payload merge so sanitize never drops them."""
+    preview = original.get("sentence_preview")
+    if isinstance(preview, str):
+        payload["sentence_preview"] = preview
+    for key in ("sentence_word_count", "comma_count", "conjunction_count"):
+        payload.pop(key, None)
+        coerced = _coerce_sc_count_metric(original.get(key))
+        if coerced is not None:
+            payload[key] = coerced
+
+
+def _debug_warn_sc_metrics_if_incomplete(
+    payload: dict[str, Any],
+    original: dict[str, Any],
+    rule_id: str | None,
+) -> None:
+    """Temporary SC-1 persistence check (remove once metrics regressions are cleared)."""
+    if rule_id != "SC-1":
+        return
+    missing = [
+        key
+        for key in ("sentence_word_count", "comma_count", "conjunction_count")
+        if key not in payload
+    ]
+    if not missing:
+        return
+    _logger.warning(
+        "SC-1 sanitize: incomplete sentence metrics missing=%s tag=%s selector=%s "
+        "original_present=%s",
+        missing,
+        payload.get("tag"),
+        payload.get("selector"),
+        [k for k in ("sentence_word_count", "comma_count", "conjunction_count") if k in original],
+    )
+
 
 BAD_TARGET_TAGS = {
     "html", "head", "body", "script", "style", "meta", "link",
@@ -59,6 +122,36 @@ def _max_sanitized_locations(rule_id: str) -> int | None:
     if rule_id == "WIP-1":
         return None
     return 8
+
+
+def _lc1_forensic() -> bool:
+    return os.environ.get("LC1_FORENSIC") == "1"
+
+
+def _lc1_incoming_case_id(location: dict[str, Any]) -> str | None:
+    attrs = location.get("attrs")
+    if isinstance(attrs, dict):
+        raw = attrs.get("data-case-id")
+        return str(raw) if raw else None
+    return None
+
+
+def _lc1_sanitize_log(
+    location: dict[str, Any],
+    resolved: dict[str, Any] | None,
+    *,
+    survived: bool,
+) -> None:
+    if not _lc1_forensic():
+        return
+    print(
+        "[LC-1 sanitize]",
+        location.get("selector"),
+        _lc1_incoming_case_id(location),
+        (resolved or {}).get("selector"),
+        (resolved or {}).get("tag"),
+        "survived" if survived else "lost",
+    )
 
 
 def _phs_structural_pass_through(location: dict[str, Any]) -> bool:
@@ -207,22 +300,164 @@ def sanitize_issue_locations(
                     if dedupe_key in used_keys:
                         continue
                     used_keys.add(dedupe_key)
-                    sanitized.append(build_location_payload(locked_tag, location, selector))
+                    sanitized.append(build_location_payload(locked_tag, location, selector, rule_id))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "VO-1":
+            locked_vo = _vo_try_lock_unique_selector(soup, location, dimension_name, rule_id)
+            if locked_vo is not None:
+                selector_vo = stable_selector(locked_vo)
+                if selector_vo:
+                    dedupe_key_vo = _location_dedupe_key(rule_id, selector_vo, location)
+                    if dedupe_key_vo in used_keys:
+                        continue
+                    used_keys.add(dedupe_key_vo)
+                    sanitized.append(build_location_payload(locked_vo, location, selector_vo, rule_id))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "WIP-1" and not (
+            location.get("highlightable") is False or location.get("documentStructuralFinding") is True
+        ):
+            locked_wip = _wip_try_lock_unique_selector_cta(soup, location, dimension_name, rule_id)
+            if locked_wip is not None:
+                selector_wip = stable_selector(locked_wip)
+                if selector_wip:
+                    dedupe_key_wip = _location_dedupe_key(rule_id, selector_wip, location)
+                    if dedupe_key_wip in used_keys:
+                        continue
+                    used_keys.add(dedupe_key_wip)
+                    sanitized.append(build_location_payload(locked_wip, location, selector_wip, rule_id))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "NC-1" and not (
+            location.get("highlightable") is False or location.get("documentStructuralFinding") is True
+        ):
+            locked_nc = _nc_try_lock_unique_selector_nav(soup, location, dimension_name, rule_id)
+            if locked_nc is not None:
+                selector_nc = stable_selector(locked_nc)
+                if selector_nc:
+                    dedupe_key_nc = _location_dedupe_key(rule_id, selector_nc, location)
+                    if dedupe_key_nc in used_keys:
+                        continue
+                    used_keys.add(dedupe_key_nc)
+                    sanitized.append(build_location_payload(locked_nc, location, selector_nc, rule_id))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "SC-1" and not (
+            location.get("highlightable") is False or location.get("documentStructuralFinding") is True
+        ):
+            locked_sc = _sc_try_lock_unique_selector_text_block(soup, location, dimension_name, rule_id)
+            if locked_sc is not None:
+                selector_sc = stable_selector(locked_sc)
+                if selector_sc:
+                    dedupe_key_sc = _location_dedupe_key(rule_id, selector_sc, location)
+                    if dedupe_key_sc in used_keys:
+                        continue
+                    used_keys.add(dedupe_key_sc)
+                    sanitized.append(build_location_payload(locked_sc, location, selector_sc, rule_id))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "LC-1" and not (
+            location.get("highlightable") is False or location.get("documentStructuralFinding") is True
+        ):
+            locked_lc = _lc_try_lock_unique_selector_text_block(soup, location, dimension_name, rule_id)
+            if locked_lc is not None:
+                selector_lc = stable_selector(locked_lc)
+                if selector_lc:
+                    dedupe_key_lc = _location_dedupe_key(rule_id, selector_lc, location)
+                    if dedupe_key_lc in used_keys:
+                        if _lc1_forensic():
+                            print(
+                                "[LC-1 missing]",
+                                _lc1_incoming_case_id(location),
+                                "sanitize",
+                                "dedupe_collapsed",
+                            )
+                        continue
+                    used_keys.add(dedupe_key_lc)
+                    payload_lc = build_location_payload(locked_lc, location, selector_lc, rule_id)
+                    sanitized.append(payload_lc)
+                    _lc1_sanitize_log(location, payload_lc, survived=True)
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        if rule_id == "DT-1" and not (
+            location.get("highlightable") is False or location.get("documentStructuralFinding") is True
+        ):
+            locked_dt = _dt_try_lock_unique_selector_text_block(soup, location, dimension_name, rule_id)
+            if locked_dt is not None:
+                selector_dt = stable_selector(locked_dt)
+                if selector_dt:
+                    dedupe_key_dt = _location_dedupe_key(rule_id, selector_dt, location)
+                    if dedupe_key_dt in used_keys:
+                        continue
+                    used_keys.add(dedupe_key_dt)
+                    sanitized.append(build_location_payload(locked_dt, location, selector_dt, rule_id))
                     if cap is not None and len(sanitized) >= cap:
                         break
                     continue
 
         candidate = best_candidate_for_location(soup, location, dimension_name, rule_id, used_keys)
         if candidate is None:
+            if rule_id == "LC-1" and _lc1_forensic():
+                print(
+                    "[LC-1 missing]",
+                    _lc1_incoming_case_id(location),
+                    "sanitize",
+                    "no_resolvable_candidate",
+                )
+            continue
+        if rule_id == "NC-1" and (candidate.name or "").lower() != "nav":
+            continue
+        if rule_id == "SC-1" and (candidate.name or "").lower() not in SC_TEXT_BLOCK_TAG_NAMES:
+            continue
+        if rule_id == "LC-1" and (candidate.name or "").lower() not in LC_TEXT_BLOCK_TAG_NAMES:
+            if _lc1_forensic():
+                print(
+                    "[LC-1 missing]",
+                    _lc1_incoming_case_id(location),
+                    "sanitize",
+                    "candidate_tag_not_in_lc_scope",
+                )
+            continue
+        if rule_id == "DT-1" and (candidate.name or "").lower() not in DT_TEXT_BLOCK_TAG_NAMES:
             continue
         selector = stable_selector(candidate)
         if not selector:
+            if rule_id == "LC-1" and _lc1_forensic():
+                print(
+                    "[LC-1 missing]",
+                    _lc1_incoming_case_id(location),
+                    "sanitize",
+                    "empty_stable_selector",
+                )
             continue
         dedupe_key = _location_dedupe_key(rule_id, selector, location)
         if dedupe_key in used_keys:
+            if rule_id == "LC-1" and _lc1_forensic():
+                print(
+                    "[LC-1 missing]",
+                    _lc1_incoming_case_id(location),
+                    "sanitize",
+                    "dedupe_collapsed",
+                )
             continue
         used_keys.add(dedupe_key)
-        sanitized.append(build_location_payload(candidate, location, selector))
+        payload_gen = build_location_payload(candidate, location, selector, rule_id)
+        sanitized.append(payload_gen)
+        if rule_id == "LC-1":
+            _lc1_sanitize_log(location, payload_gen, survived=True)
         if cap is not None and len(sanitized) >= cap:
             break
     return sanitized
@@ -239,10 +474,22 @@ def best_candidate_for_location(
         candidate
         for candidate in find_candidate_tags(soup, location, dimension_name, rule_id)
         if is_candidate_highlightable(candidate, dimension_name, rule_id)
+        and (
+            rule_id != "SC-1"
+            or (candidate.name or "").lower() in SC_TEXT_BLOCK_TAG_NAMES
+        )
+        and (
+            rule_id != "LC-1"
+            or (candidate.name or "").lower() in LC_TEXT_BLOCK_TAG_NAMES
+        )
+        and (
+            rule_id != "DT-1"
+            or (candidate.name or "").lower() in DT_TEXT_BLOCK_TAG_NAMES
+        )
     ]
     if not candidates:
         return None
-    return sorted(
+    chosen = sorted(
         candidates,
         key=lambda tag: (
             _candidate_used(tag, location, rule_id, used_keys),
@@ -250,6 +497,9 @@ def best_candidate_for_location(
             document_order_index(tag),
         ),
     )[0]
+    if rule_id == "DT-1" and (chosen.name or "").lower() not in DT_TEXT_BLOCK_TAG_NAMES:
+        return None
+    return chosen
 
 
 def find_candidate_tags(
@@ -266,6 +516,9 @@ def find_candidate_tags(
 
     if rule_id == "PHS-1":
         return _find_candidate_tags_phs(soup, location)
+
+    if rule_id == "VO-1":
+        return _find_candidate_tags_vo(soup, location)
 
     candidates: list[Tag] = []
     selector = str(location.get("selector") or "").strip()
@@ -292,9 +545,6 @@ def find_candidate_tags(
         text = str(location.get(text_key) or "").strip()
         if text:
             candidates.extend(find_by_text(soup, tag_name, text, dimension_name, rule_id))
-
-    if not candidates and rule_id == "VO-1":
-        candidates.extend(first_screen_focal_points(soup))
 
     return dedupe_tags(candidates)
 
@@ -325,6 +575,292 @@ def _phs_try_lock_unique_selector_heading(
         return None
     tag = sel_tags[0]
     if (tag.name or "").lower() not in PHS_HEADING_TAG_NAMES:
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+VO_STRICT_TEXT_TAG_NAMES = [
+    "a",
+    "article",
+    "aside",
+    "audio",
+    "button",
+    "div",
+    "footer",
+    "form",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "header",
+    "iframe",
+    "img",
+    "input",
+    "li",
+    "main",
+    "nav",
+    "p",
+    "section",
+    "select",
+    "span",
+    "textarea",
+    "ul",
+    "ol",
+    "video",
+]
+
+
+def _vo_normalize_plain(tag: Tag) -> str:
+    return normalize_text(tag.get_text(" ", strip=True)).lower()
+
+
+def _vo_narrow_tags_by_exact_text(sel_tags: list[Tag], location: dict[str, Any]) -> list[Tag]:
+    target = normalize_text(_phs_first_nonempty_text_field(location)).lower()
+    if not target:
+        return []
+    out: list[Tag] = []
+    for tag in sel_tags:
+        if isinstance(tag, Tag) and _vo_normalize_plain(tag) == target:
+            out.append(tag)
+    return dedupe_tags(out)
+
+
+def _find_by_text_vo_strict(soup: BeautifulSoup, tag_name: str, text: str) -> list[Tag]:
+    """VO-1: exact normalized full-text match only (no substring drift)."""
+    normalized = normalize_text(text).lower()
+    if not normalized:
+        return []
+    tn = normalized_tag(tag_name)
+    if tn and tn not in BAD_TARGET_TAGS:
+        matches: list[Tag] = []
+        for tag in soup.find_all(tn):
+            if isinstance(tag, Tag) and _vo_normalize_plain(tag) == normalized:
+                matches.append(tag)
+        return matches
+    matches: list[Tag] = []
+    for tag in soup.find_all(VO_STRICT_TEXT_TAG_NAMES):
+        if isinstance(tag, Tag) and _vo_normalize_plain(tag) == normalized:
+            matches.append(tag)
+    return dedupe_tags(matches)
+
+
+def _find_candidate_tags_vo(soup: BeautifulSoup, location: dict[str, Any]) -> list[Tag]:
+    """VO-1: selector-first, strict text, no focal-point invention."""
+    selector = str(location.get("selector") or "").strip()
+    if selector:
+        sel_tags = select_safely(soup, selector)
+        if len(sel_tags) == 1:
+            return sel_tags
+        if len(sel_tags) > 1:
+            narrowed = _vo_narrow_tags_by_exact_text(sel_tags, location)
+            if narrowed:
+                return narrowed
+
+    candidates: list[Tag] = []
+    summary = str(location.get("summary") or location.get("region") or "").strip()
+    if is_usable_summary_selector(summary):
+        candidates.extend(select_safely(soup, summary))
+
+    attrs = location.get("attrs") if isinstance(location.get("attrs"), dict) else {}
+    tag_name = normalized_tag(location.get("tag"))
+    if attrs:
+        candidates.extend(find_by_attrs(soup, tag_name, attrs))
+
+    if location.get("block_index"):
+        block = block_by_index(soup, int(location.get("block_index") or 0))
+        if block is not None:
+            return [block]
+
+    for text_key in ("text", "preview", "sentence_preview", "label"):
+        text = str(location.get(text_key) or "").strip()
+        if text:
+            candidates.extend(_find_by_text_vo_strict(soup, tag_name, text))
+
+    return dedupe_tags(candidates)
+
+
+def _vo_try_lock_unique_selector(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """VO-1: when detector selector resolves to exactly one node, lock identity (skip ranking/fuzzy)."""
+    if rule_id != "VO-1":
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+def _wip_tag_matches_locked_cta_shape(tag: Tag) -> bool:
+    """Matches WIP-1 detector's direct CTA nodes (button, link, role button/link, submit/button inputs)."""
+    if not isinstance(tag, Tag):
+        return False
+    name = (tag.name or "").lower()
+    role = str(tag.get("role") or "").strip().lower()
+    if role in {"button", "link"}:
+        return True
+    if name == "button":
+        return True
+    if name == "a":
+        href = str(tag.get("href") or "").strip()
+        return bool(href) and not href.startswith("#")
+    if name == "input":
+        return str(tag.get("type") or "text").lower() in {"button", "submit"}
+    return False
+
+
+def _wip_try_lock_unique_selector_cta(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """WIP-1: unique selector resolves to one CTA-shaped node — lock identity (skip fuzzy sanitize path)."""
+    if rule_id != "WIP-1":
+        return None
+    if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if not _wip_tag_matches_locked_cta_shape(tag):
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+def _nc_try_lock_unique_selector_nav(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """NC-1: unique selector resolves to exactly one <nav> — lock identity (skip fuzzy sanitize path)."""
+    if rule_id != "NC-1":
+        return None
+    if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if (tag.name or "").lower() != "nav":
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+SC_TEXT_BLOCK_TAG_NAMES = frozenset({"p", "li", "td", "th"})
+
+# Must match dense_text_detection.TEXT_BLOCK_SELECTOR (p, li, td, th).
+DT_TEXT_BLOCK_TAG_NAMES = frozenset({"p", "li", "td", "th"})
+
+# Must match analysis_selectors.language_complexity.LANGUAGE_SELECTOR (p, li, td, th, label, button, a).
+LC_TEXT_BLOCK_TAG_NAMES = frozenset({"p", "li", "td", "th", "label", "button", "a"})
+
+
+def _sc_try_lock_unique_selector_text_block(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """SC-1: unique selector resolves to exactly one p/li/td/th — lock identity (skip fuzzy sanitize path)."""
+    if rule_id != "SC-1":
+        return None
+    if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if (tag.name or "").lower() not in SC_TEXT_BLOCK_TAG_NAMES:
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+def _lc_try_lock_unique_selector_text_block(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """LC-1: unique selector resolves to exactly one allowed text/interaction block — lock identity."""
+    if rule_id != "LC-1":
+        return None
+    if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if (tag.name or "").lower() not in LC_TEXT_BLOCK_TAG_NAMES:
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
+
+
+def _dt_incoming_selector_for_lock(location: dict[str, Any]) -> str:
+    """DT-1: prefer explicit selector; else stable #id from attrs (detector may omit selector)."""
+    raw = str(location.get("selector") or "").strip()
+    if raw:
+        return raw
+    attrs = location.get("attrs") if isinstance(location.get("attrs"), dict) else {}
+    if attrs.get("id"):
+        return f"#{css_identifier_escape(str(attrs['id']))}"
+    return ""
+
+
+def _dt_try_lock_unique_selector_text_block(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """DT-1: unique selector resolves to exactly one p/li/td/th — lock identity (no fuzzy path)."""
+    if rule_id != "DT-1":
+        return None
+    if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
+        return None
+    raw_selector = _dt_incoming_selector_for_lock(location)
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if (tag.name or "").lower() not in DT_TEXT_BLOCK_TAG_NAMES:
         return None
     if not is_candidate_highlightable(tag, dimension_name, rule_id):
         return None
@@ -409,26 +945,6 @@ def text_matches_without_short_false_positive(candidate: str, target: str) -> bo
     return overlap >= 0.7
 
 
-def first_screen_focal_points(soup: BeautifulSoup) -> list[Tag]:
-    root = soup.body if isinstance(soup.body, Tag) else soup
-    matches: list[Tag] = []
-    for tag in root.find_all(True):
-        if not isinstance(tag, Tag):
-            continue
-        if len(matches) >= 12:
-            break
-        if tag.name in BAD_TARGET_TAGS:
-            continue
-        if tag.name in {"a", "button", "input", "select", "textarea", "img", "h1", "h2", "h3", "video", "audio"}:
-            matches.append(tag)
-            continue
-        attrs_blob = " ".join([tag.get("id", ""), " ".join(tag.get("class", [])), tag.get("role", "")]).lower()
-        if any(keyword in attrs_blob for keyword in ("logo", "hero", "cta", "button", "card", "tile", "nav")):
-            better_child = first_highlightable_child(tag, "Visual Overload", "VO-1")
-            matches.append(better_child or tag)
-    return dedupe_tags(matches)
-
-
 def is_candidate_highlightable(tag: Tag, dimension_name: str, rule_id: str) -> bool:
     tag_name = normalized_tag(tag.name)
     if rule_id == "PHS-1" and tag_name in {"main", "article", "body"}:
@@ -471,14 +987,26 @@ def first_highlightable_child(tag: Tag, dimension_name: str, rule_id: str) -> Ta
     return None
 
 
-def build_location_payload(tag: Tag, original: dict[str, Any], selector: str) -> dict[str, Any]:
-    label = accessible_label(tag) or text_preview(tag) or human_tag_label(tag)
+def build_location_payload(tag: Tag, original: dict[str, Any], selector: str, rule_id: str | None = None) -> dict[str, Any]:
+    if rule_id == "NC-1" and (tag.name or "").lower() == "nav":
+        label = "Navigation Region"
+        n_links = original.get("nav_link_count")
+        n_depth = original.get("nesting_depth")
+        preview_parts: list[str] = []
+        if isinstance(n_links, int):
+            preview_parts.append(f"{n_links} navigation links")
+        if isinstance(n_depth, int):
+            preview_parts.append(f"nesting depth {n_depth}")
+        preview = (" · ".join(preview_parts) if preview_parts else "Navigation region")[:160]
+    else:
+        label = accessible_label(tag) or text_preview(tag) or human_tag_label(tag)
+        preview = text_preview(tag)[:160]
     payload: dict[str, Any] = {
         "tag": tag.name or "unknown",
         "selector": selector,
         "summary": get_tag_summary(tag),
         "label": label[:90],
-        "preview": text_preview(tag)[:160],
+        "preview": preview,
         "highlightable": True,
     }
     if tag.get("data-cognilens-id"):
@@ -502,9 +1030,29 @@ def build_location_payload(tag: Tag, original: dict[str, Any], selector: str) ->
         "currentHeadingLevel",
         "text",
         "attrs",
+        "contributorCategory",
+        "nav_link_count",
+        "nesting_depth",
+        "sentence_preview",
+        "sentence_word_count",
+        "comma_count",
+        "conjunction_count",
+        "word_count",
+        "sample_words",
     ):
         if key in original:
             payload[key] = original[key]
+    if rule_id == "NC-1":
+        payload["rule_id"] = "NC-1"
+        payload.pop("text", None)
+    elif rule_id == "SC-1":
+        payload["rule_id"] = "SC-1"
+        _finalize_sc_location_sentence_fields(payload, original)
+        _debug_warn_sc_metrics_if_incomplete(payload, original, rule_id)
+    elif rule_id == "LC-1":
+        payload["rule_id"] = "LC-1"
+    elif rule_id == "DT-1":
+        payload["rule_id"] = "DT-1"
     return payload
 
 
@@ -568,12 +1116,22 @@ def nth_of_type_path(tag: Tag) -> str:
         if current.get("id"):
             parts.append(f"{name}#{css_identifier_escape(str(current['id']))}")
             break
-        siblings = [
-            sibling
-            for sibling in current.parent.find_all(name, recursive=False)
-            if isinstance(sibling, Tag)
-        ] if isinstance(current.parent, Tag) else []
-        index = siblings.index(current) + 1 if current in siblings else 1
+        siblings = (
+            [
+                sibling
+                for sibling in current.parent.find_all(name, recursive=False)
+                if isinstance(sibling, Tag)
+            ]
+            if isinstance(current.parent, Tag)
+            else []
+        )
+        # BeautifulSoup Tag __eq__ compares structure; identical sibling nodes compare equal,
+        # so list.index(tag) would return the first match. DOM nth-of-type must use identity.
+        index = 1
+        for i, sib in enumerate(siblings):
+            if sib is current:
+                index = i + 1
+                break
         parts.append(f"{name}:nth-of-type({index})")
         if name in {"main", "header", "nav"} or len(parts) >= 5:
             break
@@ -592,6 +1150,10 @@ def select_in_root(tag: Tag, selector: str) -> list[Tag]:
 
 
 def allowed_tags_for_dimension(dimension_name: str, rule_id: str) -> set[str]:
+    if rule_id == "LC-1":
+        return set(LC_TEXT_BLOCK_TAG_NAMES)
+    if rule_id == "DT-1":
+        return set(DT_TEXT_BLOCK_TAG_NAMES)
     if dimension_name in {"Dense Text Detection", "Language Complexity", "Sentence Complexity"}:
         return READABILITY_TAGS | {"a", "button"}
     if dimension_name in {"Auto-Moving Content", "Excessive Interruptions"}:

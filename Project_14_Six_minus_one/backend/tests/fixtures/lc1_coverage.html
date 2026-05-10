@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>LC-1 coverage fixture</title></head>
+<body>
+  <!--
+    LANGUAGE_SELECTOR document order: p, li, td, th, label, button, a (pre-order).
+    Triggers (8): case-2, case-3, case-4, case-5, case-6a, case-6b, case-8, case-10
+    Non-triggers: case-1, case-7, case-9 (insufficient tokens and/or ratio)
+  -->
+  <p id="lc-case-1" data-case-id="case-1">Short plain text only.</p>
+  <p id="lc-case-2" data-case-id="case-2">The internationalization extraordinarily unnecessarily dramatically significantly sophisticatedly demonstrates complexity undoubtedly phenomenal supplementary material</p>
+  <button type="button" id="lc-case-3" data-case-id="case-3">Administrative synchronization configuration authorization initialization interoperability computationally transformational methodology accessibility.</button>
+  <a href="#" class="button-link" id="lc-case-4" data-case-id="case-4">Multidisciplinary organizational interoperability documentation transformational synchronization computationally methodology accessibility optimization.</a>
+  <table>
+    <tr>
+      <td id="lc-case-5" data-case-id="case-5">The internationalization extraordinarily unnecessarily dramatically significantly sophisticatedly demonstrates complexity undoubtedly phenomenal supplementary material</td>
+    </tr>
+  </table>
+  <p id="lc-case-6a" data-case-id="case-6a">The internationalization extraordinarily unnecessarily dramatically significantly sophisticatedly demonstrates complexity undoubtedly phenomenal supplementary material</p>
+  <p id="lc-case-6b" data-case-id="case-6b">The internationalization extraordinarily unnecessarily dramatically significantly sophisticatedly demonstrates complexity undoubtedly phenomenal supplementary material</p>
+  <p id="lc-case-7" data-case-id="case-7">Short plain text block.</p>
+  <p id="lc-case-8" data-case-id="case-8">The internationalization extraordinarily unnecessarily dramatically significantly sophisticatedly demonstrates complexity undoubtedly phenomenal supplementary material</p>
+  <p id="lc-case-9" data-case-id="case-9">Another short line.</p>
+  <label id="lc-case-10" data-case-id="case-10" for="lc-dummy-input">Multidisciplinary authentication synchronization configuration interoperability transformational accessibility requirements methodology optimization.</label>
+  <input type="text" id="lc-dummy-input" name="dummy" hidden />
+</body>
+</html>
+
+<!--
+EXPECTED LC-1 TRIGGERS (8 — within issue cap):
+1. CASE 2  → paragraph
+2. CASE 3  → button
+3. CASE 4  → anchor
+4. CASE 5  → td
+5. CASE 6A → paragraph
+6. CASE 6B → paragraph
+7. CASE 8  → paragraph
+8. CASE 10 → label
+
+EXPECTED NON-TRIGGERS: CASE 1, CASE 7, CASE 9
+
+EXPECTED IN ISSUE / SANITIZE / CHIPS: 8
+-->

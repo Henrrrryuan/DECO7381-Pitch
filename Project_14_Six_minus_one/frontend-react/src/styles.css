@@ -4983,6 +4983,30 @@ body.accessibility-reading-mask-active .accessibility-menu {
   line-height: 1.35;
 }
 
+/* SC-1: exactly two logical lines (head … / final tail); pre-line, not auto-wrapped semantics */
+.issue-element-chip__sc-preview {
+  white-space: pre-line;
+  font-size: 9.5px;
+  line-height: 1.32;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+
+.guidance-sc-fingerprint {
+  white-space: pre-line;
+  font-size: 10.5px;
+  line-height: 1.32;
+  margin: 0;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+
 .issue-element-chip:hover,
 .issue-element-chip:focus-visible {
   border-color: rgba(37, 99, 235, 0.65);

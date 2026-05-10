@@ -5,6 +5,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
+from ..location_utils import get_tag_summary, stable_selector
 from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
 from .text_utils import split_sentences, tokenize_alpha_words
 
@@ -31,15 +32,16 @@ def detect_sentence_complexity(soup: BeautifulSoup):
                 or comma_count > SENTENCE_COMMA_THRESHOLD
                 or conjunction_count > SENTENCE_CONJUNCTION_THRESHOLD
             ):
-                complex_blocks.append(
-                    tag_location(
-                        tag,
-                        sentence_preview=sentence[:180],
-                        sentence_word_count=word_count,
-                        comma_count=comma_count,
-                        conjunction_count=conjunction_count,
-                    )
+                loc = tag_location(
+                    tag,
+                    sentence_preview=sentence[:180],
+                    sentence_word_count=word_count,
+                    comma_count=comma_count,
+                    conjunction_count=conjunction_count,
                 )
+                loc["selector"] = stable_selector(tag)
+                loc["summary"] = get_tag_summary(tag)
+                complex_blocks.append(loc)
                 break
     if not complex_blocks:
         return None

@@ -98,15 +98,15 @@ def detect_weak_information_prominence(soup: BeautifulSoup):
 
     return make_issue(
         rule_id="WIP-1",
-        title="Weak Information Prominence",
+        title="Competing Primary Actions",
         base_penalty=REGULAR_BASE_PENALTY,
         description=(
-            "Many CTA-like controls appear early in the document (DOM order). "
-            "That structural pattern can make a single clear next step harder to infer from markup alone."
+            "Multiple CTA-like controls appear early in the page structure (DOM order heuristic). "
+            "That pattern suggests no single dominant next action can be inferred from markup alone—this check does not measure rendered visual salience or viewport layout."
         ),
         suggestion=(
-            "Reduce competing actions in the primary flow, group secondary actions, "
-            "and reinforce one primary action through layout and content hierarchy (outside this markup-only check)."
+            "Reduce competing primary actions in the main flow, group secondary actions, "
+            "and clarify one primary path (design and layout choices are outside this markup-only heuristic)."
         ),
         evidence={
             "competing_cta_count": len(competing_tags),

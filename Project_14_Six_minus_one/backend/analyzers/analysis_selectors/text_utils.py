@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-COMPLEX_WORD_RATIO_THRESHOLD = 0.18
+COMPLEX_WORD_RATIO_THRESHOLD = 0.15
 LONG_WORD_LENGTH_THRESHOLD = 9
 
 LATIN_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?")

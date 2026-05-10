@@ -44,6 +44,9 @@ def tag_location(tag: Tag, **extra: Any) -> dict[str, Any]:
         "href": tag.get("href", ""),
         "aria-label": tag.get("aria-label", ""),
     }
+    case_id = tag.get("data-case-id")
+    if case_id:
+        attrs["data-case-id"] = str(case_id)
     return {
         "tag": tag.name or "",
         "text": visible_text(tag)[:180],

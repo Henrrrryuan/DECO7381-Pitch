@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentence Complexity (SC-1) Test Fixture</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.65;
+      color: #1e293b;
+      padding: 24px;
+      background: #f8fafc;
+      margin: 0;
+    }
+    .fixture-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 28px 32px 40px;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+    }
+    h1 {
+      font-size: 1.35rem;
+      margin: 0 0 8px;
+      color: #0f172a;
+    }
+    .fixture-intro {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin: 0 0 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    section {
+      margin-bottom: 36px;
+    }
+    section h2 {
+      font-size: 1rem;
+      margin: 0 0 12px;
+      color: #334155;
+    }
+
+    /* QA / expectation rails — NOT scanned as p/li/td/th by SC-1 */
+    .expectation-note {
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: #64748b;
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      border-left: 4px solid #94a3b8;
+      padding: 10px 14px;
+      margin: 0 0 14px;
+      border-radius: 8px;
+    }
+    .expectation-note strong {
+      color: #475569;
+      font-weight: 600;
+    }
+
+    /* Primary prose under test (SC targets) */
+    .fixture-wrap section > p {
+      margin: 0 0 12px;
+      max-width: 68ch;
+    }
+  </style>
+</head>
+<body>
+<div class="fixture-wrap">
+  <h1>Sentence Complexity (SC-1) fixture</h1>
+  <p class="fixture-intro">
+    Human-readable expectations live in <code>&lt;div class="expectation-note"&gt;</code> so they are not mixed with real
+    <code>p</code>, <code>li</code>, <code>td</code>, or <code>th</code> targets the detector scans.
+  </p>
+
+  <section>
+    <h2>CASE 1 — Long sentence primary trigger</h2>
+    <div class="expectation-note">
+      Expected: SC SHOULD trigger primarily on <strong>long sentence</strong> (word count &gt; 25); comma and conjunction counts may stay at or below thresholds.
+    </div>
+    <p>
+      This sentence is written only to exceed the twenty five word heuristic threshold without relying on excessive punctuation or many coordinating conjunctions because we need pure length here for validation purposes.
+    </p>
+  </section>
+
+  <section>
+    <h2>CASE 2 — Heavy comma density</h2>
+    <div class="expectation-note">
+      Expected: SC SHOULD reflect <strong>comma density</strong> (&gt; 3 commas in one sentence) even when the sentence is relatively short.
+    </div>
+    <p>
+      Alpha, beta, gamma, delta, epsilon remain enough tokens here to stand alone as one clause block.
+    </p>
+  </section>
+
+  <section>
+    <h2>CASE 3 — Conjunction chains</h2>
+    <div class="expectation-note">
+      Expected: SC SHOULD reflect <strong>conjunction density</strong> (&gt; 3 conjunction hits in one sentence) using the same heuristic conjunction list as production.
+    </div>
+    <p>
+      Ideas pile when we say this and that and more and less and thus we finish quickly.
+    </p>
+  </section>
+
+  <section>
+    <h2>CASE 4 — Mixed signal block</h2>
+    <div class="expectation-note">
+      Expected: SC MAY trigger on multiple grounds at once in a single sentence; the dashboard shows every matched heuristic on one consolidated row per text block.
+    </div>
+    <p>
+      Long winding prose adds commas, commas, commas, commas, and piles on clauses when we stack ideas and reasons and outcomes and doubts because readers must track everything at once without relief.
+    </p>
+  </section>
+
+  <section>
+    <h2>CASE 6 — List item complexity</h2>
+    <div class="expectation-note">
+      Expected: SC SHOULD trigger on <strong>list item</strong> (<code>li</code>) content using the same sentence heuristics as paragraphs; this item exceeds the <strong>word-count</strong> threshold without relying on comma or conjunction density alone.
+    </div>
+    <ul>
+      <li>
+        This list item deliberately stretches past twenty five alpha tokens so the sentence complexity heuristic can anchor on list markup instead of paragraph markup while keeping commas few and conjunctions minimal.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>CASE 7 — Table cell complexity</h2>
+    <div class="expectation-note">
+      Expected: SC SHOULD trigger on <strong>table cell</strong> (<code>td</code>) prose using the same thresholds; this cell exceeds the <strong>word-count</strong> threshold.
+    </div>
+    <table>
+      <tbody>
+        <tr>
+          <td>
+            This table cell deliberately stretches past twenty five alpha tokens so the sentence complexity heuristic can anchor on table markup instead of paragraph markup while keeping commas few and conjunctions minimal.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>CASE 8 — Fixture spacing</h2>
+    <div class="expectation-note">
+      Keeps following sections aligned with numbered CASE slots in the test plan.
+    </div>
+    <p>Short line.</p>
+  </section>
+
+  <section>
+    <h2>CASE 9 — Fixture spacing</h2>
+    <div class="expectation-note">
+      Same as CASE 8; no SC-1 trigger required here.
+    </div>
+    <p>Another short line.</p>
+  </section>
+
+  <section>
+    <h2>CASE 9b — Fixture spacing (index 9)</h2>
+    <div class="expectation-note">
+      Ensures the duplicate-paragraph block below is exactly <code>section:nth-of-type(10)</code>.
+    </div>
+    <p>Index pad.</p>
+  </section>
+
+  <section>
+    <h2>CASE 10 — Duplicate identical paragraphs (DOM identity)</h2>
+    <div class="expectation-note">
+      Expected: <strong>two</strong> separate SC evidence rows and two distinct highlights — <code>section:nth-of-type(10) &gt; p:nth-of-type(1)</code> and <code>section:nth-of-type(10) &gt; p:nth-of-type(2)</code> — same sentence text, different DOM nodes.
+    </div>
+    <p>
+      This sentence is written only to exceed the twenty five word heuristic threshold without relying on excessive punctuation or many coordinating conjunctions because we need pure length here for validation purposes.
+    </p>
+    <p>
+      This sentence is written only to exceed the twenty five word heuristic threshold without relying on excessive punctuation or many coordinating conjunctions because we need pure length here for validation purposes.
+    </p>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DT-1 Grounding Fixture</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 24px; line-height: 1.5; }
+    .note { padding: 12px 14px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; margin: 14px 0; }
+    .note strong { display: inline-block; margin-right: 6px; }
+    .expected-trigger { border-color: #c62828; background: #ffebee; }
+    .expected-non-trigger { border-color: #2e7d32; background: #e8f5e9; }
+    code { background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
+  </style>
+</head>
+<body>
+  <h1>DT-1 fixture: deterministic word-count triggers</h1>
+
+  <div class="note expected-non-trigger">
+    <!-- EXPECTED DT-1 NON-TRIGGER -->
+    <strong>Non-trigger:</strong>
+    This fixture intentionally includes short controls and short text blocks.
+    Expected: <code>word_count ≈ 2</code>, <code>sentence_count ≈ 1</code>, should <strong>NOT</strong> trigger DT-1.
+  </div>
+
+  <!-- EXPECTED DT-1 NON-TRIGGER -->
+  <p id="dt-short-p" data-case-id="dt-non-short">Too short.</p>
+
+  <div class="note expected-trigger">
+    <!-- EXPECTED DT-1 TRIGGER -->
+    <strong>Trigger group:</strong>
+    The following <code>p/li/td/th</code> blocks use repeated alpha-only tokens so
+    <code>tokenize_alpha_words</code> counts deterministically.
+    Expected: <code>word_count = 130</code>, <code>sentence_count = 1</code>, should trigger via <strong>word_count &gt; 120</strong>.
+  </div>
+
+  <section id="nested-structure">
+    <h2>Duplicate paragraphs + nested controls (p)</h2>
+
+    <!-- EXPECTED DT-1 TRIGGER -->
+    <p id="dup-a" data-case-id="dup-a">
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+    </p>
+
+    <div class="note expected-trigger">
+      <!-- EXPECTED DT-1 TRIGGER -->
+      Duplicate paragraph (same text, different id). Expected: <code>130 words</code>, <code>1 fragment</code>, should trigger.
+    </div>
+
+    <!-- EXPECTED DT-1 TRIGGER -->
+    <p id="dup-b" data-case-id="dup-b">
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+    </p>
+
+    <div class="note expected-trigger">
+      <!-- EXPECTED DT-1 TRIGGER -->
+      Nested link/button inside a long paragraph (DT must still highlight the paragraph itself; not descend into children).
+      Expected: <code>word_count &gt; 120</code>, <code>sentence_count = 1</code>, should trigger.
+    </div>
+
+    <!-- EXPECTED DT-1 TRIGGER -->
+    <p id="case-p" data-case-id="case-p">
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      <a href="#" aria-label="non-trigger link control">link</a>
+      <button type="button" aria-label="non-trigger button control">button</button>
+    </p>
+  </section>
+
+  <article id="article-wrapper">
+    <h2>Wrapper should not become target (article &gt; p)</h2>
+    <div class="note expected-trigger">
+      <!-- EXPECTED DT-1 TRIGGER -->
+      Wrapped in <code>&lt;article&gt;</code> but DT must still resolve to <code>&lt;p&gt;</code>.
+      Expected: <code>130 words</code>, <code>1 fragment</code>, should trigger.
+    </div>
+    <!-- EXPECTED DT-1 TRIGGER -->
+    <p id="case-article" data-case-id="case-article">
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+    </p>
+  </article>
+
+  <section id="list-wrapper">
+    <h2>List item (li)</h2>
+    <div class="note expected-trigger">
+      <!-- EXPECTED DT-1 TRIGGER -->
+      Expected: <code>130 words</code>, <code>1 fragment</code>, should trigger.
+    </div>
+    <ul>
+      <!-- EXPECTED DT-1 TRIGGER -->
+      <li id="case-li" data-case-id="case-li">
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+      </li>
+      <!-- EXPECTED DT-1 NON-TRIGGER -->
+      <li data-case-id="dt-non-li">Brief.</li>
+    </ul>
+  </section>
+
+  <section id="table-wrapper">
+    <h2>Table header/cell (th/td)</h2>
+    <div class="note expected-trigger">
+      <!-- EXPECTED DT-1 TRIGGER -->
+      Expected: <code>130 words</code>, <code>1 fragment</code>, should trigger for both <code>th</code> and <code>td</code>.
+    </div>
+    <table>
+      <tr>
+        <!-- EXPECTED DT-1 TRIGGER -->
+        <th id="case-th" data-case-id="case-th">
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        </th>
+        <!-- EXPECTED DT-1 TRIGGER -->
+        <td id="case-td" data-case-id="case-td">
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+          alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha
+        </td>
+      </tr>
+    </table>
+  </section>
+
+  <section id="non-trigger-controls">
+    <h2>Non-trigger controls (must not become DT targets)</h2>
+    <div class="note expected-non-trigger">
+      <!-- EXPECTED DT-1 NON-TRIGGER -->
+      These are controls and wrappers for grounding robustness; DT must never resolve/highlight these as final targets.
+    </div>
+    <button id="dt-short-button" type="button">Continue</button>
+    <a id="dt-short-link" href="#">Read more</a>
+    <div id="dt-wrapper-div">Wrapper div should never be a DT target.</div>
+    <section id="dt-wrapper-section">Wrapper section should never be a DT target.</section>
+  </section>
+</body>
+</html>
+

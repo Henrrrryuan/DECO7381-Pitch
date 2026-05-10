@@ -4,6 +4,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
+from ..location_utils import get_tag_summary, stable_selector
 from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location
 
 NAV_LINK_THRESHOLD = 12
@@ -20,7 +21,10 @@ def detect_navigation_complexity(soup: BeautifulSoup):
         links = nav.find_all("a", href=True)
         nesting_depth = max_list_depth(nav)
         if len(links) > NAV_LINK_THRESHOLD or nesting_depth > NAV_NESTING_THRESHOLD:
-            nav_violations.append(tag_location(nav, nav_link_count=len(links), nesting_depth=nesting_depth))
+            loc = tag_location(nav, nav_link_count=len(links), nesting_depth=nesting_depth)
+            loc["selector"] = stable_selector(nav)
+            loc["summary"] = get_tag_summary(nav)
+            nav_violations.append(loc)
     if not nav_violations:
         return None
     return make_issue(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from bs4 import BeautifulSoup
@@ -18,12 +19,29 @@ def detect_dense_text_selector(context: dict[str, Any]):
 
 def detect_dense_text(soup: BeautifulSoup):
     dense_blocks: list[dict[str, Any]] = []
+    forensic = os.environ.get("DT1_FORENSIC") == "1"
     for tag in soup.select(TEXT_BLOCK_SELECTOR):
         text = visible_text(tag)
         words = tokenize_alpha_words(text)
         sentences = split_sentences(text)
-        if len(words) > DENSE_TEXT_WORD_THRESHOLD or len(sentences) > DENSE_TEXT_SENTENCE_THRESHOLD:
+        triggered = len(words) > DENSE_TEXT_WORD_THRESHOLD or len(sentences) > DENSE_TEXT_SENTENCE_THRESHOLD
+        if forensic:
+            preview = " ".join(str(text or "").split())[:80]
+            attrs = tag.attrs if hasattr(tag, "attrs") else {}
+            case_id = attrs.get("data-case-id") if isinstance(attrs, dict) else None
+            print("[DT-1 detector]")
+            print(f"tag={(tag.name or '')}")
+            print(f"id={tag.get('id') if hasattr(tag, 'get') else None}")
+            print(f"case={case_id}")
+            print(f"words={len(words)}")
+            print(f"sentences={len(sentences)}")
+            print(f"trigger={str(bool(triggered)).lower()}")
+            print(f"preview={preview}")
+        if triggered:
             dense_blocks.append(tag_location(tag, word_count=len(words), sentence_count=len(sentences)))
+    if forensic:
+        print("[DT-1 final]")
+        print(f"dense_blocks={len(dense_blocks)}")
     if not dense_blocks:
         return None
     return make_issue(
