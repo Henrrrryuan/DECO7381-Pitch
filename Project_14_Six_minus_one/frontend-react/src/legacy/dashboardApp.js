@@ -60,40 +60,66 @@ const PATIENT_PROFILES = {
     label: "Mild Cognitive Impairment",
     condition: "Mild Cognitive Impairment",
     summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
-    detectorOrder: [
+    enabledDetectors: [
       "Weak Information Prominence",
-      "Navigation Complexity",
       "Poor Heading Structure",
+      "Navigation Complexity",
       "Visual Overload",
-      "Dense Text Detection",
-      "Sentence Complexity",
-      "Excessive Interruptions",
-      "Language Complexity",
       "Long Content Without Chunking",
       "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+    detectorOrder: [
+      "Weak Information Prominence",
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Long Content Without Chunking",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
     ],
   },
   Amy: {
     label: "Autism-related Needs",
     condition: "Autism-related Needs",
     summary: "Needs literal language, consistent structure, low clutter, and reduced sensory distraction.",
-    detectorOrder: [
+    enabledDetectors: [
       "Poor Heading Structure",
       "Navigation Complexity",
+      "Weak Information Prominence",
       "Visual Overload",
       "Auto-Moving Content",
       "Excessive Interruptions",
-      "Language Complexity",
-      "Weak Information Prominence",
-      "Dense Text Detection",
-      "Sentence Complexity",
       "Long Content Without Chunking",
+      "Language Complexity",
+    ],
+    detectorOrder: [
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Weak Information Prominence",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Long Content Without Chunking",
+      "Language Complexity",
     ],
   },
   Tal: {
     label: "Dyslexia & Motor Support",
     condition: "Dyslexia & Motor Support",
     summary: "Needs readable structure, stronger headings, clearer recovery, and easier interaction targets.",
+    enabledDetectors: [
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Language Complexity",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Weak Information Prominence",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
     detectorOrder: [
       "Dense Text Detection",
       "Sentence Complexity",
@@ -111,6 +137,18 @@ const PATIENT_PROFILES = {
     label: "ADHD-friendly Focus",
     condition: "ADHD-friendly Focus",
     summary: "Needs reduced distraction, clear chunking, stronger focus guidance, and calmer task flow.",
+    enabledDetectors: [
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Visual Overload",
+      "Weak Information Prominence",
+      "Long Content Without Chunking",
+      "Dense Text Detection",
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Sentence Complexity",
+      "Language Complexity",
+    ],
     detectorOrder: [
       "Auto-Moving Content",
       "Excessive Interruptions",
@@ -286,6 +324,14 @@ function patientDetectorOrderIndex(name) {
   return index === -1 ? dimensionBaseOrderIndex(name) : index;
 }
 
+function isDetectorEnabledForActiveProfile(name) {
+  const enabledDetectors = activePatientProfile().enabledDetectors;
+  if (!enabledDetectors || !enabledDetectors.length) {
+    return true;
+  }
+  return enabledDetectors.includes(canonicalDimensionName(name));
+}
+
 function dimensionBaseOrderIndex(name) {
   const index = DETECTOR_NAMES.indexOf(canonicalDimensionName(name));
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
@@ -336,7 +382,9 @@ function renderDashboardSummary(result) {
     return;
   }
 
-  const totalIssues = result.dimensions.reduce((count, dimension) => {
+  const totalIssues = result.dimensions
+    .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
+    .reduce((count, dimension) => {
     return count + (dimension.issues || []).length;
   }, 0);
 
@@ -1741,6 +1789,7 @@ function renderExplanation(result) {
   }
 
   const orderedDimensions = [...result.dimensions]
+    .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
     .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
 
   let globalIssueIndex = 0;
@@ -2965,7 +3014,7 @@ function printProfileLabels(result) {
 }
 
 function printProfileDimensionRows(result, profileLabel) {
-  return DIMENSION_CONFIG.map(({ name }) => {
+  return DIMENSION_CONFIG.filter(({ name }) => isDetectorEnabledForActiveProfile(name)).map(({ name }) => {
     const dimension = findDimension(result, name);
     const issueCount = dimension?.issues?.length || 0;
     return `
