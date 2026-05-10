@@ -12,8 +12,7 @@ export function DetectionGauge({ detected, total }) {
   const redOffset = 100 - ratio * 100;
   const greenOffset = ratio * 100;
 
-  const fractionText = placeholder ? "— / —" : `${detected}/${total}`;
-  const targetText = placeholder ? "—" : String(total);
+  const detectedText = placeholder ? "—" : String(detected);
 
   return (
     <section
@@ -47,10 +46,10 @@ export function DetectionGauge({ detected, total }) {
           />
         </svg>
         <div className="detection-gauge-value" aria-live="polite">
-          <strong>{fractionText}</strong>
+          <strong>{detectedText}</strong>
         </div>
         <p className="detection-gauge-caption">
-          Target to meet: <span>{targetText}</span>
+          Detected issues
         </p>
       </div>
     </section>
