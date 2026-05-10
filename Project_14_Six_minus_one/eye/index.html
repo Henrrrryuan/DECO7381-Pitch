@@ -18,7 +18,10 @@
           <a href="http://127.0.0.1:5173/docs?source=analysis">Guide</a>
           <a class="active-link" href="./" title="Stay on Eye Tracking (keeps ?run_id= in the URL)">Eye Tracking</a>
           <a href="/history">History</a>
-          <button id="backToAnalysisButton" class="nav-cta" type="button" hidden>Back to analysis</button>
+          <button id="backToAnalysisButton" class="nav-cta nav-cta-return" type="button" hidden>
+            <span class="nav-cta-icon" aria-hidden="true">←</span>
+            Back to analysis
+          </button>
         </nav>
       </div>
     </header>
@@ -41,7 +44,9 @@
           <button id="loadHtmlBtn" type="button">Load HTML…</button>
         </div>
         <div class="url-panel-actions">
-          <button id="startBtn" type="button">Start Tracking</button>
+          <button id="startBtn" type="button" class="start-tracking-primary">
+            Start Tracking
+          </button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="clearBtn" type="button" disabled>Clear Heatmap</button>
           <button id="saveBtn" type="button" disabled>Save Session</button>

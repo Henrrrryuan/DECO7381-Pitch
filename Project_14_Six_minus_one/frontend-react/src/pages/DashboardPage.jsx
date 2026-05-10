@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { DetectionGauge } from "../components/DetectionGauge.jsx";
 import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
+
+  const [gauge, setGauge] = useState({ detected: null, total: null });
 
   useEffect(() => {
     document.body.classList.add("dashboard-body");
@@ -16,15 +19,30 @@ export function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let legacyApi = null;
     (async () => {
-      const module = await import("../legacy/dashboardApp.js");
-      if (!cancelled) {
-        await module.initDashboard();
+      legacyApi = await import("../legacy/dashboardApp.js");
+      if (cancelled) {
+        return;
       }
+      await legacyApi.initDashboard({
+          onDetectionGaugeUpdate: (payload) => {
+            if (cancelled) {
+              return;
+            }
+            setGauge(
+              payload ?? {
+                detected: null,
+                total: null,
+              },
+            );
+          },
+        });
     })();
     return () => {
       cancelled = true;
       bumpDashboardLifecycle();
+      legacyApi?.notifyDashboardUnmount?.();
     };
   }, []);
 
@@ -86,30 +104,33 @@ export function DashboardPage() {
           </button>
           <aside id="toolSidebar" className="tool-sidebar">
             <div className="tool-sidebar-inner">
-              <section className="patient-profile-panel" aria-label="Patient profile">
+              <section className="patient-profile-panel" aria-label="Priority Lens">
                 <div className="patient-profile-heading">
-                  <span>Patient profile</span>
-                  <strong>Priority lens</strong>
+                  <h2 className="patient-profile-title">Priority Lens</h2>
                 </div>
-                <div className="patient-profile-tabs" role="group" aria-label="Choose patient profile">
+                <div className="patient-profile-tabs" role="group" aria-label="Choose priority lens">
                   <button type="button" className="patient-profile-tab is-active" data-patient-profile="Alison" aria-pressed="true">
-                    Alison
+                    Mild Cognitive Impairment
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Amy" aria-pressed="false">
-                    Amy
+                    Autism-related Needs
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Tal" aria-pressed="false">
-                    Tal
+                    Dyslexia &amp; Motor Support
                   </button>
                   <button type="button" className="patient-profile-tab" data-patient-profile="Yuki" aria-pressed="false">
-                    Yuki
+                    ADHD-friendly Focus
                   </button>
                 </div>
                 <p id="patientProfileSummary" className="patient-profile-summary">
-                  <strong>Mild cognitive impairment</strong>
-                  <span>Needs familiar controls, clear navigation, low clutter, and forgiving task flow.</span>
+                  <strong>Mild Cognitive Impairment</strong>
+                  <span>
+                    Needs familiar controls, clear navigation, low clutter, and forgiving task flow.
+                  </span>
                 </p>
               </section>
+
+              <DetectionGauge detected={gauge.detected} total={gauge.total} />
 
               <section className="sidebar-section sidebar-explanation-section">
                 <div className="pane-header">
