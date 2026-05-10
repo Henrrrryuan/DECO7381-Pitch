@@ -6,7 +6,7 @@ const voMetadata = {
     iso: "ISO 9241-11: Efficiency; Satisfaction",
     wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
-  coga_objective: "Avoid Too Much Content",
+  coga_objective: "Objective 5: Help users focus",
   tooltip: {
     issue: "The early-page DOM may contain a high concentration of competing elements.",
     impact: "We use an early-page structural density heuristic (element and interactive counts), not rendered viewport geometry.",

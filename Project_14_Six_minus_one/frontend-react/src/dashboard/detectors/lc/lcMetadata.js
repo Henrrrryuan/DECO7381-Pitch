@@ -6,7 +6,7 @@ const lcMetadata = {
     iso: "ISO 9241-11: Efficiency",
     wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
-  coga_objective: "Use Clear Words",
+  coga_objective: "Objective 3: Use clear and understandable content",
   tooltip: {
     issue: "Vocabulary may be harder to understand quickly.",
     impact: "We check complex or uncommon word density.",

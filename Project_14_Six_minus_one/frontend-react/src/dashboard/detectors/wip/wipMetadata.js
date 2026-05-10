@@ -6,7 +6,7 @@ const wipMetadata = {
     iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
-  coga_objective: "Make Important Tasks Easy to Find",
+  coga_objective: "Objective 2: Help users find what they need",
   tooltip: {
     issue: "Many competing primary actions appear early in the page structure.",
     impact: "Early-page CTA density heuristic: multiple CTA-like controls in DOM order—not rendered salience or viewport analysis.",

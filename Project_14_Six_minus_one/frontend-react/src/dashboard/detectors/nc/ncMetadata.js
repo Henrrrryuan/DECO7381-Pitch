@@ -6,7 +6,7 @@ const ncMetadata = {
     iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
-  coga_objective: "Findable / Clear Navigation",
+  coga_objective: "Objective 2: Help users find what they need",
   tooltip: {
     issue: "Navigation may create too many choices.",
     impact: "We check link count and nesting depth.",

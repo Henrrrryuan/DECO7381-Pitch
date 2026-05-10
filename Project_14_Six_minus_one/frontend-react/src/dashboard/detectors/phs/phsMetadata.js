@@ -6,7 +6,7 @@ const phsMetadata = {
     iso: "ISO 9241-11: Effectiveness",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
-  coga_objective: "Clear Navigation / Structure",
+  coga_objective: "Objective 2: Help users find what they need",
   tooltip: {
     issue: "Heading hierarchy may make orientation harder.",
     impact: "h1–h6 hierarchy heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings (not title tag or visual typography).",

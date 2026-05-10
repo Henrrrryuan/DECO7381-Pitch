@@ -6,7 +6,7 @@ const scMetadata = {
     iso: "ISO 9241-11: Efficiency",
     wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
-  coga_objective: "Avoid Nested Clauses",
+  coga_objective: "Objective 3: Use clear and understandable content",
   tooltip: {
     issue: "Sentences may be too long or heavily connected.",
     impact: "We check sentence length, commas, and conjunctions.",

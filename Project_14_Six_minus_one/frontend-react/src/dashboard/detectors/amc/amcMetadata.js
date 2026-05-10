@@ -6,7 +6,7 @@ const amcMetadata = {
     iso: "ISO 9241-11: Satisfaction",
     wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
-  coga_objective: "Limit Interruptions",
+  coga_objective: "Objective 5: Help users focus",
   tooltip: {
     issue: "Automatic movement may distract users.",
     impact: "We check autoplay media and continuously moving components.",

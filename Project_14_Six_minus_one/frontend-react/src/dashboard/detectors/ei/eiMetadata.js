@@ -6,7 +6,7 @@ const eiMetadata = {
     iso: "ISO 9241-11: Satisfaction",
     wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
-  coga_objective: "Limit Interruptions",
+  coga_objective: "Objective 5: Help users focus",
   tooltip: {
     issue: "Overlays or popups may interrupt the task.",
     impact: "We check dialogs, modals, sticky prompts, and interruption scripts.",
