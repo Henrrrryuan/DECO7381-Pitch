@@ -57,8 +57,8 @@ const DETECTOR_NAMES = [
 
 const PATIENT_PROFILES = {
   Alison: {
-    label: "Alison",
-    condition: "Mild cognitive impairment",
+    label: "Mild Cognitive Impairment",
+    condition: "Mild Cognitive Impairment",
     summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
     detectorOrder: [
       "Weak Information Prominence",
@@ -74,9 +74,9 @@ const PATIENT_PROFILES = {
     ],
   },
   Amy: {
-    label: "Amy",
-    condition: "Autistic user",
-    summary: "Needs predictable layouts, literal wording, clear structure, and user-controlled motion.",
+    label: "Autism-related Needs",
+    condition: "Autism-related Needs",
+    summary: "Needs literal language, consistent structure, low clutter, and reduced sensory distraction.",
     detectorOrder: [
       "Poor Heading Structure",
       "Navigation Complexity",
@@ -91,9 +91,9 @@ const PATIENT_PROFILES = {
     ],
   },
   Tal: {
-    label: "Tal",
-    condition: "Dyslexia",
-    summary: "Needs scannable text, simple language, clear headings, and easy-to-find key information.",
+    label: "Dyslexia & Motor Support",
+    condition: "Dyslexia & Motor Support",
+    summary: "Needs readable structure, stronger headings, clearer recovery, and easier interaction targets.",
     detectorOrder: [
       "Dense Text Detection",
       "Sentence Complexity",
@@ -108,9 +108,9 @@ const PATIENT_PROFILES = {
     ],
   },
   Yuki: {
-    label: "Yuki",
-    condition: "ADHD",
-    summary: "Needs reduced motion, fewer interruptions, strong key points, and short clear task paths.",
+    label: "ADHD-friendly Focus",
+    condition: "ADHD-friendly Focus",
+    summary: "Needs reduced distraction, clear chunking, stronger focus guidance, and calmer task flow.",
     detectorOrder: [
       "Auto-Moving Content",
       "Excessive Interruptions",
@@ -1506,8 +1506,7 @@ function selectedIssueRecord() {
 }
 
 function resetIssueWorkspaceForProfileChange() {
-  // A profile switch changes the audience lens, so old issue guidance/highlights
-  // should not stay visible under a different user group.
+  // Switching priority lens resets issue guidance/highlights because detector prioritization changed.
   state.selectedIssueId = "";
   state.activeHighlightDimension = "";
   state.activeHighlightIssueId = "";
