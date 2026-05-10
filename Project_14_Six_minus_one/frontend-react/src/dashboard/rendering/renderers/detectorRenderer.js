@@ -106,6 +106,12 @@ function renderExplanationMarkup({
 
     globalIssueIndex += issueCount;
 
+    // If a detector produces a single issue, avoid nesting the issue card
+    // inside a second "dimension accordion" card.
+    if (issueCount === 1) {
+      return issuesMarkup;
+    }
+
     const block = explanationAccordionBlockMarkup({
       displayNameEscaped: escapeHtml(displayName),
       issueCount,
