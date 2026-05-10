@@ -2890,30 +2890,63 @@ function injectHighlightStyles(doc) {
       border: 1px solid rgba(37, 99, 235, 0.3);
       border-radius: 12px;
       box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
-      padding: 12px 14px;
+      padding: 14px 48px 14px 16px;
       font: 500 13px/1.45 Arial, sans-serif;
       color: #0f172a;
     }
 
     #cognilens-guidance-popover .cognilens-popover-close {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 24px;
-      height: 24px;
-      border: 1px solid rgba(148, 163, 184, 0.65);
-      border-radius: 999px;
-      background: #fff;
-      color: #475569;
-      font: 800 14px/1 Arial, sans-serif;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.42);
+      border-radius: 10px;
+      background: rgba(248, 250, 252, 0.92);
+      color: transparent;
       cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close::before,
+    #cognilens-guidance-popover .cognilens-popover-close::after {
+      content: "";
+      position: absolute;
+      width: 13px;
+      height: 2px;
+      border-radius: 999px;
+      background: #64748b;
+      transform-origin: center;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close::before {
+      transform: rotate(45deg);
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close::after {
+      transform: rotate(-45deg);
     }
 
     #cognilens-guidance-popover .cognilens-popover-close:hover,
     #cognilens-guidance-popover .cognilens-popover-close:focus-visible {
-      border-color: rgba(37, 99, 235, 0.8);
-      color: #1d4ed8;
+      border-color: rgba(37, 99, 235, 0.42);
+      background: #eff6ff;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+      transform: translateY(-1px);
       outline: none;
+    }
+
+    #cognilens-guidance-popover .cognilens-popover-close:hover::before,
+    #cognilens-guidance-popover .cognilens-popover-close:hover::after,
+    #cognilens-guidance-popover .cognilens-popover-close:focus-visible::before,
+    #cognilens-guidance-popover .cognilens-popover-close:focus-visible::after {
+      background: #1d4ed8;
     }
 
     #cognilens-guidance-popover h5 {
@@ -2999,7 +3032,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuse
     ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
-    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover">×</button>
+    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover"></button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
     <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
