@@ -2230,13 +2230,27 @@ function removeGuidancePopover(doc = getPreviewDocument()) {
 }
 
 function positionGuidancePopover(popoverEl, anchorElement, doc) {
+  const view = doc.defaultView || window;
   const anchorRect = anchorElement.getBoundingClientRect();
   const popoverRect = popoverEl.getBoundingClientRect();
-  const maxLeft = Math.max(8, (doc.documentElement?.clientWidth || 0) - popoverRect.width - 8);
-  const left = Math.min(Math.max(8, anchorRect.left + 8), maxLeft);
-  const top = Math.max(8, anchorRect.bottom + 10 + (doc.defaultView?.scrollY || 0));
-  popoverEl.style.left = `${left}px`;
-  popoverEl.style.top = `${top}px`;
+  const viewportWidth = doc.documentElement?.clientWidth || view.innerWidth || 0;
+  const viewportHeight = doc.documentElement?.clientHeight || view.innerHeight || 0;
+  const edge = 8;
+  const gap = 10;
+  const maxLeft = Math.max(edge, viewportWidth - popoverRect.width - edge);
+  const leftInViewport = Math.min(Math.max(edge, anchorRect.left + edge), maxLeft);
+  const spaceBelow = viewportHeight - anchorRect.bottom;
+  const spaceAbove = anchorRect.top;
+  const placeAbove = spaceBelow < popoverRect.height + gap && spaceAbove > spaceBelow;
+  const preferredTop = placeAbove
+    ? anchorRect.top - popoverRect.height - gap
+    : anchorRect.bottom + gap;
+  const maxTop = Math.max(edge, viewportHeight - popoverRect.height - edge);
+  const topInViewport = Math.min(Math.max(edge, preferredTop), maxTop);
+
+  popoverEl.dataset.placement = placeAbove ? "above" : "below";
+  popoverEl.style.left = `${leftInViewport + (view.scrollX || 0)}px`;
+  popoverEl.style.top = `${topInViewport + (view.scrollY || 0)}px`;
 }
 
 function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuseIfSameKey = false } = {}) {
