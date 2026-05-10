@@ -10,73 +10,35 @@ import {
 } from "../lib/common.js";
 import { bumpDashboardLifecycle, getDashboardLifecycleSnapshot } from "../lib/dashboardLifecycle.js";
 import {
-  DASHBOARD_SOURCE_TYPES,
-  getRunIdFromPayload,
-  isIncomingRunNewer,
-  readDashboardAuthoritativeSourceFromStorage,
-  setDashboardAuthoritativeSource,
-} from "../dashboard/authority/dashboardAuthority.js";
-import {
   renderPrintSummary as renderPrintSummaryIntoSidebar,
   renderPrintableProfileReport as renderPrintableProfileReportIntoSidebar,
 } from "../lib/printAndDownload.js";
-import {
-  dt1FrontendForensicEnabled,
-  logDashboardLifecycle,
-  logDashboardRender,
-  logDtFrontendState,
-} from "../dashboard/forensic/dashboardForensics.js";
-import {
-  hydrateStoredDashboardSession as hydrateStoredDashboardSessionExtracted,
-  loadDashboardSessionWithHistoryFallback as loadDashboardSessionWithHistoryFallbackExtracted,
-} from "../dashboard/hydration/dashboardHydration.js";
-import { getDetectorSemanticModule } from "../dashboard/detectors/registry/detectorRegistry.js";
-import { controlElementLabel, scParseMetricNumber, titleCaseSelectorPart } from "../dashboard/detectors/shared/detectorCommon.js";
-import { DT_TEXT_BLOCK_TAGS, dtDenseEvidenceMetricsLine, filterDtEvidenceElements } from "../dashboard/detectors/dt/dtSemantics.js";
-import { LC_TEXT_BLOCK_TAGS, filterLcEvidenceElements, lcCompactSampleWords, lcLexicalEvidenceMetricsLine, lcTextBlockPrimaryLabel } from "../dashboard/detectors/lc/lcSemantics.js";
-import { SC_PRIMARY_GROUP_KEYS, SC_PRIMARY_GROUP_LABELS, SC_TEXT_BLOCK_TAGS, filterScEvidenceElements, groupScLocationsByPrimaryPattern, scAllThreeSentenceMetricsAbsent, scCompressedSentencePreview, scPrimaryPattern, scSecondaryPatterns, scSentenceEvidenceMetricsLine, scSentenceMetricValues } from "../dashboard/detectors/sc/scSemantics.js";
-import { NC_GROUPED_METRICS_FALLBACK, groupNcLocationsByViolation, ncEvidenceMetricsLine, ncTechnicalMetaLine } from "../dashboard/detectors/nc/ncSemantics.js";
-import {
-  fallbackSelectorsForIssueEngine,
-  findElementsForLocationEngine,
-  logHighlightResolution,
-  moreSpecificHighlightTargetEngine,
-  validateHighlightTargetEngine,
-} from "../dashboard/highlights/engine/highlightEngine.js";
-import { renderIssueSummaryCard } from "../dashboard/rendering/renderers/issueRenderer.js";
-import { renderExplanationMarkup } from "../dashboard/rendering/renderers/detectorRenderer.js";
-import { renderDashboardSummaryMarkup } from "../dashboard/rendering/renderers/summaryRenderer.js";
-import { DASHBOARD_ACTIONS } from "../dashboard/actions/dashboardActions.js";
-import { configureDashboardActionDispatcher, dispatchDashboardAction } from "../dashboard/actions/dashboardActionDispatcher.js";
-import { initializeDashboardRuntime } from "../dashboard/runtime/dashboardRuntime.js";
-import { validateDashboardArchitectureBoundaries } from "../dashboard/architecture/architectureForensics.js";
-import { buildDeclaredRelationChecks } from "../dashboard/architecture/dependencyGraphHelpers.js";
-import { dashboardState as state } from "../dashboard/state/dashboardState.js";
-import { activePatientProfile as activePatientProfileSelector, selectedIssueRecord as selectedIssueRecordSelector } from "../dashboard/state/dashboardSelectors.js";
-import {
-  clearActiveHighlight,
-  pushChatMessage,
-  resetChatMessages,
-  resetSelectionToSummary,
-  setActiveGuidancePopoverKey,
-  setActiveHighlightDimension,
-  setActiveHighlightIssueId,
-  setActivePatientProfile as setActivePatientProfileTransition,
-  setAssistantFloatingOpen as setAssistantFloatingOpenTransition,
-  setChatPending,
-  setCurrentPayloadAndSource,
-  setCurrentResultAndHtml,
-  setPreviousComparison,
-  setRightPanelMode,
-  setSelectedElementNumber,
-  setSelectedIssueId,
-  setSidebarCollapsed,
-  setWorkspaceMode as setWorkspaceModeTransition,
-  toggleSidebarCollapsed,
-} from "../dashboard/state/dashboardTransitions.js";
-import { PATIENT_PROFILES } from "../dashboard/shared/patientProfiles.js";
 
-// State container extracted to dashboard/state (behavior preserved).
+const state = {
+  currentHtml: "",
+  currentResult: null,
+  currentPayload: null,
+  sourceName: "",
+  sourceUrl: "",
+  /** `"url"` | `"zip"` | `"html"` | "" — from dashboard session (LoadingPage / HomePage). */
+  sourceType: "",
+  workspaceMode: "explanation",
+  rightPanelMode: "summary",
+  activeHighlightDimension: "",
+  activeHighlightIssueId: "",
+  selectedIssueId: "",
+  selectedElementNumber: 0,
+  activeGuidancePopoverKey: "",
+  /** When true, preview guidance stays visible after pointer leaves (until close or second click). */
+  previewGuidancePinned: false,
+  chatMessages: [],
+  chatPending: false,
+  sidebarCollapsed: false,
+  assistantFloatingOpen: false,
+  previousResult: null,
+  previousSourceName: "",
+  activeProfile: "Alison",
+};
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
 const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
@@ -101,42 +63,114 @@ const DETECTOR_NAMES = [
   "Excessive Interruptions",
 ];
 
-function dtLocationsCountFromResult(result) {
-  const dim = result ? findDimension(result, "Dense Text Detection") : null;
-  const issues = dim?.issues || [];
-  const issue = issues.find((item) => (item?.rule_id || "") === "DT-1") || issues[0] || null;
-  const locs = issue?.locations || [];
-  return Array.isArray(locs) ? locs.length : 0;
-}
-
-function dtRunIdFromPayload(payload) {
-  return String(payload?.run?.run_id || payload?.run_id || payload?.run?.id || "");
-}
-
-function dtFrontendStateLog(stage, payload, result, sourceNameOverride = "") {
-  logDtFrontendState({
-    stage,
-    payload,
-    result,
-    sourceNameOverride,
-    getRunIdFromPayload,
-    getDtLocationsCountFromResult: dtLocationsCountFromResult,
-  });
-}
-
-function dashboardLifecycleLog(stage, incomingPayload, currentPayload, incomingSourceType = "", currentSourceType = "", accepted = false, reason = "") {
-  logDashboardLifecycle({
-    stage,
-    incomingPayload,
-    currentPayload,
-    incomingSourceType,
-    currentSourceType,
-    accepted,
-    reason,
-    getRunIdFromPayload,
-  });
-}
-
+const PATIENT_PROFILES = {
+  Alison: {
+    label: "Mild Cognitive Impairment",
+    condition: "Mild Cognitive Impairment",
+    summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
+    enabledDetectors: [
+      "Weak Information Prominence",
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Long Content Without Chunking",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+    detectorOrder: [
+      "Weak Information Prominence",
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Long Content Without Chunking",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+  },
+  Amy: {
+    label: "Autism-related Needs",
+    condition: "Autism-related Needs",
+    summary: "Needs literal language, consistent structure, low clutter, and reduced sensory distraction.",
+    enabledDetectors: [
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Weak Information Prominence",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Long Content Without Chunking",
+      "Language Complexity",
+    ],
+    detectorOrder: [
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Weak Information Prominence",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Long Content Without Chunking",
+      "Language Complexity",
+    ],
+  },
+  Tal: {
+    label: "Dyslexia & Motor Support",
+    condition: "Dyslexia & Motor Support",
+    summary: "Needs readable structure, stronger headings, clearer recovery, and easier interaction targets.",
+    enabledDetectors: [
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Language Complexity",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Weak Information Prominence",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+    detectorOrder: [
+      "Dense Text Detection",
+      "Sentence Complexity",
+      "Language Complexity",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Weak Information Prominence",
+      "Navigation Complexity",
+      "Visual Overload",
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+    ],
+  },
+  Yuki: {
+    label: "ADHD-friendly Focus",
+    condition: "ADHD-friendly Focus",
+    summary: "Needs reduced distraction, clear chunking, stronger focus guidance, and calmer task flow.",
+    enabledDetectors: [
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Visual Overload",
+      "Weak Information Prominence",
+      "Long Content Without Chunking",
+      "Dense Text Detection",
+      "Poor Heading Structure",
+      "Navigation Complexity",
+      "Sentence Complexity",
+      "Language Complexity",
+    ],
+    detectorOrder: [
+      "Auto-Moving Content",
+      "Excessive Interruptions",
+      "Visual Overload",
+      "Weak Information Prominence",
+      "Long Content Without Chunking",
+      "Poor Heading Structure",
+      "Dense Text Detection",
+      "Navigation Complexity",
+      "Sentence Complexity",
+      "Language Complexity",
+    ],
+  },
+};
 const ISSUE_CATEGORY_CONFIG = {
   content: { displayName: "Content Issue", cognitiveDimension: "Reading load and comprehension" },
   structure: { displayName: "Structure Issue", cognitiveDimension: "Orientation, hierarchy, and task discovery" },
@@ -163,67 +197,67 @@ const DIMENSION_CONFIG = DETECTOR_NAMES.map((name) => ({
 const RULE_FRAMEWORK_MAP = {
   "DT-1": {
     coga: "COGA: Break content into manageable chunks",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
+    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "LC-1": {
     coga: "COGA: Prefer familiar vocabulary",
-    iso: "ISO 9241-11: Efficiency",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy; 6.4.3 Cognitive responses",
     wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
   },
   "SC-1": {
     coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11: Efficiency",
+    iso: "ISO 9241-11:2018 6.2.2 Accuracy",
     wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
   },
   "LCC-1": {
     coga: "COGA: Support scanning with chunking",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "PHS-1": {
     coga: "COGA: Keep structure predictable",
-    iso: "ISO 9241-11: Effectiveness",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended",
     wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
   },
   "NC-1": {
     coga: "COGA: Predictable navigation cues",
-    iso: "ISO 9241-11: Effectiveness",
+    iso: "ISO 9241-11:2018 6.3.2 Time used; 6.3.3 Human effort expended",
     wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
   },
   "WIP-1": {
     coga: "COGA: Make the next action obvious",
-    iso: "ISO 9241-11: Effectiveness",
+    iso: "ISO 9241-11:2018 6.2.1 Effectiveness general; 6.3.3 Human effort expended",
     wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
   },
   "VO-1": {
     coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
+    iso: "ISO 9241-11:2018 6.3.3 Human effort expended; 6.4.3 Cognitive responses",
     wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
   },
   "AMC-1": {
     coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11: Satisfaction",
+    iso: "ISO 9241-11:2018 6.4.2 Physical responses; 6.4.4 Emotional responses",
     wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
   },
   "EI-1": {
     coga: "COGA: Avoid interruptive overlays",
-    iso: "ISO 9241-11: Satisfaction",
+    iso: "ISO 9241-11:2018 6.2.3 Completeness; 6.4.4 Emotional responses",
     wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
   },
 };
 
 const COGA_OBJECTIVE_BY_RULE = {
-  "PHS-1": "Objective 2: Help users find what they need",
-  "WIP-1": "Objective 2: Help users find what they need",
-  "NC-1": "Objective 2: Help users find what they need",
-  "DT-1": "Objective 3: Use clear and understandable content",
-  "LC-1": "Objective 3: Use clear and understandable content",
-  "SC-1": "Objective 3: Use clear and understandable content",
-  "LCC-1": "Objective 3: Use clear and understandable content",
-  "EI-1": "Objective 5: Help users focus",
-  "AMC-1": "Objective 5: Help users focus",
-  "VO-1": "Objective 5: Help users focus",
+  "DT-1": "Use Clear and Understandable Content",
+  "LC-1": "Use Clear and Understandable Content",
+  "SC-1": "Use Clear and Understandable Content",
+  "LCC-1": "Use Clear and Understandable Content",
+  "PHS-1": "Help Users Understand What Things are and How to Use Them",
+  "NC-1": "Help Users Find What They Need",
+  "WIP-1": "Help Users Find What They Need",
+  "VO-1": "Help Users Focus",
+  "AMC-1": "Help Users Focus",
+  "EI-1": "Help Users Focus",
 };
 
 const HIGHLIGHT_CONFIG = {
@@ -289,7 +323,7 @@ function canonicalDimensionName(name) {
 }
 
 function activePatientProfile() {
-  return activePatientProfileSelector(state, PATIENT_PROFILES);
+  return PATIENT_PROFILES[state.activeProfile] || PATIENT_PROFILES.Alison;
 }
 
 function patientDetectorOrderIndex(name) {
@@ -316,7 +350,6 @@ function renderPatientSwitcher() {
   if (summaryNode) {
     const profile = activePatientProfile();
     summaryNode.innerHTML = `
-      <strong>${escapeHtml(profile.condition)}</strong>
       <span>${escapeHtml(profile.summary)}</span>
     `;
   }
@@ -332,7 +365,7 @@ function setActivePatientProfile(profileName) {
   if (!PATIENT_PROFILES[profileName] || state.activeProfile === profileName) {
     return;
   }
-  setActivePatientProfileTransition(state, profileName);
+  state.activeProfile = profileName;
   resetIssueWorkspaceForProfileChange();
   renderPatientSwitcher();
   if (state.currentResult) {
@@ -356,14 +389,8 @@ function renderDashboardSummary(result) {
   if (!summaryNode) {
     return;
   }
-  const totalIssues = (result.dimensions || [])
-    .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
-    .reduce((count, dimension) => {
-      return count + (dimension.issues || []).length;
-    }, 0);
-  summaryNode.innerHTML = `
-    <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
-  `;
+
+  summaryNode.innerHTML = "";
 }
 
 /**
@@ -481,8 +508,8 @@ function tooltipCopyForDimension(dimensionName) {
     "Long Content Without Chunking": { issue: "Long sections may lack structure.", impact: "We check long main/article/section content without headings or lists." },
     "Poor Heading Structure": { issue: "Heading hierarchy may make orientation harder.", impact: "h1–h6 hierarchy heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings (not title tag or visual typography)." },
     "Navigation Complexity": { issue: "Navigation may create too many choices.", impact: "We check link count and nesting depth." },
-    "Weak Information Prominence": { issue: "Many competing primary actions appear early in the page structure.", impact: "Early-page CTA density heuristic: multiple CTA-like controls in DOM order—not rendered salience or viewport analysis." },
-    "Visual Overload": { issue: "The early-page DOM may contain a high concentration of competing elements.", impact: "We use an early-page structural density heuristic (element and interactive counts), not rendered viewport geometry." },
+    "Weak Information Prominence": { issue: "The next important action may be hard to identify.", impact: "We check competing CTA density." },
+    "Visual Overload": { issue: "The viewport may contain too many competing elements.", impact: "We check visible element count and interactive density." },
     "Auto-Moving Content": { issue: "Automatic movement may distract users.", impact: "We check autoplay media and continuously moving components." },
     "Excessive Interruptions": { issue: "Overlays or popups may interrupt the task.", impact: "We check dialogs, modals, sticky prompts, and interruption scripts." },
   };
@@ -553,15 +580,6 @@ function initDimensionInfoTooltip() {
   });
 }
 
-function expandIssueSummaryCardsInsideDimensionAccordion(accordion) {
-  if (!accordion) {
-    return;
-  }
-  accordion.querySelectorAll("details.issue-summary-card").forEach((issueDetails) => {
-    issueDetails.open = true;
-  });
-}
-
 function focusExplanationDimension(dimensionName) {
   const targetName = normalizedDimensionName(dimensionName);
   const target = document.querySelector(
@@ -576,7 +594,6 @@ function focusExplanationDimension(dimensionName) {
     }
   });
   target.open = true;
-  expandIssueSummaryCardsInsideDimensionAccordion(target);
   target.scrollIntoView({ block: "nearest", behavior: "smooth" });
   setActiveDimensionBar(targetName);
 }
@@ -664,37 +681,6 @@ function issueAffectedGroups(issue, dimensionName) {
 function detectedEvidenceCopy(issue) {
   const locations = Array.isArray(issue?.locations) ? issue.locations : [];
   const firstLocation = locations[0];
-  if ((issue?.rule_id || "") === "NC-1" && firstLocation) {
-    const metrics = ncEvidenceMetricsLine(firstLocation);
-    return metrics
-      ? `Navigation region exceeds thresholds (${metrics}).`
-      : "Navigation region exceeds link-count or nesting-depth thresholds.";
-  }
-  if ((issue?.rule_id || "") === "SC-1" && firstLocation) {
-    const metrics = scSentenceEvidenceMetricsLine(firstLocation);
-    const detail = metrics
-      ? ` (${metrics}: long sentence, comma density, or conjunction density exceeded heuristic thresholds).`
-      : " (sentence-length, comma-density, and conjunction-density heuristics exceeded thresholds).";
-    return `Complex wording flagged at the sentence level within a text block — not a readability score or NLP parse.${detail}`;
-  }
-  if ((issue?.rule_id || "") === "LC-1" && firstLocation) {
-    const metrics = lcLexicalEvidenceMetricsLine(firstLocation);
-    const samples = lcCompactSampleWords(firstLocation);
-    const detailParts = [metrics, samples].filter(Boolean);
-    const detail = detailParts.length ? ` ${detailParts.join(" · ")}.` : "";
-    return (
-      "Dense long or multi-syllable words (simple length + syllable estimate per word, block-level)—not jargon detection, rarity, or a readability formula."
-      + detail
-    );
-  }
-  if ((issue?.rule_id || "") === "DT-1" && firstLocation) {
-    const metrics = dtDenseEvidenceMetricsLine(firstLocation);
-    const metricsParen = metrics ? `${metrics}. ` : "";
-    return (
-      "This rule flags large uninterrupted text blocks using word and punctuation-based fragment counts — not visual density, layout, or NLP parsing. "
-      + `Fragment counts split on punctuation heuristics. ${metricsParen}`.trim()
-    );
-  }
   if (firstLocation?.summary) {
     return `Detected near ${firstLocation.summary}.`;
   }
@@ -737,9 +723,9 @@ function parseStandardsItems(text, prefixRegex) {
 
 function parseIsoClausesFromRule(ruleId) {
   const isoText = RULE_FRAMEWORK_MAP[ruleId]?.iso || "";
-  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*:?\s*/i)
+  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*/i)
     .map((item) => item.replace(/^2018\s+/i, "").trim());
-  return clauses.length ? clauses : ["Effectiveness"];
+  return clauses.length ? clauses : ["6.3.3 Human effort expended"];
 }
 
 function parseWcagCriteriaFromRule(ruleId) {
@@ -755,9 +741,9 @@ function frameworkStandardsForRule(ruleId) {
     return {
       coga: "COGA: reduce cognitive load in task flow",
       wcagCriteria: ["SC 2.4.6 Headings and Labels"],
-      isoClauses: ["Effectiveness"],
+      isoClauses: ["6.3.3 Human effort expended"],
       wcagDisplay: "WCAG  SC 2.4.6 Headings and Labels",
-      isoDisplay: "ISO 9241-11: Effectiveness",
+      isoDisplay: "ISO 9241-11:2018 6.3.3 Human effort expended",
     };
   }
   const wcagCriteria = parseWcagCriteriaFromRule(ruleId);
@@ -767,7 +753,7 @@ function frameworkStandardsForRule(ruleId) {
     wcagCriteria,
     isoClauses,
     wcagDisplay: `WCAG 2.2 ${wcagCriteria.join("; ")}`,
-    isoDisplay: `ISO 9241-11: ${isoClauses.join("; ")}`,
+    isoDisplay: `ISO 9241-11:2018 ${isoClauses.join("; ")}`,
   };
 }
 
@@ -835,7 +821,8 @@ function beneficiaryTags(ruleId, dimensionName) {
 }
 
 function renderComparison(currentResult, previousResult, previousSourceName) {
-  setPreviousComparison(state, previousResult || null, previousSourceName || "");
+  state.previousResult = previousResult || null;
+  state.previousSourceName = previousSourceName || "";
   const comparisonList = document.getElementById("comparisonList");
   if (!comparisonList) {
     return;
@@ -849,7 +836,7 @@ function renderComparison(currentResult, previousResult, previousSourceName) {
     return;
   }
 
-  setRightPanelMode(state, "summary");
+  state.rightPanelMode = "summary";
   comparisonList.className = "comparison-list issue-workspace-summary";
   comparisonList.innerHTML = "";
   animatePanelEntry(comparisonList);
@@ -910,136 +897,26 @@ function looksLikeTechnicalSelector(value) {
     || /^[a-z][\w-]*\.[\w.-]+$/i.test(text);
 }
 
-// titleCaseSelectorPart / controlElementLabel extracted to detectorCommon (behavior preserved).
-
-function isNcEvidenceLocation(location, issueRuleId = "") {
-  return issueRuleId === "NC-1" || location?.rule_id === "NC-1";
+function titleCaseSelectorPart(value) {
+  return String(value || "")
+    .replace(/^[.#]/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\bcta\b/gi, "CTA")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-// NC semantics extracted to dashboard/detectors/nc/ncSemantics.js (behavior preserved).
-
-function formatNcViolationGroupTitle(key) {
-  const labels = {
-    too_many_links: "Too Many Navigation Links",
-    deep_nesting: "Deep Navigation Nesting",
-    other: "Navigation complexity",
-  };
-  return labels[key] || key;
-}
-
-function orderNcViolationGroupKeys(groupKeys) {
-  const preferred = ["too_many_links", "deep_nesting", "other"];
-  const ordered = preferred.filter((key) => groupKeys.includes(key));
-  groupKeys.forEach((key) => {
-    if (!ordered.includes(key)) {
-      ordered.push(key);
-    }
-  });
-  return ordered;
-}
-
-function issueNcGroupedChipSectionsMarkup(issue, dimensionName, visibleSlice, activeElementNumber) {
-  const grouped = groupNcLocationsByViolation(visibleSlice);
-  const keys = orderNcViolationGroupKeys(Object.keys(grouped)).filter((key) => grouped[key].length);
-  return keys.map((violationKey) => {
-    const entries = grouped[violationKey];
-    const title = `${formatNcViolationGroupTitle(violationKey)} (${entries.length})`;
-    const chips = entries.map(({ location, elementNumber }) => (
-      issueElementChipRowMarkup(
-        issue,
-        dimensionName,
-        location,
-        elementNumber,
-        activeElementNumber,
-        { ncGrouped: true },
-      )
-    )).join("");
-    return `
-      <section class="issue-phs-violation-group issue-nc-violation-group" aria-label="${escapeHtml(formatNcViolationGroupTitle(violationKey))}">
-        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
-        <div class="issue-element-chip-list issue-element-chip-list--phs-group issue-element-chip-list--nc-group">
-          ${chips}
-        </div>
-      </section>
-    `;
-  }).join("");
-}
-
-// ncEvidenceMetricsLine / ncTechnicalMetaLine extracted to NC semantics module.
-
-// SC semantics extracted to dashboard/detectors/sc/scSemantics.js (behavior preserved).
-
-function lc1FrontendForensicEnabled() {
-  return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_LC1_FORENSIC === "1");
-}
-// LC / DT / shared metric coercion extracted to detector semantics modules (behavior preserved).
-
-function scTextBlockPrimaryLabel(location) {
-  const t = String(location?.tag || "").toLowerCase();
-  const labels = {
-    p: "Paragraph",
-    li: "List item",
-    td: "Table cell",
-    th: "Table header cell",
-  };
-  if (labels[t]) {
-    return labels[t];
+function controlElementLabel(tag) {
+  const normalizedTag = String(tag || "").toLowerCase();
+  if (normalizedTag === "a") {
+    return "Link";
   }
-  return titleCaseSelectorPart(t || "text block");
-}
-
-/** SC preview: word boundaries only — head + final tail on two lines (no char slicing). */
-const SC_PREVIEW_HEAD_WORDS = 5;
-const SC_PREVIEW_TAIL_WORDS = 5;
-const SC_PREVIEW_SHORT_WORD_CAP = 12;
-const SC_PREVIEW_SHORT_CHAR_CAP = 90;
-
-/**
- * SC-1 fingerprint: `${first 5 words} …\n${last 5 words}` when long; else full sentence.
- * Tail is always the true sentence ending (consequence / outcome). Chips/guidance: pre-line CSS.
- * locationMetaText: flatten with .replace(/\n/g, " ").
- */
-// scCompressedSentencePreview / scSentenceEvidenceMetricsLine extracted to SC semantics module.
-
-const SC_CHIP_METRICS_FALLBACK = "Sentence metrics unavailable";
-
-/** Mirrors backend SC-1 thresholds — SC UI pattern badges only (detector unchanged). */
-// SC thresholds/constants + grouping extracted to SC semantics module.
-
-function orderScPrimaryGroupKeys(groupKeys) {
-  const ordered = SC_PRIMARY_GROUP_KEYS.filter((key) => groupKeys.includes(key));
-  groupKeys.forEach((key) => {
-    if (!ordered.includes(key)) {
-      ordered.push(key);
-    }
-  });
-  return ordered;
-}
-
-function scPrimaryGroupSectionTitle(groupKey, count) {
-  const heading = SC_PRIMARY_GROUP_LABELS[groupKey]?.heading ?? groupKey;
-  return `${heading} (${count})`;
-}
-
-function issueScGroupedChipSectionsMarkup(issue, dimensionName, visibleSlice, activeElementNumber) {
-  const grouped = groupScLocationsByPrimaryPattern(visibleSlice);
-  const keys = orderScPrimaryGroupKeys(Object.keys(grouped)).filter((key) => grouped[key].length);
-  return keys.map((groupKey) => {
-    const entries = grouped[groupKey];
-    const title = scPrimaryGroupSectionTitle(groupKey, entries.length);
-    const headingLabel = SC_PRIMARY_GROUP_LABELS[groupKey]?.heading ?? groupKey;
-    const chips = entries.map(({ location, elementNumber }) => (
-      issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber)
-    )).join("");
-    return `
-      <section class="issue-phs-violation-group issue-sc-violation-group" aria-label="${escapeHtml(headingLabel)}">
-        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
-        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
-          ${chips}
-        </div>
-      </section>
-    `;
-  }).join("");
+  if (normalizedTag === "input") {
+    return "Input button";
+  }
+  if (normalizedTag === "button") {
+    return "Button";
+  }
+  return titleCaseSelectorPart(normalizedTag || "Control");
 }
 
 function controlLocationLabel(location) {
@@ -1071,28 +948,9 @@ function locationAttributeSummary(location) {
   return "";
 }
 
-function friendlyLocationLabel(location, issueRuleId = "") {
+function friendlyLocationLabel(location) {
   if (!location || typeof location !== "object") {
     return "Affected page area";
-  }
-
-  // Semantic ownership hint (no behavior impact).
-  getDetectorSemanticModule(issueRuleId || location?.rule_id || "");
-
-  if (isNcEvidenceLocation(location, issueRuleId)) {
-    return "Navigation Region";
-  }
-
-  if (issueRuleId === "SC-1" || location?.rule_id === "SC-1") {
-    return scTextBlockPrimaryLabel(location);
-  }
-
-  if (issueRuleId === "LC-1" || location?.rule_id === "LC-1") {
-    return lcTextBlockPrimaryLabel(location);
-  }
-
-  if (issueRuleId === "DT-1" || location?.rule_id === "DT-1") {
-    return scTextBlockPrimaryLabel(location);
   }
 
   const controlLabel = controlLocationLabel(location);
@@ -1131,46 +989,11 @@ function friendlyLocationLabel(location, issueRuleId = "") {
   return "Affected page area";
 }
 
-function locationMetaText(location, elementNumber = null, issueRuleId = "") {
+function locationMetaText(location, elementNumber = null) {
   if (!location || typeof location !== "object") {
     return "Location detail";
   }
   const elementPrefix = elementNumber ? `Highlighted as Element ${elementNumber} · ` : "";
-  if (isNcEvidenceLocation(location, issueRuleId)) {
-    const metrics = ncEvidenceMetricsLine(location);
-    const technical = ncTechnicalMetaLine(location);
-    const core = [metrics, technical].filter(Boolean).join(" · ");
-    return `${elementPrefix}${core || "Navigation region evidence"}`;
-  }
-  if (issueRuleId === "SC-1" || location?.rule_id === "SC-1") {
-    const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-    if (metricsAbsent) {
-      console.warn("[SC-1 debug] Sentence metrics unavailable (meta) — raw location:", location);
-    }
-    const metrics = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
-    const primary = scPrimaryPattern(location);
-    const secondary = scSecondaryPatterns(location);
-    const secondaryPart = secondary.length ? ` · Secondary: ${secondary.join(" · ")}` : "";
-    const previewRaw = String(location.sentence_preview || "").trim();
-    const previewCompact = previewRaw
-      ? scCompressedSentencePreview(previewRaw).replace(/\n/g, " ")
-      : "";
-    const core = [primary, metrics, previewCompact].filter(Boolean).join(" — ");
-    return `${elementPrefix}${core}${secondaryPart}`;
-  }
-  if (issueRuleId === "LC-1" || location?.rule_id === "LC-1") {
-    const metrics = lcLexicalEvidenceMetricsLine(location);
-    const samples = lcCompactSampleWords(location);
-    const tagLabel = lcTextBlockPrimaryLabel(location);
-    const core = [tagLabel, metrics, samples].filter(Boolean).join(" — ");
-    return `${elementPrefix}${core || "Lexical heuristic (word length / syllable estimate)"}`;
-  }
-  if (issueRuleId === "DT-1" || location?.rule_id === "DT-1") {
-    const tagLabel = scTextBlockPrimaryLabel(location);
-    const metrics = dtDenseEvidenceMetricsLine(location);
-    const metricsPart = metrics ? `${metrics} · ` : "";
-    return `${elementPrefix}${tagLabel} · ${metricsPart}Sentence fragments are punctuation-based heuristics.`;
-  }
   const readableText = location.label
     || location.preview
     || location.sentence_preview
@@ -1294,157 +1117,14 @@ function orderPhsViolationGroupKeys(groupKeys) {
   return ordered;
 }
 
-/** VO-1 attention-source groups (not violations). Display order only. */
-const VO_CONTRIBUTOR_CATEGORY_ORDER = [
-  "interactive_competition",
-  "navigation_density",
-  "media_competition",
-  "card_grid_density",
-  "structural_density",
-  "unknown",
-];
-
-function formatContributorCategoryLabel(category) {
-  if (!category || typeof category !== "string") {
-    return "Attention source";
-  }
-  const normalized = category.trim();
-  const labels = {
-    interactive_competition: "Interactive Competition",
-    navigation_density: "Navigation Density",
-    media_competition: "Media Competition",
-    card_grid_density: "Card / Grid Density",
-    structural_density: "Structural Density",
-    unknown: "Other attention sources",
-  };
-  if (labels[normalized]) {
-    return labels[normalized];
-  }
-  return normalized
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function groupLocationsByContributorCategory(locations) {
-  const groups = {};
-  if (!Array.isArray(locations)) {
-    return groups;
-  }
-  locations.forEach((location, index) => {
-    const raw = location?.contributorCategory;
-    const key = typeof raw === "string" && raw.trim() ? raw.trim() : "unknown";
-    if (!groups[key]) {
-      groups[key] = [];
-    }
-    groups[key].push({ location, elementNumber: index + 1 });
-  });
-  return groups;
-}
-
-function orderVoContributorCategoryKeys(groupKeys) {
-  const ordered = [];
-  VO_CONTRIBUTOR_CATEGORY_ORDER.forEach((key) => {
-    if (groupKeys.includes(key)) {
-      ordered.push(key);
-    }
-  });
-  groupKeys.forEach((key) => {
-    if (!ordered.includes(key)) {
-      ordered.push(key);
-    }
-  });
-  return ordered;
-}
-
-function issueVoGroupedChipSectionsMarkup(issue, dimensionName, visibleSlice, activeElementNumber) {
-  const grouped = groupLocationsByContributorCategory(visibleSlice);
-  const keys = orderVoContributorCategoryKeys(Object.keys(grouped));
-  return keys.map((categoryKey) => {
-    const entries = grouped[categoryKey];
-    const title = `${formatContributorCategoryLabel(categoryKey)} (${entries.length})`;
-    const chips = entries.map(({ location, elementNumber }) => (
-      issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber)
-    )).join("");
-    return `
-      <section class="issue-phs-violation-group issue-vo-contributor-group" aria-label="${escapeHtml(formatContributorCategoryLabel(categoryKey))}">
-        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
-        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
-          ${chips}
-        </div>
-      </section>
-    `;
-  }).join("");
-}
-
-/** WIP-1: single evidence cluster (matches PHS/VO grouped chrome without sub-taxonomy). */
-function issueWipSingleGroupChipSectionsMarkup(
-  issue,
-  dimensionName,
-  visibleSlice,
-  activeElementNumber,
-  totalLocationCount,
-) {
-  const title = `Competing Primary Actions (${totalLocationCount})`;
-  const chips = visibleSlice.map((location, index) => (
-    issueElementChipRowMarkup(issue, dimensionName, location, index + 1, activeElementNumber)
-  )).join("");
-  return `
-      <section class="issue-phs-violation-group issue-wip-single-group" aria-label="Competing Primary Actions">
-        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
-        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
-          ${chips}
-        </div>
-      </section>
-    `;
-}
-
-function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber, chipOptions = {}) {
+function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber) {
   const isActive = activeElementNumber === elementNumber;
-  const issueRuleId = issue?.rule_id || "";
-  const isNc = issueRuleId === "NC-1";
-  const isSc = issueRuleId === "SC-1";
-  const isLc = issueRuleId === "LC-1";
-  const ncGroupedLayout = Boolean(chipOptions.ncGrouped) && isNc;
-  const label = isNc
-    ? "Navigation Region"
-    : isSc
-      ? scTextBlockPrimaryLabel(location)
-      : isLc
-        ? lcTextBlockPrimaryLabel(location)
-        : (location?.label || friendlyLocationLabel(location, issueRuleId));
+  const label = location?.label || friendlyLocationLabel(location);
   const isHighlightable = location?.highlightable !== false;
-  let ncMetricsLine = "";
-  let ncTechnicalLine = "";
-  let scMetricsLine = "";
-  let scPreviewLine = "";
-  let lcMetricsLine = "";
-  let lcSamplesLine = "";
-  let meta = "";
-  let showMeta = false;
-  if (isNc) {
-    ncMetricsLine = ncEvidenceMetricsLine(location);
-    if (ncGroupedLayout && !ncMetricsLine) {
-      ncMetricsLine = NC_GROUPED_METRICS_FALLBACK;
-    }
-    ncTechnicalLine = ncTechnicalMetaLine(location);
-  } else if (isSc) {
-    const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-    if (metricsAbsent) {
-      console.warn("[SC-1 debug] Sentence metrics unavailable (chip) — raw location:", location);
-    }
-    scMetricsLine = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
-    scPreviewLine = String(location.sentence_preview || "").trim();
-  } else if (isLc) {
-    lcMetricsLine = lcLexicalEvidenceMetricsLine(location);
-    lcSamplesLine = lcCompactSampleWords(location);
-  } else {
-    meta = locationMetaText(location, null, issueRuleId)
-      .replace(/^Location: /, "")
-      .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
-    showMeta = Boolean(meta && meta !== label);
-  }
+  const meta = locationMetaText(location, null)
+    .replace(/^Location: /, "")
+    .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
+  const showMeta = meta && meta !== label;
   if (!isHighlightable) {
     const strongLabel = location?.violationType
       ? formatViolationTypeLabel(location.violationType)
@@ -1460,62 +1140,18 @@ function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber
       </div>
     `;
   }
-  if (isSc) {
-    const primaryLine = scPrimaryPattern(location);
-    const secondaryList = scSecondaryPatterns(location);
-    const secondaryLine = secondaryList.length ? `Secondary: ${secondaryList.join(" · ")}` : "";
-    return `
-    <button
-      class="issue-element-chip issue-element-chip--sc${isActive ? " is-active" : ""}"
-      type="button"
-      data-issue-element="${escapeHtml(issue.rule_id)}"
-      data-issue-dimension="${escapeHtml(dimensionName)}"
-      data-element-index="${elementNumber}"
-      aria-pressed="${isActive ? "true" : "false"}"
-    >
-      <strong>Element ${elementNumber}</strong>
-      <span>${escapeHtml(label)}</span>
-      <small class="issue-element-chip__sc-primary">${escapeHtml(primaryLine)}</small>
-      <small class="issue-element-chip__sc-metrics">${escapeHtml(scMetricsLine)}</small>
-      ${secondaryLine ? `<small class="issue-element-chip__sc-secondary summary-muted">${escapeHtml(secondaryLine)}</small>` : ""}
-      ${scPreviewLine ? `<small class="issue-element-chip__sc-preview summary-muted">${escapeHtml(scCompressedSentencePreview(scPreviewLine))}</small>` : ""}
-    </button>
-  `;
-  }
-  if (isLc) {
-    return `
-    <button
-      class="issue-element-chip issue-element-chip--lc${isActive ? " is-active" : ""}"
-      type="button"
-      data-issue-element="${escapeHtml(issue.rule_id)}"
-      data-issue-dimension="${escapeHtml(dimensionName)}"
-      data-element-index="${elementNumber}"
-      aria-pressed="${isActive ? "true" : "false"}"
-    >
-      <strong>Element ${elementNumber}</strong>
-      <span>${escapeHtml(label)}</span>
-      ${lcMetricsLine ? `<small class="issue-element-chip__lc-metrics">${escapeHtml(lcMetricsLine)}</small>` : ""}
-      ${lcSamplesLine ? `<small class="issue-element-chip__lc-samples summary-muted">${escapeHtml(lcSamplesLine)}</small>` : ""}
-    </button>
-  `;
-  }
-  const secondarySpan = ncGroupedLayout
-    ? `<strong class="issue-element-chip__nc-primary-label">${escapeHtml(label)}</strong>`
-    : `<span>${escapeHtml(label || `Affected element ${elementNumber}`)}</span>`;
   return `
     <button
-      class="issue-element-chip${ncGroupedLayout ? " issue-element-chip--nc-grouped" : ""}${isActive ? " is-active" : ""}"
+      class="issue-element-chip${isActive ? " is-active" : ""}"
       type="button"
       data-issue-element="${escapeHtml(issue.rule_id)}"
       data-issue-dimension="${escapeHtml(dimensionName)}"
       data-element-index="${elementNumber}"
       aria-pressed="${isActive ? "true" : "false"}"
     >
-      ${ncGroupedLayout ? "" : `<strong>Element ${elementNumber}</strong>`}
-      ${secondarySpan}
-      ${isNc && (ncGroupedLayout || ncMetricsLine) ? `<small class="issue-element-chip__nc-metrics">${escapeHtml(ncMetricsLine || NC_GROUPED_METRICS_FALLBACK)}</small>` : ""}
-      ${isNc && ncTechnicalLine ? `<small class="issue-element-chip__nc-technical summary-muted">${escapeHtml(ncTechnicalLine)}</small>` : ""}
-      ${!isNc && !isSc && !isLc && showMeta ? `<small>${escapeHtml(meta)}</small>` : ""}
+      <strong>Element ${elementNumber}</strong>
+      <span>${escapeHtml(label || `Affected element ${elementNumber}`)}</span>
+      ${showMeta ? `<small>${escapeHtml(meta)}</small>` : ""}
     </button>
   `;
 }
@@ -1560,78 +1196,6 @@ function guidanceEvidenceMarkup(issue) {
   const shownLocations = locations.slice(0, 12);
   const hiddenCount = Math.max(0, locations.length - shownLocations.length);
 
-  if ((issue?.rule_id || "") === "VO-1") {
-    const grouped = groupLocationsByContributorCategory(shownLocations);
-    const keys = orderVoContributorCategoryKeys(Object.keys(grouped));
-    const groupedBlocks = keys.map((categoryKey) => {
-      const entries = grouped[categoryKey];
-      const groupTitle = `${formatContributorCategoryLabel(categoryKey)} (${entries.length})`;
-      const cards = entries.map(({ location, elementNumber }) => {
-        const label = friendlyLocationLabel(location, issue?.rule_id);
-        const meta = locationMetaText(location, elementNumber, issue?.rule_id).replace(/^Location: /, "");
-        const showMeta = meta && meta !== label;
-        return `
-          <div class="guidance-location-card">
-            <span class="guidance-location-index">${elementNumber}.</span>
-            <div>
-              <strong>${escapeHtml(label)}</strong>
-              ${showMeta ? `<p>${escapeHtml(meta)}</p>` : ""}
-            </div>
-          </div>
-        `;
-      }).join("");
-      return `
-        <div class="guidance-phs-violation-block guidance-vo-contributor-block">
-          <div class="guidance-phs-violation-heading">${escapeHtml(groupTitle)}</div>
-          ${cards}
-        </div>
-      `;
-    }).join("");
-    return `
-      <div class="guidance-evidence-note">
-        <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
-        <span>Grouped by <strong>attention competition source</strong> (interactive, navigation, media, cards/grids, structural density). Element numbers match preview highlights.</span>
-      </div>
-      <div class="guidance-location-list guidance-location-list--phs-grouped">
-        ${groupedBlocks}
-      </div>
-      ${hiddenCount ? `<p class="guidance-hidden-count">${escapeHtml(`${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"} not shown.`)}</p>` : ""}
-    `;
-  }
-
-  if ((issue?.rule_id || "") === "WIP-1") {
-    const totalN = locations.length;
-    const groupTitle = `Competing Primary Actions (${totalN})`;
-    const cards = shownLocations.map((location, index) => {
-      const elementNumber = index + 1;
-      const label = friendlyLocationLabel(location, issue?.rule_id);
-      const meta = locationMetaText(location, elementNumber, issue?.rule_id).replace(/^Location: /, "");
-      const showMeta = meta && meta !== label;
-      return `
-          <div class="guidance-location-card">
-            <span class="guidance-location-index">${elementNumber}.</span>
-            <div>
-              <strong>${escapeHtml(label)}</strong>
-              ${showMeta ? `<p>${escapeHtml(meta)}</p>` : ""}
-            </div>
-          </div>
-        `;
-    }).join("");
-    return `
-      <div class="guidance-evidence-note">
-        <strong>${escapeHtml(`${count} competing primary action${count === 1 ? "" : "s"} found`)}</strong>
-        <span>Shown as one cluster of competing actions (early-page CTA heuristic). Element numbers match preview highlights.</span>
-      </div>
-      <div class="guidance-location-list guidance-location-list--phs-grouped">
-        <div class="guidance-phs-violation-block guidance-wip-single-group">
-          <div class="guidance-phs-violation-heading">${escapeHtml(groupTitle)}</div>
-          ${cards}
-        </div>
-      </div>
-      ${hiddenCount ? `<p class="guidance-hidden-count">${escapeHtml(`${hiddenCount} more competing primary action${hiddenCount === 1 ? "" : "s"} not shown.`)}</p>` : ""}
-    `;
-  }
-
   if ((issue?.rule_id || "") === "PHS-1") {
     const grouped = groupLocationsByViolationType(shownLocations);
     const keys = orderPhsViolationGroupKeys(Object.keys(grouped));
@@ -1639,8 +1203,8 @@ function guidanceEvidenceMarkup(issue) {
       const entries = grouped[violationKey];
       const groupTitle = `${formatViolationTypeLabel(violationKey)} (${entries.length})`;
       const cards = entries.map(({ location, elementNumber }) => {
-        const label = friendlyLocationLabel(location, issue?.rule_id);
-        const meta = locationMetaText(location, elementNumber, issue?.rule_id).replace(/^Location: /, "");
+        const label = friendlyLocationLabel(location);
+        const meta = locationMetaText(location, elementNumber).replace(/^Location: /, "");
         const showMeta = meta && meta !== label;
         return `
           <div class="guidance-location-card">
@@ -1671,94 +1235,6 @@ function guidanceEvidenceMarkup(issue) {
     `;
   }
 
-  if ((issue?.rule_id || "") === "NC-1") {
-    const grouped = groupNcLocationsByViolation(shownLocations);
-    const keys = orderNcViolationGroupKeys(Object.keys(grouped)).filter((key) => grouped[key].length);
-    const groupedBlocks = keys.map((violationKey) => {
-      const entries = grouped[violationKey];
-      const groupTitle = `${formatNcViolationGroupTitle(violationKey)} (${entries.length})`;
-      const cards = entries.map(({ location, elementNumber }) => {
-        const metrics = ncEvidenceMetricsLine(location);
-        const tech = ncTechnicalMetaLine(location);
-        return `
-          <div class="guidance-location-card guidance-nc-location-card">
-            <span class="guidance-location-index">${elementNumber}.</span>
-            <div>
-              <strong>${escapeHtml("Navigation Region")}</strong>
-              ${metrics ? `<p class="guidance-nc-metrics">${escapeHtml(metrics)}</p>` : ""}
-              ${tech ? `<p class="guidance-nc-technical summary-muted">${escapeHtml(tech)}</p>` : ""}
-            </div>
-          </div>
-        `;
-      }).join("");
-      return `
-        <div class="guidance-phs-violation-block guidance-nc-violation-block">
-          <div class="guidance-phs-violation-heading">${escapeHtml(groupTitle)}</div>
-          ${cards}
-        </div>
-      `;
-    }).join("");
-    return `
-      <div class="guidance-evidence-note">
-        <strong>${escapeHtml(`${count} navigation region${count === 1 ? "" : "s"} flagged`)}</strong>
-        <span>Grouped by <strong>why</strong> each region is complex (link count vs nesting depth). Numbers match preview highlights.</span>
-      </div>
-      <div class="guidance-location-list guidance-location-list--phs-grouped guidance-location-list--nc-grouped">
-        ${groupedBlocks}
-      </div>
-      ${hiddenCount ? `<p class="guidance-hidden-count">${escapeHtml(`${hiddenCount} more navigation region${hiddenCount === 1 ? "" : "s"} not shown.`)}</p>` : ""}
-    `;
-  }
-
-  if ((issue?.rule_id || "") === "SC-1") {
-    const grouped = groupScLocationsByPrimaryPattern(shownLocations);
-    const keys = orderScPrimaryGroupKeys(Object.keys(grouped)).filter((key) => grouped[key].length);
-    const groupedBlocks = keys.map((groupKey) => {
-      const entries = grouped[groupKey];
-      const groupTitle = scPrimaryGroupSectionTitle(groupKey, entries.length);
-      const cards = entries.map(({ location, elementNumber }) => {
-        const label = friendlyLocationLabel(location, issue?.rule_id);
-        const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-        const metrics = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
-        const primary = scPrimaryPattern(location);
-        const secondaryList = scSecondaryPatterns(location);
-        const secondaryLine = secondaryList.length ? `Secondary: ${secondaryList.join(" · ")}` : "";
-        const previewRaw = String(location.sentence_preview || "").trim();
-        const previewCompact = previewRaw ? scCompressedSentencePreview(previewRaw) : "";
-        return `
-          <div class="guidance-location-card guidance-sc-location-card">
-            <span class="guidance-location-index">${elementNumber}.</span>
-            <div>
-              <strong>${escapeHtml(label)}</strong>
-              <p class="guidance-sc-primary">${escapeHtml(primary)}</p>
-              <p class="guidance-sc-metrics">${escapeHtml(metrics)}</p>
-              ${secondaryLine ? `<p class="guidance-sc-secondary summary-muted">${escapeHtml(secondaryLine)}</p>` : ""}
-              ${previewCompact ? `<p class="guidance-sc-fingerprint summary-muted">${escapeHtml(previewCompact)}</p>` : ""}
-            </div>
-          </div>
-        `;
-      }).join("");
-      return `
-        <div class="guidance-phs-violation-block guidance-sc-violation-block">
-          <div class="guidance-phs-violation-heading">${escapeHtml(groupTitle)}</div>
-          ${cards}
-        </div>
-      `;
-    }).join("");
-    return `
-      <div class="guidance-evidence-note">
-        <strong>${escapeHtml("Sentence complexity patterns and affected text blocks")}</strong>
-        <span>${escapeHtml(
-          "Complex sentence structures detected using sentence-length, comma-density, and conjunction-density heuristics.",
-        )} Each text block appears once under its <strong>primary</strong> pattern; any other matched heuristics are shown as a secondary line on that row. Element numbers match preview highlights.</span>
-      </div>
-      <div class="guidance-location-list guidance-location-list--phs-grouped guidance-location-list--sc-grouped">
-        ${groupedBlocks}
-      </div>
-      ${hiddenCount ? `<p class="guidance-hidden-count">${escapeHtml(`${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"} not shown.`)}</p>` : ""}
-    `;
-  }
-
   // Guidance should show concrete affected elements, not deduplicated labels,
   // so the visible list matches the affected-element count users see above.
   return `
@@ -1768,8 +1244,8 @@ function guidanceEvidenceMarkup(issue) {
     </div>
     <div class="guidance-location-list">
       ${shownLocations.map((location, index) => {
-        const label = friendlyLocationLabel(location, issue?.rule_id);
-        const meta = locationMetaText(location, index + 1, issue?.rule_id).replace(/^Location: /, "");
+        const label = friendlyLocationLabel(location);
+        const meta = locationMetaText(location, index + 1).replace(/^Location: /, "");
         const showMeta = meta && meta !== label;
         return `
           <div class="guidance-location-card">
@@ -1823,11 +1299,11 @@ function issueRuleFixStepText(issue, dimensionName) {
       "Flatten deeply nested menus and group related links clearly.",
     ],
     "WIP-1": [
-      "Establish one clear primary action in the flow and demote or relocate competing CTAs.",
-      "Group secondary actions so the markup suggests a single dominant next step.",
+      "Make one primary call to action visually dominant.",
+      "Move or demote nearby competing calls to action.",
     ],
     "VO-1": [
-      "Reduce competing elements in the early-page markup structure.",
+      "Reduce competing visible elements in the viewport.",
       "Group related content and remove non-essential cards, banners, or controls.",
     ],
     "AMC-1": [
@@ -1897,7 +1373,7 @@ function issueGoalText(issue, dimensionName) {
     "LCC-1": "Break long content into clear sections that users can scan.",
     "PHS-1": "Create a predictable heading hierarchy.",
     "NC-1": "Make navigation choices easier to scan and understand.",
-    "WIP-1": "Reduce competing primary actions so one next step reads clearly from structure.",
+    "WIP-1": "Make one primary action clearly more important than secondary actions.",
     "VO-1": "Reduce competing focal points and support one dominant task path.",
     "AMC-1": "Keep motion under user control instead of starting automatically.",
     "EI-1": "Avoid interruptions before users finish the main reading or task path.",
@@ -1927,8 +1403,8 @@ function issueDoneWhenText(issue, dimensionName) {
     "LCC-1": "Done when users can scan section headings or chunks before reading in full.",
     "PHS-1": "Done when headings follow a clear order from the main page heading down.",
     "NC-1": "Done when navigation has fewer choices and shallow, clear grouping.",
-    "WIP-1": "Done when early-page markup presents one clear primary action and secondary CTAs are grouped or deferred.",
-    "VO-1": "Done when one clear primary focus dominates the early-page structure.",
+    "WIP-1": "Done when the primary action is visually dominant and secondary actions are grouped.",
+    "VO-1": "Done when one clear primary focus is visible above the fold.",
     "AMC-1": "Done when media or animation starts only after the user chooses it.",
     "EI-1": "Done when popups or sticky prompts no longer interrupt the first task path.",
   };
@@ -1950,7 +1426,7 @@ function advancedDetailsMarkup(issue, ruleId, standards, isoClauses) {
   const selectorItems = locations.map((location, index) => `
     <li>
       <span aria-hidden="true">${index + 1}</span>
-      <code>${escapeHtml(locationMetaText(location, null, ruleId).replace(/^Location: /, ""))}</code>
+      <code>${escapeHtml(locationMetaText(location).replace(/^Location: /, ""))}</code>
     </li>
   `).join("");
   return `
@@ -1987,7 +1463,7 @@ function selectedIssueWorkspaceMarkup(record) {
     <section class="issue-guidance-panel" aria-label="Selected issue guidance">
       <div class="guidance-expanded-report">
         <section class="guidance-numbered-section">
-          <h4><span>1.</span> ${ruleId === "WIP-1" ? "Competing primary actions and locations" : ruleId === "NC-1" ? "Violation patterns and navigation regions" : "Affected elements and locations"}</h4>
+          <h4><span>1.</span> Affected elements and locations</h4>
           ${guidanceEvidenceMarkup(issue)}
         </section>
 
@@ -2038,116 +1514,6 @@ function issueElementListMarkup(issue, dimensionName) {
           </ol>
         </div>
         <div class="issue-phs-grouped-wrap">
-          ${groupedSections}
-        </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
-      </div>
-    `;
-  }
-
-  if ((issue.rule_id || "") === "VO-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const groupedSections = issueVoGroupedChipSectionsMarkup(
-      issue,
-      dimensionName,
-      visibleSlice,
-      activeElementNumber,
-    );
-    return `
-      <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Attention competition sources</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
-        <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
-          ${groupedSections}
-        </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
-      </div>
-    `;
-  }
-
-  if ((issue.rule_id || "") === "WIP-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const totalN = locations.length;
-    const groupedSection = issueWipSingleGroupChipSectionsMarkup(
-      issue,
-      dimensionName,
-      visibleSlice,
-      activeElementNumber,
-      totalN,
-    );
-    return `
-      <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Competing primary actions</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
-        <div class="issue-phs-grouped-wrap issue-wip-single-group-wrap">
-          ${groupedSection}
-        </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more competing primary action${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
-      </div>
-    `;
-  }
-
-  if ((issue.rule_id || "") === "NC-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const groupedSections = issueNcGroupedChipSectionsMarkup(
-      issue,
-      dimensionName,
-      visibleSlice,
-      activeElementNumber,
-    );
-    return `
-      <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Navigation complexity</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click a region</strong> -> preview highlights that <strong>&lt;nav&gt;</strong>.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
-        <div class="issue-phs-grouped-wrap issue-nc-grouped-wrap">
-          ${groupedSections}
-        </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more navigation region${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
-      </div>
-    `;
-  }
-
-  if ((issue.rule_id || "") === "SC-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const groupedSections = issueScGroupedChipSectionsMarkup(
-      issue,
-      dimensionName,
-      visibleSlice,
-      activeElementNumber,
-    );
-    return `
-      <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Sentence complexity patterns</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
-        <div class="issue-phs-grouped-wrap issue-sc-grouped-wrap">
           ${groupedSections}
         </div>
         ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
@@ -2211,23 +1577,26 @@ function selectIssue(dimensionName, ruleId) {
     return null;
   }
   if (state.selectedIssueId !== issueId) {
-    setSelectedElementNumber(state, 0);
-    setActiveGuidancePopoverKey(state, "");
+    state.selectedElementNumber = 0;
+    state.activeGuidancePopoverKey = "";
   }
-  setSelectedIssueId(state, issueId);
+  state.selectedIssueId = issueId;
   updateActiveHighlightButtons();
   return selected;
 }
 
 function selectedIssueRecord() {
-  return selectedIssueRecordSelector(state);
+  return findIssueById(state.selectedIssueId);
 }
 
 function resetIssueWorkspaceForProfileChange() {
-  // A profile switch changes the audience lens, so old issue guidance/highlights
-  // should not stay visible under a different user group.
-  resetSelectionToSummary(state);
-  state.previewGuidancePinned = false;
+  // Switching priority lens resets issue guidance/highlights because detector prioritization changed.
+  state.selectedIssueId = "";
+  state.activeHighlightDimension = "";
+  state.activeHighlightIssueId = "";
+  state.selectedElementNumber = 0;
+  state.activeGuidancePopoverKey = "";
+  state.rightPanelMode = "summary";
 
   clearWebsiteHighlights();
   setWorkspaceMode("website");
@@ -2279,14 +1648,14 @@ function phsIssueHasOnlyNonHighlightableLocations(issue) {
 }
 
 function issueHighlightElements(frameDoc, issue, dimensionName) {
-  const ruleId = issue?.rule_id || "";
   const locationElements = (issue.locations || []).flatMap((location) => (
-    findElementsForLocation(frameDoc, location, ruleId)
+    findElementsForLocation(frameDoc, location)
   ));
   if (locationElements.length) {
     return { elements: locationElements, exact: true };
   }
 
+  const ruleId = issue?.rule_id || "";
   if (ruleId === "PHS-1" && phsIssueHasOnlyNonHighlightableLocations(issue)) {
     return { elements: [], exact: true, structuralOnly: true };
   }
@@ -2359,9 +1728,10 @@ function openIssueInSummary(dimensionName, ruleId) {
   );
 
   if (isSameIssueOpen) {
-    setSelectedIssueId(state, "");
-    clearActiveHighlight(state);
-    setRightPanelMode(state, "summary");
+    state.selectedIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeHighlightIssueId = "";
+    state.rightPanelMode = "summary";
     setWorkspaceMode("website");
     clearWebsiteHighlights();
     updatePreviewIssueHeader();
@@ -2375,7 +1745,7 @@ function openIssueInSummary(dimensionName, ruleId) {
     return;
   }
 
-  setRightPanelMode(state, "detail");
+  state.rightPanelMode = "detail";
   setWorkspaceMode("explanation");
   renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
   updateActiveHighlightButtons();
@@ -2390,8 +1760,9 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   );
 
   if (isSamePreviewIssue) {
-    setSelectedIssueId(state, "");
-    clearActiveHighlight(state);
+    state.selectedIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeHighlightIssueId = "";
     clearWebsiteHighlights();
     updatePreviewIssueHeader();
     updateActiveHighlightButtons();
@@ -2403,54 +1774,75 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   if (!selected) {
     return;
   }
-  setRightPanelMode(state, "preview");
-  setActiveHighlightDimension(state, selected.dimension.dimension);
-  setActiveHighlightIssueId(state, issueDomId(selected.dimension.dimension, selected.issue.rule_id));
+  state.rightPanelMode = "preview";
+  state.activeHighlightDimension = selected.dimension.dimension;
+  state.activeHighlightIssueId = issueDomId(selected.dimension.dimension, selected.issue.rule_id);
   setWorkspaceMode("website");
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => highlightSelectedIssueInPreview());
 }
 
-function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
-  const issueId = issueDomId(dimensionName, issue.rule_id);
+/** Standards + affected elements (formerly nested inside a second &lt;details&gt;). */
+function issueSummaryBodyMarkup(issue, dimensionName) {
   const { coga: cogaSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
-  return renderIssueSummaryCard(
-    {
-      escapeHtml,
-      friendlyLocationLabel,
-      locationMetaText,
-      formatViolationTypeLabel,
-      scTextBlockPrimaryLabel,
-      lcTextBlockPrimaryLabel,
-      ncEvidenceMetricsLine,
-      ncTechnicalMetaLine,
-      scAllThreeSentenceMetricsAbsent,
-      scSentenceEvidenceMetricsLine,
-      scPrimaryPattern,
-      scSecondaryPatterns,
-      scCompressedSentencePreview,
-      lcLexicalEvidenceMetricsLine,
-      lcCompactSampleWords,
-      NC_GROUPED_METRICS_FALLBACK,
-      SC_CHIP_METRICS_FALLBACK,
-      groupLocationsByViolationType,
-      orderPhsViolationGroupKeys,
-      groupLocationsByContributorCategory,
-      orderVoContributorCategoryKeys,
-      formatContributorCategoryLabel,
-      issueDomId,
-    },
-    {
-      issue,
-      dimensionName,
-      issueNumber,
-      issueId,
-      selectedIssueId: state.selectedIssueId,
-      selectedElementNumber: state.selectedElementNumber,
-      cogaSummary,
-      isoSummary,
-    },
-  );
+  const cogaMarkup = cogaGuidanceMarkup(cogaSummary);
+  const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
+
+  return `
+        <details class="issue-learn-more">
+          <summary class="issue-learn-more-summary">Learn more</summary>
+          <div class="issue-learn-more-content">
+            <div class="issue-summary-row issue-summary-row-standards">
+              <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA Guidance Objective</span>
+              ${cogaMarkup}
+            </div>
+            <div class="issue-summary-row issue-summary-row-standards">
+              <span class="issue-highlight-label">ISO 9241-11</span>
+              ${isoMarkup}
+            </div>
+          </div>
+        </details>
+        ${issueElementListMarkup(issue, dimensionName)}
+  `;
+}
+
+/**
+ * One accordion per issue: expand once to see cognitive helper + standards + elements (no nested Issue card).
+ */
+function topIssueAccordionMarkup(issue, dimensionName, issueNumber, displayName, cognitiveDimension) {
+  const issueId = issueDomId(dimensionName, issue.rule_id);
+  const isSelected = issueId === state.selectedIssueId;
+  const selectedClass = isSelected ? " is-selected is-active" : "";
+  const titleText = issue.title || "Review this issue";
+  const bodyMarkup = issueSummaryBodyMarkup(issue, dimensionName);
+  const titleDiffersFromDetector = String(titleText).trim() !== String(displayName).trim();
+  const issueTitleRow = titleDiffersFromDetector
+    ? `<p class="issue-flat-issue-title"><strong>${escapeHtml(titleText)}</strong></p>`
+    : "";
+
+  return `
+    <details
+      class="explanation-block explanation-accordion issue-highlight-button issue-summary-card${selectedClass}"
+      data-explanation-dimension="${escapeHtml(displayName)}"
+      data-highlight-issue="${escapeHtml(issue.rule_id)}"
+      data-highlight-dimension="${escapeHtml(dimensionName)}"
+    >
+      <summary class="explanation-accordion-summary">
+        <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
+        <span class="explanation-accordion-meta">
+          <span class="explanation-accordion-issue-count">${issueNumber}</span>
+          <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
+        </span>
+      </summary>
+      <div class="explanation-accordion-content">
+        <p class="category-helper">${escapeHtml(cognitiveDimension)}</p>
+        ${issueTitleRow}
+        <div class="issue-summary-body">
+          ${bodyMarkup}
+        </div>
+      </div>
+    </details>
+  `;
 }
 
 function renderExplanation(result) {
@@ -2458,48 +1850,31 @@ function renderExplanation(result) {
   if (!explanationContent) {
     return;
   }
-  const filteredResult = {
-    ...result,
-    dimensions: (result?.dimensions || []).filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension)),
-  };
-  explanationContent.className = "pane-scroll rich-text";
-  explanationContent.innerHTML = renderExplanationMarkup({
-    result: filteredResult,
-    escapeHtml,
-    patientDetectorOrderIndex,
-    prioritizedIssuesForProfile,
-    displayDimensionName,
-    cognitiveDimensionLabel,
-    issueDomId,
-    issueCardStandardsSummary,
-    selectedIssueId: state.selectedIssueId,
-    selectedElementNumber: state.selectedElementNumber,
-    issueRenderCtx: {
-      escapeHtml,
-      friendlyLocationLabel,
-      locationMetaText,
-      formatViolationTypeLabel,
-      scTextBlockPrimaryLabel,
-      lcTextBlockPrimaryLabel,
-      ncEvidenceMetricsLine,
-      ncTechnicalMetaLine,
-      scAllThreeSentenceMetricsAbsent,
-      scSentenceEvidenceMetricsLine,
-      scPrimaryPattern,
-      scSecondaryPatterns,
-      scCompressedSentencePreview,
-      lcLexicalEvidenceMetricsLine,
-      lcCompactSampleWords,
-      NC_GROUPED_METRICS_FALLBACK,
-      SC_CHIP_METRICS_FALLBACK,
-      groupLocationsByViolationType,
-      orderPhsViolationGroupKeys,
-      groupLocationsByContributorCategory,
-      orderVoContributorCategoryKeys,
-      formatContributorCategoryLabel,
-      issueDomId,
-    },
+
+  const orderedDimensions = [...(result.dimensions || [])]
+    .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
+    .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
+
+  let issueSeq = 0;
+  const blocks = orderedDimensions.flatMap((dimension) => {
+    const filteredIssues = prioritizedIssuesForProfile(dimension);
+    if (!filteredIssues.length) {
+      return [];
+    }
+
+    const displayName = displayDimensionName(dimension.dimension);
+    const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
+
+    return filteredIssues.map((issue) => {
+      issueSeq += 1;
+      return topIssueAccordionMarkup(issue, dimension.dimension, issueSeq, displayName, cognitiveDimension);
+    });
   });
+
+  explanationContent.className = "pane-scroll rich-text";
+  explanationContent.innerHTML = blocks.length
+    ? `<div class="issue-highlight-list">${blocks.join("")}</div>`
+    : `<p class="category-helper">No top issues detected for this scan.</p>`;
   setActiveDimensionBar("");
 }
 
@@ -2521,7 +1896,7 @@ function setWebsiteStatus(message, isError = false) {
 }
 
 function setWorkspaceMode(mode) {
-  setWorkspaceModeTransition(state, mode);
+  state.workspaceMode = mode;
   const explanationView = document.getElementById("explanationView");
   const websiteView = document.getElementById("websiteView");
 
@@ -2783,63 +2158,30 @@ function injectHighlightStyles(doc) {
       border: 1px solid rgba(37, 99, 235, 0.3);
       border-radius: 12px;
       box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
-      padding: 14px 48px 14px 16px;
+      padding: 12px 14px;
       font: 500 13px/1.45 Arial, sans-serif;
       color: #0f172a;
     }
 
     #cognilens-guidance-popover .cognilens-popover-close {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      display: grid;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      border: 1px solid rgba(148, 163, 184, 0.42);
-      border-radius: 10px;
-      background: rgba(248, 250, 252, 0.92);
-      color: transparent;
-      cursor: pointer;
-      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
-      -webkit-appearance: none;
-      appearance: none;
-      touch-action: manipulation;
-    }
-
-    #cognilens-guidance-popover .cognilens-popover-close::before,
-    #cognilens-guidance-popover .cognilens-popover-close::after {
-      content: "";
-      position: absolute;
-      width: 13px;
-      height: 2px;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
       border-radius: 999px;
-      background: #64748b;
-      transform-origin: center;
-    }
-
-    #cognilens-guidance-popover .cognilens-popover-close::before {
-      transform: rotate(45deg);
-    }
-
-    #cognilens-guidance-popover .cognilens-popover-close::after {
-      transform: rotate(-45deg);
+      background: #fff;
+      color: #475569;
+      font: 800 14px/1 Arial, sans-serif;
+      cursor: pointer;
     }
 
     #cognilens-guidance-popover .cognilens-popover-close:hover,
     #cognilens-guidance-popover .cognilens-popover-close:focus-visible {
-      border-color: rgba(37, 99, 235, 0.42);
-      background: #eff6ff;
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
-      transform: translateY(-1px);
+      border-color: rgba(37, 99, 235, 0.8);
+      color: #1d4ed8;
       outline: none;
-    }
-
-    #cognilens-guidance-popover .cognilens-popover-close:hover::before,
-    #cognilens-guidance-popover .cognilens-popover-close:hover::after,
-    #cognilens-guidance-popover .cognilens-popover-close:focus-visible::before,
-    #cognilens-guidance-popover .cognilens-popover-close:focus-visible::after {
-      background: #1d4ed8;
     }
 
     #cognilens-guidance-popover h5 {
@@ -2883,7 +2225,7 @@ function removeGuidancePopover(doc = getPreviewDocument()) {
     return;
   }
   doc.getElementById("cognilens-guidance-popover")?.remove();
-  setActiveGuidancePopoverKey(state, "");
+  state.activeGuidancePopoverKey = "";
   state.previewGuidancePinned = false;
 }
 
@@ -2925,7 +2267,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuse
     ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
-    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover"></button>
+    <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover">×</button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
     <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
@@ -2933,7 +2275,7 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuse
     ${listMarkup}
   `;
   doc.body?.appendChild(container);
-  setActiveGuidancePopoverKey(state, expectedKey);
+  state.activeGuidancePopoverKey = expectedKey;
   positionGuidancePopover(container, anchorElement, doc);
 }
 
@@ -3166,18 +2508,28 @@ function debugCandidateList(source, elements, frameDoc = null) {
   )));
 }
 
-function validateHighlightTarget(element, location = null, frameDoc = null, ruleIdHint = "") {
-  return validateHighlightTargetEngine(
-    {
-      elementHiddenReason,
-      isGenericOrBadSelector,
-      ruleContext: { lc1FrontendForensicEnabled, dt1FrontendForensicEnabled },
-    },
-    element,
-    location,
-    frameDoc,
-    ruleIdHint,
-  );
+function validateHighlightTarget(element, location = null, frameDoc = null) {
+  if (!element || element.nodeType !== 1) {
+    return { ok: false, reason: "No visible target found" };
+  }
+  const tagName = element.tagName?.toLowerCase();
+  if (["html", "head", "body", "script", "style", "meta", "link", "noscript", "template", "defs", "path"].includes(tagName)) {
+    return { ok: false, reason: `Bad target tag: ${tagName}` };
+  }
+  const hiddenReason = elementHiddenReason(element);
+  if (hiddenReason) {
+    return { ok: false, reason: hiddenReason };
+  }
+  const rect = element.getBoundingClientRect();
+  const viewportWidth = frameDoc?.documentElement?.clientWidth || element.ownerDocument?.documentElement?.clientWidth || 0;
+  const viewportHeight = frameDoc?.documentElement?.clientHeight || element.ownerDocument?.documentElement?.clientHeight || 0;
+  if (viewportWidth && viewportHeight && rect.width * rect.height > viewportWidth * viewportHeight * 0.6) {
+    return { ok: false, reason: "Target is a large structural container" };
+  }
+  if (location?.selector && isGenericOrBadSelector(location.selector)) {
+    return { ok: false, reason: `Selector is too broad: ${location.selector}` };
+  }
+  return { ok: true, reason: "" };
 }
 
 function sortHighlightCandidates(elements) {
@@ -3194,42 +2546,101 @@ function sortHighlightCandidates(elements) {
   });
 }
 
-function findElementsForLocation(doc, location, ruleId = "") {
-  const effectiveRuleId = ruleId || location?.rule_id || "";
-  const elements = findElementsForLocationEngine(
-    {
-      cssEscape,
-      debugHighlight,
-      debugCandidateList,
-      isGenericOrBadSelector,
-      summaryToSelector,
-      findByText,
-      collectTextBlocks,
-      sortHighlightCandidates,
-      elementTextPreview,
-      elementHiddenReason,
-      isElementVisibleForHighlight,
-      filterDtEvidenceElements,
-      filterScEvidenceElements,
-      filterLcEvidenceElements,
-      lc1FrontendForensicEnabled,
-      dt1FrontendForensicEnabled,
-      ruleContext: { lc1FrontendForensicEnabled, dt1FrontendForensicEnabled },
-      HIGHLIGHT_CONFIG,
-      getDetectorSemanticModule,
-    },
-    doc,
-    location,
-    effectiveRuleId,
-  );
-  logHighlightResolution(
-    {
-      ruleContext: { lc1FrontendForensicEnabled, dt1FrontendForensicEnabled },
-      getDetectorSemanticModule,
-    },
-    { ruleId: effectiveRuleId, selector: location?.selector || "", matched: elements, finalTarget: elements?.[0] || null },
-  );
-  return elements;
+function findElementsForLocation(doc, location) {
+  if (!location || typeof location !== "object") {
+    return [];
+  }
+
+  if (location.highlightable === false || location.documentStructuralFinding === true) {
+    return [];
+  }
+
+  if (location.cognilensId) {
+    const selector = `[data-cognilens-id="${cssEscape(location.cognilensId)}"]`;
+    const matched = Array.from(doc.querySelectorAll(selector));
+    debugHighlight("cognilensId lookup", location.cognilensId, "matches", matched.length);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
+  if (location.selector) {
+    if (isGenericOrBadSelector(location.selector)) {
+      debugHighlight("skip broad/bad selector", location.selector);
+    } else {
+      try {
+        const matched = Array.from(doc.querySelectorAll(location.selector));
+        debugHighlight("selector lookup", location.selector, "matches", matched.length);
+        debugCandidateList(`selector ${location.selector}`, matched, doc);
+        if (matched.length) {
+          return sortHighlightCandidates(matched);
+        }
+      } catch (error) {
+        debugHighlight("selector lookup failed", location.selector, error);
+        return [];
+      }
+    }
+  }
+
+  const summarySelector = summaryToSelector(location.summary || location.region);
+  if (summarySelector) {
+    try {
+      const matched = Array.from(doc.querySelectorAll(summarySelector));
+      debugHighlight("summary selector lookup", summarySelector, "matches", matched.length);
+      debugCandidateList(`summary selector ${summarySelector}`, matched, doc);
+      if (matched.length) {
+        return sortHighlightCandidates(matched);
+      }
+    } catch (error) {
+      // Fall through to other location strategies.
+    }
+  }
+
+  if (location.block_index) {
+    const block = collectTextBlocks(doc)[Number(location.block_index) - 1];
+    if (block) {
+      return [block];
+    }
+  }
+
+  if (location.text) {
+    const matched = findByText(doc, location.tag, location.text);
+    debugHighlight("text fallback", location.text, "matches", matched.length);
+    debugCandidateList("text fallback", matched, doc);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
+  if (location.preview) {
+    const matched = findByText(doc, location.tag, location.preview);
+    debugHighlight("preview fallback", location.preview, "matches", matched.length);
+    debugCandidateList("preview fallback", matched, doc);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
+  if (location.sentence_preview) {
+    const matched = findByText(doc, location.tag, location.sentence_preview);
+    debugHighlight("sentence preview fallback", location.sentence_preview, "matches", matched.length);
+    debugCandidateList("sentence preview fallback", matched, doc);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
+  if (location.label || location.summary) {
+    const text = location.label || location.summary;
+    const matched = findByText(doc, location.tag, text);
+    debugHighlight("label/summary fallback", text, "matches", matched.length);
+    debugCandidateList("label/summary fallback", matched, doc);
+    if (matched.length) {
+      return sortHighlightCandidates(matched);
+    }
+  }
+
+  return [];
 }
 
 function clickableText(element) {
@@ -3292,25 +2703,52 @@ function tryExpandHiddenElement(element) {
   return true;
 }
 
-function moreSpecificHighlightTarget(element, location = null, frameDoc = null, ruleId = "") {
-  return moreSpecificHighlightTargetEngine(
-    {
-      debugHighlight,
-      sortHighlightCandidates,
-      elementTextPreview,
-      elementHiddenReason,
-      isGenericOrBadSelector,
-      ruleContext: { lc1FrontendForensicEnabled, dt1FrontendForensicEnabled },
-    },
-    element,
-    location,
-    frameDoc,
-    ruleId,
-  );
+function moreSpecificHighlightTarget(element, location = null, frameDoc = null) {
+  const validation = validateHighlightTarget(element, location, frameDoc);
+  if (validation.ok) {
+    return element;
+  }
+  const childSelectors = "a, button, input, select, textarea, img, h1, h2, h3, h4, p, li, video, audio, iframe, [role='button']";
+  const children = Array.from(element?.querySelectorAll?.(childSelectors) || []);
+  const child = sortHighlightCandidates(children).find((candidate) => (
+    validateHighlightTarget(candidate, null, frameDoc).ok
+  ));
+  if (child) {
+    debugHighlight("using more specific child target", {
+      originalReason: validation.reason,
+      originalTag: element?.tagName?.toLowerCase(),
+      childTag: child.tagName?.toLowerCase(),
+      childText: elementTextPreview(child),
+    });
+    return child;
+  }
+  return element;
 }
 
 function fallbackSelectorsForIssue(issue, dimensionName) {
-  return fallbackSelectorsForIssueEngine({ HIGHLIGHT_CONFIG, ruleContext: { lc1FrontendForensicEnabled, dt1FrontendForensicEnabled } }, issue, dimensionName);
+  const ruleId = issue?.rule_id || "";
+  if (ruleId === "DT-1" || ruleId === "LC-1" || ruleId === "SC-1" || ruleId === "LCC-1") {
+    return ["p", "li", "article", "section", "label", "legend", "small"];
+  }
+  if (ruleId === "PHS-1") {
+    return [];
+  }
+  if (ruleId === "NC-1") {
+    return ["nav", "[role='navigation']", "[class*='menu' i]", "[class*='breadcrumb' i]"];
+  }
+  if (ruleId === "WIP-1") {
+    return [];
+  }
+  if (ruleId === "VO-1") {
+    return ["main > *", "header > *", "section", "article", "nav", "button", "a", "img", "h1", "h2", ".card", "[class*='card' i]"];
+  }
+  if (ruleId === "AMC-1") {
+    return ["video[autoplay]", "audio[autoplay]", "iframe"];
+  }
+  if (ruleId === "EI-1") {
+    return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
+  }
+  return HIGHLIGHT_CONFIG[dimensionName]?.selectors || [];
 }
 
 function applyHighlights(elements, color, label, maxCount = 30) {
@@ -3420,7 +2858,7 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     selector: location?.selector || "",
     cognilensId: location?.cognilensId || "",
   });
-  const exactLocationElements = location ? findElementsForLocation(frameDoc, location, ruleId) : [];
+  const exactLocationElements = location ? findElementsForLocation(frameDoc, location) : [];
   const elements = exactLocationElements.length
     ? exactLocationElements
     : issueHighlightElements(frameDoc, issue, dimensionName).elements;
@@ -3444,18 +2882,17 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     return;
   }
 
-  let finalTarget = moreSpecificHighlightTarget(target, location, frameDoc, ruleId);
+  let finalTarget = moreSpecificHighlightTarget(target, location, frameDoc);
   if (!isElementVisibleForHighlight(finalTarget)) {
     const expanded = tryExpandHiddenElement(finalTarget);
     if (expanded) {
       setWebsiteStatus(`Element ${elementNumber} is inside hidden content. Opening its section...`);
       await waitForPreviewUpdate();
-      const retry = location ? findElementsForLocation(frameDoc, location, ruleId) : issueHighlightElements(frameDoc, issue, dimensionName).elements;
+      const retry = location ? findElementsForLocation(frameDoc, location) : issueHighlightElements(frameDoc, issue, dimensionName).elements;
       finalTarget = moreSpecificHighlightTarget(
         sortHighlightCandidates(retry)[exactLocationElements.length ? 0 : elementNumber - 1] || finalTarget,
         location,
         frameDoc,
-        ruleId,
       );
       debugHighlight("after auto expand retry", {
         candidates: retry.length,
@@ -3466,7 +2903,7 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     }
   }
 
-  const targetValidation = validateHighlightTarget(finalTarget, location, frameDoc, ruleId);
+  const targetValidation = validateHighlightTarget(finalTarget, location, frameDoc);
   debugHighlight("final target validation", {
     ok: targetValidation.ok,
     reason: targetValidation.reason,
@@ -3506,9 +2943,10 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
     && state.rightPanelMode === "preview"
   );
   if (isSameElementActive) {
-    setSelectedElementNumber(state, 0);
-    clearActiveHighlight(state);
-    setActiveGuidancePopoverKey(state, "");
+    state.selectedElementNumber = 0;
+    state.activeHighlightIssueId = "";
+    state.activeHighlightDimension = "";
+    state.activeGuidancePopoverKey = "";
     clearWebsiteHighlights();
     updateActiveHighlightButtons();
     setWebsiteStatus("Highlight cleared. Click an element again to re-highlight it.");
@@ -3519,11 +2957,11 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
   if (!selected) {
     return;
   }
-  setRightPanelMode(state, "preview");
-  setActiveHighlightDimension(state, selected.dimension.dimension);
-  setActiveHighlightIssueId(state, issueDomId(selected.dimension.dimension, selected.issue.rule_id));
-  setSelectedElementNumber(state, elementNumber);
-  setActiveGuidancePopoverKey(state, "");
+  state.rightPanelMode = "preview";
+  state.activeHighlightDimension = selected.dimension.dimension;
+  state.activeHighlightIssueId = issueDomId(selected.dimension.dimension, selected.issue.rule_id);
+  state.selectedElementNumber = elementNumber;
+  state.activeGuidancePopoverKey = "";
   setWorkspaceMode("website");
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => {
@@ -3539,14 +2977,14 @@ function highlightDimension(dimensionName) {
     && !state.activeHighlightIssueId
   ) {
     clearWebsiteHighlights();
-    setActiveHighlightDimension(state, "");
+    state.activeHighlightDimension = "";
     updateActiveHighlightButtons();
     setWebsiteStatus("Highlight cleared. The original webpage view is restored.");
     return;
   }
 
-  setActiveHighlightDimension(state, dimensionName);
-  setActiveHighlightIssueId(state, "");
+  state.activeHighlightDimension = dimensionName;
+  state.activeHighlightIssueId = "";
   const dimension = findDimension(state.currentResult, dimensionName);
   const config = HIGHLIGHT_CONFIG[dimensionName];
   updateActiveHighlightButtons();
@@ -3595,14 +3033,15 @@ function highlightIssue(dimensionName, ruleId, force = false) {
   const issueId = `${dimensionName}:${ruleId}`;
   if (!force && state.activeHighlightIssueId === issueId) {
     clearWebsiteHighlights();
-    clearActiveHighlight(state);
+    state.activeHighlightIssueId = "";
+    state.activeHighlightDimension = "";
     updateActiveHighlightButtons();
     setWebsiteStatus("Highlight cleared. The original webpage view is restored.");
     return;
   }
 
-  setActiveHighlightDimension(state, dimensionName);
-  setActiveHighlightIssueId(state, issueId);
+  state.activeHighlightDimension = dimensionName;
+  state.activeHighlightIssueId = issueId;
   updateActiveHighlightButtons();
 
   const switchedWorkspace = state.workspaceMode !== "website";
@@ -3704,12 +3143,12 @@ function ensureInitialAssistantMessage() {
   if (state.chatMessages.length) {
     return;
   }
-  resetChatMessages(state, [
-    {
-      role: "assistant",
-      content: "Ask me how to reduce information overload, improve readability, or fix specific issues.",
-    },
-  ]);
+  state.chatMessages = [
+      {
+        role: "assistant",
+        content: "Ask me how to reduce information overload, improve readability, or fix specific issues.",
+      },
+  ];
 }
 
 function renderAssistantMessages() {
@@ -3764,9 +3203,9 @@ async function handleAssistantSubmit(event) {
     return;
   }
 
-  pushChatMessage(state, { role: "user", content: prompt });
+  state.chatMessages.push({ role: "user", content: prompt });
   input.value = "";
-  setChatPending(state, true);
+  state.chatPending = true;
   renderAssistantMessages();
 
   try {
@@ -3776,24 +3215,24 @@ async function handleAssistantSubmit(event) {
       source_name: state.sourceName || "Uploaded file",
     });
 
-    pushChatMessage(state, {
+    state.chatMessages.push({
       role: "assistant",
       content: response.reply || "No assistant response was returned.",
     });
   } catch (error) {
-    pushChatMessage(state, {
+    state.chatMessages.push({
       role: "assistant",
       content: `I could not reach the AI assistant right now. ${error.message || String(error)}`,
     });
   } finally {
-    setChatPending(state, false);
+    state.chatPending = false;
     renderAssistantMessages();
     input.focus();
   }
 }
 
 function handleAssistantClear() {
-  resetChatMessages(state);
+  state.chatMessages = [];
   ensureInitialAssistantMessage();
   renderAssistantMessages();
 }
@@ -3835,18 +3274,13 @@ function syncEyeTrackingNavAndStorage() {
 
 function renderResult(result, html, options = {}) {
   const previousSelectedIssueId = state.selectedIssueId;
-  setCurrentResultAndHtml(state, result, html || "");
-  console.log("[Dashboard render authoritative]", {
-    run_id: dtRunIdFromPayload(state.currentPayload),
-    dt_locations: dtLocationsCountFromResult(state.currentResult),
-    source_type: state.dashboardSource?.source_type || "",
-  });
-  dtFrontendStateLog("renderResult", state.currentPayload, state.currentResult, state.sourceName);
+  state.currentResult = result;
+  state.currentHtml = html || "";
   if (options.preserveSelectedIssue && findIssueById(previousSelectedIssueId)) {
-    setSelectedIssueId(state, previousSelectedIssueId);
+    state.selectedIssueId = previousSelectedIssueId;
   } else {
-    setSelectedIssueId(state, "");
-    setRightPanelMode(state, "summary");
+    state.selectedIssueId = "";
+    state.rightPanelMode = "summary";
   }
   renderReportId();
   renderScoreSlider(result);
@@ -3881,14 +3315,14 @@ function applySidebarState() {
 }
 
 function handleSidebarToggle() {
-  toggleSidebarCollapsed(state);
+  state.sidebarCollapsed = !state.sidebarCollapsed;
   sessionStorage.setItem(SIDEBAR_STORAGE_KEY, String(state.sidebarCollapsed));
   applySidebarState();
 }
 
 function initSidebar() {
   window.removeEventListener("resize", applySidebarState);
-  setSidebarCollapsed(state, sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
+  state.sidebarCollapsed = sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
   applySidebarState();
   window.addEventListener("resize", applySidebarState);
 }
@@ -3957,7 +3391,7 @@ function setAssistantFloatingOpen(isOpen) {
     return;
   }
 
-  setAssistantFloatingOpenTransition(state, isOpen);
+  state.assistantFloatingOpen = isOpen;
   assistantWindow.hidden = !isOpen;
   assistantButton.setAttribute("aria-expanded", String(isOpen));
   document.body.classList.toggle("assistant-floating-open", isOpen);
@@ -3979,20 +3413,12 @@ function initAssistantFloating() {
   }
 
   assistantButton.addEventListener("click", () => {
-    dispatchDashboardAction({
-      type: DASHBOARD_ACTIONS.TOGGLE_ASSISTANT,
-      payload: { open: true },
-      affected_systems: ["state", "render"],
-    });
+    setAssistantFloatingOpen(true);
   });
 
   if (minimizeButton) {
     minimizeButton.addEventListener("click", () => {
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.TOGGLE_ASSISTANT,
-        payload: { open: false },
-        affected_systems: ["state", "render"],
-      });
+      setAssistantFloatingOpen(false);
     });
   }
 
@@ -4143,53 +3569,20 @@ function bindEvents() {
   renderPatientSwitcher();
   initDimensionInfoTooltip();
   initBackToAnalysisButton();
-  configureDashboardActionDispatcher({
-    state,
-    SIDEBAR_STORAGE_KEY,
-    PATIENT_PROFILES,
-    toggleSidebarCollapsed,
-    applySidebarState,
-    setActivePatientProfileTransition,
-    resetIssueWorkspaceForProfileChange,
-    renderPatientSwitcher,
-    renderExplanation,
-    renderDashboardSummary,
-    renderDetectionGauge,
-    renderComparison,
-    highlightIssue,
-    highlightDimension,
-    focusIssueElement,
-    printDashboardReport,
-    setAssistantFloatingOpen,
-  });
 
   if (printButton) {
     printButton.addEventListener("click", () => {
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.PRINT_REPORT,
-        payload: { restoreMode: state.workspaceMode },
-        affected_systems: ["render", "workspace"],
-      });
+      printDashboardReport({ restoreMode: state.workspaceMode });
     });
   }
 
   if (sidebarToggleButton) {
-    sidebarToggleButton.addEventListener("click", () => {
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.TOGGLE_SIDEBAR,
-        payload: {},
-        affected_systems: ["state", "render", "storage"],
-      });
-    });
+    sidebarToggleButton.addEventListener("click", handleSidebarToggle);
   }
 
   document.querySelectorAll("[data-patient-profile]").forEach((button) => {
     button.addEventListener("click", () => {
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.SET_ACTIVE_PROFILE,
-        payload: { profileName: button.dataset.patientProfile || "Alison" },
-        affected_systems: ["state", "render", "highlight", "workspace"],
-      });
+      setActivePatientProfile(button.dataset.patientProfile || "Alison");
     });
   });
 
@@ -4216,17 +3609,9 @@ function bindEvents() {
   document.querySelectorAll("[data-highlight-dimension]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.highlightIssue) {
-        dispatchDashboardAction({
-          type: DASHBOARD_ACTIONS.SET_ACTIVE_HIGHLIGHT,
-          payload: { kind: "issue", dimensionName: button.dataset.highlightDimension, ruleId: button.dataset.highlightIssue },
-          affected_systems: ["state", "highlight", "workspace", "render"],
-        });
+        highlightIssue(button.dataset.highlightDimension, button.dataset.highlightIssue);
       } else {
-        dispatchDashboardAction({
-          type: DASHBOARD_ACTIONS.SET_ACTIVE_HIGHLIGHT,
-          payload: { kind: "dimension", dimensionName: button.dataset.highlightDimension },
-          affected_systems: ["state", "highlight", "workspace", "render"],
-        });
+        highlightDimension(button.dataset.highlightDimension);
       }
     });
   });
@@ -4244,7 +3629,6 @@ function bindEvents() {
           }
         });
         setActiveDimensionBar(accordion.dataset.explanationDimension || "");
-        expandIssueSummaryCardsInsideDimensionAccordion(accordion);
       } else if (!explanationContent.querySelector(".explanation-accordion[open]")) {
         setActiveDimensionBar("");
       }
@@ -4256,15 +3640,11 @@ function bindEvents() {
     if (issueElementTrigger) {
       event.preventDefault();
       event.stopPropagation();
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.SELECT_ELEMENT,
-        payload: {
-          dimensionName: issueElementTrigger.dataset.issueDimension,
-          ruleId: issueElementTrigger.dataset.issueElement,
-          elementNumber: Number(issueElementTrigger.dataset.elementIndex || "1"),
-        },
-        affected_systems: ["state", "highlight", "workspace", "render"],
-      });
+      focusIssueElement(
+        issueElementTrigger.dataset.issueDimension,
+        issueElementTrigger.dataset.issueElement,
+        Number(issueElementTrigger.dataset.elementIndex || "1"),
+      );
       return;
     }
 
@@ -4275,11 +3655,7 @@ function bindEvents() {
     if (trigger.classList.contains("issue-summary-card")) {
       return;
     }
-    dispatchDashboardAction({
-      type: DASHBOARD_ACTIONS.SET_ACTIVE_HIGHLIGHT,
-      payload: { kind: "issue", dimensionName: trigger.dataset.highlightDimension, ruleId: trigger.dataset.highlightIssue },
-      affected_systems: ["state", "highlight", "workspace", "render"],
-    });
+    highlightIssue(trigger.dataset.highlightDimension, trigger.dataset.highlightIssue);
   });
 
   if (websitePreviewFrame) {
@@ -4335,41 +3711,41 @@ function buildDashboardSessionFromHistoryDetail(detail) {
 }
 
 async function hydrateStoredDashboardSession(storedSession) {
-  return hydrateStoredDashboardSessionExtracted({
-    storedSession,
-    fetchJson,
-    API_BASE,
-    buildDashboardSessionFromHistoryDetail,
-    readDashboardAuthoritativeSourceFromStorage,
-    getRunIdFromPayload,
-    logDashboardLifecycle: (args) => logDashboardLifecycle({ ...args, getRunIdFromPayload }),
-    buildAnalysisView,
-    logDtFrontendState: (args) => logDtFrontendState({
-      ...args,
-      getRunIdFromPayload,
-      getDtLocationsCountFromResult: dtLocationsCountFromResult,
-    }),
-  });
+  const current = storedSession?.current;
+  const hasHtml = Boolean(current?.html || current?.payload?.html_content);
+  const runId = current?.payload?.run?.run_id || current?.payload?.run?.id || current?.payload?.run_id;
+  if (!current?.payload || hasHtml || !runId) {
+    return storedSession;
+  }
+
+  try {
+    const detail = await fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`);
+    const hydrated = buildDashboardSessionFromHistoryDetail(detail);
+    return {
+      ...storedSession,
+      current: {
+        ...current,
+        ...hydrated.current,
+        payload: {
+          ...current.payload,
+          ...hydrated.current.payload,
+        },
+      },
+    };
+  } catch (error) {
+    return storedSession;
+  }
 }
 
 async function loadDashboardSessionWithHistoryFallback() {
-  return loadDashboardSessionWithHistoryFallbackExtracted({
-    getHistoryReportRunIdFromUrl,
-    fetchJson,
-    API_BASE,
-    buildDashboardSessionFromHistoryDetail,
-    loadDashboardSession,
-    readDashboardAuthoritativeSourceFromStorage,
-    hydrateStoredDashboardSessionFn: ({ storedSession }) => hydrateStoredDashboardSession(storedSession),
-    logDashboardLifecycle: (args) => logDashboardLifecycle({ ...args, getRunIdFromPayload }),
-    buildAnalysisView,
-    logDtFrontendState: (args) => logDtFrontendState({
-      ...args,
-      getRunIdFromPayload,
-      getDtLocationsCountFromResult: dtLocationsCountFromResult,
-    }),
-    getRunIdFromPayload,
-  });
+  const runId = getHistoryReportRunIdFromUrl();
+  if (runId) {
+    const detail = await fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`);
+    return buildDashboardSessionFromHistoryDetail(detail);
+  }
+
+  const storedSession = loadDashboardSession();
+  return hydrateStoredDashboardSession(storedSession);
 }
 
 function renderMissingAnalysisState() {
@@ -4392,34 +3768,52 @@ function renderMissingAnalysisState() {
 }
 
 async function init(lifecycleSnapshot) {
-  await initializeDashboardRuntime(
-    {
-      state,
-      DASHBOARD_SOURCE_TYPES,
-      AUTO_PRINT_STORAGE_KEY,
-      initSidebar,
-      bindEvents,
-      dashboardLifecycleLog,
-      dtFrontendStateLog,
-      loadDashboardSessionWithHistoryFallback,
-      getDashboardLifecycleSnapshot,
-      renderMissingAnalysisState,
-      buildAnalysisView,
-      isHistoryReportView,
-      clearHistoryReportContext,
-      isProbablyUrl,
-      setCurrentPayloadAndSource,
-      setDashboardAuthoritativeSource,
-      syncEyeTrackingNavAndStorage,
-      renderResult,
-      initHistoryContextPanel,
-      renderComparison,
-      setWorkspaceMode,
-      loadPreviewOnSessionStart,
-      printDashboardReport,
-    },
-    lifecycleSnapshot,
+  initSidebar();
+  bindEvents();
+
+  const session = await loadDashboardSessionWithHistoryFallback();
+  if (lifecycleSnapshot !== getDashboardLifecycleSnapshot()) {
+    return;
+  }
+  const currentSession = session?.current;
+  const previousSession = session?.previous;
+  if (!currentSession?.payload) {
+    renderMissingAnalysisState();
+    return;
+  }
+
+  const currentResult = buildAnalysisView(currentSession.payload);
+  const previousResult = previousSession?.payload ? buildAnalysisView(previousSession.payload) : null;
+  const sourceNode = document.getElementById("dashboardSourceName");
+  if (!isHistoryReportView()) {
+    clearHistoryReportContext();
+  }
+  state.currentPayload = currentSession.payload;
+  state.sourceName = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
+  state.sourceUrl = currentSession.sourceUrl || (isProbablyUrl(state.sourceName) ? state.sourceName : "");
+  state.sourceType = currentSession.sourceType || "";
+  if (sourceNode) {
+    sourceNode.textContent = state.sourceName;
+  }
+
+  syncEyeTrackingNavAndStorage();
+
+  renderResult(
+    currentResult,
+    currentSession.html || currentSession.payload.html_content || "",
   );
+  initHistoryContextPanel();
+  renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
+  // Default first entry to the raw website preview.
+  setWorkspaceMode("website");
+  loadPreviewOnSessionStart();
+
+  if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
+    sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
+    window.setTimeout(() => {
+      printDashboardReport();
+    }, 150);
+  }
 }
 
 export function notifyDashboardUnmount() {
@@ -4433,8 +3827,6 @@ export async function initDashboard(options = {}) {
 
   const snapshot = getDashboardLifecycleSnapshot();
   try {
-    // Architecture governance only (DEV / opt-in): warnings only, no behavior changes.
-    validateDashboardArchitectureBoundaries({ relations: buildDeclaredRelationChecks() });
     await init(snapshot);
   } catch (error) {
     if (snapshot !== getDashboardLifecycleSnapshot()) {
