@@ -16,7 +16,6 @@ const targetFrame = document.getElementById("targetFrame");
 const frameHint = document.getElementById("frameHint");
 const eyeIntroModal = document.getElementById("eyeIntroModal");
 const eyeIntroContinueBtn = document.getElementById("eyeIntroContinueBtn");
-const eyeIntroCloseBtn = document.getElementById("eyeIntroCloseBtn");
 
 const statusText = document.getElementById("statusText");
 const coordsText = document.getElementById("coordsText");
@@ -1734,10 +1733,6 @@ aboutEyeTrackingBtn?.addEventListener("click", () => {
 });
 
 eyeIntroContinueBtn?.addEventListener("click", () => {
-  hideEyeIntroModal();
-});
-
-eyeIntroCloseBtn?.addEventListener("click", () => {
   hideEyeIntroModal();
 });
 
