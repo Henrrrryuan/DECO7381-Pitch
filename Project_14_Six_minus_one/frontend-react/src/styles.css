@@ -1244,25 +1244,16 @@ body.analysis-loading-active {
   opacity: 0.85;
 }
 
-/* Green segment grows from the right (path starts at right endpoint) */
-.detection-gauge-green {
-  stroke: #22c55e;
-  stroke-width: 14;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Red segment grows from the left */
-.detection-gauge-fill {
-  stroke: #dc2626;
+/* Single-color progress arc (no red/green completion semantics). */
+.detection-gauge-progress {
+  stroke: #2563eb;
   stroke-width: 14;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .detection-gauge-green,
-  .detection-gauge-fill {
+  .detection-gauge-progress {
     transition: none;
   }
 }
@@ -1287,12 +1278,8 @@ body.analysis-loading-active {
   text-align: center;
 }
 
-.detection-gauge-panel.is-placeholder .detection-gauge-fill {
-  stroke: #dc2626;
-}
-
-.detection-gauge-panel.is-placeholder .detection-gauge-green {
-  stroke: #22c55e;
+.detection-gauge-panel.is-placeholder .detection-gauge-progress {
+  stroke: #94a3b8;
 }
 
 .sidebar-section:first-of-type .dimension-bars {

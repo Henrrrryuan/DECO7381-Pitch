@@ -9,8 +9,7 @@ export function DetectionGauge({ detected, total }) {
   const placeholder = detected == null || total == null;
   const ratio =
     placeholder || total <= 0 ? 0 : Math.min(1, Math.max(0, detected / total));
-  const redOffset = 100 - ratio * 100;
-  const greenOffset = ratio * 100;
+  const progressOffset = 100 - ratio * 100;
 
   const detectedText = placeholder ? "—" : String(detected);
 
@@ -29,20 +28,12 @@ export function DetectionGauge({ detected, total }) {
             pathLength={100}
           />
           <path
-            className="detection-gauge-green"
-            d="M 176 96 A 76 76 0 0 0 24 96"
-            fill="none"
-            pathLength={100}
-            strokeDasharray="100"
-            strokeDashoffset={greenOffset}
-          />
-          <path
-            className="detection-gauge-fill"
+            className="detection-gauge-progress"
             d="M 24 96 A 76 76 0 0 1 176 96"
             fill="none"
             pathLength={100}
             strokeDasharray="100"
-            strokeDashoffset={redOffset}
+            strokeDashoffset={progressOffset}
           />
         </svg>
         <div className="detection-gauge-value" aria-live="polite">
