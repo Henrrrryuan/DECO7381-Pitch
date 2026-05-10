@@ -30,7 +30,6 @@ function PriorityLensPanelInner() {
         })}
       </div>
       <p id="patientProfileSummary" className="patient-profile-summary">
-        <strong>{alison.condition}</strong>
         <span>
           {alison.summary}
         </span>

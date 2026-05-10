@@ -309,7 +309,6 @@ function renderPatientSwitcher() {
   if (summaryNode) {
     const profile = activePatientProfile();
     summaryNode.innerHTML = `
-      <strong>${escapeHtml(profile.condition)}</strong>
       <span>${escapeHtml(profile.summary)}</span>
     `;
   }
