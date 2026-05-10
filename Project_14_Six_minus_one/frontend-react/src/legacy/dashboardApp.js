@@ -660,6 +660,15 @@ function initDimensionInfoTooltip() {
   });
 }
 
+function expandIssueSummaryCardsInsideDimensionAccordion(accordion) {
+  if (!accordion) {
+    return;
+  }
+  accordion.querySelectorAll("details.issue-summary-card").forEach((issueDetails) => {
+    issueDetails.open = true;
+  });
+}
+
 function focusExplanationDimension(dimensionName) {
   const targetName = normalizedDimensionName(dimensionName);
   const target = document.querySelector(
@@ -674,6 +683,7 @@ function focusExplanationDimension(dimensionName) {
     }
   });
   target.open = true;
+  expandIssueSummaryCardsInsideDimensionAccordion(target);
   target.scrollIntoView({ block: "nearest", behavior: "smooth" });
   setActiveDimensionBar(targetName);
 }
@@ -4308,6 +4318,7 @@ function bindEvents() {
           }
         });
         setActiveDimensionBar(accordion.dataset.explanationDimension || "");
+        expandIssueSummaryCardsInsideDimensionAccordion(accordion);
       } else if (!explanationContent.querySelector(".explanation-accordion[open]")) {
         setActiveDimensionBar("");
       }
