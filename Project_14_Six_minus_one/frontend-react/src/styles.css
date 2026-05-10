@@ -4733,8 +4733,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .issue-highlight-list {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 5px;
+  margin-top: 5px;
   width: 100%;
   min-width: 0;
 }
@@ -4744,9 +4744,9 @@ body.accessibility-reading-mask-active .accessibility-menu {
   grid-template-columns: 64px minmax(0, 1fr);
   gap: 10px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 8px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 10px;
   background: #fff;
   color: var(--ink);
   cursor: pointer;
@@ -4866,7 +4866,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
   cursor: pointer;
   display: block;
   width: 100%;
-  padding: 14px 16px;
+  padding: 11px 12px;
 }
 
 .issue-summary-toggle::-webkit-details-marker {
@@ -4891,8 +4891,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
 .issue-summary-body {
   display: grid;
-  gap: 10px;
-  padding: 0 16px 14px;
+  gap: 8px;
+  padding: 0 12px 10px;
 }
 
 .issue-summary-topline {
