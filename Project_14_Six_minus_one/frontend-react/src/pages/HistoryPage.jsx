@@ -158,7 +158,10 @@ function HeatmapGrid({ gridCols, gridRows, cellCounts }) {
   return (
     <div
       className="history-heatmap-grid"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      style={{
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${Math.max(1, Number(gridRows) || 1)}, minmax(0, 1fr))`,
+      }}
     >
       {trimmed.map((count, index) => {
         const t = count / max;
@@ -298,11 +301,13 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
                 Attention coverage: {Number(session.coverage_percent ?? 0).toFixed(1)}% · Gaze samples:{" "}
                 {session.sample_count} · Duration: {formatDuration(session.duration_ms)}
               </p>
-                <HeatmapGrid
-                  gridCols={detail.grid_cols}
-                  gridRows={detail.grid_rows}
-                  cellCounts={detail.cell_counts}
-                />
+                <div className="history-heatmap-grid-shell">
+                  <HeatmapGrid
+                    gridCols={detail.grid_cols}
+                    gridRows={detail.grid_rows}
+                    cellCounts={detail.cell_counts}
+                  />
+                </div>
               </div>
               <EyeEvidenceDetailPanel summary={evidenceSummary} eyeEvidence={eyeEvidence} />
             </div>

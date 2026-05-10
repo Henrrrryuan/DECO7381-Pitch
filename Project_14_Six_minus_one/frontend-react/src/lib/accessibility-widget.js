@@ -11,6 +11,142 @@ import {
   runAccessibilityMenuFeature,
 } from "./accessibility-menu-features.js";
 
+const ACCESSIBILITY_WIDGET_BOTTOM_STORAGE_KEY = "cognilens.accessibilityWidgetBottomPx";
+
+function clampAccessibilityWidgetBottom(buttonEl, bottomPx) {
+  const rect = buttonEl.getBoundingClientRect();
+  const btnH = rect.height > 0 ? rect.height : 64;
+  const minBottom = 12;
+  const maxBottom = Math.max(minBottom + 1, window.innerHeight - btnH - 12);
+  return Math.min(maxBottom, Math.max(minBottom, bottomPx));
+}
+
+/**
+ * Keeps fixed `right`; only `bottom` (px from viewport bottom) changes — vertical slide on the corner.
+ */
+function attachAccessibilityWidgetVerticalDrag(buttonEl) {
+  let activePointerId = null;
+  let startClientY = 0;
+  let startBottomPx = 24;
+  let dragging = false;
+  const suppression = { ignoreMenuOpenUntil: 0 };
+
+  function readBottomPxFromDom() {
+    if (buttonEl.style.bottom) {
+      const parsed = Number.parseFloat(buttonEl.style.bottom);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    const fromComputed = Number.parseFloat(getComputedStyle(buttonEl).bottom);
+    return Number.isFinite(fromComputed) ? fromComputed : 24;
+  }
+
+  function persistBottom() {
+    try {
+      const px = clampAccessibilityWidgetBottom(buttonEl, readBottomPxFromDom());
+      buttonEl.style.bottom = `${px}px`;
+      localStorage.setItem(ACCESSIBILITY_WIDGET_BOTTOM_STORAGE_KEY, String(px));
+    } catch {
+      /* storage / quota */
+    }
+  }
+
+  function applySavedPosition() {
+    try {
+      const raw = localStorage.getItem(ACCESSIBILITY_WIDGET_BOTTOM_STORAGE_KEY);
+      if (raw == null) {
+        return;
+      }
+      const px = Number.parseFloat(raw);
+      if (!Number.isFinite(px)) {
+        return;
+      }
+      buttonEl.style.bottom = `${clampAccessibilityWidgetBottom(buttonEl, px)}px`;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function onWindowResize() {
+    if (!buttonEl.style.bottom) {
+      return;
+    }
+    const cur = Number.parseFloat(buttonEl.style.bottom);
+    if (!Number.isFinite(cur)) {
+      return;
+    }
+    buttonEl.style.bottom = `${clampAccessibilityWidgetBottom(buttonEl, cur)}px`;
+  }
+
+  window.addEventListener("resize", onWindowResize);
+
+  buttonEl.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    activePointerId = event.pointerId;
+    startClientY = event.clientY;
+    startBottomPx = readBottomPxFromDom();
+    dragging = false;
+    try {
+      buttonEl.setPointerCapture(event.pointerId);
+    } catch {
+      /* some browsers reject capture on disconnected nodes */
+    }
+  });
+
+  buttonEl.addEventListener("pointermove", (event) => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    const dy = event.clientY - startClientY;
+    if (!dragging && Math.abs(dy) > 8) {
+      dragging = true;
+      buttonEl.classList.add("accessibility-widget-button--dragging");
+    }
+    if (!dragging) {
+      return;
+    }
+    event.preventDefault();
+    const nextBottom = clampAccessibilityWidgetBottom(buttonEl, startBottomPx - dy);
+    buttonEl.style.bottom = `${nextBottom}px`;
+  });
+
+  function endDrag(event) {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    activePointerId = null;
+    const didDrag = dragging;
+    dragging = false;
+    buttonEl.classList.remove("accessibility-widget-button--dragging");
+
+    try {
+      if (buttonEl.hasPointerCapture(event.pointerId)) {
+        buttonEl.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    if (didDrag) {
+      persistBottom();
+      suppression.ignoreMenuOpenUntil = Date.now() + 450;
+    }
+  }
+
+  buttonEl.addEventListener("pointerup", endDrag);
+  buttonEl.addEventListener("pointercancel", endDrag);
+
+  return {
+    applySavedPosition,
+    shouldIgnoreMenuOpen() {
+      return Date.now() < suppression.ignoreMenuOpenUntil;
+    },
+  };
+}
+
 function createAccessibilityWidget() {
   if (document.querySelector(".accessibility-widget-button, .accessibility-menu")) {
     return;
@@ -130,7 +266,7 @@ function createAccessibilityWidget() {
   };
   button.className = "accessibility-widget-button";
   button.type = "button";
-  button.setAttribute("aria-label", "Open accessibility menu");
+  button.setAttribute("aria-label", "Open accessibility menu; drag vertically on this button to reposition it along the edge.");
   button.setAttribute("aria-controls", "accessibilityMenu");
   button.setAttribute("aria-expanded", "false");
   button.innerHTML = `
@@ -1416,7 +1552,12 @@ function createAccessibilityWidget() {
     restoreAccessibilityDefaults();
   }
 
+  const accessibilityWidgetVerticalDrag = attachAccessibilityWidgetVerticalDrag(button);
+
   button.addEventListener("click", () => {
+    if (accessibilityWidgetVerticalDrag.shouldIgnoreMenuOpen()) {
+      return;
+    }
     if (button.classList.contains("is-spinning")) {
       return;
     }
@@ -1578,6 +1719,7 @@ function createAccessibilityWidget() {
   syncTextAdjustLevelButtons();
 
   document.body.append(button, menu, readingMask, tooltip);
+  accessibilityWidgetVerticalDrag.applySavedPosition();
   document.addEventListener("pointerdown", closeMenuAfterOutsidePointer, true);
   document.addEventListener("click", (event) => {
     if (!document.body.classList.contains("accessibility-text-reader-enabled")) {

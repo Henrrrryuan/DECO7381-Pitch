@@ -20,6 +20,8 @@ const state = {
   currentPayload: null,
   sourceName: "",
   sourceUrl: "",
+  /** `"url"` | `"zip"` | `"html"` | "" — from dashboard session (LoadingPage / HomePage). */
+  sourceType: "",
   workspaceMode: "explanation",
   rightPanelMode: "summary",
   activeHighlightDimension: "",
@@ -27,6 +29,8 @@ const state = {
   selectedIssueId: "",
   selectedElementNumber: 0,
   activeGuidancePopoverKey: "",
+  /** When true, preview guidance stays visible after pointer leaves (until close or second click). */
+  previewGuidancePinned: false,
   chatMessages: [],
   chatPending: false,
   sidebarCollapsed: false,
@@ -1514,7 +1518,8 @@ function issueElementListMarkup(issue, dimensionName) {
           <p class="issue-element-tip-title">Tip</p>
           <ol class="issue-element-tip-steps">
             <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+            <li><strong>Hover highlight</strong> -> <strong>guidance</strong> appears (moves away and it hides).</li>
+            <li><strong>Click highlight</strong> -> <strong>pin guidance</strong> (click again to close).</li>
           </ol>
         </div>
         <div class="issue-phs-grouped-wrap">
@@ -1547,7 +1552,8 @@ function issueElementListMarkup(issue, dimensionName) {
         <p class="issue-element-tip-title">Tip</p>
         <ol class="issue-element-tip-steps">
           <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-          <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+          <li><strong>Hover highlight</strong> -> <strong>guidance</strong> appears (moves away and it hides).</li>
+          <li><strong>Click highlight</strong> -> <strong>pin guidance</strong> (click again to close).</li>
         </ol>
       </div>
       <div class="issue-element-chip-list">
@@ -1947,7 +1953,10 @@ function loadWebsitePreview() {
     return;
   }
 
-  const previewUrl = getPreviewUrl();
+  const hasUsableSessionHtml = String(state.currentHtml || "").trim().length > 0;
+  // URL analyses run on captured HTML; prefer that snapshot in the iframe so preview DOM matches analysis/highlighting.
+  const preferUrlSnapshot = state.sourceType === "url" && hasUsableSessionHtml;
+  const previewUrl = preferUrlSnapshot ? "" : getPreviewUrl();
   if (previewUrl) {
     const proxiedUrl = isPreviewRouteUrl(previewUrl)
       ? previewUrl
@@ -1968,7 +1977,11 @@ function loadWebsitePreview() {
       frame.srcdoc = buildPreviewHtml(state.currentHtml);
       frame.dataset.previewHtml = state.currentHtml;
       frame.dataset.previewGuardVersion = "3";
-      setWebsiteStatus("Loaded uploaded HTML preview. Choose a detector to highlight related areas.");
+      setWebsiteStatus(
+        preferUrlSnapshot
+          ? "Loaded captured page HTML (same snapshot as analysis). Choose a detector to highlight related areas."
+          : "Loaded uploaded HTML preview. Choose a detector to highlight related areas.",
+      );
     }
     scheduleIframePreviewDocumentBootstrap(frame);
     return;
@@ -2217,13 +2230,33 @@ function removeGuidancePopover(doc = getPreviewDocument()) {
   }
   doc.getElementById("cognilens-guidance-popover")?.remove();
   state.activeGuidancePopoverKey = "";
+  state.previewGuidancePinned = false;
 }
 
-function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
+function positionGuidancePopover(popoverEl, anchorElement, doc) {
+  const anchorRect = anchorElement.getBoundingClientRect();
+  const popoverRect = popoverEl.getBoundingClientRect();
+  const maxLeft = Math.max(8, (doc.documentElement?.clientWidth || 0) - popoverRect.width - 8);
+  const left = Math.min(Math.max(8, anchorRect.left + 8), maxLeft);
+  const top = Math.max(8, anchorRect.bottom + 10 + (doc.defaultView?.scrollY || 0));
+  popoverEl.style.left = `${left}px`;
+  popoverEl.style.top = `${top}px`;
+}
+
+function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuseIfSameKey = false } = {}) {
   if (!doc || !anchorElement || !record?.issue) {
     return;
   }
+  const expectedKey = `${state.selectedIssueId}:${elementLabel}`;
+  const existing = doc.getElementById("cognilens-guidance-popover");
+
+  if (reuseIfSameKey && existing && state.activeGuidancePopoverKey === expectedKey) {
+    positionGuidancePopover(existing, anchorElement, doc);
+    return;
+  }
+
   removeGuidancePopover(doc);
+
   const { issue, dimension } = record;
   const goal = issueGoalText(issue, dimension.dimension);
   const steps = recommendedFixSteps(issue, dimension.dimension)
@@ -2246,21 +2279,48 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel) {
     ${listMarkup}
   `;
   doc.body?.appendChild(container);
-  const anchorRect = anchorElement.getBoundingClientRect();
-  const popoverRect = container.getBoundingClientRect();
-  const maxLeft = Math.max(8, (doc.documentElement?.clientWidth || 0) - popoverRect.width - 8);
-  const left = Math.min(Math.max(8, anchorRect.left + 8), maxLeft);
-  const top = Math.max(8, anchorRect.bottom + 10 + (doc.defaultView?.scrollY || 0));
-  container.style.left = `${left}px`;
-  container.style.top = `${top}px`;
-  state.activeGuidancePopoverKey = `${state.selectedIssueId}:${elementLabel}`;
+  state.activeGuidancePopoverKey = expectedKey;
+  positionGuidancePopover(container, anchorElement, doc);
 }
 
 function bindPreviewElementClick(doc) {
-  if (!doc || doc.body?.dataset.cognilensElementClickBound === "true") {
+  if (!doc || doc.documentElement.dataset.cognilensPreviewGuidanceInteractions === "true") {
     return;
   }
-  doc.body.dataset.cognilensElementClickBound = "true";
+  doc.documentElement.dataset.cognilensPreviewGuidanceInteractions = "true";
+
+  doc.addEventListener("mouseover", (event) => {
+    const hl = event.target.closest("[data-cognilens-highlight]");
+    if (!hl) {
+      return;
+    }
+    const selected = selectedIssueRecord();
+    if (!selected || !state.selectedIssueId) {
+      return;
+    }
+    const elementLabel = hl.getAttribute("data-cognilens-highlight") || "Element";
+    renderGuidancePopover(doc, hl, selected, elementLabel, { reuseIfSameKey: true });
+  });
+
+  doc.addEventListener("mouseout", (event) => {
+    if (state.previewGuidancePinned) {
+      return;
+    }
+    const related = event.relatedTarget;
+    const hl = event.target.closest("[data-cognilens-highlight]");
+    if (hl) {
+      if (related && hl.contains(related)) {
+        return;
+      }
+      removeGuidancePopover(doc);
+      return;
+    }
+    const pop = event.target.closest("#cognilens-guidance-popover");
+    if (pop && (!related || !pop.contains(related))) {
+      removeGuidancePopover(doc);
+    }
+  });
+
   doc.addEventListener("click", (event) => {
     const closeTrigger = event.target.closest(".cognilens-popover-close");
     if (closeTrigger) {
@@ -2269,29 +2329,36 @@ function bindPreviewElementClick(doc) {
       removeGuidancePopover(doc);
       return;
     }
+
     const insidePopover = event.target.closest("#cognilens-guidance-popover");
     if (insidePopover) {
-      // Keep popover pinned while users select/copy guidance text.
       return;
     }
+
     const highlightedElement = event.target.closest("[data-cognilens-highlight]");
     if (!highlightedElement) {
       removeGuidancePopover(doc);
       return;
     }
+
     event.preventDefault();
     event.stopPropagation();
+
     const selected = selectedIssueRecord();
     if (!selected || !state.selectedIssueId) {
       return;
     }
     const elementLabel = highlightedElement.getAttribute("data-cognilens-highlight") || "Element";
     const nextKey = `${state.selectedIssueId}:${elementLabel}`;
-    if (state.activeGuidancePopoverKey === nextKey) {
-      removeGuidancePopover(doc);
-      return;
+    const alreadyPinnedHere = state.previewGuidancePinned && state.activeGuidancePopoverKey === nextKey;
+    const popoverShowing = Boolean(doc.getElementById("cognilens-guidance-popover"));
+    if (!popoverShowing || state.activeGuidancePopoverKey !== nextKey) {
+      renderGuidancePopover(doc, highlightedElement, selected, elementLabel);
     }
-    renderGuidancePopover(doc, highlightedElement, selected, elementLabel);
+    state.previewGuidancePinned = !alreadyPinnedHere;
+    if (!state.previewGuidancePinned) {
+      removeGuidancePopover(doc);
+    }
   });
 }
 
@@ -2866,7 +2933,10 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
     return;
   }
   finalTarget.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-  setWebsiteStatus(`Element ${elementNumber} highlighted for ${issue.title || "this issue"}. Click it to open guidance.`);
+  setWebsiteStatus(
+    `Element ${elementNumber} highlighted for ${issue.title || "this issue"}. `
+    + `Hover it for guidance, or click to pin the guidance panel.`,
+  );
 }
 
 function focusIssueElement(dimensionName, ruleId, elementNumber) {
@@ -3626,6 +3696,7 @@ function printDashboardReport({ restoreMode = "" } = {}) {
 function buildDashboardSessionFromHistoryDetail(detail) {
   const sourceName = detail.run?.source_name || "history-item";
   const analysis = detail.analysis || detail.result || {};
+  const sourceUrl = isProbablyUrl(sourceName) ? sourceName : "";
   return {
     current: {
       payload: {
@@ -3636,7 +3707,8 @@ function buildDashboardSessionFromHistoryDetail(detail) {
       },
       html: detail.html_content || analysis?.html_content || "",
       sourceName,
-      sourceUrl: isProbablyUrl(sourceName) ? sourceName : "",
+      sourceUrl,
+      sourceType: sourceUrl ? "url" : "",
     },
     previous: null,
   };
@@ -3723,6 +3795,7 @@ async function init(lifecycleSnapshot) {
   state.currentPayload = currentSession.payload;
   state.sourceName = currentSession.sourceName || currentSession.payload?.run?.source_name || "Uploaded file";
   state.sourceUrl = currentSession.sourceUrl || (isProbablyUrl(state.sourceName) ? state.sourceName : "");
+  state.sourceType = currentSession.sourceType || "";
   if (sourceNode) {
     sourceNode.textContent = state.sourceName;
   }
