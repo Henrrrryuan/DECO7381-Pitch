@@ -10,6 +10,8 @@ export const eyeTrackingHref = `${API_BASE.replace(/\/$/, "")}/eye/`;
 export const spaHomeHref = "/";
 /** Matches native index upload page `docs.html?source=landing`. */
 export const spaGuideLandingHref = "/docs?source=landing";
+/** Landing-mode history; distinct from analysis-mode report history. */
+export const spaLandingHistoryHref = "/history?source=landing";
 /** Matches native dashboard / history / eye → Guide (`docs.html?source=analysis`). */
 export const spaGuideAnalysisHref = "/docs?source=analysis";
 export const spaHistoryHref = "/history";

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "cognilens-dashboard-session";
+const DASHBOARD_AUTHORITATIVE_SOURCE_KEY = "cognilens.dashboard.authoritative-source";
 const FALLBACK_API_BASE = "http://127.0.0.1:8001";
 const MAX_STORED_HTML_CHARS = 750000;
 const isHttpPage = window.location.protocol === "http:" || window.location.protocol === "https:";
@@ -181,6 +182,46 @@ function trySetStorage(storage, key, value) {
   }
 }
 
+function getRunIdFromPayload(payload) {
+  const run = payload?.run || null;
+  return String(run?.run_id || run?.id || payload?.run_id || "");
+}
+
+function getSourceNameFromPayload(payload) {
+  return String(payload?.run?.source_name || payload?.source_name || "");
+}
+
+function getPayloadCreatedAtMs(payload) {
+  const run = payload?.run || null;
+  const raw = run?.created_at || run?.createdAt || payload?.created_at || payload?.createdAt || "";
+  const parsed = raw ? Date.parse(String(raw)) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function saveFreshAnalysisAuthority(payload) {
+  const currentPayload = payload?.current?.payload || payload?.payload || null;
+  const runId = getRunIdFromPayload(currentPayload);
+  if (!runId) {
+    try {
+      sessionStorage.removeItem(DASHBOARD_AUTHORITATIVE_SOURCE_KEY);
+    } catch (error) {
+      // Ignore storage cleanup failures.
+    }
+    return;
+  }
+  trySetStorage(
+    sessionStorage,
+    DASHBOARD_AUTHORITATIVE_SOURCE_KEY,
+    JSON.stringify({
+      source_type: "fresh_analysis",
+      run_id: runId,
+      source_name: getSourceNameFromPayload(currentPayload),
+      created_at_ms: getPayloadCreatedAtMs(currentPayload),
+      set_at_ms: Date.now(),
+    }),
+  );
+}
+
 async function analyzeUploadFile(file, baselineRunId = null) {
   if (isZipFile(file)) {
     const formData = new FormData();
@@ -213,6 +254,7 @@ function saveDashboardSession(payload) {
     const serialized = JSON.stringify(candidate);
     if (trySetStorage(sessionStorage, STORAGE_KEY, serialized)) {
       trySetStorage(localStorage, STORAGE_KEY, serialized);
+      saveFreshAnalysisAuthority(payload);
       return true;
     }
   }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE, fetchJson, formatDate, formatReportTimestamp } from "../lib/common.js";
 import {
   EYE_EVIDENCE_DETAIL_FALLBACK,
@@ -10,7 +10,7 @@ import {
   getRiskDrivers,
 } from "../lib/eyeEvidenceSummary.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaGuideAnalysisHref, spaGuideLandingHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const DESKTOP_MIN_PAGE_SIZE = 8;
 const DESKTOP_MAX_PAGE_SIZE = 12;
@@ -456,6 +456,8 @@ export function HistoryPage() {
   }, []);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isLandingHistory = searchParams.get("source") === "landing";
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [reportPage, setReportPage] = useState(1);
@@ -606,6 +608,9 @@ export function HistoryPage() {
   }, []);
 
   useEffect(() => {
+    if (isLandingHistory) {
+      return undefined;
+    }
     const backButton = document.getElementById("backToAnalysisButtonHistory");
     if (!backButton) {
       return undefined;
@@ -636,7 +641,7 @@ export function HistoryPage() {
     };
     backButton.addEventListener("click", onClick);
     return () => backButton.removeEventListener("click", onClick);
-  }, []);
+  }, [isLandingHistory]);
 
   return (
     <>
@@ -649,19 +654,30 @@ export function HistoryPage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to={spaGuideAnalysisHref}>Guide</Link>
-            <a className="nav-eye-tracking" href={eyeTrackingHref}>
-              Eye Tracking
-            </a>
-            <Link className="active-link" to={spaHistoryHref}>
-              History
-            </Link>
-            <button id="backToAnalysisButtonHistory" className="nav-cta nav-cta-return" type="button" hidden>
-              <span className="nav-cta-icon" aria-hidden="true">
-                ←
-              </span>
-              Back to analysis
-            </button>
+            {isLandingHistory ? (
+              <>
+                <Link to={spaGuideLandingHref}>Guide</Link>
+                <Link className="nav-cta" to="/">
+                  Back to start
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to={spaGuideAnalysisHref}>Guide</Link>
+                <a className="nav-eye-tracking" href={eyeTrackingHref}>
+                  Eye Tracking
+                </a>
+                <Link className="active-link" to={spaHistoryHref}>
+                  History
+                </Link>
+                <button id="backToAnalysisButtonHistory" className="nav-cta nav-cta-return" type="button" hidden>
+                  <span className="nav-cta-icon" aria-hidden="true">
+                    ←
+                  </span>
+                  Back to analysis
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>
