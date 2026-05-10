@@ -1,5 +1,5 @@
 function activePatientProfile(state, PATIENT_PROFILES) {
-  return PATIENT_PROFILES?.[state.activeProfile] || PATIENT_PROFILES?.General || PATIENT_PROFILES?.Alison || null;
+  return PATIENT_PROFILES?.[state.activeProfile] || PATIENT_PROFILES?.Alison || null;
 }
 
 function selectedIssueRecord(state) {

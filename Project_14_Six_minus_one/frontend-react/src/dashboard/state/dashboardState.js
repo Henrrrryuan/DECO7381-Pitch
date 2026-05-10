@@ -23,7 +23,7 @@ function createDashboardState() {
     assistantFloatingOpen: false,
     previousResult: null,
     previousSourceName: "",
-    activeProfile: "General",
+    activeProfile: "Alison",
   };
 }
 

@@ -89,11 +89,8 @@ import {
   toggleSidebarCollapsed,
 } from "../dashboard/state/dashboardTransitions.js";
 import { PATIENT_PROFILES } from "../dashboard/shared/patientProfiles.js";
-import { persistActiveProfile, readPersistedActiveProfile } from "../dashboard/shared/profilePersistence.js";
 
 // State container extracted to dashboard/state (behavior preserved).
-
-const DEFAULT_PROFILE = "General";
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
 const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
@@ -265,7 +262,7 @@ function isDetectorEnabledForActiveProfile(name) {
         source_of_truth: "PATIENT_PROFILES[activeProfile].enabledDetectors",
         enabled_detectors: [],
         runtime_profile: state.activeProfile || "",
-        fallback_profile: DEFAULT_PROFILE,
+        fallback_profile: "Alison",
       });
     }
     return true;
@@ -296,7 +293,7 @@ function isDetectorEnabledForActiveProfile(name) {
       source_of_truth: "PATIENT_PROFILES[activeProfile].enabledDetectors",
       enabled_detectors: enabledDetectors,
       runtime_profile: state.activeProfile || "",
-      fallback_profile: DEFAULT_PROFILE,
+      fallback_profile: "Alison",
     });
   }
   return enabled;
@@ -327,20 +324,6 @@ function renderPatientSwitcher() {
 function setActivePatientProfile(profileName) {
   if (!PATIENT_PROFILES[profileName] || state.activeProfile === profileName) {
     return;
-  }
-  persistActiveProfile(profileName);
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-      console.log("[Profile persistence]", {
-        persisted_profile: profileName,
-        hydrated_profile: null,
-        fallback_profile: DEFAULT_PROFILE,
-        runtime_selected_profile: profileName,
-        restore_success: true,
-      });
-    }
-  } catch (_) {
-    // ignore
   }
   if (detectorEnablementAuditEnabled()) {
     detectorEnablementAuditLog("profile.runtime.selection", {
@@ -4495,43 +4478,21 @@ export async function initDashboard(options = {}) {
   onDetectionGaugeUpdate =
     typeof options.onDetectionGaugeUpdate === "function" ? options.onDetectionGaugeUpdate : null;
 
-  // Phase 1: restore persisted Priority Lens profile (session-stable).
-  const persistedProfile = readPersistedActiveProfile();
-  const persistedValid = Boolean(persistedProfile && PATIENT_PROFILES?.[persistedProfile]);
-  const hydratedProfile = persistedValid ? persistedProfile : DEFAULT_PROFILE;
-  const restoreSuccess = persistedValid;
-  if (PATIENT_PROFILES?.[hydratedProfile] && state.activeProfile !== hydratedProfile) {
-    setActivePatientProfileTransition(state, hydratedProfile);
-  }
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-      console.log("[Profile persistence]", {
-        persisted_profile: persistedProfile || null,
-        hydrated_profile: hydratedProfile,
-        fallback_profile: persistedValid ? null : DEFAULT_PROFILE,
-        runtime_selected_profile: state.activeProfile || "",
-        restore_success: restoreSuccess,
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
-
   if (detectorEnablementAuditEnabled()) {
     detectorEnablementAuditLog("profile.storage.read", {
-      persisted_profile: persistedProfile || null,
-      source_of_truth: "dashboard/shared/profilePersistence.readPersistedActiveProfile",
+      persisted_profile: null,
+      source_of_truth: "no_profile_storage_key_present",
     });
     detectorEnablementAuditLog("profile.hydration", {
       hydrated_profile: state.activeProfile || "",
-      source_of_truth: persistedValid ? "profilePersistence.restore" : "fallback_default_profile",
+      source_of_truth: "dashboardState.default",
     });
     detectorEnablementAuditLog("profile.defaulting", {
-      fallback_profile: DEFAULT_PROFILE,
+      fallback_profile: "Alison",
       runtime_profile: state.activeProfile || "",
       onboarding_profile: null,
       session_profile: null,
-      source_of_truth: "initDashboard.profile_restore",
+      source_of_truth: "createDashboardState().activeProfile",
     });
     detectorEnablementAuditLog("profile.runtime.selection", {
       runtime_profile: state.activeProfile || "",

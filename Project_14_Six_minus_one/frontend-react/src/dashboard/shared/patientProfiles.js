@@ -3,35 +3,6 @@
  * Consumed by legacy dashboard orchestration and the React Priority Lens panel.
  */
 export const PATIENT_PROFILES = {
-  General: {
-    label: "All Detectors",
-    condition: "General",
-    summary: "Default Priority Lens: shows all detectors unless you choose a persona.",
-    enabledDetectors: [
-      "Dense Text Detection",
-      "Language Complexity",
-      "Sentence Complexity",
-      "Long Content Without Chunking",
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Weak Information Prominence",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-    detectorOrder: [
-      "Dense Text Detection",
-      "Language Complexity",
-      "Sentence Complexity",
-      "Long Content Without Chunking",
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Weak Information Prominence",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-  },
   Alison: {
     label: "Mild Cognitive Impairment",
     condition: "Mild Cognitive Impairment",
