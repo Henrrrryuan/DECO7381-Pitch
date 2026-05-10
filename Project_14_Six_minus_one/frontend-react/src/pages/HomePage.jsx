@@ -29,7 +29,7 @@ function normalizeUrl(rawUrl) {
   try {
     hostPart = new URL(candidateForHost).hostname.toLowerCase();
   } catch {
-    throw new Error("Enter a valid URL, for example http://localhost:5173.");
+    throw new Error("Enter a valid URL, for example http://127.0.0.1:5173.");
   }
 
   const isLocalTarget =
@@ -49,7 +49,7 @@ function normalizeUrl(rawUrl) {
   try {
     parsed = new URL(withProtocol);
   } catch {
-    throw new Error("Enter a valid URL, for example http://localhost:5173.");
+    throw new Error("Enter a valid URL, for example http://127.0.0.1:5173.");
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
@@ -68,7 +68,7 @@ function normalizeUrl(rawUrl) {
     /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
 
   if (!isParsedLocalTarget) {
-    throw new Error("Only local URLs are supported (localhost, 127.0.0.1, or LAN IP).");
+    throw new Error("Only local URLs are supported (127.0.0.1, localhost, or a LAN IP).");
   }
 
   return parsed.href;
@@ -367,7 +367,9 @@ export function HomePage() {
                   onClick={() => setWorkflow("url")}
                 >
                   <span className="workflow-option-title">Website URL</span>
-                  <span className="workflow-option-copy">Check a page from your local development server only.</span>
+                  <span className="workflow-option-copy">
+                    Quick scans and dev iteration—machine or LAN URL only (127.0.0.1 recommended).
+                  </span>
                 </button>
                 <button
                   className={`workflow-option${!isUrlWorkflow ? " is-active" : ""}`}
@@ -398,7 +400,12 @@ export function HomePage() {
                 >
                   <div className="input-card-copy">
                     <h3>Check a website</h3>
-                    <p>Paste a local development URL (localhost / local network).</p>
+                    <p>
+                      Local URL (this machine): quick scans and iteration during development. Prefer{" "}
+                      <strong>http://127.0.0.1</strong> with your dev-server port (e.g.{" "}
+                      <strong>http://127.0.0.1:5173</strong>) instead of localhost. Replace{" "}
+                      <strong>5173</strong> with your dev-server port if yours differs.
+                    </p>
                   </div>
 
                   <div className="url-input-row">
@@ -407,7 +414,7 @@ export function HomePage() {
                       className="url-input"
                       type="url"
                       inputMode="url"
-                      placeholder="http://localhost:5173"
+                      placeholder="http://127.0.0.1:5173"
                       autoComplete="url"
                       value={url}
                       onChange={(event) => setUrl(event.target.value)}
