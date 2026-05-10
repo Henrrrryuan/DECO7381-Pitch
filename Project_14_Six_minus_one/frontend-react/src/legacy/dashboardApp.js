@@ -1941,7 +1941,6 @@ function issueElementListMarkup(issue, dimensionName) {
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Affected elements</span>
         <div class="issue-phs-grouped-wrap">
           ${groupedSections}
         </div>
@@ -1961,7 +1960,6 @@ function issueElementListMarkup(issue, dimensionName) {
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Attention competition sources</span>
         <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
           ${groupedSections}
         </div>
@@ -1983,7 +1981,6 @@ function issueElementListMarkup(issue, dimensionName) {
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Competing primary actions</span>
         <div class="issue-phs-grouped-wrap issue-wip-single-group-wrap">
           ${groupedSection}
         </div>
@@ -2003,7 +2000,6 @@ function issueElementListMarkup(issue, dimensionName) {
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Navigation complexity</span>
         <div class="issue-phs-grouped-wrap issue-nc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -2023,7 +2019,6 @@ function issueElementListMarkup(issue, dimensionName) {
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Sentence complexity patterns</span>
         <div class="issue-phs-grouped-wrap issue-sc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -2049,7 +2044,6 @@ function issueElementListMarkup(issue, dimensionName) {
   const hiddenCount = Math.max(0, inferredCount - sliceForDisplay.length);
   return `
     <div class="issue-summary-row issue-summary-row-elements">
-      <span class="issue-highlight-label">Affected elements</span>
       <div class="issue-element-chip-list">
         ${rows}
       </div>

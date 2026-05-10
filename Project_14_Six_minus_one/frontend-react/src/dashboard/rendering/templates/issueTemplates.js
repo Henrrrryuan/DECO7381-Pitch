@@ -279,7 +279,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     const groupedSections = issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Affected elements</span>
         <div class="issue-phs-grouped-wrap">
           ${groupedSections}
         </div>
@@ -294,7 +293,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     const groupedSections = issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Attention competition sources</span>
         <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
           ${groupedSections}
         </div>
@@ -316,7 +314,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     );
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Competing primary actions</span>
         <div class="issue-phs-grouped-wrap issue-wip-single-wrap">
           ${groupedSections}
         </div>
@@ -329,7 +326,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     const groupedSections = issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Motion evidence</span>
         <div class="issue-phs-grouped-wrap issue-amc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -341,7 +337,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     const groupedSections = issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
-        <span class="issue-highlight-label">Interruption evidence</span>
         <div class="issue-phs-grouped-wrap issue-ei-grouped-wrap">
           ${groupedSections}
         </div>
@@ -379,7 +374,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
   }
   return `
     <div class="issue-summary-row issue-summary-row-elements">
-      <span class="issue-highlight-label">Affected elements</span>
       <div class="issue-element-chip-list">
         ${chips}
       </div>

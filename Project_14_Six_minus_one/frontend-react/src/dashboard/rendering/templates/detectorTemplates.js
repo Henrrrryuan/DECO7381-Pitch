@@ -14,7 +14,6 @@ function explanationAccordionBlockMarkup({
           </span>
         </summary>
         <div class="explanation-accordion-content">
-          <p class="category-helper">${summaryEscaped || ""}</p>
           ${issuesMarkup || ""}
         </div>
       </details>
