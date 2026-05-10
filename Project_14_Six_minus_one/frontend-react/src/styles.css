@@ -952,11 +952,18 @@ body.analysis-loading-active {
 
 .tool-sidebar-inner {
   height: 100%;
-  display: grid;
-  /* Profile + gauge stay intrinsic height; Top Issue Cards fills remaining sidebar height so inner 1fr tracks resolve. */
-  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Single scroll container: Priority Lens, gauge, and Top Issue Cards scroll together. */
   overflow-y: auto;
+  overscroll-behavior: contain;
   transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Flex defaults allow shrink; min-height:0 on gauge + shrink caused overlap with the section below. */
+.tool-sidebar-inner > * {
+  flex-shrink: 0;
 }
 
 .sidebar-collapse-toggle {
@@ -1172,7 +1179,6 @@ body.analysis-loading-active {
   border-bottom: 1px solid var(--border);
   padding: 14px 20px 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  min-height: 0;
 }
 
 .detection-gauge {
@@ -3025,11 +3031,11 @@ button.dimension-row.is-linked-active {
 .sidebar-explanation-section {
   --sidebar-issue-cards-column-max: 360px;
 
-  min-height: 0;
   min-width: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -3040,23 +3046,22 @@ button.dimension-row.is-linked-active {
 }
 
 .sidebar-explanation-content {
-  min-height: 0;
+  flex: 0 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  height: 100%;
 }
 
 .sidebar-explanation-content .pane-scroll {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   align-self: center;
   width: min(100%, var(--sidebar-issue-cards-column-max));
   max-width: 100%;
   min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
+  min-height: auto;
+  overflow-y: visible;
   padding-right: 0;
 }
 
