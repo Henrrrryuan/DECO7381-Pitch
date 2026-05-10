@@ -5779,6 +5779,26 @@ body.accessibility-reading-mask-active .accessibility-menu {
   border-color: rgba(74, 222, 128, 0.48);
 }
 
+.docs-workflow-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.docs-workflow-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.36);
+  background: rgba(239, 246, 255, 0.9);
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
 @keyframes docs-axis-pulse {
   0%, 100% {
     opacity: 0.66;

@@ -117,8 +117,9 @@ export function DocsPage() {
             <span className="docs-step">1</span>
             <h2>Quick path</h2>
             <p>
-              <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a category by risk -&gt; open an
-              issue card -&gt; click an <strong>Element</strong> chip -&gt; click the highlighted area for guidance.
+              <strong>New Analysis</strong> -&gt; <strong>Analyze</strong> -&gt; choose a <strong>Priority Lens</strong>{" "}
+              -&gt; open a detected issue -&gt; click an <strong>Element</strong> chip -&gt; inspect the highlighted area
+              for guidance.
             </p>
             <p>Use this route when you want a fast first pass before deeper review.</p>
             <p className="docs-outcome">You should see: the matching page element highlighted on the right preview.</p>
@@ -131,29 +132,35 @@ export function DocsPage() {
               Click <strong>New Analysis</strong>, then analyze a local <span className="docs-mono-tag">URL</span>,{" "}
               <span className="docs-mono-tag">HTML</span> file, or <span className="docs-mono-tag">ZIP</span> package.
             </p>
-            <p>After processing, CogniLens opens the dashboard with profile-based risk views and issue cards.</p>
+            <p>
+              After processing, CogniLens opens the dashboard with Priority Lens views, detected issue counts, and issue
+              cards.
+            </p>
           </article>
 
           <article id="issue-workspace" className="docs-card docs-card-core">
             <span className="docs-step">3</span>
             <h2>Prioritize and inspect issues</h2>
             <p>
-              Use <strong>High / Medium / Low risk</strong> to decide where to start. Risk is prioritization support,
-              not a final compliance grade.
+              Use <strong>Priority Lens</strong> to choose the user need you want to review first. The issue list updates
+              to show detected issues that are most relevant to that lens.
             </p>
-            <div className="docs-risk-row" aria-hidden="true">
-              <span className="docs-risk-pill is-high">High risk</span>
-              <span className="docs-risk-pill is-medium">Medium risk</span>
-              <span className="docs-risk-pill is-low">Low risk</span>
+            <div className="docs-workflow-row" aria-hidden="true">
+              <span>Priority Lens</span>
+              <span>Detected Issues</span>
+              <span>Element chips</span>
             </div>
-            <p>Start with <strong>High risk</strong> cards first for faster triage.</p>
+            <p>
+              Start with the lens that matches your target user group, then open issue cards with detected elements
+              first.
+            </p>
             <p>In each Top Issue Card, use the <strong>Affected elements</strong> list to drive inspection:</p>
             <ul className="docs-list">
               <li>
                 Click an <strong>Element</strong> chip to highlight that exact location in the website preview.
               </li>
               <li>
-                Click the highlighted element in preview to open in-context guidance.
+                Some structural issues may describe document-level markup and may not have a precise visual target.
               </li>
             </ul>
             <p className="docs-outcome">You should see: one highlighted target and an element list in sync.</p>
@@ -166,20 +173,24 @@ export function DocsPage() {
               In the preview popover, review <strong>Why this matters</strong> and <strong>First redesign move</strong>{" "}
               in order.
             </p>
-            <p>Click the same highlighted element again to close the popover when you are done.</p>
-            <p className="docs-outcome">You should see: guidance open/close directly on the highlighted element.</p>
+            <p>
+              Hover a highlighted element to preview guidance. Click it to pin the guidance, then use the{" "}
+              <strong>X</strong> button to close the pinned popover.
+            </p>
+            <p className="docs-outcome">You should see: guidance appear near the highlighted element without covering it.</p>
           </article>
 
           <article className="docs-card docs-card-right">
             <span className="docs-step">5</span>
-            <h2>Understand scoring signals</h2>
+            <h2>Understand detected signals</h2>
             <p>
-              Hover the info icon beside each dimension to see <strong>what it means</strong> and{" "}
-              <strong>how it is scored</strong>.
+              Use the detected issue count and Priority Lens summary to understand what was found for the selected user
+              need.
             </p>
             <p>
-              Dimension scoring aligns with your cognitive risk model and maps to <span className="docs-mono-tag">WCAG</span>{" "}
-              / <span className="docs-mono-tag">ISO</span>-based signals in issue details.
+              Issue details connect findings to cognitive accessibility heuristics and relevant{" "}
+              <span className="docs-mono-tag">WCAG</span> / <span className="docs-mono-tag">ISO</span> /{" "}
+              <span className="docs-mono-tag">COGA</span> references where available.
             </p>
           </article>
 
@@ -190,7 +201,8 @@ export function DocsPage() {
               Open <strong>Eye Tracking</strong> when you need behavior evidence for attention and visual focus patterns.
             </p>
             <p>
-              Use <strong>History</strong> to reopen reports, compare iterations, and continue from prior analysis runs.
+              Use <strong>History</strong> to reopen saved reports and review prior analysis runs. Saved eye evidence can
+              support later review when available.
             </p>
           </article>
         </section>
