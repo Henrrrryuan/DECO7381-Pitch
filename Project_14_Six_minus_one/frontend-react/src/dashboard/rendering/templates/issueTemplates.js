@@ -280,13 +280,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Affected elements</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap">
           ${groupedSections}
         </div>
@@ -302,13 +295,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Attention competition sources</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
           ${groupedSections}
         </div>
@@ -331,13 +317,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Competing primary actions</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-wip-single-wrap">
           ${groupedSections}
         </div>
@@ -351,13 +330,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Motion evidence</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-amc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -370,13 +342,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Interruption evidence</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-ei-grouped-wrap">
           ${groupedSections}
         </div>
@@ -415,13 +380,6 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
-      <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-        <p class="issue-element-tip-title">Tip</p>
-        <ol class="issue-element-tip-steps">
-          <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-          <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-        </ol>
-      </div>
       <div class="issue-element-chip-list">
         ${chips}
       </div>

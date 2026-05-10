@@ -1217,8 +1217,8 @@ body.analysis-loading-active {
 }
 
 .detection-gauge-panel {
-  border-bottom: 1px solid var(--border);
-  padding: 14px 20px 18px;
+  border-bottom: 0;
+  padding: 14px 20px 0px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
@@ -1248,53 +1248,14 @@ body.analysis-loading-active {
   color: #475569;
 }
 
-.detection-gauge-pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
-.detection-gauge-pill {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: rgba(248, 250, 252, 0.9);
-  color: #334155;
-  font-size: 11.5px;
-}
-
-.detection-gauge-pill__label {
-  opacity: 0.9;
-}
-
-.detection-gauge-pill__value {
-  font-size: 12px;
-  font-weight: 850;
-  color: #0f172a;
-}
-
-.detection-gauge-pill--content {
-  border-color: rgba(37, 99, 235, 0.35);
-}
-
-.detection-gauge-pill--structure {
-  border-color: rgba(124, 58, 237, 0.28);
-}
-
-.detection-gauge-pill--motion {
-  border-color: rgba(245, 158, 11, 0.35);
-}
-
-.detection-gauge-pill--forms {
-  border-color: rgba(20, 184, 166, 0.35);
-}
-
 .sidebar-section:first-of-type .dimension-bars {
   margin-top: 0;
+}
+
+/* The issues list follows the metric card; keep the sidebar flow continuous. */
+.sidebar-explanation-section {
+  border-bottom: 0;
+  padding-top: 10px;
 }
 
 .score-ring {
@@ -5110,43 +5071,6 @@ body.accessibility-reading-mask-active .accessibility-menu {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #64748b;
-}
-
-.issue-element-tip {
-  margin: 0;
-  padding: 8px 11px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.38);
-  background: rgba(248, 250, 252, 0.72);
-  color: #475569;
-}
-
-.issue-element-tip-title {
-  margin: 0 0 4px;
-  font-size: 10.5px;
-  line-height: 1.25;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.issue-element-tip-steps {
-  margin: 0;
-  padding-left: 16px;
-  display: grid;
-  gap: 7px;
-  font-size: 11.5px;
-  line-height: 1.42;
-}
-
-.issue-element-tip-steps li {
-  color: #55657e;
-}
-
-.issue-element-tip-steps strong {
-  color: #0f172a;
-  font-weight: 750;
 }
 
 .issue-element-chip {

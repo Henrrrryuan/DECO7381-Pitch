@@ -9,7 +9,7 @@ import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/si
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
 
-  const [gauge, setGauge] = useState({ detected: null, total: null, breakdown: null });
+  const [gauge, setGauge] = useState({ detected: null });
 
   useEffect(() => {
     document.body.classList.add("dashboard-body");
@@ -34,8 +34,6 @@ export function DashboardPage() {
             setGauge(
               payload ?? {
                 detected: null,
-                total: null,
-                breakdown: null,
               },
             );
           },
@@ -108,12 +106,9 @@ export function DashboardPage() {
             <div className="tool-sidebar-inner">
               <PriorityLensPanel />
 
-              <DetectionGauge detected={gauge.detected} total={gauge.total} />
+              <DetectionGauge detected={gauge.detected} />
 
               <section className="sidebar-section sidebar-explanation-section">
-                <div className="pane-header">
-                  <h2>Detected Issues</h2>
-                </div>
                 <div className="sidebar-explanation-content">
                   <div id="dashboardSummaryText" className="overall-summary" />
                   <section id="printSummary" className="print-summary" aria-label="Printable summary">

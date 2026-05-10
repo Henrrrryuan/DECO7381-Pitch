@@ -383,22 +383,12 @@ function renderDetectionGauge(result) {
   }
 
   if (!result?.dimensions) {
-    onDetectionGaugeUpdate({ detected: null, total: null, breakdown: null });
+    onDetectionGaugeUpdate({ detected: null });
     return;
   }
 
-  const total = TOTAL_POSSIBLE_DETECTION_POINTS;
   const detected = detectorsWithIssuesCount(result);
-  const breakdown = { content: 0, structure: 0, motion: 0, forms: 0 };
-  (result.dimensions || []).forEach((dimension) => {
-    if (!isDetectorEnabledForActiveProfile(dimension?.dimension)) {
-      return;
-    }
-    const key = issueCategoryKeyForDimension(dimension?.dimension);
-    const bucket = key in breakdown ? key : "structure";
-    breakdown[bucket] += (dimension?.issues || []).length;
-  });
-  onDetectionGaugeUpdate({ detected, total, breakdown });
+  onDetectionGaugeUpdate({ detected });
 }
 
 function renderReportId() {
@@ -1952,14 +1942,6 @@ function issueElementListMarkup(issue, dimensionName) {
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Affected elements</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Hover highlight</strong> -> <strong>guidance</strong> appears (moves away and it hides).</li>
-            <li><strong>Click highlight</strong> -> <strong>pin guidance</strong> (click again to close).</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap">
           ${groupedSections}
         </div>
@@ -1980,13 +1962,6 @@ function issueElementListMarkup(issue, dimensionName) {
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Attention competition sources</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
           ${groupedSections}
         </div>
@@ -2009,13 +1984,6 @@ function issueElementListMarkup(issue, dimensionName) {
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Competing primary actions</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-wip-single-group-wrap">
           ${groupedSection}
         </div>
@@ -2036,13 +2004,6 @@ function issueElementListMarkup(issue, dimensionName) {
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Navigation complexity</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click a region</strong> -> preview highlights that <strong>&lt;nav&gt;</strong>.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-nc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -2063,13 +2024,6 @@ function issueElementListMarkup(issue, dimensionName) {
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <span class="issue-highlight-label">Sentence complexity patterns</span>
-        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-          <p class="issue-element-tip-title">Tip</p>
-          <ol class="issue-element-tip-steps">
-            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
-          </ol>
-        </div>
         <div class="issue-phs-grouped-wrap issue-sc-grouped-wrap">
           ${groupedSections}
         </div>
@@ -2096,14 +2050,6 @@ function issueElementListMarkup(issue, dimensionName) {
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
-      <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
-        <p class="issue-element-tip-title">Tip</p>
-        <ol class="issue-element-tip-steps">
-          <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
-          <li><strong>Hover highlight</strong> -> <strong>guidance</strong> appears (moves away and it hides).</li>
-          <li><strong>Click highlight</strong> -> <strong>pin guidance</strong> (click again to close).</li>
-        </ol>
-      </div>
       <div class="issue-element-chip-list">
         ${rows}
       </div>
