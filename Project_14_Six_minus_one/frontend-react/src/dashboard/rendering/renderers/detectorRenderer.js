@@ -1,6 +1,11 @@
 import { logRenderContext } from "../shared/renderForensics.js";
 import { explanationAccordionBlockMarkup } from "../templates/detectorTemplates.js";
 import { renderIssueSummaryCard } from "./issueRenderer.js";
+import { dtLineageEnabled, summarizeDtLocationArray } from "../../observability/dtLocationLineage.js";
+
+function amcAuditEnabled() {
+  return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_AMC_AUDIT === "1");
+}
 
 function renderExplanationMarkup({
   result,
@@ -15,8 +20,10 @@ function renderExplanationMarkup({
   selectedElementNumber,
   issueRenderCtx,
 } = {}) {
-  const dimensionsWithIssues = [...(result?.dimensions || [])]
-    .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension))
+  const orderedDimensions = [...(result?.dimensions || [])]
+    .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
+
+  const dimensionsWithIssues = orderedDimensions
     .map((dimension) => ({
       dimension,
       filteredIssues: prioritizedIssuesForProfile(dimension),
@@ -29,7 +36,52 @@ function renderExplanationMarkup({
 
   let globalIssueIndex = 0;
   const blocks = dimensionsWithIssues.map(({ dimension, filteredIssues }) => {
+    if (dtLineageEnabled() && dimension?.dimension === "Dense Text Detection") {
+      const dtIssue = (dimension?.issues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
+      const rawSummary = summarizeDtLocationArray(dtIssue?.locations || []);
+      console.log("[DT-1 location lineage]", {
+        stage: "render.explanation.dimension.raw",
+        ...rawSummary,
+        dimension: dimension.dimension,
+      });
+    }
     const issueCount = filteredIssues.length;
+    if (amcAuditEnabled() && dimension?.dimension === "Auto-Moving Content") {
+      const amcIssue = (filteredIssues || []).find((i) => (i?.rule_id || "") === "AMC-1") || null;
+      const locations = Array.isArray(amcIssue?.locations) ? amcIssue.locations : [];
+      const aggregation = amcIssue?.evidence?.aggregation || {};
+      const subgroupCounts = aggregation?.subgroup_counts || aggregation?.subgroupCounts || {};
+      console.log("[AMC lineage]", {
+        raw_candidate_count: null,
+        issue_count: amcIssue ? 1 : 0,
+        location_count_before_sanitize: null,
+        location_count_after_sanitize: null,
+        rendered_location_count: locations.length,
+        grouped_into_single_issue: Boolean(amcIssue),
+        grouping_reason: "single_issue_max_underlying_issue",
+        collapse_detected: false,
+        collapse_stage: "frontend.render.explanation.dimension.filtered",
+      });
+      console.log("[AMC aggregation]", {
+        id1_location_count: aggregation?.id1_location_count ?? aggregation?.id1LocationCount ?? null,
+        id2_location_count: aggregation?.id2_location_count ?? aggregation?.id2LocationCount ?? null,
+        merged_location_count: aggregation?.merged_location_count ?? aggregation?.mergedLocationCount ?? locations.length,
+        subgroup_counts: subgroupCounts,
+        deduped_count: aggregation?.deduped_count ?? aggregation?.dedupedCount ?? locations.length,
+        discarded_duplicates: aggregation?.discarded_duplicates ?? aggregation?.discardedDuplicates ?? null,
+        rendered_group_count: Object.keys(subgroupCounts || {}).length,
+      });
+    }
+    if (dtLineageEnabled() && dimension?.dimension === "Dense Text Detection") {
+      const filteredDt = (filteredIssues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
+      const filteredSummary = summarizeDtLocationArray(filteredDt?.locations || []);
+      console.log("[DT-1 location lineage]", {
+        stage: "render.explanation.dimension.filtered",
+        ...filteredSummary,
+        dimension: dimension.dimension,
+        filtered_issue_count: issueCount,
+      });
+    }
     const displayName = displayDimensionName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
 

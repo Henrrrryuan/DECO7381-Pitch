@@ -152,13 +152,161 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         response_payload = analysis.to_dict()
         response_payload["html_content"] = payload.html
         response_payload["baseline_run_id"] = None
+        if os.environ.get("DT1_LINEAGE") == "1":
+            print("[DT-1 locations] api.response", _dt1_locations_summary(response_payload))
+        if os.environ.get("LCC_AUDIT") == "1":
+            print("[LCC lineage] api.response", _lcc_locations_summary(response_payload))
+        if os.environ.get("AMC_AUDIT") == "1":
+            print("[AMC lineage] api.response", _amc_locations_summary(response_payload))
         return response_payload
-    return build_analysis_response(
+    response_payload = build_analysis_response(
         analysis,
         html_content=payload.html,
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
+    if os.environ.get("DT1_LINEAGE") == "1":
+        print("[DT-1 locations] api.response", _dt1_locations_summary(response_payload))
+    if os.environ.get("LCC_AUDIT") == "1":
+        print("[LCC lineage] api.response", _lcc_locations_summary(response_payload))
+    if os.environ.get("AMC_AUDIT") == "1":
+        print("[AMC lineage] api.response", _amc_locations_summary(response_payload))
+    return response_payload
+
+
+def _dt1_locations_summary(payload_dict: dict[str, Any]) -> dict[str, Any]:
+    dims = payload_dict.get("dimensions") or []
+    for dim in dims:
+        if dim.get("dimension") != "Dense Text Detection":
+            continue
+        for issue in dim.get("issues") or []:
+            if issue.get("rule_id") != "DT-1":
+                continue
+            locs = issue.get("locations") or []
+            selectors = [str(loc.get("selector") or "") for loc in locs if isinstance(loc, dict)]
+            ids = []
+            for idx, loc in enumerate(locs):
+                if not isinstance(loc, dict):
+                    continue
+                attrs = loc.get("attrs") if isinstance(loc.get("attrs"), dict) else {}
+                dom_id = str(attrs.get("id") or "")
+                case_id = str(attrs.get("data-case-id") or "")
+                tag = str(loc.get("tag") or "")
+                selector = str(loc.get("selector") or "")
+                text = str(loc.get("text") or loc.get("preview") or "")
+                ids.append(f"dt:{idx}:{selector}:{tag}:{dom_id}:{case_id}:{len(text)}")
+            dup_selector_count = sum(1 for s in set(selectors) if s and selectors.count(s) > 1)
+            dup_text_count = 0
+            return {
+                "dt_location_count": len(locs),
+                "dt_location_ids": ids,
+                "selectors": selectors,
+                "duplicate_selector_count": dup_selector_count,
+                "duplicate_text_count": dup_text_count,
+            }
+    return {"dt_location_count": 0, "dt_location_ids": [], "selectors": [], "duplicate_selector_count": 0, "duplicate_text_count": 0}
+
+
+def _lcc_locations_summary(payload_dict: dict[str, Any]) -> dict[str, Any]:
+    dims = payload_dict.get("dimensions") or []
+    for dim in dims:
+        if dim.get("dimension") != "Long Content Without Chunking":
+            continue
+        for issue in dim.get("issues") or []:
+            if issue.get("rule_id") != "LCC-1":
+                continue
+            locs = issue.get("locations") or []
+            selectors = [str(loc.get("selector") or "") for loc in locs if isinstance(loc, dict)]
+            ids = []
+            for idx, loc in enumerate(locs):
+                if not isinstance(loc, dict):
+                    continue
+                attrs = loc.get("attrs") if isinstance(loc.get("attrs"), dict) else {}
+                dom_id = str(attrs.get("id") or "")
+                case_id = str(attrs.get("data-case-id") or "")
+                tag = str(loc.get("tag") or "")
+                selector = str(loc.get("selector") or "")
+                wc = str(loc.get("word_count") or "")
+                hc = str(loc.get("heading_count") or "")
+                lc = str(loc.get("list_count") or "")
+                pc = str(loc.get("paragraph_count") or "")
+                ids.append(f"lcc:{idx}:{selector}:{tag}:{dom_id}:{case_id}:{wc}:{hc}:{lc}:{pc}")
+            dup_selector_count = sum(1 for s in set(selectors) if s and selectors.count(s) > 1)
+            return {
+                "raw_candidate_count": None,
+                "issue_count": 1,
+                "location_count_before_sanitize": None,
+                "location_count_after_sanitize": len(locs),
+                "grouped_into_single_issue": len(locs) > 1,
+                "grouping_reason": "single_issue_locations_array_cap_8" if len(locs) > 1 else "",
+                "location_count": len(locs),
+                "location_ids": ids,
+                "selectors": selectors,
+                "duplicate_selector_count": dup_selector_count,
+            }
+    return {
+        "raw_candidate_count": None,
+        "issue_count": 0,
+        "location_count_before_sanitize": None,
+        "location_count_after_sanitize": 0,
+        "grouped_into_single_issue": False,
+        "grouping_reason": "",
+        "location_count": 0,
+        "location_ids": [],
+        "selectors": [],
+        "duplicate_selector_count": 0,
+    }
+
+
+def _amc_locations_summary(payload_dict: dict[str, Any]) -> dict[str, Any]:
+    dims = payload_dict.get("dimensions") or []
+    for dim in dims:
+        if dim.get("dimension") != "Auto-Moving Content":
+            continue
+        for issue in dim.get("issues") or []:
+            if issue.get("rule_id") != "AMC-1":
+                continue
+            locs = issue.get("locations") or []
+            ids = []
+            for idx, loc in enumerate(locs):
+                if not isinstance(loc, dict):
+                    continue
+                tag = str(loc.get("tag") or "")
+                summary = str(loc.get("summary") or "")
+                region = str(loc.get("region") or "")
+                muted = str(loc.get("muted") or "")
+                src = str(loc.get("src") or "")
+                ids.append(f"amc:{idx}:{tag}:{region}:{muted}:{len(summary)}:{len(src)}")
+            summaries = [str(loc.get("summary") or "") for loc in locs if isinstance(loc, dict)]
+            dup_summary_count = sum(1 for s in set(summaries) if s and summaries.count(s) > 1)
+            return {
+                "raw_candidate_count": None,
+                "issue_count": 1,
+                "location_count_before_sanitize": None,
+                "location_count_after_sanitize": len(locs),
+                "rendered_location_count": None,
+                "grouped_into_single_issue": True,
+                "grouping_reason": "single_issue_max_underlying_issue",
+                "collapse_detected": False,
+                "collapse_stage": "",
+                "location_count": len(locs),
+                "location_ids": ids,
+                "duplicate_summary_count": dup_summary_count,
+            }
+    return {
+        "raw_candidate_count": None,
+        "issue_count": 0,
+        "location_count_before_sanitize": None,
+        "location_count_after_sanitize": 0,
+        "rendered_location_count": None,
+        "grouped_into_single_issue": False,
+        "grouping_reason": "",
+        "collapse_detected": False,
+        "collapse_stage": "",
+        "location_count": 0,
+        "location_ids": [],
+        "duplicate_summary_count": 0,
+    }
 
 
 @router.post("/analyze-url")
@@ -235,6 +383,8 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
         "js_files": sorted(bundle.js_files.keys()),
         "rendered_snapshot_used": rendered_snapshot_used,
     }
+    if os.environ.get("DT1_LINEAGE") == "1":
+        print("[DT-1 locations] api.response", _dt1_locations_summary(payload_dict))
     return payload_dict
 
 

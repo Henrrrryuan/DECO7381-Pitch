@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from typing import Any
 
 from bs4 import BeautifulSoup
@@ -21,24 +22,41 @@ def detect_dense_text(soup: BeautifulSoup):
     dense_blocks: list[dict[str, Any]] = []
     forensic = os.environ.get("DT1_FORENSIC") == "1"
     for tag in soup.select(TEXT_BLOCK_SELECTOR):
+        raw_text = tag.get_text(" ", strip=True)
         text = visible_text(tag)
         words = tokenize_alpha_words(text)
         sentences = split_sentences(text)
-        triggered = len(words) > DENSE_TEXT_WORD_THRESHOLD or len(sentences) > DENSE_TEXT_SENTENCE_THRESHOLD
+        word_count = len(words)
+        sentence_count = len(sentences)
+        passes_words = word_count > DENSE_TEXT_WORD_THRESHOLD
+        passes_sentences = sentence_count > DENSE_TEXT_SENTENCE_THRESHOLD
+        triggered = passes_words or passes_sentences
         if forensic:
-            preview = " ".join(str(text or "").split())[:80]
             attrs = tag.attrs if hasattr(tag, "attrs") else {}
             case_id = attrs.get("data-case-id") if isinstance(attrs, dict) else None
-            print("[DT-1 detector]")
-            print(f"tag={(tag.name or '')}")
-            print(f"id={tag.get('id') if hasattr(tag, 'get') else None}")
-            print(f"case={case_id}")
-            print(f"words={len(words)}")
-            print(f"sentences={len(sentences)}")
-            print(f"trigger={str(bool(triggered)).lower()}")
-            print(f"preview={preview}")
+            rejection_reason = ""
+            if not triggered:
+                rejection_reason = f"words<={DENSE_TEXT_WORD_THRESHOLD} and sentences<={DENSE_TEXT_SENTENCE_THRESHOLD}"
+            payload = {
+                "tag": (tag.name or ""),
+                "id": (tag.get("id") if hasattr(tag, "get") else None),
+                "case": case_id,
+                "raw_text_length": len(raw_text or ""),
+                "normalized_word_count": word_count,
+                "normalized_sentence_count": sentence_count,
+                "threshold_operator": ">",
+                "threshold_value": {"words": DENSE_TEXT_WORD_THRESHOLD, "sentences": DENSE_TEXT_SENTENCE_THRESHOLD},
+                "passes_threshold": bool(triggered),
+                "passes_words": bool(passes_words),
+                "passes_sentences": bool(passes_sentences),
+                "rejection_reason": rejection_reason,
+                "preview": " ".join(str(text or "").split())[:80],
+                "in_article": bool(tag.find_parent("article")) if hasattr(tag, "find_parent") else False,
+            }
+            print("[DT-1 candidate]")
+            print(json.dumps(payload, ensure_ascii=False))
         if triggered:
-            dense_blocks.append(tag_location(tag, word_count=len(words), sentence_count=len(sentences)))
+            dense_blocks.append(tag_location(tag, word_count=word_count, sentence_count=sentence_count))
     if forensic:
         print("[DT-1 final]")
         print(f"dense_blocks={len(dense_blocks)}")

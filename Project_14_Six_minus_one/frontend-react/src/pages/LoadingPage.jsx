@@ -9,11 +9,26 @@ import {
 } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { spaGuideAnalysisHref } from "../lib/siteUrls.js";
+import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
+import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const MIN_LOADING_TIME_MS = 2600;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
+
+function dt1FrontendForensicEnabled() {
+  return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_FORENSIC === "1");
+}
+
+function dtLocationsFromPayload(payload) {
+  const dims = payload?.dimensions || payload?.result?.dimensions || payload?.analysis?.dimensions || [];
+  const dtDim = Array.isArray(dims) ? dims.find((d) => d?.dimension === "Dense Text Detection") : null;
+  const issues = dtDim?.issues || [];
+  const issue = issues.find((i) => i?.rule_id === "DT-1") || issues[0] || null;
+  const locs = issue?.locations || [];
+  return Array.isArray(locs) ? locs.length : 0;
+}
 
 function createCancelledError() {
   const error = new Error("Analysis cancelled by user.");
@@ -151,6 +166,20 @@ export function LoadingPage() {
       sessionStorage.removeItem(DASHBOARD_HISTORY_ONCE_KEY);
       const previousSession = loadDashboardSession();
       const savedAt = new Date().toISOString();
+      if (dt1FrontendForensicEnabled()) {
+        const runId = String(result?.payload?.run?.run_id || result?.payload?.run_id || "");
+        console.log("[DT lineage] analyze.response", {
+          sourceType: result?.sourceType || "",
+          sourceName: result?.sourceName || "",
+          run_id: runId,
+          dt_locations: dtLocationsFromPayload(result?.payload || null),
+        });
+      }
+      logDtLineage("frontend.fetch.payload", result?.payload || null, {
+        owner: "pages/LoadingPage.saveResult",
+        sourceType: result?.sourceType || "",
+        sourceName: result?.sourceName || "",
+      });
       saveDashboardSession({
         current: {
           payload: result.payload,
@@ -166,6 +195,24 @@ export function LoadingPage() {
         sourceUrl: result.sourceUrl,
         savedAt,
       });
+      if (dt1FrontendForensicEnabled()) {
+        const stored = loadDashboardSession();
+        const storedRun = String(stored?.current?.payload?.run?.run_id || stored?.current?.payload?.run_id || "");
+        console.log("[DT lineage] session.persisted", {
+          stored_run_id: storedRun,
+          stored_sourceType: stored?.current?.sourceType || "",
+          stored_sourceName: stored?.current?.sourceName || "",
+        });
+      }
+      try {
+        const stored = loadDashboardSession();
+        logDtLineage("frontend.session.persisted", stored?.current?.payload || null, {
+          owner: "pages/LoadingPage.saveResult",
+          stored_sourceType: stored?.current?.sourceType || "",
+        });
+      } catch (_) {
+        // ignore
+      }
     }
 
     function showError(error) {
@@ -200,6 +247,16 @@ export function LoadingPage() {
         setProgress(100);
         await wait(350);
         ensureNotCancelled();
+        try {
+          const stored = loadDashboardSession();
+          logLineageTimeline("navigation.before", {
+            owner: "pages/LoadingPage.runPendingAnalysis",
+            to: "/dashboard",
+            stored: summarizeRun(stored?.current?.payload || null),
+          });
+        } catch (_) {
+          logLineageTimeline("navigation.before", { owner: "pages/LoadingPage.runPendingAnalysis", to: "/dashboard" });
+        }
         navigate("/dashboard");
       } catch (error) {
         if (cancelRequestedRef.current || error?.name === "AnalysisCancelledError") {

@@ -1,4 +1,5 @@
 import { cogaGuidanceMarkup, standardsPillsMarkup } from "../shared/renderHelpers.js";
+import { dtLineageEnabled, summarizeDtLocationArray } from "../../observability/dtLocationLineage.js";
 
 function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber, chipOptions = {}) {
   const {
@@ -198,6 +199,64 @@ function issueWipSingleGroupChipSectionsMarkup(ctx, issue, dimensionName, visibl
     `;
 }
 
+function issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber) {
+  const {
+    escapeHtml,
+    groupAmcLocationsBySubtype,
+    amcSubtypeLabel,
+    amcSubtypeOrder,
+  } = ctx;
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const grouped = groupAmcLocationsBySubtype(locations);
+  const subtypeKeys = Object.keys(grouped);
+  const ordered = subtypeKeys.sort((a, b) => amcSubtypeOrder(a) - amcSubtypeOrder(b));
+  return ordered.map((subtype) => {
+    const entries = grouped[subtype] || [];
+    const label = amcSubtypeLabel(subtype);
+    const title = `${label} (${entries.length})`;
+    const chips = entries.map(({ location, elementNumber }) => (
+      issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber)
+    )).join("");
+    return `
+      <section class="issue-phs-violation-group issue-amc-subtype-group" aria-label="${escapeHtml(label)}">
+        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
+        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
+          ${chips}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
+function issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber) {
+  const {
+    escapeHtml,
+    groupEiLocationsBySubtype,
+    eiSubtypeLabel,
+    eiSubtypeOrder,
+  } = ctx;
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const grouped = groupEiLocationsBySubtype(locations);
+  const subtypeKeys = Object.keys(grouped);
+  const ordered = subtypeKeys.sort((a, b) => eiSubtypeOrder(a) - eiSubtypeOrder(b));
+  return ordered.map((subtype) => {
+    const entries = grouped[subtype] || [];
+    const label = eiSubtypeLabel(subtype);
+    const title = `${label} (${entries.length})`;
+    const chips = entries.map(({ location, elementNumber }) => (
+      issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber)
+    )).join("");
+    return `
+      <section class="issue-phs-violation-group issue-ei-subtype-group" aria-label="${escapeHtml(label)}">
+        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
+        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
+          ${chips}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber) {
   const { escapeHtml, issueDomId } = ctx;
   const locations = Array.isArray(issue?.locations) ? issue.locations : [];
@@ -205,6 +264,14 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
   const activeElementNumber = String(selectedIssueId || "") === String(selectedIdForIssue || "")
     ? Number(selectedElementNumber || 0)
     : 0;
+
+  if (dtLineageEnabled() && (issue?.rule_id || "") === "DT-1") {
+    console.log("[DT-1 location lineage]", {
+      stage: "issue.template.input",
+      ...summarizeDtLocationArray(locations),
+      dimension: dimensionName,
+    });
+  }
 
   if ((issue.rule_id || "") === "PHS-1" && locations.length > 0) {
     const visibleSlice = locations.slice(0, 12);
@@ -279,12 +346,72 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
     `;
   }
 
+  if ((issue.rule_id || "") === "AMC-1" && locations.length > 0) {
+    const groupedSections = issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
+    return `
+      <div class="issue-summary-row issue-summary-row-elements">
+        <span class="issue-highlight-label">Motion evidence</span>
+        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+          <p class="issue-element-tip-title">Tip</p>
+          <ol class="issue-element-tip-steps">
+            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
+            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+          </ol>
+        </div>
+        <div class="issue-phs-grouped-wrap issue-amc-grouped-wrap">
+          ${groupedSections}
+        </div>
+      </div>
+    `;
+  }
+
+  if ((issue.rule_id || "") === "EI-1" && locations.length > 0) {
+    const groupedSections = issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
+    return `
+      <div class="issue-summary-row issue-summary-row-elements">
+        <span class="issue-highlight-label">Interruption evidence</span>
+        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+          <p class="issue-element-tip-title">Tip</p>
+          <ol class="issue-element-tip-steps">
+            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
+            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+          </ol>
+        </div>
+        <div class="issue-phs-grouped-wrap issue-ei-grouped-wrap">
+          ${groupedSections}
+        </div>
+      </div>
+    `;
+  }
+
   const inferredCount = Math.max(1, locations.length || 0);
   const shown = locations.slice(0, 12);
   const hiddenCount = Math.max(0, inferredCount - shown.length);
+  if (dtLineageEnabled() && (issue?.rule_id || "") === "DT-1") {
+    console.log("[DT-1 location lineage]", {
+      stage: "grouped.issue.locations",
+      ...summarizeDtLocationArray(shown),
+      dimension: dimensionName,
+      hidden_count: hiddenCount,
+    });
+  }
   const chips = shown.map((location, index) => (
     issueElementChipRowMarkup(ctx, issue, dimensionName, location, index + 1, activeElementNumber)
   )).join("");
+  if (dtLineageEnabled() && (issue?.rule_id || "") === "DT-1") {
+    console.log("[DT-1 location lineage]", {
+      stage: "issue.template.output",
+      dt_location_count: shown.length,
+      dt_location_ids: summarizeDtLocationArray(shown).dt_location_ids,
+      duplicate_selector_count: summarizeDtLocationArray(shown).duplicate_selector_count,
+      duplicate_text_count: summarizeDtLocationArray(shown).duplicate_text_count,
+      grouped_keys: [],
+      collapsed_ids: [],
+      surviving_ids: summarizeDtLocationArray(shown).dt_location_ids,
+      markup_length: chips.length,
+      dimension: dimensionName,
+    });
+  }
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>

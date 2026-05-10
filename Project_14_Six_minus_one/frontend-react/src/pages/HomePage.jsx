@@ -9,9 +9,25 @@ import {
 } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { spaGuideLandingHref, spaLandingHistoryHref } from "../lib/siteUrls.js";
+import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
+import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
+
+function dt1FrontendForensicEnabled() {
+  return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_FORENSIC === "1");
+}
+
+function dtLocationsFromPayload(payload) {
+  const dims = payload?.dimensions || payload?.result?.dimensions || payload?.analysis?.dimensions || [];
+  const dtDim = Array.isArray(dims) ? dims.find((d) => d?.dimension === "Dense Text Detection") : null;
+  const issues = dtDim?.issues || [];
+  const issue = issues.find((i) => i?.rule_id === "DT-1") || issues[0] || null;
+  const locs = issue?.locations || [];
+  return Array.isArray(locs) ? locs.length : 0;
+}
+
 function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
   if (!value) {
@@ -221,6 +237,27 @@ export function HomePage() {
       const html = payload.html_content || "";
 
       const savedAt = new Date().toISOString();
+      if (dt1FrontendForensicEnabled()) {
+        const runId = String(payload?.run?.run_id || payload?.run_id || "");
+        console.log("[DT lineage] analyze.response", {
+          sourceType,
+          sourceName,
+          run_id: runId,
+          dt_locations: dtLocationsFromPayload(payload),
+        });
+      }
+      logLineageTimeline("analyze.response", {
+        owner: "pages/HomePage.onFileSubmit",
+        sourceType,
+        sourceName,
+        incoming: summarizeRun(payload),
+        dt_locations: dtLocationsFromPayload(payload),
+      });
+      logDtLineage("frontend.fetch.payload", payload, {
+        owner: "pages/HomePage.onFileSubmit",
+        sourceType,
+        sourceName,
+      });
       saveDashboardSession({
         current: {
           payload,
@@ -235,6 +272,31 @@ export function HomePage() {
         sourceName,
         sourceUrl,
         savedAt,
+      });
+      if (dt1FrontendForensicEnabled()) {
+        const stored = loadDashboardSession();
+        const storedRun = String(stored?.current?.payload?.run?.run_id || stored?.current?.payload?.run_id || "");
+        console.log("[DT lineage] session.persisted", {
+          stored_run_id: storedRun,
+          stored_sourceType: stored?.current?.sourceType || "",
+          stored_sourceName: stored?.current?.sourceName || "",
+        });
+      }
+      const stored = loadDashboardSession();
+      logLineageTimeline("session.persisted", {
+        owner: "pages/HomePage.onFileSubmit",
+        stored: summarizeRun(stored?.current?.payload || null),
+        stored_sourceType: stored?.current?.sourceType || "",
+        stored_sourceName: stored?.current?.sourceName || "",
+      });
+      logDtLineage("frontend.session.persisted", stored?.current?.payload || null, {
+        owner: "pages/HomePage.onFileSubmit",
+        stored_sourceType: stored?.current?.sourceType || "",
+      });
+      logLineageTimeline("navigation.before", {
+        owner: "pages/HomePage.onFileSubmit",
+        to: "/dashboard",
+        stored: summarizeRun(stored?.current?.payload || null),
       });
       navigate("/dashboard");
     } catch (err) {

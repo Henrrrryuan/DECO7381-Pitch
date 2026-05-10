@@ -4,6 +4,7 @@ import { captureDashboardRuntimeSnapshot } from "../observability/runtimeSnapsho
 import { emitLineageEvent, emitSnapshotEvent, emitTraceEvent } from "../observability/observabilityForensics.js";
 import { createDashboardTraceContext } from "../observability/traceContext.js";
 import { attachTraceToRender } from "../observability/runtimeTrace.js";
+import { dtLocationsFromPayload, logLineageTimeline, summarizeRun } from "../observability/lineageTimeline.js";
 
 function renderDashboardRuntime({
   currentResult,
@@ -18,6 +19,11 @@ function renderDashboardRuntime({
   emitTraceEvent(trace, { kind: "render.begin" });
   emitSnapshotEvent(captureDashboardRuntimeSnapshot({ state: ctx.state, traceContext: trace, runtime_phase: "render" }), { kind: "render.before" });
   logDashboardRenderRuntime({ stage: "render.begin" });
+  logLineageTimeline("render.runtime.begin", {
+    owner: "dashboard/runtime.renderDashboardRuntime",
+    render: summarizeRun(ctx.state.currentPayload || null),
+    render_dt_locations: dtLocationsFromPayload(ctx.state.currentPayload || null),
+  });
   ctx.renderResult(currentResult, currentHtml);
   ctx.initHistoryContextPanel();
   ctx.renderComparison(currentResult, previousResult, previousSourceName || "");

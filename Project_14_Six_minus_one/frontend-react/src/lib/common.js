@@ -1,3 +1,6 @@
+import { dtLocationsFromPayload, logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
+import { summarizeDtLocations } from "../dashboard/observability/dtLocationLineage.js";
+
 const STORAGE_KEY = "cognilens-dashboard-session";
 const DASHBOARD_AUTHORITATIVE_SOURCE_KEY = "cognilens.dashboard.authoritative-source";
 const FALLBACK_API_BASE = "http://127.0.0.1:8001";
@@ -244,6 +247,28 @@ async function analyzeUploadFile(file, baselineRunId = null) {
 }
 
 function saveDashboardSession(payload) {
+  let previousSession = null;
+  try {
+    previousSession = loadDashboardSession();
+  } catch (_) {
+    previousSession = null;
+  }
+  const incoming = payload?.current?.payload || payload?.payload || null;
+  const prevPayload = previousSession?.current?.payload || null;
+  const prevRun = String(prevPayload?.run?.run_id || prevPayload?.run_id || "");
+  const incomingRun = String(incoming?.run?.run_id || incoming?.run_id || "");
+  const incomingDt = summarizeDtLocations(incoming);
+  logLineageTimeline("session.write.begin", {
+    owner: "lib/common.saveDashboardSession",
+    incoming: summarizeRun(incoming),
+    incoming_dt_locations: dtLocationsFromPayload(incoming),
+    incoming_dt_location_ids: incomingDt.dt_location_ids,
+    incoming_duplicate_selector_count: incomingDt.duplicate_selector_count,
+    incoming_duplicate_text_count: incomingDt.duplicate_text_count,
+    previous: summarizeRun(prevPayload),
+    overwrite_detected: Boolean(prevRun && incomingRun && prevRun !== incomingRun),
+    overwrite_reason: prevRun && incomingRun && prevRun !== incomingRun ? "incoming saveDashboardSession current.payload.run_id differs from stored current" : "",
+  });
   const html = payload?.current?.html || payload?.html || "";
   const candidates = [
     trimDashboardSessionForStorage(payload, html.length <= MAX_STORED_HTML_CHARS),
@@ -255,6 +280,21 @@ function saveDashboardSession(payload) {
     if (trySetStorage(sessionStorage, STORAGE_KEY, serialized)) {
       trySetStorage(localStorage, STORAGE_KEY, serialized);
       saveFreshAnalysisAuthority(payload);
+      const after = loadDashboardSession();
+      const afterPayload = after?.current?.payload || null;
+      const afterRun = String(afterPayload?.run?.run_id || afterPayload?.run_id || "");
+      const afterDt = summarizeDtLocations(afterPayload);
+      logLineageTimeline("session.write.success", {
+        owner: "lib/common.saveDashboardSession",
+        stored: summarizeRun(afterPayload),
+        stored_sourceType: after?.current?.sourceType || "",
+        stored_sourceName: after?.current?.sourceName || "",
+        stored_dt_location_ids: afterDt.dt_location_ids,
+        stored_duplicate_selector_count: afterDt.duplicate_selector_count,
+        stored_duplicate_text_count: afterDt.duplicate_text_count,
+        overwrite_detected: Boolean(prevRun && afterRun && prevRun !== afterRun),
+        overwrite_reason: prevRun && afterRun && prevRun !== afterRun ? "storage write replaced stored current run_id" : "",
+      });
       return true;
     }
   }

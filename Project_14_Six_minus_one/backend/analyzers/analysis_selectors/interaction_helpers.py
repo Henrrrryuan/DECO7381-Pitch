@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import os
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -92,6 +93,23 @@ JS_INTERRUPTION_PATTERN = re.compile(
 STYLE_RULE_PATTERN = re.compile(r"([^{]+)\{([^}]*)\}", re.DOTALL)
 CLASS_SELECTOR_PATTERN = re.compile(r"\.([A-Za-z0-9_-]+)")
 ID_SELECTOR_PATTERN = re.compile(r"#([A-Za-z0-9_-]+)")
+
+
+def _amc_audit_enabled() -> bool:
+    return os.environ.get("AMC_AUDIT") == "1"
+
+
+def _ei_audit_enabled() -> bool:
+    return os.environ.get("EI_AUDIT") == "1"
+
+
+def _amc_tag_identity(tag: Tag) -> dict[str, Any]:
+    return {
+        "tag": str(tag.name or ""),
+        "id": str(tag.get("id") or ""),
+        "class_name": " ".join(tag.get("class", [])),
+        "summary": get_tag_summary(tag),
+    }
 
 
 def build_issue(
@@ -210,6 +228,24 @@ def detect_id2_too_many_animated_elements(
 ) -> list[Issue]:
     violating_regions: list[dict[str, Any]] = []
 
+    if _amc_audit_enabled():
+        print("[AMC heuristic]", {
+            "stage": "id2.begin",
+            "ANIMATION_THRESHOLD": ANIMATION_THRESHOLD,
+            "candidate_region_count": len(candidate_regions),
+            "candidate_regions": [get_tag_summary(r) for r in candidate_regions[:8]],
+            "style_hints": {
+                "animated_classes_count": len(style_hints.get("animated_classes", set())),
+                "animated_ids_count": len(style_hints.get("animated_ids", set())),
+                "animated_classes_sample": sorted(list(style_hints.get("animated_classes", set())))[:12],
+                "animated_ids_sample": sorted(list(style_hints.get("animated_ids", set())))[:12],
+            },
+            "js_hints": {
+                "motion_count": js_hints.get("motion_count"),
+                "motion_samples": (js_hints.get("motion_samples") or [])[:2],
+            },
+        })
+
     for region in candidate_regions:
         animated_tags = get_region_scoped_tags(
             region,
@@ -217,6 +253,15 @@ def detect_id2_too_many_animated_elements(
             lambda tag: looks_distracting_animation(tag, style_hints),
         )
         animated_count = len(animated_tags)
+        if _amc_audit_enabled():
+            print("[AMC motion lineage]", {
+                "stage": "id2.region.scan",
+                "region": get_tag_summary(region),
+                "animated_count": animated_count,
+                "passes_threshold": animated_count > ANIMATION_THRESHOLD,
+                "rejection_reason": "" if animated_count > ANIMATION_THRESHOLD else "below_region_animation_threshold",
+                "animated_tag_samples": [get_tag_summary(t) for t in animated_tags[:5]],
+            })
         if animated_count <= ANIMATION_THRESHOLD:
             continue
         violating_regions.append(
@@ -293,17 +338,56 @@ def detect_id3_dynamic_interruptions(
     primary_region = infer_primary_task_region(soup, candidate_regions)
     interruption_candidates: list[dict[str, Any]] = []
 
+    if _ei_audit_enabled():
+        print("[EI audit]", {
+            "stage": "id3.begin",
+            "INTERRUPTION_SCORE_THRESHOLD": INTERRUPTION_SCORE_THRESHOLD,
+            "primary_region": get_tag_summary(primary_region) if primary_region is not None else "body",
+            "js_hints": {
+                "interruption_count": js_hints.get("interruption_count"),
+                "interruption_samples": (js_hints.get("interruption_samples") or [])[:2],
+            },
+        })
+
     for tag in soup.find_all(True):
         if has_interruption_candidate_ancestor(tag, style_hints):
             continue
         candidate = describe_interruption_candidate(tag, primary_region, style_hints)
         if candidate is None:
             continue
+        if _ei_audit_enabled():
+            print("[EI candidate]", {
+                "candidate_type": "interrupt_candidate",
+                "summary": candidate.get("summary"),
+                "tag": str(getattr(candidate.get("tag"), "name", "") or ""),
+                "id": str(candidate.get("tag").get("id", "") or "") if isinstance(candidate.get("tag"), Tag) else "",
+                "class_name": " ".join(candidate.get("tag").get("class", [])) if isinstance(candidate.get("tag"), Tag) else "",
+                "interrupt_type": candidate.get("interrupt_type"),
+                "heuristic_source": "describe_interruption_candidate",
+                "interrupt_score": candidate.get("interrupt_score"),
+                "initial_load_visible": candidate.get("initial_load_visible"),
+                "fixed_or_sticky": candidate.get("fixed_or_sticky"),
+                "overlay_like": candidate.get("overlay_like"),
+                "blocks_scroll": candidate.get("blocks_scroll"),
+                "covers_primary_region": candidate.get("covers_primary_region"),
+                "dismiss_required": candidate.get("dismiss_required"),
+                "takes_focus": candidate.get("takes_focus"),
+                "motion_related": candidate.get("motion_related"),
+                "passes_threshold": candidate.get("interrupt_score", 0) >= INTERRUPTION_SCORE_THRESHOLD,
+                "rejection_reason": "" if candidate.get("interrupt_score", 0) >= INTERRUPTION_SCORE_THRESHOLD else "below_interrupt_score_threshold",
+            })
         if candidate["interrupt_score"] >= INTERRUPTION_SCORE_THRESHOLD:
             interruption_candidates.append(candidate)
 
     js_interrupt_count = js_hints["interruption_count"]
     if not interruption_candidates and js_interrupt_count == 0:
+        if _ei_audit_enabled():
+            print("[EI lineage]", {
+                "stage": "id3.none",
+                "interrupting_element_count": 0,
+                "js_interruption_signal_count": js_interrupt_count,
+                "issue_emitted": False,
+            })
         return []
 
     max_interrupt_score = max((item["interrupt_score"] for item in interruption_candidates), default=0)
@@ -352,6 +436,16 @@ def detect_id3_dynamic_interruptions(
         )
 
     primary_region_summary = get_tag_summary(primary_region) if primary_region is not None else "body"
+
+    if _ei_audit_enabled():
+        print("[EI lineage]", {
+            "stage": "id3.issue.build",
+            "interrupting_element_count": len(interruption_candidates),
+            "max_interrupt_score": max_interrupt_score,
+            "js_interruption_signal_count": js_interrupt_count,
+            "location_count_before_cap": len(locations),
+            "locations_cap": 5,
+        })
 
     return [
         build_issue(
@@ -687,15 +781,47 @@ def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> b
         return False
 
     if tag.name == "marquee":
+        if _amc_audit_enabled():
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["tag.marquee"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
         return True
 
     classes = {item.lower() for item in tag.get("class", [])}
     element_id = (tag.get("id") or "").lower()
     if classes & style_hints["animated_classes"]:
+        if _amc_audit_enabled():
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["style_hints.animated_classes"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
         return True
     if element_id and element_id in style_hints["animated_ids"]:
+        if _amc_audit_enabled():
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["style_hints.animated_ids"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
         return True
     if any(hint in class_name for class_name in classes for hint in ANIMATED_CLASS_HINTS):
+        if _amc_audit_enabled():
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["class_hint.ANIMATED_CLASS_HINTS"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
         return True
 
     combined = " ".join(
@@ -709,10 +835,43 @@ def looks_distracting_animation(tag: Tag, style_hints: dict[str, set[str]]) -> b
 
     strong_hints = ("carousel", "slider", "swiper", "marquee", "animate", "animation", "rotator", "ticker")
     if any(hint in combined for hint in strong_hints):
+        if _amc_audit_enabled():
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["combined_text.strong_hints"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
         return True
 
     style = tag.get("style", "").lower()
-    return "animation" in style
+    decision = "animation" in style
+    if _amc_audit_enabled():
+        # Only log rejections for "motion-looking" candidates to keep noise bounded.
+        looks_motiony = any(token in combined for token in ("animation", "transition", "transform", "translate", "rotate", "marquee", "carousel", "ticker"))
+        if not decision and looks_motiony:
+            print("[AMC motion rejection]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": [],
+                "rejected_heuristics": [
+                    "not_in_style_hints",
+                    "no_animated_class_hint",
+                    "no_strong_combined_hint_match",
+                    "inline_style_missing_animation_property",
+                ],
+                "final_decision": False,
+                "rejection_reason": "looks_distracting_animation_false",
+            })
+        if decision:
+            print("[AMC motion candidate]", {
+                **_amc_tag_identity(tag),
+                "matched_heuristics": ["inline_style.contains_animation"],
+                "rejected_heuristics": [],
+                "final_decision": True,
+                "rejection_reason": "",
+            })
+    return decision
 
 
 def has_autoplay_media(tag: Tag) -> bool:

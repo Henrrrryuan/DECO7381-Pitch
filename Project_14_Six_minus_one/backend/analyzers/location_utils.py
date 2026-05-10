@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import re
+import hashlib
 from typing import Any
 
 _logger = logging.getLogger(__name__)
@@ -91,13 +92,166 @@ def sanitize_analysis_locations(analysis: AnalysisResult, html: str) -> Analysis
     soup = BeautifulSoup(html or "", "html.parser")
     for dimension in analysis.dimensions:
         for issue in dimension.issues:
+            if _dt1_lineage_enabled() and issue.rule_id == "DT-1":
+                _dt1_lineage_log("sanitize.input", issue.locations)
+            if _lcc_audit_enabled() and issue.rule_id == "LCC-1":
+                _lcc_lineage_log("sanitize.input", issue.locations)
+            if _amc_audit_enabled() and issue.rule_id == "AMC-1":
+                _amc_lineage_log("sanitize.input", issue.locations)
+            if _ei_audit_enabled() and issue.rule_id == "EI-1":
+                _ei_lineage_log("sanitize.input", issue.locations)
             issue.locations = sanitize_issue_locations(
                 soup,
                 issue.locations,
                 dimension.dimension,
                 issue.rule_id,
             )
+            if _dt1_lineage_enabled() and issue.rule_id == "DT-1":
+                _dt1_lineage_log("sanitize.output", issue.locations)
+            if _lcc_audit_enabled() and issue.rule_id == "LCC-1":
+                _lcc_lineage_log("sanitize.output", issue.locations)
+            if _amc_audit_enabled() and issue.rule_id == "AMC-1":
+                _amc_lineage_log("sanitize.output", issue.locations)
+            if _ei_audit_enabled() and issue.rule_id == "EI-1":
+                _ei_lineage_log("sanitize.output", issue.locations)
     return analysis
+
+
+def _dt1_lineage_enabled() -> bool:
+    return os.environ.get("DT1_LINEAGE") == "1"
+
+
+def _dt1_loc_text(loc: dict[str, Any]) -> str:
+    for key in ("text", "preview", "sentence_preview", "label"):
+        value = loc.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _dt1_lineage_id(loc: dict[str, Any], index: int) -> str:
+    selector = str(loc.get("selector") or "")
+    tag = str(loc.get("tag") or "")
+    attrs = loc.get("attrs") if isinstance(loc.get("attrs"), dict) else {}
+    dom_id = str(attrs.get("id") or "")
+    case_id = str(attrs.get("data-case-id") or "")
+    text = _dt1_loc_text(loc)
+    digest = hashlib.sha1(text.encode("utf-8", errors="ignore")).hexdigest()[:10] if text else ""
+    return f"dt:{index}:{selector}:{tag}:{dom_id}:{case_id}:{digest}"
+
+
+def _dt1_lineage_log(stage: str, locations: list[dict[str, Any]] | None) -> None:
+    locs = locations or []
+    selectors = [str(loc.get("selector") or "") for loc in locs]
+    texts = [_dt1_loc_text(loc) for loc in locs]
+    ids = [_dt1_lineage_id(loc, idx) for idx, loc in enumerate(locs)]
+    dup_selector_count = sum(1 for s in set(selectors) if s and selectors.count(s) > 1)
+    dup_text_count = sum(1 for t in set(texts) if t and texts.count(t) > 1)
+    print("[DT-1 locations]", stage, {
+        "dt_location_count": len(locs),
+        "dt_location_ids": ids,
+        "selectors": selectors,
+        "duplicate_selector_count": dup_selector_count,
+        "duplicate_text_count": dup_text_count,
+    })
+
+
+def _lcc_audit_enabled() -> bool:
+    return os.environ.get("LCC_AUDIT") == "1"
+
+
+def _lcc_loc_id(loc: dict[str, Any], index: int) -> str:
+    attrs = loc.get("attrs") if isinstance(loc.get("attrs"), dict) else {}
+    dom_id = str(attrs.get("id") or "")
+    case_id = str(attrs.get("data-case-id") or "")
+    selector = str(loc.get("selector") or "")
+    tag = str(loc.get("tag") or "")
+    wc = str(loc.get("word_count") or "")
+    hc = str(loc.get("heading_count") or "")
+    lc = str(loc.get("list_count") or "")
+    pc = str(loc.get("paragraph_count") or "")
+    return f"lcc:{index}:{selector}:{tag}:{dom_id}:{case_id}:{wc}:{hc}:{lc}:{pc}"
+
+
+def _lcc_lineage_log(stage: str, locations: list[dict[str, Any]] | None) -> None:
+    locs = locations or []
+    selectors = [str(loc.get("selector") or "") for loc in locs if isinstance(loc, dict)]
+    ids = []
+    for idx, loc in enumerate(locs):
+        if not isinstance(loc, dict):
+            continue
+        ids.append(_lcc_loc_id(loc, idx))
+    dup_selector_count = sum(1 for s in set(selectors) if s and selectors.count(s) > 1)
+    print("[LCC lineage]", stage, {
+        "location_count": len(locs),
+        "location_ids": ids,
+        "selectors": selectors,
+        "duplicate_selector_count": dup_selector_count,
+    })
+
+
+def _amc_audit_enabled() -> bool:
+    return os.environ.get("AMC_AUDIT") == "1"
+
+
+def _amc_loc_id(loc: dict[str, Any], index: int) -> str:
+    summary = str(loc.get("summary") or "")
+    tag = str(loc.get("tag") or "")
+    region = str(loc.get("region") or "")
+    muted = str(loc.get("muted") or "")
+    src = str(loc.get("src") or "")
+    return f"amc:{index}:{tag}:{region}:{muted}:{len(summary)}:{len(src)}"
+
+
+def _amc_lineage_log(stage: str, locations: list[dict[str, Any]] | None) -> None:
+    locs = locations or []
+    ids: list[str] = []
+    summaries: list[str] = []
+    for idx, loc in enumerate(locs):
+        if not isinstance(loc, dict):
+            continue
+        ids.append(_amc_loc_id(loc, idx))
+        summaries.append(str(loc.get("summary") or ""))
+    dup_summary_count = sum(1 for s in set(summaries) if s and summaries.count(s) > 1)
+    print("[AMC lineage]", stage, {
+        "location_count": len(locs),
+        "location_ids": ids,
+        "duplicate_summary_count": dup_summary_count,
+    })
+
+
+def _ei_audit_enabled() -> bool:
+    return os.environ.get("EI_AUDIT") == "1"
+
+
+def _ei_loc_id(loc: dict[str, Any], index: int) -> str:
+    summary = str(loc.get("summary") or "")
+    interrupt_type = str(loc.get("interrupt_type") or "")
+    overlay_like = str(loc.get("overlay_like") or "")
+    fixed_or_sticky = str(loc.get("fixed_or_sticky") or "")
+    aria = ""
+    attrs = loc.get("attrs") if isinstance(loc.get("attrs"), dict) else {}
+    if attrs.get("aria-label"):
+        aria = str(attrs.get("aria-label") or "")
+    return f"ei:{index}:{interrupt_type}:{overlay_like}:{fixed_or_sticky}:{len(summary)}:{len(aria)}"
+
+
+def _ei_lineage_log(stage: str, locations: list[dict[str, Any]] | None) -> None:
+    locs = locations or []
+    ids: list[str] = []
+    types: list[str] = []
+    for idx, loc in enumerate(locs):
+        if not isinstance(loc, dict):
+            continue
+        ids.append(_ei_loc_id(loc, idx))
+        types.append(str(loc.get("interrupt_type") or ""))
+    dup_type_count = sum(1 for t in set(types) if t and types.count(t) > 1)
+    print("[EI lineage]", stage, {
+        "location_count": len(locs),
+        "location_ids": ids,
+        "interrupt_types": types,
+        "duplicate_interrupt_type_count": dup_type_count,
+    })
 
 
 def _location_dedupe_key(rule_id: str, selector: str, location: dict[str, Any]) -> Any:
@@ -120,6 +274,10 @@ def _candidate_used(
 def _max_sanitized_locations(rule_id: str) -> int | None:
     """Return None for no cap (preserve every detector-supplied location)."""
     if rule_id == "WIP-1":
+        return None
+    if rule_id == "AMC-1":
+        return None
+    if rule_id == "EI-1":
         return None
     return 8
 
@@ -277,6 +435,14 @@ def sanitize_issue_locations(
     dimension_name: str,
     rule_id: str,
 ) -> list[dict[str, Any]]:
+    # AMC-1 locations are evidence dictionaries (often selector/snippet based) and
+    # must be preserved without selector-lock dedupe collapsing aggregated evidence.
+    if rule_id == "AMC-1":
+        return list(locations or [])
+    # EI-1 locations are snippet-based evidence dictionaries (summary/html_snippet/interrupt_type/flags)
+    # and must be preserved as-is (no grounding/dedupe/canonicalization).
+    if rule_id == "EI-1":
+        return list(locations or [])
     sanitized: list[dict[str, Any]] = []
     used_keys: set[Any] = set()
     cap = _max_sanitized_locations(rule_id)

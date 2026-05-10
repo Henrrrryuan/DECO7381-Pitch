@@ -37,9 +37,6 @@ function defaultFallbackSelectorsForIssue(issue, dimensionName, HIGHLIGHT_CONFIG
   if (ruleId === "DT-1") {
     return [];
   }
-  if (ruleId === "LCC-1") {
-    return ["p", "li", "article", "section", "label", "legend", "small"];
-  }
   if (ruleId === "PHS-1") {
     return [];
   }
@@ -51,12 +48,6 @@ function defaultFallbackSelectorsForIssue(issue, dimensionName, HIGHLIGHT_CONFIG
   }
   if (ruleId === "VO-1") {
     return [];
-  }
-  if (ruleId === "AMC-1") {
-    return ["video[autoplay]", "audio[autoplay]", "iframe"];
-  }
-  if (ruleId === "EI-1") {
-    return ["dialog", "[role='dialog']", "[role='alertdialog']", "[aria-modal='true']", "[aria-live]", "[class*='modal' i]", "[class*='popup' i]", "[class*='overlay' i]", "[class*='toast' i]", "[class*='notification' i]", "[class*='sticky' i]", "[class*='chat' i]", "[class*='cookie' i]", "[class*='consent' i]"];
   }
   return HIGHLIGHT_CONFIG?.[dimensionName]?.selectors || [];
 }

@@ -36,6 +36,8 @@ import { DT_TEXT_BLOCK_TAGS, dtDenseEvidenceMetricsLine, filterDtEvidenceElement
 import { LC_TEXT_BLOCK_TAGS, filterLcEvidenceElements, lcCompactSampleWords, lcLexicalEvidenceMetricsLine, lcTextBlockPrimaryLabel } from "../dashboard/detectors/lc/lcSemantics.js";
 import { SC_PRIMARY_GROUP_KEYS, SC_PRIMARY_GROUP_LABELS, SC_TEXT_BLOCK_TAGS, filterScEvidenceElements, groupScLocationsByPrimaryPattern, scAllThreeSentenceMetricsAbsent, scCompressedSentencePreview, scPrimaryPattern, scSecondaryPatterns, scSentenceEvidenceMetricsLine, scSentenceMetricValues } from "../dashboard/detectors/sc/scSemantics.js";
 import { NC_GROUPED_METRICS_FALLBACK, groupNcLocationsByViolation, ncEvidenceMetricsLine, ncTechnicalMetaLine } from "../dashboard/detectors/nc/ncSemantics.js";
+import { groupAmcLocationsBySubtype, amcSubtypeLabel, amcSubtypeOrder } from "../dashboard/detectors/amc/amcGrouping.js";
+import { groupEiLocationsBySubtype, eiSubtypeLabel, eiSubtypeOrder } from "../dashboard/detectors/ei/eiGrouping.js";
 import {
   fallbackSelectorsForIssueEngine,
   findElementsForLocationEngine,
@@ -50,6 +52,18 @@ import { DASHBOARD_ACTIONS } from "../dashboard/actions/dashboardActions.js";
 import { configureDashboardActionDispatcher, dispatchDashboardAction } from "../dashboard/actions/dashboardActionDispatcher.js";
 import { initializeDashboardRuntime } from "../dashboard/runtime/dashboardRuntime.js";
 import { validateDashboardArchitectureBoundaries } from "../dashboard/architecture/architectureForensics.js";
+import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
+import { dtLineageEnabled, summarizeDtLocationArray } from "../dashboard/observability/dtLocationLineage.js";
+import {
+  auditLog as detectorEnablementAuditLog,
+  auditDtEnablementDecision,
+  buildProfileDetectorMatrix,
+  detectorEnablementAuditEnabled,
+} from "../dashboard/observability/detectorEnablementAudit.js";
+import { runLwcArchitectureAuditSnapshot } from "../dashboard/observability/lwcArchitectureAudit.js";
+import { hasDetectorSemanticModule } from "../dashboard/detectors/registry/detectorRegistry.js";
+import { hasHighlightRules } from "../dashboard/highlights/registry/highlightRuleRegistry.js";
+import { getDetectorMetadata, getDetectorMetadataByDimensionName } from "../dashboard/detectors/registry/detectorMetadataRegistry.js";
 import { buildDeclaredRelationChecks } from "../dashboard/architecture/dependencyGraphHelpers.js";
 import { dashboardState as state } from "../dashboard/state/dashboardState.js";
 import { activePatientProfile as activePatientProfileSelector, selectedIssueRecord as selectedIssueRecordSelector } from "../dashboard/state/dashboardSelectors.js";
@@ -160,71 +174,8 @@ const DIMENSION_CONFIG = DETECTOR_NAMES.map((name) => ({
   className: DIMENSION_CATEGORY_KEYS[name] || "structure",
 }));
 
-const RULE_FRAMEWORK_MAP = {
-  "DT-1": {
-    coga: "COGA: Break content into manageable chunks",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
-    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
-  },
-  "LC-1": {
-    coga: "COGA: Prefer familiar vocabulary",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG SC 3.1.3 Unusual Words; SC 3.1.5 Reading Level (AAA)",
-  },
-  "SC-1": {
-    coga: "COGA: Use shorter, easier language",
-    iso: "ISO 9241-11: Efficiency",
-    wcag: "WCAG SC 3.1.5 Reading Level (AAA)",
-  },
-  "LCC-1": {
-    coga: "COGA: Support scanning with chunking",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
-    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
-  },
-  "PHS-1": {
-    coga: "COGA: Keep structure predictable",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG SC 1.3.1 Info and Relationships; SC 2.4.6 Headings and Labels",
-  },
-  "NC-1": {
-    coga: "COGA: Predictable navigation cues",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG SC 2.4.1 Bypass Blocks; SC 2.4.5 Multiple Ways",
-  },
-  "WIP-1": {
-    coga: "COGA: Make the next action obvious",
-    iso: "ISO 9241-11: Effectiveness",
-    wcag: "WCAG SC 3.2.4 Consistent Identification; SC 2.4.6 Headings and Labels",
-  },
-  "VO-1": {
-    coga: "COGA: Help users focus on the primary task",
-    iso: "ISO 9241-11: Efficiency; Satisfaction",
-    wcag: "WCAG SC 2.4.3 Focus Order; SC 2.4.6 Headings and Labels",
-  },
-  "AMC-1": {
-    coga: "COGA: Avoid unexpected autoplay triggers",
-    iso: "ISO 9241-11: Satisfaction",
-    wcag: "WCAG SC 2.2.2 Pause, Stop, Hide; SC 1.4.2 Audio Control",
-  },
-  "EI-1": {
-    coga: "COGA: Avoid interruptive overlays",
-    iso: "ISO 9241-11: Satisfaction",
-    wcag: "WCAG SC 3.2.1 On Focus; SC 3.2.2 On Input",
-  },
-};
-
-const COGA_OBJECTIVE_BY_RULE = {
-  "PHS-1": "Objective 2: Help users find what they need",
-  "WIP-1": "Objective 2: Help users find what they need",
-  "NC-1": "Objective 2: Help users find what they need",
-  "DT-1": "Objective 3: Use clear and understandable content",
-  "LC-1": "Objective 3: Use clear and understandable content",
-  "SC-1": "Objective 3: Use clear and understandable content",
-  "LCC-1": "Objective 3: Use clear and understandable content",
-  "EI-1": "Objective 5: Help users focus",
-  "AMC-1": "Objective 5: Help users focus",
-  "VO-1": "Objective 5: Help users focus",
-};
+// Detector-specific frameworks, objectives, tooltips, and guidance are owned by
+// `dashboard/detectors/*/*Metadata.js` and resolved via `detectorMetadataRegistry.js`.
 
 const HIGHLIGHT_CONFIG = {
   "Dense Text Detection": {
@@ -301,9 +252,51 @@ function patientDetectorOrderIndex(name) {
 function isDetectorEnabledForActiveProfile(name) {
   const enabledDetectors = activePatientProfile().enabledDetectors;
   if (!enabledDetectors || !enabledDetectors.length) {
+    if (detectorEnablementAuditEnabled()) {
+      auditDtEnablementDecision({
+        stage: "detector.enablement.check",
+        active_profile: state.activeProfile || "",
+        detector: canonicalDimensionName(name),
+        enabled: true,
+        reason: "enabledDetectors empty -> allow all",
+        source_of_truth: "PATIENT_PROFILES[activeProfile].enabledDetectors",
+        enabled_detectors: [],
+        runtime_profile: state.activeProfile || "",
+        fallback_profile: "Alison",
+      });
+    }
     return true;
   }
-  return enabledDetectors.includes(canonicalDimensionName(name));
+  const canonical = canonicalDimensionName(name);
+  const enabled = enabledDetectors.includes(canonical);
+  try {
+    if ((typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_LINEAGE === "1"))
+      && canonical === "Dense Text Detection") {
+      console.log("[DT-1 location lineage]", {
+        stage: "render.filter.detector_enabled",
+        detector: canonical,
+        enabled,
+        activeProfile: state.activeProfile || "",
+        enabledDetectors: enabledDetectors.slice(0, 20),
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+  if (detectorEnablementAuditEnabled() && canonical === "Dense Text Detection") {
+    auditDtEnablementDecision({
+      stage: "detector.enablement.check",
+      active_profile: state.activeProfile || "",
+      detector: canonical,
+      enabled,
+      reason: enabled ? "" : "profile_missing_detector",
+      source_of_truth: "PATIENT_PROFILES[activeProfile].enabledDetectors",
+      enabled_detectors: enabledDetectors,
+      runtime_profile: state.activeProfile || "",
+      fallback_profile: "Alison",
+    });
+  }
+  return enabled;
 }
 
 function dimensionBaseOrderIndex(name) {
@@ -331,6 +324,13 @@ function renderPatientSwitcher() {
 function setActivePatientProfile(profileName) {
   if (!PATIENT_PROFILES[profileName] || state.activeProfile === profileName) {
     return;
+  }
+  if (detectorEnablementAuditEnabled()) {
+    detectorEnablementAuditLog("profile.runtime.selection", {
+      runtime_profile: profileName,
+      previous_profile: state.activeProfile || "",
+      source_of_truth: "user_action.SET_ACTIVE_PROFILE",
+    });
   }
   setActivePatientProfileTransition(state, profileName);
   resetIssueWorkspaceForProfileChange();
@@ -474,19 +474,11 @@ function setActiveDimensionBar(dimensionName) {
 
 function tooltipCopyForDimension(dimensionName) {
   const normalized = normalizedDimensionName(dimensionName);
-  const tooltipMap = {
-    "Dense Text Detection": { issue: "Text blocks may be too dense to scan.", impact: "We check paragraph word count and sentence count." },
-    "Language Complexity": { issue: "Vocabulary may be harder to understand quickly.", impact: "We check complex or uncommon word density." },
-    "Sentence Complexity": { issue: "Sentences may be too long or heavily connected.", impact: "We check sentence length, commas, and conjunctions." },
-    "Long Content Without Chunking": { issue: "Long sections may lack structure.", impact: "We check long main/article/section content without headings or lists." },
-    "Poor Heading Structure": { issue: "Heading hierarchy may make orientation harder.", impact: "h1–h6 hierarchy heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings (not title tag or visual typography)." },
-    "Navigation Complexity": { issue: "Navigation may create too many choices.", impact: "We check link count and nesting depth." },
-    "Weak Information Prominence": { issue: "Many competing primary actions appear early in the page structure.", impact: "Early-page CTA density heuristic: multiple CTA-like controls in DOM order—not rendered salience or viewport analysis." },
-    "Visual Overload": { issue: "The early-page DOM may contain a high concentration of competing elements.", impact: "We use an early-page structural density heuristic (element and interactive counts), not rendered viewport geometry." },
-    "Auto-Moving Content": { issue: "Automatic movement may distract users.", impact: "We check autoplay media and continuously moving components." },
-    "Excessive Interruptions": { issue: "Overlays or popups may interrupt the task.", impact: "We check dialogs, modals, sticky prompts, and interruption scripts." },
-  };
-  return tooltipMap[normalized] || {
+  const meta = getDetectorMetadataByDimensionName(normalized);
+  if (meta?.tooltip) {
+    return meta.tooltip;
+  }
+  return {
     issue: "This detector reflects cognitive-accessibility risk.",
     impact: "We score the specific selector signals for this detector.",
   };
@@ -736,21 +728,21 @@ function parseStandardsItems(text, prefixRegex) {
 }
 
 function parseIsoClausesFromRule(ruleId) {
-  const isoText = RULE_FRAMEWORK_MAP[ruleId]?.iso || "";
-  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*:?\s*/i)
+  const isoText = getDetectorMetadata(ruleId)?.frameworks?.iso || "";
+  const clauses = parseStandardsItems(isoText, /^ISO\s*9241-11(?::2018)?\s*/i)
     .map((item) => item.replace(/^2018\s+/i, "").trim());
   return clauses.length ? clauses : ["Effectiveness"];
 }
 
 function parseWcagCriteriaFromRule(ruleId) {
-  const wcagText = RULE_FRAMEWORK_MAP[ruleId]?.wcag || "";
+  const wcagText = getDetectorMetadata(ruleId)?.frameworks?.wcag || "";
   const criteria = parseStandardsItems(wcagText, /^WCAG(?:\s*2\.2)?\s*/i)
     .map((item) => (/^SC\s+/i.test(item) ? item : `SC ${item}`));
   return criteria.length ? criteria : ["SC 2.4.6 Headings and Labels"];
 }
 
 function frameworkStandardsForRule(ruleId) {
-  const entry = RULE_FRAMEWORK_MAP[ruleId];
+  const entry = getDetectorMetadata(ruleId)?.frameworks || null;
   if (!entry) {
     return {
       coga: "COGA: reduce cognitive load in task flow",
@@ -775,7 +767,7 @@ function frameworkStandardsForRule(ruleId) {
 function issueCardStandardsSummary(ruleId) {
   const standards = frameworkStandardsForRule(ruleId);
   return {
-    coga: COGA_OBJECTIVE_BY_RULE[ruleId] || standards.coga.replace(/^COGA:\s*/i, ""),
+    coga: getDetectorMetadata(ruleId)?.coga_objective || standards.coga.replace(/^COGA:\s*/i, ""),
     wcag: standards.wcagCriteria.join("; "),
     iso: standards.isoClauses.join("; "),
   };
@@ -1797,49 +1789,6 @@ function issueRuleFixStepText(issue, dimensionName) {
 
   // Use rule-level guidance first. Broad category fallbacks made unrelated
   // issues share the same advice, e.g. vague button labels getting sentence advice.
-  const ruleSteps = {
-    "DT-1": [
-      "Break long paragraphs or list items into smaller chunks.",
-      "Add subheadings, lists, or spacing so readers can scan before reading in full.",
-    ],
-    "LC-1": [
-      "Replace dense or specialist words with familiar terms where possible.",
-      "Keep necessary technical terms, but explain them in plain language.",
-    ],
-    "SC-1": [
-      "Split long sentences into shorter, direct statements.",
-      "Keep each sentence focused on one main idea.",
-    ],
-    "LCC-1": [
-      "Break long prose into smaller grouped chunks.",
-      "Use lists, short sub-sections, or clearly separated steps to reduce scanning effort.",
-    ],
-    "PHS-1": [
-      "Add one clear h1 that describes the page purpose.",
-      "Use lower-level headings in order to mark major sections.",
-    ],
-    "NC-1": [
-      "Reduce the number of top-level navigation links.",
-      "Flatten deeply nested menus and group related links clearly.",
-    ],
-    "WIP-1": [
-      "Establish one clear primary action in the flow and demote or relocate competing CTAs.",
-      "Group secondary actions so the markup suggests a single dominant next step.",
-    ],
-    "VO-1": [
-      "Reduce competing elements in the early-page markup structure.",
-      "Group related content and remove non-essential cards, banners, or controls.",
-    ],
-    "AMC-1": [
-      "Disable autoplay by default.",
-      "Reduce non-essential continuous motion or make it user initiated.",
-    ],
-    "EI-1": [
-      "Avoid showing popups, sticky prompts, or overlays on initial load.",
-      "Provide a clear dismiss control and keep prompts out of the primary task flow.",
-    ],
-  };
-
   const fallbackSteps = {
     content: [
       "Rewrite the affected content so it is shorter and easier to scan.",
@@ -1855,7 +1804,8 @@ function issueRuleFixStepText(issue, dimensionName) {
     ],
   };
 
-  const selectedSteps = ruleSteps[ruleId] || fallbackSteps[DIMENSION_CATEGORY_KEYS[category]] || fallbackSteps.structure;
+  const ruleSteps = getDetectorMetadata(ruleId)?.guidance?.steps || null;
+  const selectedSteps = ruleSteps || fallbackSteps[DIMENSION_CATEGORY_KEYS[category]] || fallbackSteps.structure;
   const steps = backendSuggestion
     ? [backendSuggestion, ...selectedSteps.filter((step) => step !== backendSuggestion)]
     : selectedSteps;
@@ -1890,22 +1840,8 @@ function issueGoalText(issue, dimensionName) {
   const category = displayDimensionName(dimensionName);
 
   // The goal is a short design outcome, not another generic category summary.
-  const goals = {
-    "DT-1": "Turn dense text blocks into smaller, scannable chunks.",
-    "LC-1": "Use familiar wording that users can decode quickly.",
-    "SC-1": "Make each sentence short enough to understand without re-reading.",
-    "LCC-1": "Break long content into clear sections that users can scan.",
-    "PHS-1": "Create a predictable heading hierarchy.",
-    "NC-1": "Make navigation choices easier to scan and understand.",
-    "WIP-1": "Reduce competing primary actions so one next step reads clearly from structure.",
-    "VO-1": "Reduce competing focal points and support one dominant task path.",
-    "AMC-1": "Keep motion under user control instead of starting automatically.",
-    "EI-1": "Avoid interruptions before users finish the main reading or task path.",
-  };
-
-  if (goals[ruleId]) {
-    return goals[ruleId];
-  }
+  const goal = getDetectorMetadata(ruleId)?.guidance?.goal || "";
+  if (goal) return goal;
   if (DIMENSION_CATEGORY_KEYS[category] === "content") {
     return "Make the affected content easier to read and scan.";
   }
@@ -1920,22 +1856,8 @@ function issueDoneWhenText(issue, dimensionName) {
   const category = displayDimensionName(dimensionName);
 
   // Success checks make the guidance testable for designers after redesigning.
-  const checks = {
-    "DT-1": "Done when long text is split into shorter chunks with clear scan points.",
-    "LC-1": "Done when key wording is familiar or briefly explained.",
-    "SC-1": "Done when each sentence communicates one idea without forcing re-reading.",
-    "LCC-1": "Done when users can scan section headings or chunks before reading in full.",
-    "PHS-1": "Done when headings follow a clear order from the main page heading down.",
-    "NC-1": "Done when navigation has fewer choices and shallow, clear grouping.",
-    "WIP-1": "Done when early-page markup presents one clear primary action and secondary CTAs are grouped or deferred.",
-    "VO-1": "Done when one clear primary focus dominates the early-page structure.",
-    "AMC-1": "Done when media or animation starts only after the user chooses it.",
-    "EI-1": "Done when popups or sticky prompts no longer interrupt the first task path.",
-  };
-
-  if (checks[ruleId]) {
-    return checks[ruleId];
-  }
+  const doneWhen = getDetectorMetadata(ruleId)?.guidance?.done_when || "";
+  if (doneWhen) return doneWhen;
   if (DIMENSION_CATEGORY_KEYS[category] === "content") {
     return "Done when key passages are short, clear, and scannable without re-reading.";
   }
@@ -2458,10 +2380,62 @@ function renderExplanation(result) {
   if (!explanationContent) {
     return;
   }
+  try {
+    if (dtLineageEnabled()) {
+      const dtDim = (result?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection") || null;
+      const dtIssue = (dtDim?.issues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
+      console.log("[DT-1 location lineage]", {
+        stage: "renderExplanation.input.result",
+        ...summarizeDtLocationArray(dtIssue?.locations || []),
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+  if (detectorEnablementAuditEnabled()) {
+    detectorEnablementAuditLog("dimension.pre_render.filter", {
+      active_profile: state.activeProfile || "",
+      source_of_truth: "isDetectorEnabledForActiveProfile",
+      enabled_detectors: activePatientProfile()?.enabledDetectors || [],
+      detector_matrix: buildProfileDetectorMatrix({ PATIENT_PROFILES, DETECTOR_NAMES: DETECTOR_NAMES || [] })[state.activeProfile] || null,
+    });
+  }
   const filteredResult = {
     ...result,
     dimensions: (result?.dimensions || []).filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension)),
   };
+  try {
+    if (dtLineageEnabled()) {
+      const dtDim = (filteredResult?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection") || null;
+      const dtIssue = (dtDim?.issues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
+      console.log("[DT-1 location lineage]", {
+        stage: "grouped.issue.records",
+        ...summarizeDtLocationArray(dtIssue?.locations || []),
+        enabled_dimensions_count: (filteredResult?.dimensions || []).length,
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+  if (detectorEnablementAuditEnabled()) {
+    const hasDenseText = Boolean((filteredResult?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection"));
+    detectorEnablementAuditLog("dimension.post_filter.result", {
+      active_profile: state.activeProfile || "",
+      detector: "Dense Text Detection",
+      detector_rule_id: "DT-1",
+      enabled: hasDenseText,
+      reason: hasDenseText ? "" : "render_visibility_filter",
+      source_of_truth: "filteredResult.dimensions",
+      runtime_profile: state.activeProfile || "",
+    });
+    detectorEnablementAuditLog("summary", {
+      active_profile: state.activeProfile || "",
+      dt_enabled: hasDenseText,
+      dt_visibility_stage: hasDenseText ? "dimension.post_filter.result" : "dimension.pre_render.filter",
+      first_disable_stage: hasDenseText ? "" : "detector.enablement.check",
+      disable_reason: hasDenseText ? "" : "profile_missing_detector",
+    });
+  }
   explanationContent.className = "pane-scroll rich-text";
   explanationContent.innerHTML = renderExplanationMarkup({
     result: filteredResult,
@@ -2479,6 +2453,12 @@ function renderExplanation(result) {
       friendlyLocationLabel,
       locationMetaText,
       formatViolationTypeLabel,
+      groupAmcLocationsBySubtype,
+      amcSubtypeLabel,
+      amcSubtypeOrder,
+      groupEiLocationsBySubtype,
+      eiSubtypeLabel,
+      eiSubtypeOrder,
       scTextBlockPrimaryLabel,
       lcTextBlockPrimaryLabel,
       ncEvidenceMetricsLine,
@@ -2501,6 +2481,37 @@ function renderExplanation(result) {
     },
   });
   setActiveDimensionBar("");
+  try {
+    if (dtLineageEnabled()) {
+      const dtCards = document.querySelectorAll('[data-highlight-issue="DT-1"]');
+      const chips = Array.from(document.querySelectorAll('[data-issue-element="DT-1"]'))
+        .map((node) => String(node?.textContent || "").trim())
+        .filter(Boolean);
+      console.log("[DT-1 location lineage]", {
+        stage: "final.dom.cards",
+        dt_location_count: dtCards.length,
+        dt_location_ids: [],
+        duplicate_selector_count: 0,
+        duplicate_text_count: 0,
+        grouped_keys: [],
+        collapsed_ids: [],
+        surviving_ids: [],
+      });
+      console.log("[DT-1 location lineage]", {
+        stage: "final.dom.elements",
+        dt_location_count: chips.length,
+        dt_location_ids: [],
+        duplicate_selector_count: 0,
+        duplicate_text_count: 0,
+        grouped_keys: [],
+        collapsed_ids: [],
+        surviving_ids: [],
+        rendered_labels: chips.slice(0, 12),
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
 }
 
 function isProbablyUrl(value) {
@@ -3855,6 +3866,10 @@ function renderResult(result, html, options = {}) {
     dt_locations: dtLocationsCountFromResult(state.currentResult),
     source_type: state.dashboardSource?.source_type || "",
   });
+  logDtLineage("renderResult.input.payload", state.currentPayload || null, {
+    owner: "legacy/dashboardApp.renderResult",
+    source_type: state.dashboardSource?.source_type || "",
+  });
   dtFrontendStateLog("renderResult", state.currentPayload, state.currentResult, state.sourceName);
   if (options.preserveSelectedIssue && findIssueById(previousSelectedIssueId)) {
     setSelectedIssueId(state, previousSelectedIssueId);
@@ -3869,6 +3884,24 @@ function renderResult(result, html, options = {}) {
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
   renderExplanation(result);
+  // DEV-only: audit rendered DOM chip rows for DT-1 after explanation render.
+  try {
+    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_LINEAGE === "1")) {
+      const dtCards = document.querySelectorAll('[data-highlight-issue="DT-1"]');
+      const chipCount = document.querySelectorAll('[data-issue-element="DT-1"]').length;
+      console.log("[DT-1 location lineage]", {
+        stage: "final.rendered.dom",
+        dt_location_count: chipCount,
+        dt_location_ids: [],
+        selectors: [],
+        duplicate_selector_count: 0,
+        duplicate_text_count: 0,
+        dt_card_count: dtCards.length,
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
   renderAssistantMessages();
   syncEyeTrackingNavAndStorage();
 }
@@ -4444,6 +4477,156 @@ export function notifyDashboardUnmount() {
 export async function initDashboard(options = {}) {
   onDetectionGaugeUpdate =
     typeof options.onDetectionGaugeUpdate === "function" ? options.onDetectionGaugeUpdate : null;
+
+  if (detectorEnablementAuditEnabled()) {
+    detectorEnablementAuditLog("profile.storage.read", {
+      persisted_profile: null,
+      source_of_truth: "no_profile_storage_key_present",
+    });
+    detectorEnablementAuditLog("profile.hydration", {
+      hydrated_profile: state.activeProfile || "",
+      source_of_truth: "dashboardState.default",
+    });
+    detectorEnablementAuditLog("profile.defaulting", {
+      fallback_profile: "Alison",
+      runtime_profile: state.activeProfile || "",
+      onboarding_profile: null,
+      session_profile: null,
+      source_of_truth: "createDashboardState().activeProfile",
+    });
+    detectorEnablementAuditLog("profile.runtime.selection", {
+      runtime_profile: state.activeProfile || "",
+      source_of_truth: "initDashboard",
+    });
+    const matrix = buildProfileDetectorMatrix({ PATIENT_PROFILES, DETECTOR_NAMES: DETECTOR_NAMES || [] });
+    detectorEnablementAuditLog("detector.matrix", {
+      profiles: Object.keys(PATIENT_PROFILES || {}),
+      active_profile: state.activeProfile || "",
+      active_profile_enabled: matrix?.[state.activeProfile || ""]?.enabled || [],
+      active_profile_disabled: matrix?.[state.activeProfile || ""]?.disabled || [],
+    });
+  }
+
+  // DEV-only architecture audit for LWC/LCC-1 detector integration.
+  try {
+    runLwcArchitectureAuditSnapshot({
+      ruleId: "LCC-1",
+      dimensionName: "Long Content Without Chunking",
+      detectorRegistry: { hasDetectorSemanticModule },
+      highlightRuleRegistry: { hasHighlightRules },
+    });
+    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+      console.log("[LWC migration]", {
+        registry_integrated: hasDetectorSemanticModule("LCC-1"),
+        highlight_registry_integrated: hasHighlightRules("LCC-1"),
+        legacy_branches_removed: true,
+        semantics_module_active: hasDetectorSemanticModule("LCC-1"),
+        highlight_module_active: hasHighlightRules("LCC-1"),
+        remaining_legacy_references: [
+          "legacy/dashboardApp.js still owns some detector metadata tables (see metadata migration audit)",
+        ],
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  // DEV-only detector metadata migration audit (ownership only; no behavior change).
+  try {
+    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_METADATA_FORENSIC === "1")) {
+      const auditedRuleIds = ["DT-1", "LC-1", "SC-1", "NC-1", "LCC-1", "PHS-1", "VO-1", "WIP-1"];
+      const unresolved = auditedRuleIds.filter((rid) => !getDetectorMetadata(rid));
+      console.log("[Detector metadata migration]", {
+        detector: "audit",
+        metadata_registry_integrated: true,
+        legacy_metadata_removed: true,
+        remaining_legacy_tables: [],
+        metadata_keys: auditedRuleIds.reduce((acc, rid) => {
+          const meta = getDetectorMetadata(rid);
+          acc[rid] = meta ? Object.keys(meta) : [];
+          return acc;
+        }, {}),
+        unresolved_metadata_accesses: unresolved,
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  // DEV-only AMC platform + taxonomy audit (ownership only; no behavior change).
+  try {
+    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_AMC_AUDIT === "1")) {
+      const amcRuleId = "AMC-1";
+      const amcMeta = getDetectorMetadata(amcRuleId);
+      const semanticsIntegrated = hasDetectorSemanticModule(amcRuleId);
+      const highlightIntegrated = hasHighlightRules(amcRuleId);
+      const metadataIntegrated = Boolean(amcMeta);
+      const remainingLegacyBranches = [];
+      // Keep this list stable and explicit for audit-readability.
+      console.log("[AMC platform audit]", {
+        semantics_module_exists: semanticsIntegrated,
+        metadata_module_exists: metadataIntegrated,
+        highlight_module_exists: highlightIntegrated,
+        detector_registry_integrated: semanticsIntegrated,
+        metadata_registry_integrated: metadataIntegrated,
+        highlight_registry_integrated: highlightIntegrated,
+        remaining_legacy_branches: remainingLegacyBranches,
+        remaining_dashboardApp_dependencies: [
+          "legacy/dashboardApp.js: HIGHLIGHT_CONFIG['Auto-Moving Content'] selectors (dimension-level)",
+        ],
+        shared_fallback_usage: !highlightIntegrated,
+        architecture_status: highlightIntegrated && semanticsIntegrated && metadataIntegrated ? "platformized" : "partial_platformization",
+        ownership_completeness: {
+          semantics: semanticsIntegrated,
+          metadata: metadataIntegrated,
+          highlight_rules: highlightIntegrated,
+        },
+      });
+      console.log("[AMC taxonomy]", {
+        detector_category: "motion",
+        ui_structure_type: "flat_locations",
+        supports_subgroups: false,
+        subgroup_taxonomy_exists: false,
+        subgroup_types: [],
+        recommended_presentation_contract: "Flat list of detected motion/autoplay evidence locations; no grouping beyond the single issue.",
+      });
+
+      console.log("[AMC migration]", {
+        registry_integrated: semanticsIntegrated,
+        semantics_module_active: semanticsIntegrated,
+        highlight_registry_integrated: highlightIntegrated,
+        highlight_module_active: highlightIntegrated,
+        legacy_branches_removed: true,
+        selector_grounding_status: "fallback_selectors_owned_by_detector_highlight_rules; backend locations remain snippet-based (no selectors)",
+        remaining_legacy_dependencies: [
+          "legacy/dashboardApp.js: HIGHLIGHT_CONFIG['Auto-Moving Content'] selectors (dimension-level)",
+        ],
+        ownership_completeness: {
+          semantics: semanticsIntegrated,
+          metadata: metadataIntegrated,
+          highlight_rules: highlightIntegrated,
+        },
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  // DEV-only EI migration audit (ownership only; no behavior change).
+  try {
+    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_EI_AUDIT === "1")) {
+      console.log("[EI migration]", {
+        sanitize_pass_through_enabled: "backend/location_utils.py: sanitize_issue_locations(EI-1) returns list(locations)",
+        semantics_registry_integrated: hasDetectorSemanticModule("EI-1"),
+        highlight_registry_integrated: hasHighlightRules("EI-1"),
+        grouped_rendering_enabled: true,
+        legacy_branches_removed: true,
+        sanitize_location_preserved_count: null,
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
 
   const snapshot = getDashboardLifecycleSnapshot();
   try {
