@@ -160,8 +160,8 @@ export function DashboardPage() {
                     >
                       <span aria-hidden="true">Back to History</span>
                     </button>
-                    <button id="analyzeCurrentViewBtn" className="context-print-button" type="button" title="Analyze the current visible preview state">
-                      <span aria-hidden="true">Analyze current view</span>
+                    <button id="analyzeCurrentViewBtn" className="context-print-button" type="button" title="Capture a snapshot of the visible preview and run a new backend analysis">
+                      <span aria-hidden="true">Capture current view snapshot</span>
                     </button>
                     <button id="printReportBtn" className="context-print-button" type="button" title="Print current report">
                       <span aria-hidden="true">Print</span>

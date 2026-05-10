@@ -1,6 +1,5 @@
 import {
   API_BASE,
-  analyzeHtmlText,
   analyzeRenderedView,
   buildAnalysisView,
   chatWithAssistant,
@@ -29,9 +28,7 @@ const state = {
   chatPending: false,
   sidebarCollapsed: false,
   assistantFloatingOpen: false,
-  renderedDomAnalysisKey: "",
   renderedDomAnalysisPending: false,
-  renderedDomAnalysisTimer: null,
   renderedViewStale: false,
   renderedViewBaselineKey: "",
   previousResult: null,
@@ -350,8 +347,8 @@ function renderDashboardSummary(result) {
   const renderedNotice = state.currentPayload?.analysis_mode === "rendered_current_view"
     ? `<div class="summary-line summary-rendered-mode${state.renderedViewStale ? " is-stale" : ""}">
         ${state.renderedViewStale
-          ? "Preview state changed. Re-run Analyze current view to update issues and highlights."
-          : "This report is based on the current visible page state. Interact with the preview and re-run analysis to check another state."}
+          ? "Preview state changed. Capture current view snapshot again to refresh issues and highlights."
+          : "This report is based on the captured preview snapshot. Change the preview and capture again to analyze another state."}
       </div>`
     : "";
   summaryNode.innerHTML = `
@@ -1694,7 +1691,8 @@ function loadWebsitePreview() {
   setWebsiteStatus("No website preview is available for this analysis.", true);
 }
 
-function startBackgroundRenderedAnalysis() {
+/** Loads the iframe preview when the dashboard opens for URL-based sessions. Does not run analysis. */
+function loadPreviewOnSessionStart() {
   if (!isProbablyUrl(state.sourceUrl)) {
     return;
   }
@@ -1826,6 +1824,10 @@ function isRenderedViewExtractable(element) {
   return isElementVisibleForHighlight(element);
 }
 
+/**
+ * Builds the payload for POST /analyze-rendered-view from the iframe DOM.
+ * Used only when the user explicitly captures a snapshot — not for automatic re-analysis.
+ */
 function extractRenderedCurrentViewPayload(doc) {
   if (!doc?.body) {
     throw new Error("The preview document is not available yet.");
@@ -2105,13 +2107,6 @@ function isGenericOrBadSelector(selector) {
 function collectTextBlocks(doc) {
   return Array.from(doc.querySelectorAll("p, li, article, section, blockquote, td, th"))
     .filter((element) => normalizeInlineText(element.textContent).length >= 20);
-}
-
-function countMeaningfulElements(doc) {
-  if (!doc?.body) {
-    return 0;
-  }
-  return doc.body.querySelectorAll("button, a, input, textarea, select, section, article, nav, aside, dialog, [role='dialog'], [role='button'], [class*='card' i], [class*='modal' i], [class*='popup' i]").length;
 }
 
 function findByText(doc, tag, text) {
@@ -3058,31 +3053,6 @@ function renderResult(result, html, options = {}) {
   syncEyeTrackingNavAndStorage();
 }
 
-function buildRenderedDomAnalysisKey(doc) {
-  if (!doc?.documentElement) {
-    return "";
-  }
-  const title = String(doc.title || "").trim();
-  const textSample = normalizeInlineText(doc.body?.innerText || "").slice(0, 400);
-  const elementCount = countMeaningfulElements(doc);
-  return `${getPreviewUrl()}::${title}::${elementCount}::${textSample}`;
-}
-
-function shouldAnalyzeRenderedPreview(doc) {
-  if (!isProbablyUrl(state.sourceUrl) || !doc?.documentElement || state.renderedDomAnalysisPending) {
-    return false;
-  }
-  const html = doc.documentElement.outerHTML || "";
-  if (!html.trim()) {
-    return false;
-  }
-  const key = buildRenderedDomAnalysisKey(doc);
-  if (!key || key === state.renderedDomAnalysisKey) {
-    return false;
-  }
-  return true;
-}
-
 function saveTransientDashboardState(payload, html) {
   const existingSession = loadDashboardSession();
   if (!existingSession?.current) {
@@ -3114,17 +3084,18 @@ function setRenderedViewStale(isStale) {
   if (button) {
     button.classList.toggle("is-stale", state.renderedViewStale);
     button.title = state.renderedViewStale
-      ? "Preview state changed. Re-run Analyze current view to update issues and highlights."
-      : "Analyze the current visible preview state";
+      ? "Preview changed. Capture current view snapshot again to refresh the report."
+      : "Capture a snapshot of the visible preview and send it to the analyzer";
   }
   if (state.currentResult) {
     renderDashboardSummary(state.currentResult);
   }
   if (state.renderedViewStale && state.currentPayload?.analysis_mode === "rendered_current_view") {
-    setWebsiteStatus("Preview state changed. Re-run Analyze current view to update issues and highlights.", true);
+    setWebsiteStatus("Preview changed. Capture current view snapshot again to refresh issues and highlights.", true);
   }
 }
 
+/** Flags UI when iframe DOM diverges from the last snapshot-backed report; does not call the analyzer. */
 function markRenderedViewStaleFromPreviewInteraction() {
   if (state.currentPayload?.analysis_mode === "rendered_current_view") {
     window.setTimeout(() => {
@@ -3141,10 +3112,14 @@ function markRenderedViewStaleFromPreviewInteraction() {
   }
 }
 
-async function analyzeCurrentRenderedView() {
+/**
+ * User-triggered only: serializes visible iframe elements and POSTs to /analyze-rendered-view.
+ * Creates a new authoritative backend run — the frontend does not score issues locally.
+ */
+async function captureCurrentViewSnapshotAndAnalyze() {
   const doc = getPreviewDocument();
   if (!doc?.body) {
-    setWebsiteStatus("The preview iframe is not accessible yet. Wait for it to load, then try Analyze current view.", true);
+    setWebsiteStatus("The preview iframe is not ready. Wait for it to load, then capture again.", true);
     return;
   }
 
@@ -3152,22 +3127,22 @@ async function analyzeCurrentRenderedView() {
   try {
     payload = extractRenderedCurrentViewPayload(doc);
   } catch (error) {
-    setWebsiteStatus(`Could not read the current preview state: ${error.message || String(error)}`, true);
+    setWebsiteStatus(`Could not read the preview for snapshot: ${error.message || String(error)}`, true);
     return;
   }
 
   if (!payload.elements.length) {
-    setWebsiteStatus("No visible analyzable elements were found in the current preview state.", true);
+    setWebsiteStatus("No visible elements found to include in the snapshot.", true);
     return;
   }
 
   const button = document.getElementById("analyzeCurrentViewBtn");
   if (button) {
     button.disabled = true;
-    button.textContent = "Analyzing current view...";
+    button.textContent = "Sending snapshot…";
   }
   state.renderedDomAnalysisPending = true;
-  setWebsiteStatus(`Analyzing ${payload.elements.length} visible element${payload.elements.length === 1 ? "" : "s"} from the current preview state...`);
+  setWebsiteStatus(`Sending ${payload.elements.length} visible element${payload.elements.length === 1 ? "" : "s"} to the analyzer…`);
 
   try {
     const baselineRunId = state.currentPayload?.run?.run_id || null;
@@ -3192,89 +3167,16 @@ async function analyzeCurrentRenderedView() {
     setWorkspaceMode("website");
     injectHighlightStyles(doc);
     clearWebsiteHighlights(doc);
-    setWebsiteStatus("This report is based on the current visible page state. Interact with the preview and re-run analysis to check another state.");
+    setWebsiteStatus("Report updated from this snapshot. Change the preview and capture again to analyze another state.");
   } catch (error) {
-    setWebsiteStatus(`Analyze current view failed: ${error.message || String(error)}`, true);
+    setWebsiteStatus(`Snapshot analysis failed: ${error.message || String(error)}`, true);
   } finally {
     state.renderedDomAnalysisPending = false;
     if (button) {
       button.disabled = false;
-      button.textContent = "Analyze current view";
+      button.textContent = "Capture current view snapshot";
     }
   }
-}
-
-async function analyzeRenderedPreviewDocument(doc) {
-  if (!shouldAnalyzeRenderedPreview(doc)) {
-    return;
-  }
-
-  const renderedHtml = doc.documentElement.outerHTML || "";
-  const analysisKey = buildRenderedDomAnalysisKey(doc);
-  if (!renderedHtml.trim() || !analysisKey) {
-    return;
-  }
-
-  state.renderedDomAnalysisPending = true;
-  setWebsiteStatus("Preview rendered. Re-analyzing the live DOM for a more accurate localhost result...");
-
-  try {
-    const renderedPayload = await analyzeHtmlText(
-      renderedHtml,
-      state.sourceUrl || state.sourceName || "rendered-preview.html",
-      { persistResult: false },
-    );
-    const mergedPayload = {
-      ...(state.currentPayload || {}),
-      ...renderedPayload,
-      run: state.currentPayload?.run || renderedPayload.run,
-      resource_bundle: state.currentPayload?.resource_bundle || renderedPayload.resource_bundle,
-      html_content: renderedHtml,
-    };
-    state.currentPayload = mergedPayload;
-    state.renderedDomAnalysisKey = analysisKey;
-    saveTransientDashboardState(mergedPayload, renderedHtml);
-    renderResult(buildAnalysisView(mergedPayload), renderedHtml, { preserveSelectedIssue: true });
-    updateActiveHighlightButtons();
-    if (state.workspaceMode === "explanation") {
-      renderComparison(state.currentResult, state.previousResult, state.previousSourceName);
-    }
-
-    const frameDoc = getPreviewDocument();
-    if (frameDoc) {
-      injectHighlightStyles(frameDoc);
-      clearWebsiteHighlights(frameDoc);
-      if (state.rightPanelMode === "preview" && state.selectedIssueId) {
-        highlightSelectedIssueInPreview();
-      } else if (state.activeHighlightIssueId) {
-        const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
-        highlightIssue(dimensionName, ruleId, true);
-      } else if (state.activeHighlightDimension) {
-        highlightDimension(state.activeHighlightDimension);
-      } else {
-        setWebsiteStatus("Live DOM analysis updated. Choose a detector or issue to highlight related areas.");
-      }
-    }
-  } catch (error) {
-    state.renderedDomAnalysisKey = analysisKey;
-    setWebsiteStatus(`Rendered preview analysis failed: ${error.message || String(error)}`, true);
-  } finally {
-    state.renderedDomAnalysisPending = false;
-  }
-}
-
-function queueRenderedDomAnalysis() {
-  const doc = getPreviewDocument();
-  if (!shouldAnalyzeRenderedPreview(doc)) {
-    return;
-  }
-  if (state.renderedDomAnalysisTimer) {
-    window.clearTimeout(state.renderedDomAnalysisTimer);
-  }
-  state.renderedDomAnalysisTimer = window.setTimeout(() => {
-    const latestDoc = getPreviewDocument();
-    analyzeRenderedPreviewDocument(latestDoc);
-  }, 900);
 }
 
 function applySidebarState() {
@@ -3458,9 +3360,6 @@ function initAssistantFloating() {
   positionAssistantWindow();
 }
 
-function initPreviewMessageBridge() {
-}
-
 function getHistoryReportRunIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("from") !== "history") {
@@ -3555,7 +3454,6 @@ function bindEvents() {
   const explanationContent = document.getElementById("explanationContent");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
   renderPatientSwitcher();
-  initPreviewMessageBridge();
   initDimensionInfoTooltip();
   initBackToAnalysisButton();
 
@@ -3566,7 +3464,7 @@ function bindEvents() {
   }
 
   if (analyzeCurrentViewButton) {
-    analyzeCurrentViewButton.addEventListener("click", analyzeCurrentRenderedView);
+    analyzeCurrentViewButton.addEventListener("click", captureCurrentViewSnapshotAndAnalyze);
   }
 
   if (sidebarToggleButton) {
@@ -3822,7 +3720,7 @@ async function init(lifecycleSnapshot) {
   renderComparison(currentResult, previousResult, previousSession?.sourceName || "");
   // Default first entry to the raw website preview.
   setWorkspaceMode("website");
-  startBackgroundRenderedAnalysis();
+  loadPreviewOnSessionStart();
 
   if (sessionStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
     sessionStorage.removeItem(AUTO_PRINT_STORAGE_KEY);
