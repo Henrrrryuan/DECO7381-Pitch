@@ -3119,13 +3119,6 @@ button.dimension-row.is-linked-active {
   max-width: 100%;
 }
 
-.sidebar-explanation-content .explanation-no-issue-cards {
-  margin: 0.75rem 0 0;
-  color: var(--color-text-secondary, #5a6b7c);
-  font-size: 0.95rem;
-  line-height: 1.45;
-}
-
 .pane-header-actions-right {
   border-bottom: 0;
 }
