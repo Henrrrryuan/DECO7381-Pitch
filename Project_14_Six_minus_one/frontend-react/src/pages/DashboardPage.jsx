@@ -9,7 +9,7 @@ import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/si
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
 
-  const [gauge, setGauge] = useState({ detected: null, total: null });
+  const [gauge, setGauge] = useState({ detected: null, total: null, breakdown: null });
 
   useEffect(() => {
     document.body.classList.add("dashboard-body");
@@ -35,6 +35,7 @@ export function DashboardPage() {
               payload ?? {
                 detected: null,
                 total: null,
+                breakdown: null,
               },
             );
           },

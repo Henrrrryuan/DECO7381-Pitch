@@ -383,13 +383,22 @@ function renderDetectionGauge(result) {
   }
 
   if (!result?.dimensions) {
-    onDetectionGaugeUpdate({ detected: null, total: null });
+    onDetectionGaugeUpdate({ detected: null, total: null, breakdown: null });
     return;
   }
 
   const total = TOTAL_POSSIBLE_DETECTION_POINTS;
   const detected = detectorsWithIssuesCount(result);
-  onDetectionGaugeUpdate({ detected, total });
+  const breakdown = { content: 0, structure: 0, motion: 0, forms: 0 };
+  (result.dimensions || []).forEach((dimension) => {
+    if (!isDetectorEnabledForActiveProfile(dimension?.dimension)) {
+      return;
+    }
+    const key = issueCategoryKeyForDimension(dimension?.dimension);
+    const bucket = key in breakdown ? key : "structure";
+    breakdown[bucket] += (dimension?.issues || []).length;
+  });
+  onDetectionGaugeUpdate({ detected, total, breakdown });
 }
 
 function renderReportId() {

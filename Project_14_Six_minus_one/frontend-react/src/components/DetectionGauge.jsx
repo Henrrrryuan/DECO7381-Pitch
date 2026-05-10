@@ -1,48 +1,52 @@
 /**
- * Semi-circle detector summary (issues-with-hits vs total rule slots).
+ * Axe-style metric card: big count + short label.
  * Values are driven by legacy dashboardApp via initDashboard({ onDetectionGaugeUpdate }).
  */
 
-/** @typedef {{ detected: number | null; total: number | null }} DetectionGaugeProps */
+/** @typedef {{ content: number; structure: number; motion: number; forms: number }} IssueBreakdown */
+/** @typedef {{ detected: number | null; total: number | null; breakdown?: IssueBreakdown | null }} DetectionGaugeProps */
 
-export function DetectionGauge({ detected, total }) {
-  const placeholder = detected == null || total == null;
-  const ratio =
-    placeholder || total <= 0 ? 0 : Math.min(1, Math.max(0, detected / total));
-  const progressOffset = 100 - ratio * 100;
+function pill(label, value, tone) {
+  return (
+    <span className={`detection-gauge-pill detection-gauge-pill--${tone}`}>
+      <span className="detection-gauge-pill__label">{label}</span>
+      <strong className="detection-gauge-pill__value">{value}</strong>
+    </span>
+  );
+}
 
+export function DetectionGauge({ detected, breakdown = null }) {
+  const placeholder = detected == null;
   const detectedText = placeholder ? "—" : String(detected);
+  const safe = breakdown && typeof breakdown === "object"
+    ? {
+        content: Number(breakdown.content || 0),
+        structure: Number(breakdown.structure || 0),
+        motion: Number(breakdown.motion || 0),
+        forms: Number(breakdown.forms || 0),
+      }
+    : null;
 
   return (
     <section
-      className={`detection-gauge-panel${placeholder ? " is-placeholder" : ""}`}
+      className={`detection-gauge-panel detection-gauge-card${placeholder ? " is-placeholder" : ""}`}
       id="detectionGaugePanel"
-      aria-label="Detectors with issues"
+      aria-label="Detected issues"
     >
-      <div className="detection-gauge">
-        <svg className="detection-gauge-svg" viewBox="0 0 200 112" aria-hidden="true" focusable="false">
-          <path
-            className="detection-gauge-base"
-            d="M 24 96 A 76 76 0 0 1 176 96"
-            fill="none"
-            pathLength={100}
-          />
-          <path
-            className="detection-gauge-progress"
-            d="M 24 96 A 76 76 0 0 1 176 96"
-            fill="none"
-            pathLength={100}
-            strokeDasharray="100"
-            strokeDashoffset={progressOffset}
-          />
-        </svg>
-        <div className="detection-gauge-value" aria-live="polite">
-          <strong>{detectedText}</strong>
-        </div>
-        <p className="detection-gauge-caption">
-          Detected issues
-        </p>
+      <p className="detection-gauge-title">Detected issues</p>
+      <div className="detection-gauge-value" aria-live="polite">
+        <strong>{detectedText}</strong>
       </div>
+      {safe ? (
+        <div className="detection-gauge-pills" aria-label="Issue breakdown">
+          {pill("Content", safe.content, "content")}
+          {pill("Structure", safe.structure, "structure")}
+          {pill("Motion", safe.motion, "motion")}
+          {safe.forms ? pill("Forms", safe.forms, "forms") : null}
+        </div>
+      ) : (
+        <div className="detection-gauge-pills is-placeholder" aria-hidden="true" />
+      )}
     </section>
   );
 }
