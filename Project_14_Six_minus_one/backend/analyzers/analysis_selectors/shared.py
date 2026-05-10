@@ -4,7 +4,7 @@ from typing import Any
 
 from bs4 import Tag
 
-from ...schemas import Issue, Severity
+from ...schemas import Issue
 from ...scoring import calculate_penalty
 
 REGULAR_BASE_PENALTY = 3
@@ -15,7 +15,6 @@ def make_issue(
     *,
     rule_id: str,
     title: str,
-    severity: Severity,
     base_penalty: int,
     description: str,
     suggestion: str,
@@ -25,22 +24,13 @@ def make_issue(
     return Issue(
         rule_id=rule_id,
         title=title,
-        severity=severity,
         base_penalty=base_penalty,
-        penalty=calculate_penalty(base_penalty, severity),
+        penalty=calculate_penalty(base_penalty),
         description=description,
         suggestion=suggestion,
         evidence=evidence,
         locations=locations or [],
     )
-
-
-def severity_from_count(count: int, *, major: int = 2, critical: int = 4) -> Severity:
-    if count >= critical:
-        return "critical"
-    if count >= major:
-        return "major"
-    return "minor"
 
 
 def visible_text(tag: Tag) -> str:

@@ -37,6 +37,147 @@ def sanitize_analysis_locations(analysis: AnalysisResult, html: str) -> Analysis
     return analysis
 
 
+def _location_dedupe_key(rule_id: str, selector: str, location: dict[str, Any]) -> Any:
+    if rule_id == "PHS-1":
+        return (selector, str(location.get("violationType") or ""))
+    return selector
+
+
+def _candidate_used(
+    tag: Tag,
+    location: dict[str, Any],
+    rule_id: str,
+    used_keys: set[Any],
+) -> bool:
+    selector = stable_selector(tag)
+    key = _location_dedupe_key(rule_id, selector, location)
+    return key in used_keys
+
+
+def _max_sanitized_locations(rule_id: str) -> int | None:
+    """Return None for no cap (preserve every detector-supplied location)."""
+    if rule_id == "WIP-1":
+        return None
+    return 8
+
+
+def _phs_structural_pass_through(location: dict[str, Any]) -> bool:
+    """PHS-1 document-level finding: do not resolve to body/main or aggregate page text."""
+    if not isinstance(location, dict):
+        return False
+    if location.get("documentStructuralFinding") is True:
+        return True
+    if location.get("highlightable") is False:
+        return True
+    if str(location.get("tag") or "").lower() == "document":
+        return True
+    return False
+
+
+def build_structural_phs_sanitized_payload(original: dict[str, Any]) -> dict[str, Any]:
+    """Stable payload for structural-only PHS rows (no DOM highlight)."""
+    payload: dict[str, Any] = {
+        "tag": "document",
+        "selector": "",
+        "summary": "",
+        "label": "Document structure",
+        "preview": "",
+        "highlightable": False,
+        "documentStructuralFinding": True,
+    }
+    for key in (
+        "violationType",
+        "headingLevel",
+        "previousHeadingLevel",
+        "currentHeadingLevel",
+        "attrs",
+    ):
+        if key in original:
+            payload[key] = original[key]
+    return payload
+
+
+PHS_HEADING_TAG_NAMES = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+PHS_HEADING_TAGS_LIST = ["h1", "h2", "h3", "h4", "h5", "h6"]
+
+
+def _phs_first_nonempty_text_field(location: dict[str, Any]) -> str:
+    for key in ("text", "preview", "sentence_preview", "label"):
+        raw = str(location.get(key) or "").strip()
+        if raw:
+            return raw
+    return ""
+
+
+def _phs_normalize_heading_plain(tag: Tag) -> str:
+    return normalize_text(tag.get_text(" ", strip=True)).lower()
+
+
+def _phs_narrow_tags_by_exact_heading_text(sel_tags: list[Tag], location: dict[str, Any]) -> list[Tag]:
+    """When a selector matches multiple nodes, keep only headings whose text equals the location payload."""
+    target = normalize_text(_phs_first_nonempty_text_field(location)).lower()
+    if not target:
+        return []
+    out: list[Tag] = []
+    for tag in sel_tags:
+        if not isinstance(tag, Tag):
+            continue
+        if (tag.name or "").lower() not in PHS_HEADING_TAG_NAMES:
+            continue
+        if _phs_normalize_heading_plain(tag) == target:
+            out.append(tag)
+    return dedupe_tags(out)
+
+
+def _find_by_text_phs_strict(soup: BeautifulSoup, text: str) -> list[Tag]:
+    """PHS-1: exact normalized match on h1–h6 only; no substring / fuzzy overlap."""
+    normalized = normalize_text(text).lower()
+    if not normalized:
+        return []
+    matches: list[Tag] = []
+    for tag in soup.find_all(PHS_HEADING_TAGS_LIST):
+        if not isinstance(tag, Tag):
+            continue
+        if _phs_normalize_heading_plain(tag) == normalized:
+            matches.append(tag)
+    return matches
+
+
+def _find_candidate_tags_phs(soup: BeautifulSoup, location: dict[str, Any]) -> list[Tag]:
+    """PHS-1 only: selector-first; strict heading text fallback (no global find_by_text)."""
+    selector = str(location.get("selector") or "").strip()
+    if selector:
+        sel_tags = select_safely(soup, selector)
+        if len(sel_tags) == 1:
+            return sel_tags
+        if len(sel_tags) > 1:
+            narrowed = _phs_narrow_tags_by_exact_heading_text(sel_tags, location)
+            if narrowed:
+                return narrowed
+
+    candidates: list[Tag] = []
+    summary = str(location.get("summary") or location.get("region") or "").strip()
+    if is_usable_summary_selector(summary):
+        candidates.extend(select_safely(soup, summary))
+
+    attrs = location.get("attrs") if isinstance(location.get("attrs"), dict) else {}
+    tag_name = normalized_tag(location.get("tag"))
+    if attrs:
+        candidates.extend(find_by_attrs(soup, tag_name, attrs))
+
+    if location.get("block_index"):
+        block = block_by_index(soup, int(location.get("block_index") or 0))
+        if block is not None:
+            return [block]
+
+    for text_key in ("text", "preview", "sentence_preview", "label"):
+        text = str(location.get(text_key) or "").strip()
+        if text:
+            candidates.extend(_find_by_text_phs_strict(soup, text))
+
+    return dedupe_tags(candidates)
+
+
 def sanitize_issue_locations(
     soup: BeautifulSoup,
     locations: list[dict[str, Any]],
@@ -44,17 +185,45 @@ def sanitize_issue_locations(
     rule_id: str,
 ) -> list[dict[str, Any]]:
     sanitized: list[dict[str, Any]] = []
-    used_selectors: set[str] = set()
+    used_keys: set[Any] = set()
+    cap = _max_sanitized_locations(rule_id)
     for location in locations or []:
-        candidate = best_candidate_for_location(soup, location, dimension_name, rule_id, used_selectors)
+        if rule_id == "PHS-1" and _phs_structural_pass_through(location):
+            dedupe_key = _location_dedupe_key(rule_id, str(location.get("selector") or ""), location)
+            if dedupe_key in used_keys:
+                continue
+            used_keys.add(dedupe_key)
+            sanitized.append(build_structural_phs_sanitized_payload(location))
+            if cap is not None and len(sanitized) >= cap:
+                break
+            continue
+
+        if rule_id == "PHS-1" and not _phs_structural_pass_through(location):
+            locked_tag = _phs_try_lock_unique_selector_heading(soup, location, dimension_name, rule_id)
+            if locked_tag is not None:
+                selector = stable_selector(locked_tag)
+                if selector:
+                    dedupe_key = _location_dedupe_key(rule_id, selector, location)
+                    if dedupe_key in used_keys:
+                        continue
+                    used_keys.add(dedupe_key)
+                    sanitized.append(build_location_payload(locked_tag, location, selector))
+                    if cap is not None and len(sanitized) >= cap:
+                        break
+                    continue
+
+        candidate = best_candidate_for_location(soup, location, dimension_name, rule_id, used_keys)
         if candidate is None:
             continue
         selector = stable_selector(candidate)
-        if not selector or selector in used_selectors:
+        if not selector:
             continue
-        used_selectors.add(selector)
+        dedupe_key = _location_dedupe_key(rule_id, selector, location)
+        if dedupe_key in used_keys:
+            continue
+        used_keys.add(dedupe_key)
         sanitized.append(build_location_payload(candidate, location, selector))
-        if len(sanitized) >= 8:
+        if cap is not None and len(sanitized) >= cap:
             break
     return sanitized
 
@@ -64,7 +233,7 @@ def best_candidate_for_location(
     location: dict[str, Any],
     dimension_name: str,
     rule_id: str,
-    used_selectors: set[str],
+    used_keys: set[Any],
 ) -> Tag | None:
     candidates = [
         candidate
@@ -76,7 +245,7 @@ def best_candidate_for_location(
     return sorted(
         candidates,
         key=lambda tag: (
-            stable_selector(tag) in used_selectors,
+            _candidate_used(tag, location, rule_id, used_keys),
             structural_penalty(tag, dimension_name, rule_id),
             document_order_index(tag),
         ),
@@ -91,6 +260,12 @@ def find_candidate_tags(
 ) -> list[Tag]:
     if not isinstance(location, dict):
         return []
+
+    if rule_id == "PHS-1" and _phs_structural_pass_through(location):
+        return []
+
+    if rule_id == "PHS-1":
+        return _find_candidate_tags_phs(soup, location)
 
     candidates: list[Tag] = []
     selector = str(location.get("selector") or "").strip()
@@ -131,6 +306,29 @@ def select_safely(soup: BeautifulSoup, selector: str) -> list[Tag]:
         return [tag for tag in soup.select(selector) if isinstance(tag, Tag)]
     except Exception:
         return []
+
+
+def _phs_try_lock_unique_selector_heading(
+    soup: BeautifulSoup,
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """PHS-1: when detector selector resolves to exactly one heading, lock identity (skip candidate ranking)."""
+    if rule_id != "PHS-1" or _phs_structural_pass_through(location):
+        return None
+    raw_selector = str(location.get("selector") or "").strip()
+    if not raw_selector:
+        return None
+    sel_tags = select_safely(soup, raw_selector)
+    if len(sel_tags) != 1:
+        return None
+    tag = sel_tags[0]
+    if (tag.name or "").lower() not in PHS_HEADING_TAG_NAMES:
+        return None
+    if not is_candidate_highlightable(tag, dimension_name, rule_id):
+        return None
+    return tag
 
 
 def find_by_attrs(soup: BeautifulSoup, tag_name: str, attrs: dict[str, Any]) -> list[Tag]:
@@ -233,6 +431,8 @@ def first_screen_focal_points(soup: BeautifulSoup) -> list[Tag]:
 
 def is_candidate_highlightable(tag: Tag, dimension_name: str, rule_id: str) -> bool:
     tag_name = normalized_tag(tag.name)
+    if rule_id == "PHS-1" and tag_name in {"main", "article", "body"}:
+        return False
     if tag_name in BAD_TARGET_TAGS:
         return False
     if is_hidden_static(tag):
@@ -296,6 +496,12 @@ def build_location_payload(tag: Tag, original: dict[str, Any], selector: str) ->
         "interrupt_type",
         "animated_count",
         "region",
+        "violationType",
+        "headingLevel",
+        "previousHeadingLevel",
+        "currentHeadingLevel",
+        "text",
+        "attrs",
     ):
         if key in original:
             payload[key] = original[key]
@@ -321,6 +527,11 @@ def stable_selector(tag: Tag) -> str:
     path = nth_of_type_path(tag)
     if path and not is_too_generic_selector(path):
         return path
+
+    structural_root = (tag.name or "").lower()
+    if structural_root in {"main", "article", "body"}:
+        return structural_root
+
     return ""
 
 
@@ -398,6 +609,8 @@ def is_usable_summary_selector(value: str) -> bool:
 
 def is_too_generic_selector(selector: str) -> bool:
     normalized = selector.strip().lower()
+    if normalized in {"main", "article", "body"}:
+        return False
     return normalized in GENERIC_SELECTOR_TAGS or normalized in BAD_TARGET_TAGS
 
 

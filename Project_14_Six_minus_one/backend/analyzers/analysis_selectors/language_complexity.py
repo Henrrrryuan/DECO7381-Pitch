@@ -4,7 +4,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from .shared import REGULAR_BASE_PENALTY, make_issue, severity_from_count, tag_location, visible_text
+from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
 from .text_utils import COMPLEX_WORD_RATIO_THRESHOLD, is_complex_word, tokenize_alpha_words
 
 LANGUAGE_SELECTOR = "p, li, td, th, label, button, a"
@@ -37,7 +37,6 @@ def detect_language_complexity(soup: BeautifulSoup):
     return make_issue(
         rule_id="LC-1",
         title="Language Complexity",
-        severity=severity_from_count(len(complex_regions)),
         base_penalty=REGULAR_BASE_PENALTY,
         description="Complex vocabulary reduces comprehension speed and increases cognitive effort.",
         suggestion="Replace uncommon or jargon-heavy wording with clear, familiar language.",

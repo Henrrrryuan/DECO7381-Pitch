@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  PHS-1 manual checks (Poor Heading Structure — violation grouping in dashboard).
+
+  Load this file (or a copy) into the analyzer preview and open issue PHS-1.
+
+  Swap the <body> below for each case. Expected violation groups refer to the
+  dashboard "Affected elements" section (grouped by violation type).
+
+  CASE 3 — hierarchy_gap only (expect "Hierarchy Gap" group with heading text like Skipped H2)
+  <body>
+    <main>
+      <h1>Main Title</h1>
+      <p>Intro copy.</p>
+      <h3>Skipped H2</h3>
+    </main>
+  </body>
+
+  CASE 4 — multiple_h1 (expect "Multiple H1" with both extra h1 titles)
+  <body>
+    <main>
+      <h1>Homepage</h1>
+      <h1>Another Main Title</h1>
+    </main>
+  </body>
+
+  CASE 5 — duplicate_heading_text (expect "Duplicate Heading Text" with two rows)
+  <body>
+    <main>
+      <h1>Site</h1>
+      <h2>Features</h2>
+      <h2>Features</h2>
+    </main>
+  </body>
+
+  CASE 6 — missing_headings / document-level (no h1–h6; expect Missing Headings group,
+           disabled chip, no body overlay highlight)
+  <body>
+    <main>
+      <p>No heading tags in this document.</p>
+    </main>
+  </body>
+
+  CASE missing_h1 — first heading is h2 (expect "Missing H1" group; optional manual check)
+  <body>
+    <main>
+      <h2>Starts With H2</h2>
+      <p>Content.</p>
+    </main>
+  </body>
+-->
+<head>
+  <meta charset="utf-8" />
+  <title>PHS test — CASE 4 (multiple h1)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <main>
+    <h1>Homepage</h1>
+    <h1>Another Main Title</h1>
+  </main>
+</body>
+</html>

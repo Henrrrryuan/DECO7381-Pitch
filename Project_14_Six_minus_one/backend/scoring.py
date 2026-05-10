@@ -2,18 +2,14 @@ from __future__ import annotations
 
 from typing import Iterable, Mapping
 
-from .schemas import AnalysisResult, AudienceLensScore, DimensionResult, Severity
-
-SEVERITY_MULTIPLIERS: dict[Severity, int] = {
-    "minor": 1,
-    "major": 2,
-    "critical": 3,
-}
+from .schemas import AnalysisResult, AudienceLensScore, DimensionResult
 
 SCORING_FORMULA_TEXT = (
     "Dimension Score = max(0, round(100 * (1 - Raw Penalty Sum / Dimension Penalty Cap)))"
 )
-PENALTY_FORMULA_TEXT = "Penalty = Base Penalty * Severity"
+PENALTY_FORMULA_TEXT = (
+    "When a detector raises an issue, a fixed base penalty applies (no severity tiers)."
+)
 
 DIMENSION_WEIGHTS: dict[str, float] = {
     "Dense Text Detection": 0.10,
@@ -75,8 +71,9 @@ PROFILE_LENS_CONFIG: dict[str, dict[str, object]] = {
 }
 
 
-def calculate_penalty(base_penalty: int, severity: Severity) -> int:
-    return base_penalty * SEVERITY_MULTIPLIERS[severity]
+def calculate_penalty(base_penalty: int) -> int:
+    """Fixed penalty per triggered issue (no severity multipliers)."""
+    return base_penalty
 
 
 def clamp_score(score: float) -> int:

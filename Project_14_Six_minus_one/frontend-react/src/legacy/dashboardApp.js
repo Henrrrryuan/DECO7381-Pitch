@@ -237,7 +237,7 @@ const HIGHLIGHT_CONFIG = {
   },
   "Poor Heading Structure": {
     color: "#8d28df",
-    selectors: ["h1", "h2", "h3", "h4", "h5", "h6", "title"],
+    selectors: ["h1", "h2", "h3", "h4", "h5", "h6", "main", "article", "body"],
   },
   "Navigation Complexity": {
     color: "#8d28df",
@@ -368,12 +368,6 @@ function renderReportId() {
   reportIdNode.title = createdAt || runId || "";
 }
 
-const SEVERITY_RANK = {
-  critical: 3,
-  major: 2,
-  minor: 1,
-};
-
 function displayDimensionName(name) {
   return String(name || "");
 }
@@ -442,7 +436,7 @@ function tooltipCopyForDimension(dimensionName) {
     "Language Complexity": { issue: "Vocabulary may be harder to understand quickly.", impact: "We check complex or uncommon word density." },
     "Sentence Complexity": { issue: "Sentences may be too long or heavily connected.", impact: "We check sentence length, commas, and conjunctions." },
     "Long Content Without Chunking": { issue: "Long sections may lack structure.", impact: "We check long main/article/section content without headings or lists." },
-    "Poor Heading Structure": { issue: "Heading hierarchy may make orientation harder.", impact: "We check missing h1, multiple h1s, empty headings, duplicates, and skipped levels." },
+    "Poor Heading Structure": { issue: "Heading hierarchy may make orientation harder.", impact: "h1–h6 hierarchy heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings (not title tag or visual typography)." },
     "Navigation Complexity": { issue: "Navigation may create too many choices.", impact: "We check link count and nesting depth." },
     "Weak Information Prominence": { issue: "The next important action may be hard to identify.", impact: "We check competing CTA density." },
     "Visual Overload": { issue: "The viewport may contain too many competing elements.", impact: "We check visible element count and interactive density." },
@@ -548,13 +542,20 @@ function issuePriority(issue, dimensionName = "") {
       + (issue?.penalty || 0)
     );
   }
-  return (SEVERITY_RANK[issue?.severity] || 0) * 100 + (issue?.penalty || 0);
+  return issue?.penalty || 0;
 }
 
 function primaryIssueForDimension(dimension) {
-  return [...(dimension?.issues || [])].sort(
-    (a, b) => issuePriority(b, dimension?.dimension) - issuePriority(a, dimension?.dimension),
-  )[0] || null;
+  const issues = [...(dimension?.issues || [])];
+  issues.sort((a, b) => {
+    const pb = issuePriority(b, dimension?.dimension);
+    const pa = issuePriority(a, dimension?.dimension);
+    if (pb !== pa) {
+      return pb - pa;
+    }
+    return String(a.rule_id || "").localeCompare(String(b.rule_id || ""));
+  });
+  return issues[0] || null;
 }
 
 function firstSentence(text) {
@@ -974,6 +975,137 @@ function uniqueKeyLocations(locations, limit = 3) {
   return keyLocations.slice(0, limit);
 }
 
+/** Display order for PHS-1 violation groups (presentational only). */
+const PHS_VIOLATION_GROUP_ORDER = [
+  "missing_headings",
+  "missing_h1",
+  "multiple_h1",
+  "first_heading_not_h1",
+  "hierarchy_gap",
+  "duplicate_heading_text",
+  "empty_heading",
+  "unknown",
+];
+
+function formatViolationTypeLabel(type) {
+  if (!type || typeof type !== "string") {
+    return "Issue detail";
+  }
+  const normalized = type.trim();
+  const labels = {
+    missing_headings: "Missing Headings",
+    missing_h1: "Missing H1",
+    multiple_h1: "Multiple H1",
+    first_heading_not_h1: "First Heading Not H1",
+    hierarchy_gap: "Hierarchy Gap",
+    duplicate_heading_text: "Duplicate Heading Text",
+    empty_heading: "Empty Heading",
+    unknown: "Other",
+  };
+  if (labels[normalized]) {
+    return labels[normalized];
+  }
+  return normalized
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * Groups PHS location rows by violationType. Values are entries with the original
+ * location and 1-based index into the issue.locations array (for highlight parity).
+ */
+function groupLocationsByViolationType(locations) {
+  const groups = {};
+  if (!Array.isArray(locations)) {
+    return groups;
+  }
+  locations.forEach((location, index) => {
+    const raw = location?.violationType;
+    const key = typeof raw === "string" && raw.trim() ? raw.trim() : "unknown";
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push({ location, elementNumber: index + 1 });
+  });
+  return groups;
+}
+
+function orderPhsViolationGroupKeys(groupKeys) {
+  const ordered = [];
+  PHS_VIOLATION_GROUP_ORDER.forEach((key) => {
+    if (groupKeys.includes(key)) {
+      ordered.push(key);
+    }
+  });
+  groupKeys.forEach((key) => {
+    if (!ordered.includes(key)) {
+      ordered.push(key);
+    }
+  });
+  return ordered;
+}
+
+function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber) {
+  const isActive = activeElementNumber === elementNumber;
+  const label = location?.label || friendlyLocationLabel(location);
+  const isHighlightable = location?.highlightable !== false;
+  const meta = locationMetaText(location, null)
+    .replace(/^Location: /, "")
+    .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
+  const showMeta = meta && meta !== label;
+  if (!isHighlightable) {
+    const strongLabel = location?.violationType
+      ? formatViolationTypeLabel(location.violationType)
+      : "Evidence";
+    const statusFallback = location?.violationType === "missing_headings"
+      ? "Document-level structural finding — no single DOM highlight."
+      : "No visible target found";
+    return `
+      <div class="issue-element-chip is-disabled" role="note">
+        <strong>${escapeHtml(strongLabel)}</strong>
+        <span>${escapeHtml(label || "Structural evidence, not directly highlightable")}</span>
+        <small>${escapeHtml(location?.status || statusFallback)}</small>
+      </div>
+    `;
+  }
+  return `
+    <button
+      class="issue-element-chip${isActive ? " is-active" : ""}"
+      type="button"
+      data-issue-element="${escapeHtml(issue.rule_id)}"
+      data-issue-dimension="${escapeHtml(dimensionName)}"
+      data-element-index="${elementNumber}"
+      aria-pressed="${isActive ? "true" : "false"}"
+    >
+      <strong>Element ${elementNumber}</strong>
+      <span>${escapeHtml(label || `Affected element ${elementNumber}`)}</span>
+      ${showMeta ? `<small>${escapeHtml(meta)}</small>` : ""}
+    </button>
+  `;
+}
+
+function issuePhsGroupedChipSectionsMarkup(issue, dimensionName, visibleSlice, activeElementNumber) {
+  const grouped = groupLocationsByViolationType(visibleSlice);
+  const keys = orderPhsViolationGroupKeys(Object.keys(grouped));
+  return keys.map((violationKey) => {
+    const entries = grouped[violationKey];
+    const title = `${formatViolationTypeLabel(violationKey)} (${entries.length})`;
+    const chips = entries.map(({ location, elementNumber }) => (
+      issueElementChipRowMarkup(issue, dimensionName, location, elementNumber, activeElementNumber)
+    )).join("");
+    return `
+      <section class="issue-phs-violation-group" aria-label="${escapeHtml(formatViolationTypeLabel(violationKey))}">
+        <h5 class="issue-phs-violation-heading">${escapeHtml(title)}</h5>
+        <div class="issue-element-chip-list issue-element-chip-list--phs-group">
+          ${chips}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 function guidanceEvidenceMarkup(issue) {
   const locations = Array.isArray(issue?.locations) ? issue.locations : [];
   const count = issueFailingElementCount(issue);
@@ -991,10 +1123,50 @@ function guidanceEvidenceMarkup(issue) {
     `;
   }
 
-  // Guidance should show concrete affected elements, not deduplicated labels,
-  // so the visible list matches the affected-element count users see above.
   const shownLocations = locations.slice(0, 12);
   const hiddenCount = Math.max(0, locations.length - shownLocations.length);
+
+  if ((issue?.rule_id || "") === "PHS-1") {
+    const grouped = groupLocationsByViolationType(shownLocations);
+    const keys = orderPhsViolationGroupKeys(Object.keys(grouped));
+    const groupedBlocks = keys.map((violationKey) => {
+      const entries = grouped[violationKey];
+      const groupTitle = `${formatViolationTypeLabel(violationKey)} (${entries.length})`;
+      const cards = entries.map(({ location, elementNumber }) => {
+        const label = friendlyLocationLabel(location);
+        const meta = locationMetaText(location, elementNumber).replace(/^Location: /, "");
+        const showMeta = meta && meta !== label;
+        return `
+          <div class="guidance-location-card">
+            <span class="guidance-location-index">${elementNumber}.</span>
+            <div>
+              <strong>${escapeHtml(label)}</strong>
+              ${showMeta ? `<p>${escapeHtml(meta)}</p>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+      return `
+        <div class="guidance-phs-violation-block">
+          <div class="guidance-phs-violation-heading">${escapeHtml(groupTitle)}</div>
+          ${cards}
+        </div>
+      `;
+    }).join("");
+    return `
+      <div class="guidance-evidence-note">
+        <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
+        <span>Grouped by heading-structure violation type. Element numbers match <strong>Element 1</strong>, <strong>Element 2</strong>, … in the preview highlight.</span>
+      </div>
+      <div class="guidance-location-list guidance-location-list--phs-grouped">
+        ${groupedBlocks}
+      </div>
+      ${hiddenCount ? `<p class="guidance-hidden-count">${escapeHtml(`${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"} not shown.`)}</p>` : ""}
+    `;
+  }
+
+  // Guidance should show concrete affected elements, not deduplicated labels,
+  // so the visible list matches the affected-element count users see above.
   return `
     <div class="guidance-evidence-note">
       <strong>${escapeHtml(`${count} affected element${count === 1 ? "" : "s"} found`)}</strong>
@@ -1250,45 +1422,49 @@ function issueElementListMarkup(issue, dimensionName) {
   const inferredCount = Math.max(1, locations.length || 0);
   const selectedIssueId = issueDomId(dimensionName, issue.rule_id);
   const activeElementNumber = state.selectedIssueId === selectedIssueId ? state.selectedElementNumber : 0;
+
+  if ((issue.rule_id || "") === "PHS-1" && locations.length > 0) {
+    const visibleSlice = locations.slice(0, 12);
+    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
+    const groupedSections = issuePhsGroupedChipSectionsMarkup(
+      issue,
+      dimensionName,
+      visibleSlice,
+      activeElementNumber,
+    );
+    return `
+      <div class="issue-summary-row issue-summary-row-elements">
+        <span class="issue-highlight-label">Affected elements</span>
+        <div class="issue-element-tip" role="note" aria-label="Element interaction tip">
+          <p class="issue-element-tip-title">Tip</p>
+          <ol class="issue-element-tip-steps">
+            <li><strong>Click element</strong> -> right preview <strong>highlights</strong> it.</li>
+            <li><strong>Click highlight</strong> -> <strong>guidance</strong> opens.</li>
+          </ol>
+        </div>
+        <div class="issue-phs-grouped-wrap">
+          ${groupedSections}
+        </div>
+        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+      </div>
+    `;
+  }
+
   const visibleLocations = locations.length ? locations : [{
     label: "Structural evidence, not directly highlightable",
     highlightable: false,
     status: "No visible target found",
   }];
-  const rows = visibleLocations.slice(0, 12).map((location, index) => {
+  const sliceForDisplay = visibleLocations.slice(0, 12);
+  const rows = sliceForDisplay.map((location, index) => {
     const elementNumber = index + 1;
-    const isActive = activeElementNumber === elementNumber;
-    const label = location?.label || friendlyLocationLabel(location);
     const isHighlightable = location?.highlightable !== false && locations.length > 0;
-    const meta = locationMetaText(location, null)
-      .replace(/^Location: /, "")
-      .replace(/\s*Highlighted as Element \d+\s*·\s*/i, "");
-    const showMeta = meta && meta !== label;
-    if (!isHighlightable) {
-      return `
-        <div class="issue-element-chip is-disabled" role="note">
-          <strong>Evidence</strong>
-          <span>${escapeHtml(label || "Structural evidence, not directly highlightable")}</span>
-          <small>${escapeHtml(location?.status || "No visible target found")}</small>
-        </div>
-      `;
-    }
-    return `
-      <button
-        class="issue-element-chip${isActive ? " is-active" : ""}"
-        type="button"
-        data-issue-element="${escapeHtml(issue.rule_id)}"
-        data-issue-dimension="${escapeHtml(dimensionName)}"
-        data-element-index="${elementNumber}"
-        aria-pressed="${isActive ? "true" : "false"}"
-      >
-        <strong>Element ${elementNumber}</strong>
-        <span>${escapeHtml(label || `Affected element ${elementNumber}`)}</span>
-        ${showMeta ? `<small>${escapeHtml(meta)}</small>` : ""}
-      </button>
-    `;
+    const adapted = isHighlightable
+      ? location
+      : { ...location, highlightable: false };
+    return issueElementChipRowMarkup(issue, dimensionName, adapted, elementNumber, activeElementNumber);
   }).join("");
-  const hiddenCount = Math.max(0, inferredCount - visibleLocations.slice(0, 12).length);
+  const hiddenCount = Math.max(0, inferredCount - sliceForDisplay.length);
   return `
     <div class="issue-summary-row issue-summary-row-elements">
       <span class="issue-highlight-label">Affected elements</span>
@@ -1390,12 +1566,27 @@ function updatePreviewIssueHeader() {
   titleNode.textContent = `Highlighted issue: ${model.issueTitle}`;
 }
 
+function phsIssueHasOnlyNonHighlightableLocations(issue) {
+  const locs = issue?.locations || [];
+  if (!locs.length) {
+    return false;
+  }
+  return locs.every(
+    (loc) => loc.highlightable === false || loc.documentStructuralFinding === true,
+  );
+}
+
 function issueHighlightElements(frameDoc, issue, dimensionName) {
   const locationElements = (issue.locations || []).flatMap((location) => (
     findElementsForLocation(frameDoc, location)
   ));
   if (locationElements.length) {
     return { elements: locationElements, exact: true };
+  }
+
+  const ruleId = issue?.rule_id || "";
+  if (ruleId === "PHS-1" && phsIssueHasOnlyNonHighlightableLocations(issue)) {
+    return { elements: [], exact: true, structuralOnly: true };
   }
 
   const fallbackElements = fallbackSelectorsForIssue(issue, dimensionName).flatMap((selector) => {
@@ -1421,14 +1612,26 @@ function highlightIssueInLoadedPreview(dimensionName, ruleId) {
   injectHighlightStyles(frameDoc);
   clearWebsiteHighlights(frameDoc);
 
-  const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
-  const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
+  const highlightOutcome = issueHighlightElements(frameDoc, issue, dimensionName);
+  const { elements, exact, structuralOnly } = highlightOutcome;
+  const maxHl = exact ? Math.min(100, Math.max(elements.length, 1)) : 30;
+  const highlighted = applyHighlights(
+    elements,
+    config.color,
+    (_element, index) => `Element ${index}`,
+    maxHl,
+  );
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
     const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
     setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issue.title || "this issue"}.${fallbackNotice}`);
+  } else if (structuralOnly && issue.rule_id === "PHS-1") {
+    setWebsiteStatus(
+      "No precise DOM highlight for this structural heading issue—it describes document-level markup (semantic hierarchy), not a single visual region.",
+      false,
+    );
   } else {
     setWebsiteStatus("No exact page element is linked to this issue yet.", true);
   }
@@ -2250,6 +2453,10 @@ function findElementsForLocation(doc, location) {
     return [];
   }
 
+  if (location.highlightable === false || location.documentStructuralFinding === true) {
+    return [];
+  }
+
   if (location.cognilensId) {
     const selector = `[data-cognilens-id="${cssEscape(location.cognilensId)}"]`;
     const matched = Array.from(doc.querySelectorAll(selector));
@@ -2426,13 +2633,13 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
     return ["p", "li", "article", "section", "label", "legend", "small"];
   }
   if (ruleId === "PHS-1") {
-    return ["h1", "h2", "h3", "h4", "h5", "h6"];
+    return [];
   }
   if (ruleId === "NC-1") {
     return ["nav", "[role='navigation']", "[class*='menu' i]", "[class*='breadcrumb' i]"];
   }
   if (ruleId === "WIP-1") {
-    return ["button", "a", "[role='button']", "input[type='submit']", "input[type='button']", "input[type='reset']"];
+    return [];
   }
   if (ruleId === "VO-1") {
     return ["main > *", "header > *", "section", "article", "nav", "button", "a", "img", "h1", "h2", ".card", "[class*='card' i]"];
@@ -2446,10 +2653,10 @@ function fallbackSelectorsForIssue(issue, dimensionName) {
   return HIGHLIGHT_CONFIG[dimensionName]?.selectors || [];
 }
 
-function applyHighlights(elements, color, label) {
+function applyHighlights(elements, color, label, maxCount = 30) {
   const highlighted = new Set();
   sortHighlightCandidates(elements).forEach((element) => {
-    if (!element || element.nodeType !== 1 || highlighted.size >= 30 || highlighted.has(element)) {
+    if (!element || element.nodeType !== 1 || highlighted.size >= maxCount || highlighted.has(element)) {
       return;
     }
     const validation = validateHighlightTarget(element, null, element.ownerDocument);
@@ -2748,15 +2955,27 @@ function highlightIssue(dimensionName, ruleId, force = false) {
   injectHighlightStyles(frameDoc);
   clearWebsiteHighlights(frameDoc);
 
-  const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
+  const highlightOutcome = issueHighlightElements(frameDoc, issue, dimensionName);
+  const { elements, exact, structuralOnly } = highlightOutcome;
 
-  const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
+  const maxHl = exact ? Math.min(100, Math.max(elements.length, 1)) : 30;
+  const highlighted = applyHighlights(
+    elements,
+    config.color,
+    (_element, index) => `Element ${index}`,
+    maxHl,
+  );
   const firstElement = highlighted.values().next().value;
   firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
   if (highlighted.size) {
     const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
     setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.${fallbackNotice}`);
+  } else if (structuralOnly && issue.rule_id === "PHS-1") {
+    setWebsiteStatus(
+      "No precise DOM highlight for this structural heading issue—it describes document-level markup (semantic hierarchy), not a single visual region.",
+      false,
+    );
   } else {
     setWebsiteStatus("No exact page element is linked to this issue yet.", true);
   }
@@ -2812,11 +3031,13 @@ function printProfileDimensionRows(result, profileLabel) {
 function printIssueCardMarkup(issue, dimensionName, issueNumber) {
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 180);
   const description = conciseText(issue.description, "This issue may increase cognitive effort for users.", 220);
+  const conf = issue.interpretation?.confidence || issue.issue_object?.interpretation?.confidence;
+  const metaRight = conf ? `Confidence: ${conf}` : "Heuristic finding";
   return `
     <article class="print-issue-card">
       <div class="print-issue-card__meta">
         <span>Issue ${issueNumber}</span>
-        <span>${escapeHtml(issue.severity || "review")}</span>
+        <span>${escapeHtml(metaRight)}</span>
       </div>
       <h4>${escapeHtml(issue.title || "Review this issue")}</h4>
       <p>${escapeHtml(description)}</p>
@@ -2894,7 +3115,7 @@ function buildAssistantContext() {
         title: issue.title,
         description: issue.description,
         suggestion: issue.suggestion,
-        severity: issue.severity,
+        interpretation: issue.interpretation || issue.issue_object?.interpretation,
       })),
     })),
   };

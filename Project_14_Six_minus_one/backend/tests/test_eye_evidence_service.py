@@ -289,7 +289,7 @@ class EyeEvidenceServiceTest(unittest.TestCase):
         self.assertEqual(interactive["near_hit_count"], 1)
         self.assertEqual(interactive["weighted_hit_score"], 0.5)
 
-    def test_interactive_borderline_values_keep_same_severity(self) -> None:
+    def test_interactive_borderline_values_keep_same_risk_level(self) -> None:
         lower = calculate_element_hit_risk(
             _summary(
                 _interactive_item(0.049, hit_count=8, exact_hit_count=4, weighted_hit_score=4),

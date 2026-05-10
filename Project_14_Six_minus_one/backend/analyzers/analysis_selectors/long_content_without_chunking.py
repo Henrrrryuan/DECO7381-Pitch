@@ -5,7 +5,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from .shared import SERIOUS_BASE_PENALTY, make_issue, severity_from_count, tag_location, visible_text
+from .shared import SERIOUS_BASE_PENALTY, make_issue, tag_location, visible_text
 from .text_utils import tokenize_alpha_words
 
 LONG_SECTION_WORD_THRESHOLD = 300
@@ -42,7 +42,6 @@ def detect_long_content_without_chunking(soup: BeautifulSoup):
     return make_issue(
         rule_id="LCC-1",
         title="Long Content Without Chunking",
-        severity=severity_from_count(len(violations), major=1, critical=3),
         base_penalty=SERIOUS_BASE_PENALTY,
         description="Lack of chunking makes long content harder to scan, process, and remember.",
         suggestion="Add headings, lists, summaries, or shorter sections to break up long content.",

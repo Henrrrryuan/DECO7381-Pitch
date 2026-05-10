@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
-Severity = Literal["minor", "major", "critical"]
 IssueCategory = Literal["content", "structure", "motion", "forms"]
 DimensionName = Literal[
     "Dense Text Detection",
@@ -108,12 +107,75 @@ THRESHOLD_BY_RULE_ID: dict[str, dict[str, int | float]] = {
     "LC-1": {"maxComplexWordRatio": 0.15},
     "SC-1": {"maxSentenceWords": 25, "maxCommas": 3, "maxConjunctions": 3},
     "LCC-1": {"maxSectionWordsWithoutChunking": 300, "maxArticleWordsWithoutChunking": 600},
-    "PHS-1": {"maxSkippedHeadingLevels": 1},
+    "PHS-1": {
+        "heuristic": "h1_h6_semantic_hierarchy",
+        "triggerConditions": (
+            "missing_h1, multiple_h1, hierarchy_gap, duplicate_heading_text, empty_heading, "
+            "first_heading_not_h1, missing_headings"
+        ),
+        "highlightStrategy": "heading_tags_when_present_else_document_level_note",
+        "confidence": "Medium-High",
+    },
     "NC-1": {"maxNavLinks": 12, "maxNestingDepth": 2},
-    "WIP-1": {"maxCompetingCtasNearby": 3},
+    "WIP-1": {
+        "maxCompetingCtasNearby": 3,
+        "earlyPageTagWindow": 120,
+        "triggerSummary": "Competing CTA-like elements in early DOM order exceed threshold.",
+    },
     "VO-1": {"maxVisibleElements": 20, "maxInteractiveElements": 8},
     "AMC-1": {"maxAutoplayElements": 0, "maxInfiniteAnimations": 0},
     "EI-1": {"maxOverlayViewportShare": 0.2},
+}
+
+# Per-rule interpretation metadata (confidence + heuristic basis). Not a graded risk label.
+INTERPRETATION_BY_RULE_ID: dict[str, dict[str, Any]] = {
+    "DT-1": {
+        "confidence": "high",
+        "heuristicBasis": "Text-block density (word and sentence counts).",
+    },
+    "LC-1": {
+        "confidence": "high",
+        "heuristicBasis": "Complex-word ratio (length and syllable heuristic).",
+    },
+    "SC-1": {
+        "confidence": "high",
+        "heuristicBasis": "Sentence length, commas, and conjunction density.",
+    },
+    "LCC-1": {
+        "confidence": "medium",
+        "heuristicBasis": "Section/article word counts vs headings/lists presence.",
+    },
+    "PHS-1": {
+        "confidence": "medium-high",
+        "heuristicBasis": "Document semantic heading hierarchy (h1–h6 markup order); not visual prominence or viewport layout.",
+    },
+    "NC-1": {
+        "confidence": "medium",
+        "heuristicBasis": "Link count and list nesting within <nav>.",
+    },
+    "WIP-1": {
+        "confidence": "low",
+        "heuristicBasis": "HTML-order CTA density heuristic.",
+        "triggerConditions": (
+            "High concentration of CTA-like interactive elements detected in early-page DOM structure."
+        ),
+        "limitations": [
+            "Does not perform rendered visual saliency analysis.",
+            "Uses DOM-order approximation rather than geometric viewport analysis.",
+        ],
+    },
+    "VO-1": {
+        "confidence": "low",
+        "heuristicBasis": "First-N tag density and interactive count (document order proxy).",
+    },
+    "AMC-1": {
+        "confidence": "low",
+        "heuristicBasis": "Autoplay tags, CSS animation hints, and JS motion regex signals.",
+    },
+    "EI-1": {
+        "confidence": "low",
+        "heuristicBasis": "Overlay/modal/sticky heuristics and JS interruption regex signals.",
+    },
 }
 
 
@@ -160,7 +222,6 @@ def issue_id_for_rule(rule_id: str) -> str:
 class Issue:
     rule_id: str
     title: str
-    severity: Severity
     base_penalty: int
     penalty: int
     description: str
@@ -175,6 +236,10 @@ class Issue:
         recommendations = [self.suggestion] if self.suggestion else []
         detector = detector_name_for_rule(self.rule_id, self.title)
         final_category = final_category_for_rule(self.rule_id)
+        interpretation = INTERPRETATION_BY_RULE_ID.get(
+            self.rule_id,
+            {"confidence": "medium", "heuristicBasis": "Heuristic cognitive signals."},
+        )
 
         return {
             "id": issue_id_for_rule(self.rule_id),
@@ -192,6 +257,7 @@ class Issue:
             },
             "metrics": metrics,
             "threshold": THRESHOLD_BY_RULE_ID.get(self.rule_id, {}),
+            "interpretation": interpretation,
             "evidence": detected_evidence_text(metrics, first_location),
             "explanation": self.description,
             "recommendations": recommendations,
@@ -215,6 +281,7 @@ class Issue:
         payload["target"] = issue_object["target"]
         payload["metrics"] = issue_object["metrics"]
         payload["threshold"] = issue_object["threshold"]
+        payload["interpretation"] = issue_object["interpretation"]
         payload["evidence_text"] = issue_object["evidence"]
         payload["explanation"] = issue_object["explanation"]
         payload["recommendations"] = issue_object["recommendations"]
