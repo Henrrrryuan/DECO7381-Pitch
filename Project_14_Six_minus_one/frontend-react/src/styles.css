@@ -4687,6 +4687,13 @@ body.accessibility-reading-mask-active .accessibility-menu {
   line-height: 1.45;
 }
 
+.issue-flat-issue-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
 .explanation-block h3,
 .suggestion-group h3 {
   margin: 0 0 8px;

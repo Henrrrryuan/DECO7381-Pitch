@@ -410,15 +410,6 @@ function detectorsWithIssuesCount(result) {
   ).length;
 }
 
-/** Detectors considered for the active patient profile (defaults to full rule set). */
-function detectionGaugeTotalSlots() {
-  const enabled = activePatientProfile().enabledDetectors;
-  if (Array.isArray(enabled) && enabled.length > 0) {
-    return enabled.length;
-  }
-  return TOTAL_POSSIBLE_DETECTION_POINTS;
-}
-
 function renderDetectionGauge(result) {
   const panel = document.getElementById("detectionGaugePanel");
   const fractionEl = document.getElementById("detectionGaugeFraction");
@@ -439,7 +430,7 @@ function renderDetectionGauge(result) {
   }
 
   panel.classList.remove("is-placeholder");
-  const total = detectionGaugeTotalSlots();
+  const total = TOTAL_POSSIBLE_DETECTION_POINTS;
   const detected = detectorsWithIssuesCount(result);
   const ratio = total > 0 ? Math.min(1, Math.max(0, detected / total)) : 0;
 
@@ -1803,28 +1794,13 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   runHighlightAfterIframeLayoutStable(() => highlightSelectedIssueInPreview());
 }
 
-function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
-  const issueId = issueDomId(dimensionName, issue.rule_id);
-  const isSelected = issueId === state.selectedIssueId;
-  const selectedClass = isSelected ? " is-selected is-active" : "";
+/** Standards + affected elements (formerly nested inside a second &lt;details&gt;). */
+function issueSummaryBodyMarkup(issue, dimensionName) {
   const { coga: cogaSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
   const cogaMarkup = cogaGuidanceMarkup(cogaSummary);
   const isoMarkup = standardsPillsMarkup(isoSummary, "Effectiveness, efficiency, satisfaction.");
 
   return `
-    <details
-      class="issue-highlight-button issue-summary-card${selectedClass}"
-      data-highlight-issue="${escapeHtml(issue.rule_id)}"
-      data-highlight-dimension="${escapeHtml(dimensionName)}"
-    >
-      <summary class="issue-summary-toggle">
-        <div class="issue-summary-topline">
-          <span class="issue-highlight-rule">Issue ${issueNumber}</span>
-          <span class="issue-summary-chevron" aria-hidden="true">▾</span>
-        </div>
-        <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
-      </summary>
-      <div class="issue-summary-body">
         <div class="issue-summary-row issue-summary-row-standards">
           <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA Guidance Objective</span>
           ${cogaMarkup}
@@ -1834,6 +1810,43 @@ function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
           ${isoMarkup}
         </div>
         ${issueElementListMarkup(issue, dimensionName)}
+  `;
+}
+
+/**
+ * One accordion per issue: expand once to see cognitive helper + standards + elements (no nested Issue card).
+ */
+function topIssueAccordionMarkup(issue, dimensionName, issueNumber, displayName, cognitiveDimension) {
+  const issueId = issueDomId(dimensionName, issue.rule_id);
+  const isSelected = issueId === state.selectedIssueId;
+  const selectedClass = isSelected ? " is-selected is-active" : "";
+  const titleText = issue.title || "Review this issue";
+  const bodyMarkup = issueSummaryBodyMarkup(issue, dimensionName);
+  const titleDiffersFromDetector = String(titleText).trim() !== String(displayName).trim();
+  const issueTitleRow = titleDiffersFromDetector
+    ? `<p class="issue-flat-issue-title"><strong>${escapeHtml(titleText)}</strong></p>`
+    : "";
+
+  return `
+    <details
+      class="explanation-block explanation-accordion issue-highlight-button issue-summary-card${selectedClass}"
+      data-explanation-dimension="${escapeHtml(displayName)}"
+      data-highlight-issue="${escapeHtml(issue.rule_id)}"
+      data-highlight-dimension="${escapeHtml(dimensionName)}"
+    >
+      <summary class="explanation-accordion-summary">
+        <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
+        <span class="explanation-accordion-meta">
+          <span class="explanation-accordion-issue-count">${issueNumber}</span>
+          <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
+        </span>
+      </summary>
+      <div class="explanation-accordion-content">
+        <p class="category-helper">${escapeHtml(cognitiveDimension)}</p>
+        ${issueTitleRow}
+        <div class="issue-summary-body">
+          ${bodyMarkup}
+        </div>
       </div>
     </details>
   `;
@@ -1849,43 +1862,25 @@ function renderExplanation(result) {
     .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
     .sort((left, right) => patientDetectorOrderIndex(left?.dimension) - patientDetectorOrderIndex(right?.dimension));
 
-  let globalIssueIndex = 0;
+  let issueSeq = 0;
   const blocks = orderedDimensions.flatMap((dimension) => {
     const filteredIssues = prioritizedIssuesForProfile(dimension);
-    const issueCount = filteredIssues.length;
-    if (issueCount === 0) {
+    if (!filteredIssues.length) {
       return [];
     }
 
     const displayName = displayDimensionName(dimension.dimension);
     const cognitiveDimension = cognitiveDimensionLabel(dimension.dimension);
-    const issues = `<div class="issue-highlight-list">${filteredIssues.map((issue, issueIndex) => (
-      issueSummaryCardMarkup(issue, dimension.dimension, globalIssueIndex + issueIndex + 1)
-    )).join("")}</div>`;
-    globalIssueIndex += issueCount;
 
-    return [
-      `
-      <details class="explanation-block explanation-accordion" data-explanation-dimension="${escapeHtml(displayName)}">
-        <summary class="explanation-accordion-summary">
-          <span class="explanation-accordion-title">${escapeHtml(displayName)}</span>
-          <span class="explanation-accordion-meta">
-            <span class="explanation-accordion-issue-count">${issueCount}</span>
-            <span class="explanation-accordion-chevron" aria-hidden="true">▾</span>
-          </span>
-        </summary>
-        <div class="explanation-accordion-content">
-          <p class="category-helper">${escapeHtml(cognitiveDimension)}</p>
-          ${issues}
-        </div>
-      </details>
-    `,
-    ];
+    return filteredIssues.map((issue) => {
+      issueSeq += 1;
+      return topIssueAccordionMarkup(issue, dimension.dimension, issueSeq, displayName, cognitiveDimension);
+    });
   });
 
   explanationContent.className = "pane-scroll rich-text";
   explanationContent.innerHTML = blocks.length
-    ? blocks.join("")
+    ? `<div class="issue-highlight-list">${blocks.join("")}</div>`
     : `<p class="category-helper">No top issues detected for this scan.</p>`;
   setActiveDimensionBar("");
 }
