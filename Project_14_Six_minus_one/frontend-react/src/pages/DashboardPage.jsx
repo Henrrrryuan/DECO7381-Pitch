@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
@@ -23,9 +24,7 @@ export function DashboardPage() {
     })();
     return () => {
       cancelled = true;
-      import("../legacy/dashboardApp.js").then((module) => {
-        module.notifyDashboardUnmount();
-      });
+      bumpDashboardLifecycle();
     };
   }, []);
 

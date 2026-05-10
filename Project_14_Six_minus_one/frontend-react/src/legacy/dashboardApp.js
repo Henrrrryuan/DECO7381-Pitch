@@ -8,6 +8,7 @@ import {
   formatReportTimestamp,
   loadDashboardSession,
 } from "../lib/common.js";
+import { bumpDashboardLifecycle, getDashboardLifecycleSnapshot } from "../lib/dashboardLifecycle.js";
 
 const state = {
   currentHtml: "",
@@ -1492,7 +1493,7 @@ function renderIssuePreviewPanel(dimensionName, ruleId) {
   state.activeHighlightIssueId = issueDomId(selected.dimension.dimension, selected.issue.rule_id);
   setWorkspaceMode("website");
   updateActiveHighlightButtons();
-  highlightSelectedIssueInPreview();
+  runHighlightAfterIframeLayoutStable(() => highlightSelectedIssueInPreview());
 }
 
 function issueSummaryCardMarkup(issue, dimensionName, issueNumber) {
@@ -1661,6 +1662,7 @@ function loadWebsitePreview() {
       frame.dataset.previewUrl = proxiedUrl;
       setWebsiteStatus("Loading proxied website preview...");
     }
+    scheduleIframePreviewDocumentBootstrap(frame);
     return;
   }
 
@@ -1672,6 +1674,7 @@ function loadWebsitePreview() {
       frame.dataset.previewGuardVersion = "3";
       setWebsiteStatus("Loaded uploaded HTML preview. Choose a detector to highlight related areas.");
     }
+    scheduleIframePreviewDocumentBootstrap(frame);
     return;
   }
 
@@ -1697,6 +1700,86 @@ function getPreviewDocument() {
   } catch (error) {
     return null;
   }
+}
+
+function runHighlightAfterIframeLayoutStable(callback) {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => callback());
+  });
+}
+
+function applyIframePreviewBootstrap(doc) {
+  if (!doc) {
+    return;
+  }
+
+  injectHighlightStyles(doc);
+  bindPreviewElementClick(doc);
+  updatePreviewIssueHeader();
+  if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
+    const selected = selectedIssueRecord();
+    if (selected) {
+      void highlightIssueElementInPreview(
+        selected.dimension.dimension,
+        selected.issue.rule_id,
+        state.selectedElementNumber,
+      );
+    }
+  } else if (state.rightPanelMode === "preview" && state.selectedIssueId) {
+    highlightSelectedIssueInPreview();
+  } else if (state.activeHighlightIssueId) {
+    const [dimensionName, ...ruleIdParts] = state.activeHighlightIssueId.split(":");
+    highlightIssue(dimensionName, ruleIdParts.join(":"), true);
+  } else if (state.selectedIssueId) {
+    const selected = findIssueById(state.selectedIssueId);
+    if (selected) {
+      highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
+    }
+  } else if (state.activeHighlightDimension) {
+    highlightDimension(state.activeHighlightDimension);
+  }
+}
+
+function scheduleIframePreviewDocumentBootstrap(frameParam) {
+  const frame = frameParam ?? document.getElementById("websitePreviewFrame");
+  if (!frame) {
+    return;
+  }
+
+  const pendingRaw = frame.dataset.cognilensPreviewBootstrapAf ?? "";
+  const pending = Number.parseInt(pendingRaw, 10);
+  if (!Number.isNaN(pending)) {
+    window.cancelAnimationFrame(pending);
+  }
+
+  let ticks = 0;
+  const maxTicks = 90;
+
+  const step = () => {
+    delete frame.dataset.cognilensPreviewBootstrapAf;
+    ticks += 1;
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document || null;
+      if (doc?.body && (doc.readyState === "complete" || doc.readyState === "interactive")) {
+        applyIframePreviewBootstrap(doc);
+        return;
+      }
+      if (ticks >= maxTicks) {
+        applyIframePreviewBootstrap(doc ?? null);
+        return;
+      }
+    } catch {
+      /* cross-origin transitions can throw until load settles */
+      if (ticks >= maxTicks) {
+        applyIframePreviewBootstrap(null);
+        return;
+      }
+    }
+
+    frame.dataset.cognilensPreviewBootstrapAf = String(window.requestAnimationFrame(step));
+  };
+
+  frame.dataset.cognilensPreviewBootstrapAf = String(window.requestAnimationFrame(step));
 }
 
 function previewDebugState(doc = getPreviewDocument()) {
@@ -2515,7 +2598,9 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
   state.activeGuidancePopoverKey = "";
   setWorkspaceMode("website");
   updateActiveHighlightButtons();
-  highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
+  runHighlightAfterIframeLayoutStable(() => {
+    void highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
+  });
 }
 
 function highlightDimension(dimensionName) {
@@ -2536,43 +2621,46 @@ function highlightDimension(dimensionName) {
   state.activeHighlightIssueId = "";
   const dimension = findDimension(state.currentResult, dimensionName);
   const config = HIGHLIGHT_CONFIG[dimensionName];
-  const frameDoc = getPreviewDocument();
-
   updateActiveHighlightButtons();
 
-  if (state.workspaceMode !== "website") {
+  const switchedWorkspace = state.workspaceMode !== "website";
+  if (switchedWorkspace) {
     setWorkspaceMode("website");
   }
 
-  if (!frameDoc || !config) {
-    setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
-    return;
-  }
+  runHighlightAfterIframeLayoutStable(() => {
+    const frameDoc = getPreviewDocument();
 
-  injectHighlightStyles(frameDoc);
-  clearWebsiteHighlights(frameDoc);
+    if (!frameDoc || !config) {
+      setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
+      return;
+    }
 
-  if (!dimension?.issues?.length) {
-    setWebsiteStatus(`${detectorName} has no triggered issue in this analysis.`);
-    return;
-  }
+    injectHighlightStyles(frameDoc);
+    clearWebsiteHighlights(frameDoc);
 
-  const candidateElements = [];
-  config.selectors.forEach((selector) => {
-    frameDoc.querySelectorAll(selector).forEach((element) => {
-      candidateElements.push(element);
+    if (!dimension?.issues?.length) {
+      setWebsiteStatus(`${detectorName} has no triggered issue in this analysis.`);
+      return;
+    }
+
+    const candidateElements = [];
+    config.selectors.forEach((selector) => {
+      frameDoc.querySelectorAll(selector).forEach((element) => {
+        candidateElements.push(element);
+      });
     });
+    const highlighted = applyHighlights(candidateElements, config.color, detectorName);
+
+    const firstElement = highlighted.values().next().value;
+    firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+
+    if (highlighted.size) {
+      setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${detectorName}.`);
+    } else {
+      setWebsiteStatus(`No directly highlightable elements were found for ${detectorName}; this issue may describe a missing or page-level pattern.`, true);
+    }
   });
-  const highlighted = applyHighlights(candidateElements, config.color, detectorName);
-
-  const firstElement = highlighted.values().next().value;
-  firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-
-  if (highlighted.size) {
-    setWebsiteStatus(`${highlighted.size} related area${highlighted.size === 1 ? "" : "s"} highlighted for ${detectorName}.`);
-  } else {
-    setWebsiteStatus(`No directly highlightable elements were found for ${detectorName}; this issue may describe a missing or page-level pattern.`, true);
-  }
 }
 
 function highlightIssue(dimensionName, ruleId, force = false) {
@@ -2590,35 +2678,38 @@ function highlightIssue(dimensionName, ruleId, force = false) {
   state.activeHighlightIssueId = issueId;
   updateActiveHighlightButtons();
 
-  if (state.workspaceMode !== "website") {
+  const switchedWorkspace = state.workspaceMode !== "website";
+  if (switchedWorkspace) {
     setWorkspaceMode("website");
   }
 
-  const frameDoc = getPreviewDocument();
-  const dimension = findDimension(state.currentResult, dimensionName);
-  const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
-  const config = HIGHLIGHT_CONFIG[dimensionName];
-  const issueLabel = issue?.title || displayIssueCategoryNameForIssue(issue, dimensionName);
-  if (!frameDoc || !issue || !config) {
-    setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
-    return;
-  }
+  runHighlightAfterIframeLayoutStable(() => {
+    const frameDoc = getPreviewDocument();
+    const dimension = findDimension(state.currentResult, dimensionName);
+    const issue = dimension?.issues?.find((item) => item.rule_id === ruleId);
+    const config = HIGHLIGHT_CONFIG[dimensionName];
+    const issueLabel = issue?.title || displayIssueCategoryNameForIssue(issue, dimensionName);
+    if (!frameDoc || !issue || !config) {
+      setWebsiteStatus("The website preview is still loading. Try again in a moment.", true);
+      return;
+    }
 
-  injectHighlightStyles(frameDoc);
-  clearWebsiteHighlights(frameDoc);
+    injectHighlightStyles(frameDoc);
+    clearWebsiteHighlights(frameDoc);
 
-  const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
+    const { elements, exact } = issueHighlightElements(frameDoc, issue, dimensionName);
 
-  const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
-  const firstElement = highlighted.values().next().value;
-  firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+    const highlighted = applyHighlights(elements, config.color, (_element, index) => `Element ${index}`);
+    const firstElement = highlighted.values().next().value;
+    firstElement?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
 
-  if (highlighted.size) {
-    const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
-    setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.${fallbackNotice}`);
-  } else {
-    setWebsiteStatus("No exact page element is linked to this issue yet.", true);
-  }
+    if (highlighted.size) {
+      const fallbackNotice = exact ? "" : " No exact page element is linked to this issue yet; related areas are highlighted instead.";
+      setWebsiteStatus(`${highlighted.size} area${highlighted.size === 1 ? "" : "s"} highlighted for ${issueLabel}.${fallbackNotice}`);
+    } else {
+      setWebsiteStatus("No exact page element is linked to this issue yet.", true);
+    }
+  });
 }
 
 function renderPrintSummary(result) {
@@ -3284,31 +3375,7 @@ function bindEvents() {
         setWebsiteStatus("Preview loaded, but browser security blocked direct highlighting.", true);
         return;
       }
-      injectHighlightStyles(doc);
-      bindPreviewElementClick(doc);
-      updatePreviewIssueHeader();
-      if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
-        const selected = selectedIssueRecord();
-        if (selected) {
-          highlightIssueElementInPreview(
-            selected.dimension.dimension,
-            selected.issue.rule_id,
-            state.selectedElementNumber,
-          );
-        }
-      } else if (state.rightPanelMode === "preview" && state.selectedIssueId) {
-        highlightSelectedIssueInPreview();
-      } else if (state.activeHighlightIssueId) {
-        const [dimensionName, ruleId] = state.activeHighlightIssueId.split(":");
-        highlightIssue(dimensionName, ruleId, true);
-      } else if (state.selectedIssueId) {
-        const selected = findIssueById(state.selectedIssueId);
-        if (selected) {
-          highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
-        }
-      } else if (state.activeHighlightDimension) {
-        highlightDimension(state.activeHighlightDimension);
-      }
+      applyIframePreviewBootstrap(doc);
     });
   }
 }
@@ -3412,7 +3479,7 @@ async function init(lifecycleSnapshot) {
   bindEvents();
 
   const session = await loadDashboardSessionWithHistoryFallback();
-  if (lifecycleSnapshot !== dashboardLifecycle) {
+  if (lifecycleSnapshot !== getDashboardLifecycleSnapshot()) {
     return;
   }
   const currentSession = session?.current;
@@ -3455,19 +3522,16 @@ async function init(lifecycleSnapshot) {
   }
 }
 
-/** Bumped when the React dashboard route unmounts so in-flight init() does not paint a torn-down DOM. */
-let dashboardLifecycle = 0;
-
 export function notifyDashboardUnmount() {
-  dashboardLifecycle += 1;
+  bumpDashboardLifecycle();
 }
 
 export async function initDashboard() {
-  const snapshot = dashboardLifecycle;
+  const snapshot = getDashboardLifecycleSnapshot();
   try {
     await init(snapshot);
   } catch (error) {
-    if (snapshot !== dashboardLifecycle) {
+    if (snapshot !== getDashboardLifecycleSnapshot()) {
       return;
     }
     document.body.innerHTML = `<pre style="padding:24px;">${escapeHtml(String(error))}</pre>`;
