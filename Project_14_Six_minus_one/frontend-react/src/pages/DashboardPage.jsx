@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
+import { PriorityLensPanel } from "../components/dashboard/PriorityLensPanel.jsx";
 import { DetectionGauge } from "../components/DetectionGauge.jsx";
 import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
@@ -104,31 +105,7 @@ export function DashboardPage() {
           </button>
           <aside id="toolSidebar" className="tool-sidebar">
             <div className="tool-sidebar-inner">
-              <section className="patient-profile-panel" aria-label="Priority Lens">
-                <div className="patient-profile-heading">
-                  <h2 className="patient-profile-title">Priority Lens</h2>
-                </div>
-                <div className="patient-profile-tabs" role="group" aria-label="Choose priority lens">
-                  <button type="button" className="patient-profile-tab is-active" data-patient-profile="Alison" aria-pressed="true">
-                    Mild Cognitive Impairment
-                  </button>
-                  <button type="button" className="patient-profile-tab" data-patient-profile="Amy" aria-pressed="false">
-                    Autism-related Needs
-                  </button>
-                  <button type="button" className="patient-profile-tab" data-patient-profile="Tal" aria-pressed="false">
-                    Dyslexia &amp; Motor Support
-                  </button>
-                  <button type="button" className="patient-profile-tab" data-patient-profile="Yuki" aria-pressed="false">
-                    ADHD-friendly Focus
-                  </button>
-                </div>
-                <p id="patientProfileSummary" className="patient-profile-summary">
-                  <strong>Mild Cognitive Impairment</strong>
-                  <span>
-                    Needs familiar controls, clear navigation, low clutter, and forgiving task flow.
-                  </span>
-                </p>
-              </section>
+              <PriorityLensPanel />
 
               <DetectionGauge detected={gauge.detected} total={gauge.total} />
 

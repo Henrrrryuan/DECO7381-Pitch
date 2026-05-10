@@ -74,6 +74,7 @@ import {
   setWorkspaceMode as setWorkspaceModeTransition,
   toggleSidebarCollapsed,
 } from "../dashboard/state/dashboardTransitions.js";
+import { PATIENT_PROFILES } from "../dashboard/shared/patientProfiles.js";
 
 // State container extracted to dashboard/state (behavior preserved).
 
@@ -136,114 +137,6 @@ function dashboardLifecycleLog(stage, incomingPayload, currentPayload, incomingS
   });
 }
 
-const PATIENT_PROFILES = {
-  Alison: {
-    label: "Mild Cognitive Impairment",
-    condition: "Mild Cognitive Impairment",
-    summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
-    enabledDetectors: [
-      "Weak Information Prominence",
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Visual Overload",
-      "Long Content Without Chunking",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-    detectorOrder: [
-      "Weak Information Prominence",
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Visual Overload",
-      "Long Content Without Chunking",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-  },
-  Amy: {
-    label: "Autism-related Needs",
-    condition: "Autism-related Needs",
-    summary: "Needs literal language, consistent structure, low clutter, and reduced sensory distraction.",
-    enabledDetectors: [
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Weak Information Prominence",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-      "Long Content Without Chunking",
-      "Language Complexity",
-    ],
-    detectorOrder: [
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Weak Information Prominence",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-      "Long Content Without Chunking",
-      "Language Complexity",
-    ],
-  },
-  Tal: {
-    label: "Dyslexia & Motor Support",
-    condition: "Dyslexia & Motor Support",
-    summary: "Needs readable structure, stronger headings, clearer recovery, and easier interaction targets.",
-    enabledDetectors: [
-      "Dense Text Detection",
-      "Sentence Complexity",
-      "Language Complexity",
-      "Long Content Without Chunking",
-      "Poor Heading Structure",
-      "Weak Information Prominence",
-      "Navigation Complexity",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-    detectorOrder: [
-      "Dense Text Detection",
-      "Sentence Complexity",
-      "Language Complexity",
-      "Long Content Without Chunking",
-      "Poor Heading Structure",
-      "Weak Information Prominence",
-      "Navigation Complexity",
-      "Visual Overload",
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-    ],
-  },
-  Yuki: {
-    label: "ADHD-friendly Focus",
-    condition: "ADHD-friendly Focus",
-    summary: "Needs reduced distraction, clear chunking, stronger focus guidance, and calmer task flow.",
-    enabledDetectors: [
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-      "Visual Overload",
-      "Weak Information Prominence",
-      "Long Content Without Chunking",
-      "Dense Text Detection",
-      "Poor Heading Structure",
-      "Navigation Complexity",
-      "Sentence Complexity",
-      "Language Complexity",
-    ],
-    detectorOrder: [
-      "Auto-Moving Content",
-      "Excessive Interruptions",
-      "Visual Overload",
-      "Weak Information Prominence",
-      "Long Content Without Chunking",
-      "Poor Heading Structure",
-      "Dense Text Detection",
-      "Navigation Complexity",
-      "Sentence Complexity",
-      "Language Complexity",
-    ],
-  },
-};
 const ISSUE_CATEGORY_CONFIG = {
   content: { displayName: "Content Issue", cognitiveDimension: "Reading load and comprehension" },
   structure: { displayName: "Structure Issue", cognitiveDimension: "Orientation, hierarchy, and task discovery" },
