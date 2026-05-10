@@ -368,7 +368,7 @@ export function HomePage() {
                 >
                   <span className="workflow-option-title">Website URL</span>
                   <span className="workflow-option-copy">
-                    Quick scans and dev iteration—machine or LAN URL only (127.0.0.1 recommended).
+                    Analyze a local development webpage by entering its URL.
                   </span>
                 </button>
                 <button
