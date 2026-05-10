@@ -355,14 +355,7 @@ function renderDashboardSummary(result) {
   if (!summaryNode) {
     return;
   }
-  const totalIssues = (result.dimensions || [])
-    .filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension))
-    .reduce((count, dimension) => {
-      return count + (dimension.issues || []).length;
-    }, 0);
-  summaryNode.innerHTML = `
-    <div class="summary-line summary-issues">Total number of issues: ${totalIssues} issues detected</div>
-  `;
+  summaryNode.innerHTML = "";
 }
 
 /**

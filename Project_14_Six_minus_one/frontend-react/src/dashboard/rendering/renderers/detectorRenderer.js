@@ -31,7 +31,7 @@ function renderExplanationMarkup({
     .filter((item) => item.filteredIssues.length > 0);
 
   if (!dimensionsWithIssues.length) {
-    return `<p class="explanation-no-issue-cards">No triggered issues for the current Priority Lens—there are no Top Issue Cards to show.</p>`;
+    return `<p class="explanation-no-issue-cards">No triggered issues for the current Priority Lens—there are no detected issues to show.</p>`;
   }
 
   let globalIssueIndex = 0;

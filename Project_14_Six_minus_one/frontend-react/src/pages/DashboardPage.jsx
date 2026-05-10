@@ -111,7 +111,7 @@ export function DashboardPage() {
 
               <section className="sidebar-section sidebar-explanation-section">
                 <div className="pane-header">
-                  <h2>Top Issue Cards</h2>
+                  <h2>Detected Issues</h2>
                 </div>
                 <div className="sidebar-explanation-content">
                   <div id="dashboardSummaryText" className="overall-summary" />
