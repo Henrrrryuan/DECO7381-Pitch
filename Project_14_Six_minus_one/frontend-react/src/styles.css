@@ -4473,6 +4473,13 @@ body.accessibility-reading-mask-active .accessibility-menu {
   line-height: 1.25;
 }
 
+.print-profile-summary {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .print-profile-risk-list {
   display: grid;
   gap: 9px;
