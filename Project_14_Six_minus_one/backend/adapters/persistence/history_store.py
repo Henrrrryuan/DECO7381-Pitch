@@ -237,7 +237,7 @@ def list_history_runs(
             SELECT
                 id,
                 created_at,
-                source_name,
+                source_name
             FROM analysis_runs
             {where_clause}
             ORDER BY rowid DESC
@@ -269,7 +269,7 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
                 id,
                 created_at,
                 source_name,
-                html_content,
+                html_content
             FROM analysis_runs
             WHERE id = ?
             """,
