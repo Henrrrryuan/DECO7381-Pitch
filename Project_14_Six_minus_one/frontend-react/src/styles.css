@@ -15,6 +15,30 @@
   --consistency: #8d28df;
 }
 
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/opendyslexic/opendyslexic-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/opendyslexic/opendyslexic-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/opendyslexic/opendyslexic-latin-400-italic.woff2") format("woff2");
+}
+
 * {
   box-sizing: border-box;
 }
@@ -4160,7 +4184,7 @@ body.accessibility-saturation-high #root {
 
 body.accessibility-readable-fonts-enabled,
 body.accessibility-readable-fonts-enabled * {
-  font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
+  font-family: "OpenDyslexic", Arial, Verdana, Tahoma, sans-serif !important;
   letter-spacing: 0.01em !important;
 }
 
@@ -4168,7 +4192,7 @@ body.accessibility-readable-fonts-enabled input,
 body.accessibility-readable-fonts-enabled textarea,
 body.accessibility-readable-fonts-enabled select,
 body.accessibility-readable-fonts-enabled button {
-  font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Bradley Hand ITC", cursive !important;
+  font-family: "OpenDyslexic", Arial, Verdana, Tahoma, sans-serif !important;
 }
 
 body.accessibility-text-reader-enabled p,

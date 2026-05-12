@@ -84,6 +84,7 @@ export function DocsPage() {
               type="button"
               hidden={!showAnalysisNav}
               data-analysis-nav
+              data-accessibility-tooltip="Return to the analysis dashboard you opened before the guide."
               onClick={() => {
                 if (returnUrl) {
                   window.location.href = returnUrl;

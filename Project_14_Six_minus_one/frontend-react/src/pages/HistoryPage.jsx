@@ -125,6 +125,7 @@ function Pagination({
           className="history-page-btn"
           type="button"
           disabled={safePage <= 1}
+          data-accessibility-tooltip={`Go to the previous page of ${itemLabel}.`}
           onClick={() => onPageChange(Math.max(1, safePage - 1))}
         >
           Previous
@@ -136,6 +137,7 @@ function Pagination({
           className="history-page-btn"
           type="button"
           disabled={safePage >= totalPages}
+          data-accessibility-tooltip={`Go to the next page of ${itemLabel}.`}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
         >
           Next
@@ -287,7 +289,12 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
               Relative attention by region (descriptive). Not a usability or accessibility score.
             </p>
           </div>
-          <button className="history-modal-close-btn" type="button" onClick={onClose}>
+          <button
+            className="history-modal-close-btn"
+            type="button"
+            data-accessibility-tooltip="Close the heatmap dialog and return to history."
+            onClick={onClose}
+          >
             Close
           </button>
         </div>
@@ -341,6 +348,7 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
       <button
         className="history-heatmap-btn"
         type="button"
+        data-accessibility-tooltip="Open the gaze heatmap linked to this analysis report."
         onClick={onViewHeatmap}
         disabled={heatmapBusy}
       >
@@ -382,6 +390,7 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
             type="button"
             title="Open printable report view"
             aria-label="Open printable report view"
+            data-accessibility-tooltip="Open this report in a printable dashboard view."
             onClick={() => onPrintReport(item.run_id)}
           >
             <span aria-hidden="true">⬇</span>
@@ -390,6 +399,7 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
             className="history-open-btn"
             type="button"
             data-run-id={item.run_id}
+            data-accessibility-tooltip="Open this saved analysis report in the dashboard."
             onClick={() => onOpenReport(item.run_id)}
           >
             View
@@ -670,7 +680,13 @@ export function HistoryPage() {
                 <Link className="active-link" to={spaHistoryHref}>
                   History
                 </Link>
-                <button id="backToAnalysisButtonHistory" className="nav-cta nav-cta-return" type="button" hidden>
+                <button
+                  id="backToAnalysisButtonHistory"
+                  className="nav-cta nav-cta-return"
+                  type="button"
+                  data-accessibility-tooltip="Return to the analysis dashboard you opened before history."
+                  hidden
+                >
                   <span className="nav-cta-icon" aria-hidden="true">
                     ←
                   </span>
@@ -704,10 +720,17 @@ export function HistoryPage() {
               type="search"
               placeholder="Enter a file name or report ID"
               autoComplete="off"
+              data-accessibility-tooltip="Search saved reports by file name or report ID."
               value={queryInput}
               onChange={(event) => setQueryInput(event.target.value)}
             />
-            <button id="historySearchButton" className="history-search-button" type="submit" aria-label="Search reports">
+            <button
+              id="historySearchButton"
+              className="history-search-button"
+              type="submit"
+              aria-label="Search reports"
+              data-accessibility-tooltip="Run the history search using the text in the search field."
+            >
               <span aria-hidden="true">🔍</span>
             </button>
           </form>

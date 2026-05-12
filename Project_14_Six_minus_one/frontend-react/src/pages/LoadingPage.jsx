@@ -332,7 +332,12 @@ export function LoadingPage() {
           </p>
           <p id="analysisLoadingError" className="analysis-loading-error" hidden />
           <div className="analysis-loading-actions">
-            <button id="analysisCancelButton" className="analysis-loading-cancel-button" type="button">
+            <button
+              id="analysisCancelButton"
+              className="analysis-loading-cancel-button"
+              type="button"
+              data-accessibility-tooltip="Cancel the current analysis and return to the start page."
+            >
               Cancel
             </button>
           </div>

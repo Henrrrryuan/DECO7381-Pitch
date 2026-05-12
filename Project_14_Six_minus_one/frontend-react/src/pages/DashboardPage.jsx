@@ -97,6 +97,7 @@ export function DashboardPage() {
             aria-controls="toolSidebar"
             aria-expanded="true"
             aria-label="Collapse sidebar"
+            data-accessibility-tooltip="Hide or show the left sidebar with target audience and issue summary controls."
           >
             <span className="sidebar-collapse-toggle-icon" aria-hidden="true">
               ‹
@@ -144,11 +145,18 @@ export function DashboardPage() {
                       id="backToHistoryButton"
                       className="context-print-button back-to-history-button"
                       type="button"
+                      data-accessibility-tooltip="Return to the history page without starting a new analysis."
                       hidden
                     >
                       <span aria-hidden="true">Back to History</span>
                     </button>
-                    <button id="printReportBtn" className="context-print-button" type="button" title="Print current report">
+                    <button
+                      id="printReportBtn"
+                      className="context-print-button"
+                      type="button"
+                      title="Print current report"
+                      data-accessibility-tooltip="Open the browser print dialog for the current report."
+                    >
                       <span aria-hidden="true">Print</span>
                     </button>
                   </div>

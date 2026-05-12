@@ -22,6 +22,7 @@ function PriorityLensPanelInner() {
               type="button"
               className={`patient-profile-tab${isAlison ? " is-active" : ""}`}
               data-patient-profile={key}
+              data-accessibility-tooltip={`Show issues most relevant to ${profile.condition}. ${profile.summary}`}
               aria-pressed={isAlison ? "true" : "false"}
             >
               {profile.label}

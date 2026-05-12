@@ -92,6 +92,7 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
       data-issue-element="${escapeHtml(issue.rule_id)}"
       data-issue-dimension="${escapeHtml(dimensionName)}"
       data-element-index="${elementNumber}"
+      data-accessibility-tooltip="${escapeHtml(`Show Element ${elementNumber} in the website preview for ${issue.title || "this issue"}.`)}"
       aria-pressed="${isActive ? "true" : "false"}"
     >
       <strong>Element ${elementNumber}</strong>
@@ -111,6 +112,7 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
       data-issue-element="${escapeHtml(issue.rule_id)}"
       data-issue-dimension="${escapeHtml(dimensionName)}"
       data-element-index="${elementNumber}"
+      data-accessibility-tooltip="${escapeHtml(`Show Element ${elementNumber} in the website preview for ${issue.title || "this issue"}.`)}"
       aria-pressed="${isActive ? "true" : "false"}"
     >
       <strong>Element ${elementNumber}</strong>
@@ -130,6 +132,7 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
       data-issue-element="${escapeHtml(issue.rule_id)}"
       data-issue-dimension="${escapeHtml(dimensionName)}"
       data-element-index="${elementNumber}"
+      data-accessibility-tooltip="${escapeHtml(`Show Element ${elementNumber} in the website preview for ${issue.title || "this issue"}.`)}"
       aria-pressed="${isActive ? "true" : "false"}"
     >
       ${ncGroupedLayout ? "" : `<strong>Element ${elementNumber}</strong>`}
@@ -394,7 +397,10 @@ function issueSummaryCardMarkup(ctx, issueContext) {
       data-highlight-issue="${escapeHtml(issue.rule_id)}"
       data-highlight-dimension="${escapeHtml(dimensionName)}"
     >
-      <summary class="issue-summary-toggle">
+      <summary
+        class="issue-summary-toggle"
+        data-accessibility-tooltip="${escapeHtml(`Open guidance and affected elements for ${issue.title || "this issue"}.`)}"
+      >
         <div class="issue-summary-topline">
           <span class="issue-highlight-rule">Issue ${issueNumber}</span>
           <span class="issue-summary-chevron" aria-hidden="true">▾</span>
