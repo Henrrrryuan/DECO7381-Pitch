@@ -467,7 +467,9 @@ export function HistoryPage() {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isLandingHistory = searchParams.get("source") === "landing";
+  // Landing/start history is pre-analysis, so it must not expose analysis-only navigation.
+  const historySource = searchParams.get("source");
+  const isLandingHistory = historySource === "landing" || historySource === "start";
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [reportPage, setReportPage] = useState(1);
