@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 from bs4 import BeautifulSoup, Tag
 
-from ..schemas import AnalysisResult
+from ..schemas import AnalysisResult, Issue
 
 def _coerce_sc_count_metric(raw: Any) -> int | None:
     """Normalize SC-1 numeric metrics for JSON (ints only; bool and non-finite floats rejected)."""
@@ -88,6 +88,35 @@ FOCAL_POINT_TAGS = INTERACTION_TAGS | MEDIA_TAGS | {"h1", "h2", "h3", "nav", "he
 SUMMARY_SELECTOR_PATTERN = re.compile(r"^[a-z][a-z0-9-]*(?:#[A-Za-z0-9_-]+)?(?:\.[A-Za-z0-9_-]+)*$", re.I)
 
 
+def _location_is_intentional_structural_finding(location: Any) -> bool:
+    """Document-level or other rows that deliberately omit normal DOM highlight targets."""
+    if not isinstance(location, dict):
+        return False
+    if location.get("documentStructuralFinding") is True:
+        return True
+    if location.get("highlightable") is False and str(location.get("tag") or "").lower() == "document":
+        return True
+    return False
+
+
+def _issue_can_survive_without_locations(issue: Issue) -> bool:
+    """True when an issue may remain in the report with zero post-sanitize locations."""
+    evidence = issue.evidence if isinstance(issue.evidence, dict) else {}
+    return evidence.get("documentStructuralFinding") is True
+
+
+def _issue_should_remain_after_sanitize(issue: Issue) -> bool:
+    locations = issue.locations if isinstance(issue.locations, list) else []
+    if locations:
+        return True
+    return _issue_can_survive_without_locations(issue)
+
+
+def _drop_post_sanitize_ghost_issues(issues: list[Issue]) -> list[Issue]:
+    """Remove issues whose locations were fully stripped by sanitize (empty issue cards)."""
+    return [issue for issue in issues if _issue_should_remain_after_sanitize(issue)]
+
+
 def sanitize_analysis_locations(analysis: AnalysisResult, html: str) -> AnalysisResult:
     soup = BeautifulSoup(html or "", "html.parser")
     for dimension in analysis.dimensions:
@@ -114,6 +143,7 @@ def sanitize_analysis_locations(analysis: AnalysisResult, html: str) -> Analysis
                 _amc_lineage_log("sanitize.output", issue.locations)
             if _ei_audit_enabled() and issue.rule_id == "EI-1":
                 _ei_lineage_log("sanitize.output", issue.locations)
+        dimension.issues = _drop_post_sanitize_ghost_issues(dimension.issues)
     return analysis
 
 
@@ -254,9 +284,33 @@ def _ei_lineage_log(stage: str, locations: list[dict[str, Any]] | None) -> None:
     })
 
 
+def _phs_location_dedupe_identity(location: dict[str, Any]) -> str:
+    """Disambiguate PHS rows when post-resolve stable_selector collides across distinct headings."""
+    if _phs_structural_pass_through(location):
+        return ""
+    text = normalize_text(_phs_first_nonempty_text_field(location)).lower()
+    if text:
+        return text
+    incoming_selector = str(location.get("selector") or "").strip()
+    if incoming_selector:
+        return incoming_selector
+    attrs = location.get("attrs")
+    if isinstance(attrs, dict) and attrs.get("id"):
+        return f"id:{attrs['id']}"
+    tag_name = str(location.get("tag") or "").lower()
+    heading_level = location.get("headingLevel")
+    if tag_name and heading_level is not None:
+        return f"{tag_name}:{heading_level}"
+    return ""
+
+
 def _location_dedupe_key(rule_id: str, selector: str, location: dict[str, Any]) -> Any:
     if rule_id == "PHS-1":
-        return (selector, str(location.get("violationType") or ""))
+        return (
+            selector,
+            str(location.get("violationType") or ""),
+            _phs_location_dedupe_identity(location),
+        )
     return selector
 
 
@@ -429,6 +483,68 @@ def _find_candidate_tags_phs(soup: BeautifulSoup, location: dict[str, Any]) -> l
     return dedupe_tags(candidates)
 
 
+def _phs_extended_heading_selector_path(tag: Tag) -> str:
+    """Ancestor chain for repeated section > header > h1 blocks (unique per section id/nth)."""
+    parts: list[str] = []
+    current: Tag | None = tag
+    while isinstance(current, Tag) and (current.name or "").lower() not in {"[document]", "html", "body"}:
+        name = (current.name or "").lower()
+        if not name or name in BAD_TARGET_TAGS:
+            break
+        element_id = current.get("id")
+        if element_id:
+            parts.append(f"{name}#{css_identifier_escape(str(element_id))}")
+            break
+        siblings: list[Tag] = []
+        if isinstance(current.parent, Tag):
+            siblings = [
+                sibling
+                for sibling in current.parent.find_all(name, recursive=False)
+                if isinstance(sibling, Tag)
+            ]
+        index = 1
+        for i, sibling in enumerate(siblings):
+            if sibling is current:
+                index = i + 1
+                break
+        parts.append(f"{name}:nth-of-type({index})")
+        current = current.parent if isinstance(current.parent, Tag) else None
+        if len(parts) >= 10:
+            break
+    return " > ".join(reversed(parts))
+
+
+def _phs_grounding_selector(soup: BeautifulSoup, tag: Tag) -> str:
+    """Unique highlight selector for a resolved PHS heading (never re-emit ambiguous stable_selector)."""
+    if not isinstance(tag, Tag):
+        return ""
+    tag_name = (tag.name or "").lower()
+    if tag_name not in PHS_HEADING_TAG_NAMES:
+        return stable_selector(tag)
+
+    cognilens_id = tag.get("data-cognilens-id")
+    if cognilens_id:
+        cognilens_sel = f'[data-cognilens-id="{css_attr_escape(str(cognilens_id))}"]'
+        if len(select_safely(soup, cognilens_sel)) == 1:
+            return cognilens_sel
+
+    element_id = tag.get("id")
+    if element_id:
+        id_sel = f"#{css_identifier_escape(str(element_id))}"
+        if len(select_safely(soup, id_sel)) == 1:
+            return id_sel
+
+    extended = _phs_extended_heading_selector_path(tag)
+    if extended and len(select_safely(soup, extended)) == 1:
+        return extended
+
+    stable = stable_selector(tag)
+    if stable and len(select_safely(soup, stable)) == 1:
+        return stable
+
+    return extended or stable
+
+
 def sanitize_issue_locations(
     soup: BeautifulSoup,
     locations: list[dict[str, Any]],
@@ -460,7 +576,7 @@ def sanitize_issue_locations(
         if rule_id == "PHS-1" and not _phs_structural_pass_through(location):
             locked_tag = _phs_try_lock_unique_selector_heading(soup, location, dimension_name, rule_id)
             if locked_tag is not None:
-                selector = stable_selector(locked_tag)
+                selector = _phs_grounding_selector(soup, locked_tag)
                 if selector:
                     dedupe_key = _location_dedupe_key(rule_id, selector, location)
                     if dedupe_key in used_keys:
@@ -599,7 +715,10 @@ def sanitize_issue_locations(
             continue
         if rule_id == "DT-1" and (candidate.name or "").lower() not in DT_TEXT_BLOCK_TAG_NAMES:
             continue
-        selector = stable_selector(candidate)
+        if rule_id == "PHS-1" and (candidate.name or "").lower() in PHS_HEADING_TAG_NAMES:
+            selector = _phs_grounding_selector(soup, candidate)
+        else:
+            selector = stable_selector(candidate)
         if not selector:
             if rule_id == "LC-1" and _lc1_forensic():
                 print(

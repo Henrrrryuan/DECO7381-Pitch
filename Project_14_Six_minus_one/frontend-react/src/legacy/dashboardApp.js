@@ -3392,9 +3392,24 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
   const elements = exactLocationElements.length
     ? exactLocationElements
     : issueHighlightElements(frameDoc, issue, dimensionName).elements;
-  const target = exactLocationElements.length
-    ? sortHighlightCandidates(elements)[0]
-    : sortHighlightCandidates(elements)[elementNumber - 1];
+  const sortedExact = sortHighlightCandidates(exactLocationElements);
+  let target = null;
+  if (sortedExact.length === 1) {
+    target = sortedExact[0];
+  } else if (sortedExact.length > 1) {
+    const targetText = String(location?.text || location?.preview || location?.label || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+    const narrowed = targetText
+      ? sortedExact.filter((element) => (
+        String(element.textContent || "").replace(/\s+/g, " ").trim().toLowerCase() === targetText
+      ))
+      : [];
+    target = narrowed[0] || sortedExact[elementNumber - 1] || sortedExact[0];
+  } else {
+    target = sortHighlightCandidates(elements)[elementNumber - 1];
+  }
   debugHighlight("click issue element", {
     dimensionName,
     ruleId,
@@ -3419,8 +3434,22 @@ async function highlightIssueElementInPreview(dimensionName, ruleId, elementNumb
       setWebsiteStatus(`Element ${elementNumber} is inside hidden content. Opening its section...`);
       await waitForPreviewUpdate();
       const retry = location ? findElementsForLocation(frameDoc, location, ruleId) : issueHighlightElements(frameDoc, issue, dimensionName).elements;
+      const retrySorted = sortHighlightCandidates(retry);
+      let retryTarget = retrySorted[elementNumber - 1] || retrySorted[0] || finalTarget;
+      if (retrySorted.length > 1 && location) {
+        const retryText = String(location.text || location.preview || location.label || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+        const retryNarrowed = retryText
+          ? retrySorted.filter((element) => (
+            String(element.textContent || "").replace(/\s+/g, " ").trim().toLowerCase() === retryText
+          ))
+          : [];
+        retryTarget = retryNarrowed[0] || retryTarget;
+      }
       finalTarget = moreSpecificHighlightTarget(
-        sortHighlightCandidates(retry)[exactLocationElements.length ? 0 : elementNumber - 1] || finalTarget,
+        retryTarget,
         location,
         frameDoc,
         ruleId,

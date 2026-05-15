@@ -34,6 +34,31 @@ NON_INTERRUPTIVE_HINTS = (
     "fab",
     "chip",
 )
+MODAL_TRIGGER_ATTR_HINTS = (
+    "modal-trigger",
+    "popup-trigger",
+    "open-modal",
+    "launch-modal",
+    "show-modal",
+    "ref-modal-trigger",
+    "open-popup",
+    "launch-popup",
+    "show-popup",
+    "modal_trigger",
+    "popup_trigger",
+    "trigger-modal",
+    "trigger-popup",
+)
+MODAL_TRIGGER_INTENT_PHRASES = (
+    "view details",
+    "learn more",
+    "show dialog",
+    "open modal",
+    "show modal",
+    "open popup",
+    "show popup",
+)
+MODAL_TRIGGER_SHORT_INTENTS = ("open", "show")
 DISMISS_LABEL_HINTS = (
     "close",
     "dismiss",
@@ -492,12 +517,78 @@ def has_interruption_candidate_ancestor(tag: Tag, style_hints: dict[str, set[str
     return False
 
 
+def _is_modal_launcher_tag(tag: Tag) -> bool:
+    name = (tag.name or "").lower()
+    role = (tag.get("role") or "").lower()
+    if role in {"button", "link"}:
+        return True
+    if name in {"a", "button"}:
+        return True
+    if name == "input" and (tag.get("type") or "text").lower() in {"button", "submit"}:
+        return True
+    return False
+
+
+def _looks_like_modal_trigger(tag: Tag) -> bool:
+    """Interactive controls that open a modal/popup, not the overlay surface itself."""
+    if not isinstance(tag, Tag):
+        return False
+
+    name = (tag.name or "").lower()
+    role = (tag.get("role") or "").lower()
+    if name == "dialog" or role in {"dialog", "alertdialog"}:
+        return False
+    if tag.get("aria-modal", "").lower() == "true":
+        return False
+    if not _is_modal_launcher_tag(tag):
+        return False
+
+    attrs_text = interruption_context_text(tag)
+    if any(hint in attrs_text for hint in MODAL_TRIGGER_ATTR_HINTS):
+        return True
+
+    for token in re.findall(r"[a-z0-9]+(?:[-_][a-z0-9]+)*", attrs_text):
+        if "trigger" in token and any(keyword in token for keyword in ("modal", "popup", "dialog", "overlay")):
+            return True
+        if token.startswith(("open-", "show-", "launch-")) and any(
+            keyword in token for keyword in ("modal", "popup", "dialog")
+        ):
+            return True
+
+    label_text = normalize_text(
+        " ".join(
+            part
+            for part in (
+                tag.get_text(" ", strip=True),
+                tag.get("aria-label", ""),
+                tag.get("title", ""),
+                tag.get("value", ""),
+            )
+            if part
+        )
+    ).lower()
+
+    if any(phrase in label_text for phrase in MODAL_TRIGGER_INTENT_PHRASES):
+        return True
+
+    if label_text in MODAL_TRIGGER_SHORT_INTENTS or any(
+        label_text.startswith(f"{word} ") for word in MODAL_TRIGGER_SHORT_INTENTS
+    ):
+        if any(keyword in attrs_text for keyword in ("modal", "popup", "dialog", "overlay", "trigger")):
+            return True
+
+    return False
+
+
 def describe_interruption_candidate(
     tag: Tag,
     primary_region: Tag | None,
     style_hints: dict[str, set[str]],
 ) -> dict[str, Any] | None:
     if not looks_like_interruption_candidate(tag, style_hints):
+        return None
+
+    if _looks_like_modal_trigger(tag):
         return None
 
     initial_load_visible = is_initially_visible(tag)
@@ -550,6 +641,9 @@ def describe_interruption_candidate(
 
 def looks_like_interruption_candidate(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
     if not isinstance(tag, Tag):
+        return False
+
+    if _looks_like_modal_trigger(tag):
         return False
 
     if tag.name == "dialog":
@@ -637,6 +731,9 @@ def has_fixed_or_sticky(tag: Tag, style_hints: dict[str, set[str]]) -> bool:
 
 
 def is_overlay_like(tag: Tag) -> bool:
+    if _looks_like_modal_trigger(tag):
+        return False
+
     attrs_text = interruption_context_text(tag)
     style = tag.get("style", "")
     return (
@@ -725,6 +822,9 @@ def covers_primary_task_proxy(
 
 
 def classify_interrupt_type(tag: Tag) -> str:
+    if _looks_like_modal_trigger(tag):
+        return "launcher"
+
     attrs_text = interruption_context_text(tag)
     if any(hint in attrs_text for hint in ("cookie", "consent")):
         return "consent"
