@@ -331,6 +331,7 @@ function createAccessibilityWidget() {
                   class="accessibility-profile-card"
                   type="button"
                   data-accessibility-profile="${profile.id}"
+                  ${profile.tooltip ? `data-accessibility-tooltip="${profile.tooltip}"` : ""}
                   aria-pressed="false"
                 >
                   <span class="accessibility-profile-icon">${profile.icon}</span>
@@ -349,6 +350,7 @@ function createAccessibilityWidget() {
                   data-accessibility-option="${option.id}"
                   data-default-label="${option.label}"
                   data-active-label="${option.activeLabel || option.label}"
+                  ${option.tooltip ? `data-accessibility-tooltip="${option.tooltip}"` : ""}
                 >
                   <span class="accessibility-option-icon">${option.icon}</span>
                   <span class="accessibility-option-label">${option.label}</span>
@@ -361,27 +363,27 @@ function createAccessibilityWidget() {
               `).join("")}
               <div class="accessibility-text-adjust-panel" aria-label="Text adjustment controls">
                 <div class="accessibility-text-adjust-tools">
-                  <button class="accessibility-text-adjust-tool is-active" type="button" data-text-adjust-mode="text-size" aria-pressed="true">
+                  <button class="accessibility-text-adjust-tool is-active" type="button" data-text-adjust-mode="text-size" aria-pressed="true" data-accessibility-tooltip="Choose text size adjustment, then select a multiplier below.">
                     <span class="accessibility-text-adjust-value">x1.0</span>
                     <small>Text Size</small>
                   </button>
-                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="text-spacing" aria-pressed="false">
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="text-spacing" aria-pressed="false" data-accessibility-tooltip="Choose word spacing adjustment, then select a multiplier below.">
                     <span class="accessibility-text-adjust-value">x1.0</span>
                     <small>Text Spacing</small>
                   </button>
-                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="height-spacing" aria-pressed="false">
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="height-spacing" aria-pressed="false" data-accessibility-tooltip="Choose line height adjustment, then select a multiplier below.">
                     <span class="accessibility-text-adjust-value">x1.0</span>
                     <small>Height Spacing</small>
                   </button>
-                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="letter-spacing" aria-pressed="false">
+                  <button class="accessibility-text-adjust-tool" type="button" data-text-adjust-mode="letter-spacing" aria-pressed="false" data-accessibility-tooltip="Choose letter spacing adjustment, then select a multiplier below.">
                     <span class="accessibility-text-adjust-value">x1.0</span>
                     <small>Letter Spacing</small>
                   </button>
                 </div>
                 <div class="accessibility-text-adjust-levels">
-                  <button type="button" data-text-adjust-level="1">x1.0</button>
-                  <button type="button" data-text-adjust-level="1.5">x1.5</button>
-                  <button type="button" data-text-adjust-level="2">x2.0</button>
+                  <button type="button" data-text-adjust-level="1" data-accessibility-tooltip="Use the default spacing or size for the selected text setting.">x1.0</button>
+                  <button type="button" data-text-adjust-level="1.5" data-accessibility-tooltip="Increase the selected text setting to one and a half times.">x1.5</button>
+                  <button type="button" data-text-adjust-level="2" data-accessibility-tooltip="Increase the selected text setting to double.">x2.0</button>
                 </div>
               </div>
             </div>

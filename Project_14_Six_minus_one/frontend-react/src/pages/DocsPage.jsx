@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaGuideAnalysisHref, spaGuideLandingHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const STORAGE_KEY = "cognilens.return.analysis-url";
 
@@ -11,8 +11,9 @@ export function DocsPage() {
 
   useEffect(() => {
     const source = searchParams.get("source");
+    // A plain /docs visit is pre-analysis help; analysis pages opt in with source=analysis.
     if (source == null || source === "") {
-      navigate(spaGuideAnalysisHref, { replace: true });
+      navigate(spaGuideLandingHref, { replace: true });
     }
   }, [navigate, searchParams]);
 
@@ -84,6 +85,7 @@ export function DocsPage() {
               type="button"
               hidden={!showAnalysisNav}
               data-analysis-nav
+              data-accessibility-tooltip="Return to the analysis dashboard you opened before the guide."
               onClick={() => {
                 if (returnUrl) {
                   window.location.href = returnUrl;

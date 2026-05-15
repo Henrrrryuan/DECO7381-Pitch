@@ -427,6 +427,7 @@ export function HomePage() {
                   aria-selected={isUrlWorkflow}
                   aria-controls="urlForm"
                   data-workflow-option="url"
+                  data-accessibility-tooltip="Use this option when the page is running in a browser and can be reached by URL."
                   onClick={() => setWorkflow("url")}
                 >
                   <span className="workflow-option-title">Website URL</span>
@@ -441,6 +442,7 @@ export function HomePage() {
                   aria-selected={!isUrlWorkflow}
                   aria-controls="uploadForm"
                   data-workflow-option="file"
+                  data-accessibility-tooltip="Use this option when you want to analyze a saved HTML file or ZIP package."
                   onClick={() => {
                     setWorkflow("file");
                     setStatusMessage(file ? `${file.name} is ready for analysis.` : "");
@@ -478,12 +480,19 @@ export function HomePage() {
                       inputMode="url"
                       placeholder="http://127.0.0.1:5173"
                       autoComplete="url"
+                      data-accessibility-tooltip="Enter the full website address to analyze, including http:// or https:// and the port if needed."
                       value={url}
                       onChange={(event) => setUrl(event.target.value)}
                     />
                   </div>
 
-                  <button id="analyzeUrlButton" className="upload-analyze-button" type="submit" disabled={!urlValid}>
+                  <button
+                    id="analyzeUrlButton"
+                    className="upload-analyze-button"
+                    type="submit"
+                    disabled={!urlValid}
+                    data-accessibility-tooltip="Start analyzing this website URL and open the cognitive accessibility report."
+                  >
                     {loading && isUrlWorkflow ? "Analyzing..." : "Analyze"}
                   </button>
                 </form>
@@ -506,6 +515,7 @@ export function HomePage() {
                     id="dropzone"
                     className={`dropzone${dropDragging ? " dragging" : ""}`}
                     htmlFor="uploadInput"
+                    data-accessibility-tooltip="Choose or drop an HTML file or ZIP package to prepare it for analysis."
                     onDragEnter={(event) => {
                       event.preventDefault();
                       setDropDragging(true);
@@ -520,7 +530,13 @@ export function HomePage() {
                     }}
                     onDrop={onDrop}
                   >
-                    <input id="uploadInput" type="file" accept=".html,.htm,text/html,.zip,application/zip" onChange={onFileInputChange} />
+                    <input
+                      id="uploadInput"
+                      type="file"
+                      accept=".html,.htm,text/html,.zip,application/zip"
+                      data-accessibility-tooltip="Select an HTML file or ZIP package from your computer."
+                      onChange={onFileInputChange}
+                    />
                     <span className="dropzone-label">Drag &amp; drop an HTML or ZIP file</span>
                     <span id="selectedFileName" className="dropzone-file">
                       {file ? file.name : "or choose an HTML / ZIP file"}
@@ -532,6 +548,7 @@ export function HomePage() {
                     className="upload-analyze-button secondary-action"
                     type="submit"
                     disabled={!fileValid}
+                    data-accessibility-tooltip="Start analyzing the selected file and open the cognitive accessibility report."
                   >
                     {loading && !isUrlWorkflow ? "Analyzing..." : "Analyze"}
                   </button>

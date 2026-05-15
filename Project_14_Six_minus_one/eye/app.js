@@ -516,7 +516,9 @@ function initBackToAnalysisButton() {
 
 function setFrameHint(text) {
   if (frameHint) {
-    frameHint.textContent = text;
+    const message = String(text || "").trim();
+    frameHint.textContent = message;
+    frameHint.hidden = !message;
   }
 }
 
@@ -555,11 +557,7 @@ function loadTempHtmlPreview(relativePath, uploadLabel) {
   urlInput.value = absolutePersistUrl;
   persistPreferredTargetUrl(absolutePersistUrl);
   targetFrame.src = `${path}?t=${Date.now()}`;
-  setFrameHint(
-    uploadLabel
-      ? `Uploaded HTML (${uploadLabel}) is served from temporary backend storage on this origin.`
-      : "Temporary HTML is served from backend storage on this origin (not the remote proxy)."
-  );
+  setFrameHint("");
   resetTrackingData();
   setStatus(uploadLabel ? `Uploaded ${uploadLabel}. Loading…` : "Loading temporary HTML…");
 }
@@ -578,9 +576,7 @@ function loadTargetUrl(rawInput) {
     if (isTempHtmlServicePath(normalizedUrl)) {
       const u = new URL(normalizedUrl);
       targetFrame.src = `${u.pathname}${u.search}`;
-      setFrameHint(
-        "Temporary HTML preview (same origin). Re-upload if this link expired."
-      );
+      setFrameHint("");
     } else {
       targetFrame.src = toProxyUrl(normalizedUrl);
       setFrameHint(

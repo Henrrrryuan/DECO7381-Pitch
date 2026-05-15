@@ -14,16 +14,58 @@ import { escapeHtml, findDimension } from "./common.js";
  *   conciseText: (text: unknown, fallback?: string, maxLength?: number) => string,
  *   pillListMarkup: (items: string[], limit?: number, className?: string) => string,
  *   issueIsoClauseTags: (ruleId: unknown) => string[],
+ *   PATIENT_PROFILES?: Record<string, { label?: string, condition?: string, summary?: string, enabledDetectors?: string[], detectorOrder?: string[] }>,
  * }} PrintMarkupDeps
  */
 
-export function printProfileLabels(result) {
-  return result ? ["Detectors"] : [];
+export function printProfileLabels(result, deps = {}) {
+  if (!result) {
+    return [];
+  }
+  const { PATIENT_PROFILES } = deps;
+  const profiles = PATIENT_PROFILES && typeof PATIENT_PROFILES === "object" ? PATIENT_PROFILES : {};
+  const profileNames = Object.keys(profiles);
+  return profileNames.length ? profileNames : ["Detectors"];
+}
+
+function canonicalDimensionName(name) {
+  return String(name || "");
+}
+
+function profileDisplayLabel(profileName, deps) {
+  const profile = deps.PATIENT_PROFILES?.[profileName] || {};
+  return profile.condition || profile.label || profileName;
+}
+
+function isDetectorEnabledForProfile(name, profileName, deps) {
+  const profile = deps.PATIENT_PROFILES?.[profileName] || {};
+  const enabledDetectors = Array.isArray(profile.enabledDetectors) ? profile.enabledDetectors : [];
+  return enabledDetectors.length ? enabledDetectors.includes(canonicalDimensionName(name)) : true;
+}
+
+function profileDimensionConfigs(profileName, deps) {
+  const { DIMENSION_CONFIG } = deps;
+  const profile = deps.PATIENT_PROFILES?.[profileName] || {};
+  const detectorOrder = Array.isArray(profile.detectorOrder) ? profile.detectorOrder : [];
+  const baseIndexByName = new Map(DIMENSION_CONFIG.map(({ name }, index) => [canonicalDimensionName(name), index]));
+  return [...DIMENSION_CONFIG]
+    .filter(({ name }) => isDetectorEnabledForProfile(name, profileName, deps))
+    .sort((left, right) => {
+      const leftIndex = detectorOrder.indexOf(canonicalDimensionName(left.name));
+      const rightIndex = detectorOrder.indexOf(canonicalDimensionName(right.name));
+      const normalizedLeft = leftIndex === -1
+        ? 100000 + (baseIndexByName.get(canonicalDimensionName(left.name)) || 0)
+        : leftIndex;
+      const normalizedRight = rightIndex === -1
+        ? 100000 + (baseIndexByName.get(canonicalDimensionName(right.name)) || 0)
+        : rightIndex;
+      return normalizedLeft - normalizedRight;
+    });
 }
 
 export function printProfileDimensionRows(result, profileLabel, deps) {
-  const { DIMENSION_CONFIG, displayDimensionName, isDetectorEnabledForActiveProfile } = deps;
-  return DIMENSION_CONFIG.filter(({ name }) => isDetectorEnabledForActiveProfile(name)).map(({ name }) => {
+  const { displayDimensionName } = deps;
+  return profileDimensionConfigs(profileLabel, deps).map(({ name }) => {
     const dimension = findDimension(result, name);
     const issueCount = dimension?.issues?.length || 0;
     return `
@@ -39,13 +81,10 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
   const { conciseText, pillListMarkup, issueIsoClauseTags } = deps;
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 180);
   const description = conciseText(issue.description, "This issue may increase cognitive effort for users.", 220);
-  const conf = issue.interpretation?.confidence || issue.issue_object?.interpretation?.confidence;
-  const metaRight = conf ? `Confidence: ${conf}` : "Heuristic finding";
   return `
     <article class="print-issue-card">
       <div class="print-issue-card__meta">
         <span>Issue ${issueNumber}</span>
-        <span>${escapeHtml(metaRight)}</span>
       </div>
       <h4>${escapeHtml(issue.title || "Review this issue")}</h4>
       <p>${escapeHtml(description)}</p>
@@ -58,9 +97,9 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
 }
 
 export function printProfileDimensionCards(result, profileLabel, deps) {
-  const { DIMENSION_CONFIG, displayDimensionName } = deps;
+  const { displayDimensionName } = deps;
   let issueNumber = 0;
-  return DIMENSION_CONFIG.map(({ name }) => {
+  return profileDimensionConfigs(profileLabel, deps).map(({ name }) => {
     const dimension = findDimension(result, name);
     const issues = dimension?.issues || [];
     const issueCards = issues.map((issue) => {
@@ -87,15 +126,16 @@ export function renderPrintableProfileReport(result, deps) {
     return;
   }
 
-  const labels = printProfileLabels(result);
-  printProfileReport.innerHTML = labels.map((profileLabel) => `
+  const labels = printProfileLabels(result, deps);
+  printProfileReport.innerHTML = labels.map((profileName) => `
     <section class="print-profile-section">
-      <h2>${escapeHtml(profileLabel)}</h2>
+      <h2>${escapeHtml(profileDisplayLabel(profileName, deps))}</h2>
+      ${deps.PATIENT_PROFILES?.[profileName]?.summary ? `<p class="print-profile-summary">${escapeHtml(deps.PATIENT_PROFILES[profileName].summary)}</p>` : ""}
       <div class="print-profile-risk-list">
-        ${printProfileDimensionRows(result, profileLabel, deps)}
+        ${printProfileDimensionRows(result, profileName, deps)}
       </div>
       <div class="print-profile-dimension-list">
-        ${printProfileDimensionCards(result, profileLabel, deps)}
+        ${printProfileDimensionCards(result, profileName, deps)}
       </div>
     </section>
   `).join("");

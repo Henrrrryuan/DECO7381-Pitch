@@ -3648,6 +3648,7 @@ function printMarkupDeps() {
     conciseText,
     pillListMarkup,
     issueIsoClauseTags,
+    PATIENT_PROFILES,
   };
 }
 
