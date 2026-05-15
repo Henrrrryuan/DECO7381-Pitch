@@ -57,20 +57,32 @@ def _extract_zip_to_preview_dir(zip_bytes: bytes, preview_dir: Path) -> None:
 
 
 def _find_preview_entry_file(preview_dir: Path) -> Path:
-    root_index = preview_dir / "index.html"
-    if root_index.exists():
-        return root_index
+    root_indexes = [
+        candidate
+        for candidate in (preview_dir / "index.html", preview_dir / "index.htm")
+        if candidate.exists() and candidate.is_file()
+    ]
+    if root_indexes:
+        return root_indexes[0]
 
-    top_level_dirs = [item for item in preview_dir.iterdir() if item.is_dir()]
+    top_level_dirs = sorted(item for item in preview_dir.iterdir() if item.is_dir())
     for folder in top_level_dirs:
-        nested_index = folder / "index.html"
-        if nested_index.exists():
-            return nested_index
+        for index_name in ("index.html", "index.htm"):
+            nested_index = folder / index_name
+            if nested_index.exists() and nested_index.is_file():
+                return nested_index
 
-    all_indexes = list(preview_dir.rglob("index.html"))
-    if all_indexes:
-        return sorted(all_indexes)[0]
-    raise ZipInputError("No index.html file was found after extracting the ZIP package.")
+    all_html_files = sorted(
+        file_path
+        for file_path in preview_dir.rglob("*")
+        if file_path.is_file() and file_path.suffix.lower() in {".html", ".htm"}
+    )
+    for file_path in all_html_files:
+        if file_path.name.lower() in {"index.html", "index.htm"}:
+            return file_path
+    if all_html_files:
+        return all_html_files[0]
+    raise ZipInputError("No .html or .htm file was found after extracting the ZIP package.")
 
 
 def _rel_preview_path(preview_dir: Path, file_path: Path) -> str:
@@ -458,4 +470,3 @@ async def analyze_zip(
     payload["preview_id"] = preview_id
     payload["preview_url"] = preview_url
     return payload
-

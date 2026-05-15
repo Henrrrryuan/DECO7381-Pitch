@@ -36,9 +36,9 @@ def extract_web_bundle_from_zip_bytes(zip_bytes: bytes) -> ExtractedWebBundle:
         with ZipFile(BytesIO(zip_bytes)) as archive:
             safe_members = _safe_member_map(archive)
             html_candidates = [
-                member_name
-                for member_name in safe_members
-                if member_name.lower().endswith(HTML_EXTENSIONS)
+                original_member_name
+                for member_key, original_member_name in safe_members.items()
+                if member_key.endswith(HTML_EXTENSIONS)
             ]
             if not html_candidates:
                 raise ZipInputError("No .html or .htm file was found in the ZIP archive.")
@@ -224,4 +224,3 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
             container.append(style_tag)
 
     return str(soup)
-
