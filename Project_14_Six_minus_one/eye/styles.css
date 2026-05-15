@@ -515,6 +515,8 @@ button.start-tracking-primary:focus-visible {
   height: 12px;
   border-radius: 999px;
   background: #1d1f24;
+  transform: translate3d(0, 0, 0);
+  transition: transform 60ms linear;
   box-shadow: 0 0 8px rgba(110, 204, 255, 0.34);
 }
 
