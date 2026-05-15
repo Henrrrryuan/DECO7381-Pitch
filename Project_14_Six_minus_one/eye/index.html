@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CogniLens Eye Tracking</title>
-    <link rel="stylesheet" href="./styles.css?v=eye-onboarding-modal-2" />
+    <link rel="stylesheet" href="./styles.css?v=eye-onboarding-modal-3" />
   </head>
   <body>
     <header class="app-nav">
@@ -100,15 +100,33 @@
     <div id="eyeIntroModal" class="eye-intro-modal" role="dialog" aria-modal="true" aria-labelledby="eyeIntroTitle" hidden>
       <div class="eye-intro-card">
         <div class="eye-intro-characters" aria-hidden="true">
-          <span class="eye-intro-character eye-intro-character-purple">
-            <span></span>
-          </span>
-          <span class="eye-intro-character eye-intro-character-orange">
-            <span></span>
-          </span>
-          <span class="eye-intro-character eye-intro-character-yellow">
-            <span></span>
-          </span>
+          <div class="eye-intro-character-stage">
+            <div class="eye-intro-character eye-intro-character-purple">
+              <div class="eye-intro-character-eyes">
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+              </div>
+            </div>
+            <div class="eye-intro-character eye-intro-character-dark">
+              <div class="eye-intro-character-eyes">
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+              </div>
+            </div>
+            <div class="eye-intro-character eye-intro-character-orange">
+              <div class="eye-intro-character-eyes">
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+              </div>
+            </div>
+            <div class="eye-intro-character eye-intro-character-yellow">
+              <div class="eye-intro-character-eyes">
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
+              </div>
+              <span class="eye-intro-character-mouth"></span>
+            </div>
+          </div>
         </div>
         <div class="eye-intro-content">
           <h2 id="eyeIntroTitle">Behavioral Evidence Collection</h2>
@@ -132,6 +150,6 @@
     </div>
 
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-onboarding-modal-2"></script>
+    <script src="./app.js?v=eye-onboarding-modal-3"></script>
   </body>
 </html>
