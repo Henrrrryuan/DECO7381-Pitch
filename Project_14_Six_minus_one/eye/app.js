@@ -762,7 +762,7 @@ function getNearHitProbeOffsets() {
     [-24, -24]
   ];
 }
-
+//Perform a near-hit when key elements are not hit.
 function getBestNearHitFromPoint(frameDocument, framePoint) {
   const candidates = new Map();
   const viewport = frameDocument.defaultView;
@@ -814,7 +814,7 @@ function resolveAttentionHit(clientPoint) {
   if (!frameDocument || !framePoint) {
     return { bucketKey: "other", hitType: "exact", weight: 1 };
   }
-
+//Locate elements within the iframe document
   const exactElement = frameDocument.elementFromPoint(framePoint.x, framePoint.y);
   const exactBucketKey = classifyAttentionBucket(exactElement);
   if (isMeaningfulAttentionBucket(exactBucketKey)) {
@@ -843,7 +843,7 @@ function resolveAttentionHit(clientPoint) {
     element: exactElement
   };
 }
-
+//Recorded attention summary
 function updateAttentionSummary(clientPoint, elapsedDurationMs) {
   const hit = resolveAttentionHit(clientPoint);
   const bucketKey = hit.bucketKey;
@@ -941,7 +941,7 @@ function getPointInsideFrame(clientPoint) {
   if (!targetFrame || !clientPoint) {
     return null;
   }
-
+//Map the gaze point to the iframe coordinates
   const frameRect = targetFrame.getBoundingClientRect();
   return {
     x: clientPoint.x - frameRect.left,

@@ -306,7 +306,7 @@ def calculate_data_reliability_score(sample_count: int, duration_ms: int) -> int
     duration_score = min(100, (max(0, duration_ms) / 20000) * 100)
     return clamp_score((0.65 * sample_score) + (0.35 * duration_score))
 
-
+#The normalization of cell_counts (converting the input into an integer array) is here:
 def _normalise_cell_counts(raw_counts: object) -> list[int]:
     if not isinstance(raw_counts, list):
         return []
@@ -318,7 +318,7 @@ def _normalise_cell_counts(raw_counts: object) -> list[int]:
             counts.append(0)
     return counts
 
-
+#The specific reading lines of summary.attention_summary are here
 def _extract_attention_items(summary: object) -> list[dict[str, Any]]:
     if not isinstance(summary, dict):
         return []
