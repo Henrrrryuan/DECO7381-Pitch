@@ -27,7 +27,7 @@ class GridCell:
 
     @property
     def vcs(self) -> float:
-        return (1.743 + 0.097 * self.tlc + 0.053 * self.word_count + 0.003 * self.images) / 10
+        return _clamp_vcs((1.743 + 0.097 * self.tlc + 0.053 * self.word_count + 0.003 * self.images) / 10)
 
     def to_dict(self, color: str) -> dict[str, Any]:
         return {
@@ -234,7 +234,11 @@ def _word_count(text: str) -> int:
 
 
 def _page_vcs(*, word_count: int, images: int, tlc: int) -> float:
-    return (1.743 + 0.097 * tlc + 0.053 * word_count + 0.003 * images) / 10
+    return _clamp_vcs((1.743 + 0.097 * tlc + 0.053 * word_count + 0.003 * images) / 10)
+
+
+def _clamp_vcs(value: float) -> float:
+    return max(0.0, min(10.0, float(value)))
 
 
 def _center_grid(

@@ -363,6 +363,9 @@ function renderDashboardSummary(result) {
 
 function getVicramTargetUrl() {
   const previewUrl = getPreviewUrl();
+  if (isPreviewRouteUrl(previewUrl)) {
+    return new URL(previewUrl, window.location.origin).toString();
+  }
   if (isProbablyUrl(previewUrl)) {
     return previewUrl;
   }
