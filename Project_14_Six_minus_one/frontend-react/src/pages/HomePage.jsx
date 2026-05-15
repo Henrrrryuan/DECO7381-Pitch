@@ -360,7 +360,6 @@ export function HomePage() {
 
           <nav className="app-nav-links" aria-label="Primary">
             <Link to={spaGuideLandingHref}>Guide</Link>
-            <Link to="/vicram">ViCRAM</Link>
             <Link to={spaLandingHistoryHref}>History</Link>
           </nav>
         </div>
