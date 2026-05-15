@@ -4660,6 +4660,9 @@ function bindEvents() {
     if (issueElementTrigger) {
       event.preventDefault();
       event.stopPropagation();
+      if (vicramState().gridVisible) {
+        restoreWebsitePreviewFromVicram();
+      }
       dispatchDashboardAction({
         type: DASHBOARD_ACTIONS.SELECT_ELEMENT,
         payload: {
