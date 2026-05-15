@@ -440,7 +440,6 @@ function renderVicramDashboardPanel() {
       <div class="vicram-dashboard-copy">
         <span class="vicram-dashboard-label">ViCRAM VCS</span>
         <strong>${escapeHtml(scoreText)}</strong>
-        <small>${source.label ? escapeHtml(source.label) : "Run a URL or HTML analysis first."}</small>
         ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
       </div>
       <div class="vicram-dashboard-actions">
@@ -2778,9 +2777,6 @@ function buildVicramGridHtml(result) {
   const overlay = result?.artifacts?.overlay_svg_base64 || "";
   const width = Number(result?.page?.width || 1);
   const height = Number(result?.page?.height || 1);
-  const vcs = Number(result?.page?.vcs || 0).toFixed(4);
-  const rows = result?.grid?.rows || VICRAM_GRID_ROWS;
-  const columns = result?.grid?.columns || VICRAM_GRID_COLUMNS;
 
   return `<!doctype html>
 <html>
@@ -2793,27 +2789,6 @@ function buildVicramGridHtml(result) {
       background: #e5e7eb;
       font-family: "Segoe UI", Arial, sans-serif;
       color: #0f172a;
-    }
-    .vicram-bar {
-      position: sticky;
-      top: 0;
-      z-index: 3;
-      min-height: 44px;
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: rgba(15, 23, 42, 0.94);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
-    }
-    .vicram-bar strong {
-      font-size: 14px;
-    }
-    .vicram-bar span {
-      color: rgba(226, 232, 240, 0.86);
-      font-size: 12px;
     }
     .vicram-stage {
       position: relative;
@@ -2832,10 +2807,6 @@ function buildVicramGridHtml(result) {
   </style>
 </head>
 <body>
-  <div class="vicram-bar">
-    <strong>ViCRAM VCS ${escapeHtml(vcs)}</strong>
-    <span>${escapeHtml(String(rows))} x ${escapeHtml(String(columns))} grid</span>
-  </div>
   <div class="vicram-stage">
     <img src="data:image/png;base64,${screenshot}" alt="Rendered webpage screenshot">
     <img src="data:image/svg+xml;base64,${overlay}" alt="ViCRAM grid overlay">
