@@ -350,6 +350,7 @@ state.attentionSummary = createAttentionSummaryState();
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
 const TRACKING_START_DELAY_MS = 1200;
+const INTRO_PUPIL_MAX_OFFSET = 5.5;
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -361,11 +362,44 @@ function setStatus(text) {
   statusText.textContent = text;
 }
 
+function getIntroPupils() {
+  return Array.from(document.querySelectorAll(".eye-intro-pupil"));
+}
+
+function resetIntroPupils() {
+  getIntroPupils().forEach((pupil) => {
+    pupil.style.transform = "translate3d(0, 0, 0)";
+  });
+}
+
+function updateIntroPupils(clientX, clientY) {
+  if (!eyeIntroModal || eyeIntroModal.hidden) {
+    return;
+  }
+  getIntroPupils().forEach((pupil) => {
+    const eye = pupil.parentElement;
+    if (!eye) {
+      return;
+    }
+    const rect = eye.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const angle = Math.atan2(dy, dx);
+    const distancePx = Math.min(INTRO_PUPIL_MAX_OFFSET, Math.hypot(dx, dy) * 0.09);
+    const x = Math.cos(angle) * distancePx;
+    const y = Math.sin(angle) * distancePx;
+    pupil.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  });
+}
+
 function showEyeIntroModal() {
   if (!eyeIntroModal) {
     return;
   }
   eyeIntroModal.hidden = false;
+  resetIntroPupils();
 }
 
 function hideEyeIntroModal() {
@@ -373,6 +407,7 @@ function hideEyeIntroModal() {
     return;
   }
   eyeIntroModal.hidden = true;
+  resetIntroPupils();
 }
 
 function setTrackingControlsEnabled(enabled) {
@@ -1742,6 +1777,14 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && eyeIntroModal && !eyeIntroModal.hidden) {
     hideEyeIntroModal();
   }
+});
+
+window.addEventListener("pointermove", (event) => {
+  updateIntroPupils(event.clientX, event.clientY);
+});
+
+window.addEventListener("pointerleave", () => {
+  resetIntroPupils();
 });
 
 resizeHeatmapCanvas();
