@@ -5,6 +5,7 @@ from typing import Any
 from bs4 import BeautifulSoup, Tag
 
 from ..location_utils import get_tag_summary, looks_like_visual_component, stable_selector
+from .interaction_helpers import _looks_like_modal_trigger
 from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
 from .visual_parser import VisualHTMLParser
 
@@ -74,12 +75,25 @@ _VO_CARD_GRID_BLOB = frozenset({
     "slider",
 })
 
+_VO_NAV_STRUCTURE_ATTR_HINTS = (
+    "nav",
+    "menu",
+    "sidebar",
+    "side-bar",
+    "toc",
+    "sub-nav",
+    "subnav",
+    "navigation",
+)
+
 
 def detect_visual_overload_selector(context: dict[str, Any]):
     return detect_visual_overload(context["soup"], context["visual_parser"])
 
 
 def is_interactive(tag: Tag) -> bool:
+    if (tag.name or "").lower() == "a" and _looks_like_modal_trigger(tag):
+        return False
     return bool(
         tag.name in {"button", "select", "textarea"}
         or (tag.name == "a" and tag.get("href"))
@@ -206,6 +220,23 @@ def _ancestor_tag_names(tag: Tag) -> set[str]:
     return names
 
 
+def _is_navigation_list_context(tag: Tag) -> bool:
+    """True when ul/ol/li belong to nav landmarks or navigation-like chrome (not card grids)."""
+    name = (tag.name or "").lower()
+    if name not in {"ul", "ol", "li"}:
+        return False
+    if tag.find_parent("nav") is not None:
+        return True
+    if "nav" in _ancestor_tag_names(tag):
+        return True
+    blob = _attrs_blob(tag)
+    parent: Tag | None = tag.parent if isinstance(tag.parent, Tag) else None
+    while isinstance(parent, Tag):
+        blob = f"{blob} {_attrs_blob(parent)}"
+        parent = parent.parent if isinstance(parent.parent, Tag) else None
+    return any(hint in blob for hint in _VO_NAV_STRUCTURE_ATTR_HINTS)
+
+
 def vo_contributor_category(tag: Tag) -> str:
     """
     Presentation-only attention-source bucket for VO-1 evidence rows.
@@ -227,6 +258,8 @@ def vo_contributor_category(tag: Tag) -> str:
     if any(h in blob for h in _VO_NAV_BLOB_HINTS):
         return "navigation_density"
     if name == "a" and tag.get("href") and any(h in blob for h in ("nav", "menu", "breadcrumb", "tab")):
+        return "navigation_density"
+    if name in {"ul", "ol", "li"} and _is_navigation_list_context(tag):
         return "navigation_density"
 
     # 2 — Media / motion-rich competition

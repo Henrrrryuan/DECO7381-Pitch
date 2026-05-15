@@ -5,12 +5,9 @@ import html
 import math
 import re
 from dataclasses import dataclass
+from importlib.util import find_spec
 from typing import Any
 from urllib import parse as urllib_parse
-
-from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from playwright.sync_api import sync_playwright
 
 
 class VicramAnalysisError(ValueError):
@@ -117,6 +114,16 @@ def _render_and_analyze(
     viewport_width: int,
     viewport_height: int,
 ) -> dict[str, Any]:
+    if find_spec("playwright") is None:
+        raise VicramAnalysisError(
+            "Playwright is not installed. Install it with "
+            "`python -m pip install playwright` and `python -m playwright install chromium`."
+        )
+
+    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+    from playwright.sync_api import sync_playwright
+
     browser = None
     try:
         with sync_playwright() as playwright:

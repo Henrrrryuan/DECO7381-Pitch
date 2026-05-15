@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from ..location_utils import get_tag_summary, stable_selector
 from .shared import REGULAR_BASE_PENALTY, make_issue, tag_location, visible_text
@@ -12,6 +12,24 @@ from .text_utils import COMPLEX_WORD_RATIO_THRESHOLD, is_complex_word, tokenize_
 LANGUAGE_SELECTOR = "p, li, td, th, label, button, a"
 
 LC1_MAX_LOCATIONS = 8  # system-standard issue row cap (aligned with _max_sanitized_locations default)
+
+_LC_LAUNCHER_BLOCK_DESCENDANTS = ["p", "div", "section", "article", "h1", "h2", "h3", "h4", "h5", "h6"]
+_LC_LAUNCHER_SURFACE_CLASSES = frozenset({"ref-modal-trigger", "card-link"})
+
+
+def _lc_skip_interactive_launcher_container(tag: Tag) -> bool:
+    """Skip a/button shells whose text duplicates nested block content (card/modal launchers)."""
+    name = (tag.name or "").lower()
+    if name not in {"a", "button"}:
+        return False
+    if tag.find(_LC_LAUNCHER_BLOCK_DESCENDANTS):
+        return True
+    classes = tag.get("class") or []
+    if isinstance(classes, str):
+        class_tokens = {part.lower() for part in classes.split()}
+    else:
+        class_tokens = {str(part).lower() for part in classes}
+    return bool(class_tokens & _LC_LAUNCHER_SURFACE_CLASSES)
 
 
 def _lc1_forensic() -> bool:
@@ -25,6 +43,10 @@ def detect_language_complexity_selector(context: dict[str, Any]):
 def detect_language_complexity(soup: BeautifulSoup):
     complex_regions: list[dict[str, Any]] = []
     for tag in soup.select(LANGUAGE_SELECTOR):
+        if tag.find_parent(["nav", "aside"]):
+            continue
+        if _lc_skip_interactive_launcher_container(tag):
+            continue
         words = tokenize_alpha_words(visible_text(tag))
         if len(words) < 8:
             continue
