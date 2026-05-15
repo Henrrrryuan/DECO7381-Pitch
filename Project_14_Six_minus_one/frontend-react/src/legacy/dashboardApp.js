@@ -413,9 +413,26 @@ function vicramState() {
       result: null,
       gridVisible: false,
       targetUrl: "",
+      pendingShowGridAfterLoad: false,
     };
   }
   return state.vicram;
+}
+
+function resetVicramStateForNewResult() {
+  const vicram = vicramState();
+  vicram.loading = false;
+  vicram.error = "";
+  vicram.result = null;
+  vicram.gridVisible = false;
+  vicram.targetUrl = "";
+  vicram.pendingShowGridAfterLoad = false;
+  const frame = document.getElementById("websitePreviewFrame");
+  if (frame?.dataset.vicramGrid === "1") {
+    frame.dataset.vicramGrid = "";
+    frame.removeAttribute("srcdoc");
+    frame.removeAttribute("src");
+  }
 }
 
 function renderVicramDashboardPanel() {
@@ -435,7 +452,7 @@ function renderVicramDashboardPanel() {
       : "Not run";
   const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
   const canAnalyze = Boolean(source.kind) && !vicram.loading;
-  const canToggle = canAnalyze && hasResultForTarget;
+  const canToggle = Boolean(source.kind);
   const canShowReport = hasResultForTarget && !vicram.loading;
 
   panel.innerHTML = `
@@ -578,10 +595,17 @@ function showVicramReportModal() {
   modal.querySelector(".vicram-report-close")?.focus();
 }
 
-async function refreshVicramAnalysis({ showGridAfter = false } = {}) {
+async function refreshVicramAnalysis({ showGridAfter = false, force = false } = {}) {
   const source = getVicramAnalysisSource();
   const vicram = vicramState();
-  if (!source.kind || vicram.loading) {
+  if (!source.kind) {
+    renderVicramDashboardPanel();
+    return;
+  }
+  if (vicram.loading && !force) {
+    if (showGridAfter) {
+      vicram.pendingShowGridAfterLoad = true;
+    }
     renderVicramDashboardPanel();
     return;
   }
@@ -589,25 +613,38 @@ async function refreshVicramAnalysis({ showGridAfter = false } = {}) {
   vicram.loading = true;
   vicram.error = "";
   vicram.targetUrl = source.label;
+  const requestTarget = source.label;
+  vicram.activeRequestTarget = requestTarget;
   renderVicramDashboardPanel();
   try {
-    vicram.result = await analyzeVicramSource(source.payload, {
+    const result = await analyzeVicramSource(source.payload, {
       rows: VICRAM_GRID_ROWS,
       columns: VICRAM_GRID_COLUMNS,
       viewportWidth: 1366,
       viewportHeight: 768,
     });
+    if (getVicramAnalysisSource().label !== requestTarget || vicram.activeRequestTarget !== requestTarget) {
+      return;
+    }
+    vicram.result = result;
     vicram.error = "";
-    if (showGridAfter || vicram.gridVisible) {
-      showVicramGridOverlay();
+    if (showGridAfter || vicram.pendingShowGridAfterLoad || vicram.gridVisible) {
+      vicram.pendingShowGridAfterLoad = false;
+      applyVicramGridOverlay(result);
     }
   } catch (error) {
+    if (getVicramAnalysisSource().label !== requestTarget || vicram.activeRequestTarget !== requestTarget) {
+      return;
+    }
     vicram.result = null;
     vicram.gridVisible = false;
     vicram.error = error?.message || "ViCRAM analysis failed.";
   } finally {
-    vicram.loading = false;
-    renderVicramDashboardPanel();
+    if (vicram.activeRequestTarget === requestTarget) {
+      vicram.loading = false;
+      vicram.activeRequestTarget = "";
+      renderVicramDashboardPanel();
+    }
   }
 }
 
@@ -2818,23 +2855,33 @@ function buildVicramGridHtml(result) {
 </html>`;
 }
 
-function showVicramGridOverlay() {
-  const vicram = vicramState();
-  if (!vicram.result) {
-    refreshVicramAnalysis({ showGridAfter: true });
-    return;
-  }
+function applyVicramGridOverlay(result) {
   const frame = document.getElementById("websitePreviewFrame");
   if (!frame) {
     return;
   }
-  setWorkspaceMode("website");
-  frame.removeAttribute("src");
-  frame.srcdoc = buildVicramGridHtml(vicram.result);
+  const vicram = vicramState();
   frame.dataset.vicramGrid = "1";
+  frame.dataset.previewUrl = "";
+  frame.dataset.previewHtml = "";
+  frame.removeAttribute("src");
+  frame.removeAttribute("srcdoc");
+  setWorkspaceMode("website");
+  frame.srcdoc = buildVicramGridHtml(result);
   vicram.gridVisible = true;
   setWebsiteStatus("Showing ViCRAM grid overlay. Use the ViCRAM button to return to the webpage preview.");
   renderVicramDashboardPanel();
+}
+
+function showVicramGridOverlay() {
+  const vicram = vicramState();
+  const source = getVicramAnalysisSource();
+  if (!vicram.result || vicram.targetUrl !== source.label) {
+    vicram.pendingShowGridAfterLoad = true;
+    refreshVicramAnalysis({ showGridAfter: true });
+    return;
+  }
+  applyVicramGridOverlay(vicram.result);
 }
 
 function restoreWebsitePreviewFromVicram() {
@@ -4200,6 +4247,7 @@ function renderResult(result, html, options = {}) {
     setSelectedIssueId(state, "");
     setRightPanelMode(state, "summary");
   }
+  resetVicramStateForNewResult();
   renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
@@ -4644,7 +4692,7 @@ function bindEvents() {
       if (vicram.gridVisible) {
         restoreWebsitePreviewFromVicram();
       } else {
-        showVicramGridOverlay();
+        void refreshVicramAnalysis({ showGridAfter: true, force: true });
       }
       return;
     }
