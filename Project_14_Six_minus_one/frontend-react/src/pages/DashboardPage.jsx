@@ -107,6 +107,12 @@ export function DashboardPage() {
             <div className="tool-sidebar-inner">
               <PriorityLensPanel />
 
+              <section
+                id="vicramDashboardPanel"
+                className="vicram-dashboard-panel"
+                aria-label="ViCRAM visual complexity"
+              />
+
               <DetectionGauge detected={gauge.detected} />
 
               <section className="sidebar-section sidebar-explanation-section">

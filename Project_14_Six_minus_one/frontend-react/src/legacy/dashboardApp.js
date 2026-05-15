@@ -1,5 +1,6 @@
 import {
   API_BASE,
+  analyzeVicramSource,
   buildAnalysisView,
   chatWithAssistant,
   escapeHtml,
@@ -101,6 +102,8 @@ const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 /** Shared with `eye/app.js`: latest dashboard report to attach behavioral evidence. */
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
 const ASSISTANT_MARGIN = 16;
+const VICRAM_GRID_ROWS = 20;
+const VICRAM_GRID_COLUMNS = 20;
 
 const DETECTOR_NAMES = [
   "Dense Text Detection",
@@ -356,6 +359,254 @@ function renderDashboardSummary(result) {
     return;
   }
   summaryNode.innerHTML = "";
+}
+
+function getVicramTargetUrl() {
+  const previewUrl = getPreviewUrl();
+  if (isProbablyUrl(previewUrl)) {
+    return previewUrl;
+  }
+  if (isProbablyUrl(state.sourceUrl)) {
+    return state.sourceUrl;
+  }
+  if (isProbablyUrl(state.sourceName)) {
+    return state.sourceName;
+  }
+  const sourceName = state.currentPayload?.run?.source_name || "";
+  return isProbablyUrl(sourceName) ? sourceName : "";
+}
+
+function getVicramAnalysisSource() {
+  const targetUrl = getVicramTargetUrl();
+  if (targetUrl) {
+    return {
+      kind: "url",
+      label: targetUrl,
+      payload: { url: targetUrl },
+    };
+  }
+
+  const html = String(state.currentHtml || state.currentPayload?.html_content || "").trim();
+  if (html) {
+    return {
+      kind: "html",
+      label: state.sourceName || state.currentPayload?.run?.source_name || "Uploaded HTML",
+      payload: { html },
+    };
+  }
+
+  return {
+    kind: "",
+    label: "",
+    payload: {},
+  };
+}
+
+function vicramState() {
+  if (!state.vicram) {
+    state.vicram = {
+      loading: false,
+      error: "",
+      result: null,
+      gridVisible: false,
+      targetUrl: "",
+    };
+  }
+  return state.vicram;
+}
+
+function renderVicramDashboardPanel() {
+  const panel = document.getElementById("vicramDashboardPanel");
+  if (!panel) {
+    return;
+  }
+
+  const vicram = vicramState();
+  const source = getVicramAnalysisSource();
+  const vcs = vicram.result?.page?.vcs;
+  const hasResultForTarget = vicram.result && vicram.targetUrl === source.label;
+  const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
+    ? Number(vcs).toFixed(4)
+    : vicram.loading
+      ? "Calculating"
+      : "Not run";
+  const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
+  const canAnalyze = Boolean(source.kind) && !vicram.loading;
+  const canToggle = canAnalyze && hasResultForTarget;
+  const canShowReport = hasResultForTarget && !vicram.loading;
+
+  panel.innerHTML = `
+    <div class="vicram-dashboard-card">
+      <div class="vicram-dashboard-copy">
+        <span class="vicram-dashboard-label">ViCRAM VCS</span>
+        <strong>${escapeHtml(scoreText)}</strong>
+        <small>${source.label ? escapeHtml(source.label) : "Run a URL or HTML analysis first."}</small>
+        ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
+      </div>
+      <div class="vicram-dashboard-actions">
+        <button
+          id="vicramRefreshButton"
+          type="button"
+          ${canAnalyze ? "" : "disabled"}
+          data-accessibility-tooltip="Recalculate the ViCRAM visual complexity score for the current input URL."
+        >${vicram.loading ? "Running..." : "Refresh"}</button>
+        <button
+          id="vicramToggleGridButton"
+          type="button"
+          ${canToggle ? "" : "disabled"}
+          data-accessibility-tooltip="Toggle the right preview between the webpage and the ViCRAM grid overlay."
+        >${escapeHtml(buttonLabel)}</button>
+        <button
+          id="vicramReportButton"
+          type="button"
+          ${canShowReport ? "" : "disabled"}
+          data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
+        >Show Report</button>
+      </div>
+    </div>
+  `;
+}
+
+function topVicramCells(result, limit = 12) {
+  const cells = Array.isArray(result?.grid?.cells) ? result.grid.cells : [];
+  return cells
+    .filter((cell) => Number(cell.word_count) > 0 || Number(cell.images) > 0 || Number(cell.tlc) > 0)
+    .sort((a, b) => Number(b.vcs || 0) - Number(a.vcs || 0))
+    .slice(0, limit);
+}
+
+function vicramTopCellsTableMarkup(result) {
+  const cells = topVicramCells(result);
+  if (!cells.length) {
+    return `<p class="vicram-report-empty">No active grid cells were returned.</p>`;
+  }
+  return `
+    <div class="vicram-report-table-wrap">
+      <table class="vicram-report-table">
+        <thead>
+          <tr>
+            <th>Grid</th>
+            <th>VCS</th>
+            <th>Words</th>
+            <th>Images</th>
+            <th>TLC</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cells.map((cell) => `
+            <tr>
+              <td>${escapeHtml(`${cell.row}-${cell.column}`)}</td>
+              <td>${Number(cell.vcs || 0).toFixed(4)}</td>
+              <td>${Number(cell.word_count || 0).toFixed(2)}</td>
+              <td>${Number(cell.images || 0).toFixed(2)}</td>
+              <td>${escapeHtml(String(cell.tlc || 0))}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function closeVicramReportModal() {
+  const modal = document.getElementById("vicramReportModal");
+  if (modal) {
+    modal.remove();
+  }
+  document.body.classList.remove("vicram-report-modal-open");
+}
+
+function showVicramReportModal() {
+  const vicram = vicramState();
+  if (!vicram.result) {
+    void refreshVicramAnalysis();
+    return;
+  }
+
+  closeVicramReportModal();
+  const result = vicram.result;
+  const page = result.page || {};
+  const debug = result.debug || {};
+  const sourceLabel = vicram.targetUrl || result.url || "Current analysis source";
+  const modal = document.createElement("div");
+  modal.id = "vicramReportModal";
+  modal.className = "vicram-report-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-label", "ViCRAM summary report");
+  modal.innerHTML = `
+    <div class="vicram-report-backdrop" data-vicram-report-close></div>
+    <section class="vicram-report-dialog">
+      <header class="vicram-report-header">
+        <div>
+          <span>ViCRAM Summary Report</span>
+          <h2>${Number(page.vcs || 0).toFixed(4)} VCS</h2>
+          <p>${escapeHtml(sourceLabel)}</p>
+        </div>
+        <button type="button" class="vicram-report-close" data-vicram-report-close aria-label="Close ViCRAM report">Close</button>
+      </header>
+      <div class="vicram-report-metrics">
+        <article><span>Words</span><strong>${escapeHtml(String(page.word_count ?? 0))}</strong></article>
+        <article><span>Images</span><strong>${escapeHtml(String(page.images ?? 0))}</strong></article>
+        <article><span>TLC</span><strong>${escapeHtml(String(page.tlc ?? 0))}</strong></article>
+        <article><span>Grid</span><strong>${escapeHtml(`${result.grid?.rows || 0} x ${result.grid?.columns || 0}`)}</strong></article>
+      </div>
+      <div class="vicram-report-content">
+        <section class="vicram-report-section">
+          <h3>Formula</h3>
+          <code>${escapeHtml(result.grid?.formula || "")}</code>
+        </section>
+        <section class="vicram-report-section">
+          <h3>Debug</h3>
+          <p>textPositions=${escapeHtml(String(debug.text_rects ?? 0))}; imagePositions=${escapeHtml(String(debug.image_rects ?? 0))}; elementPositions=${escapeHtml(String(debug.element_rects ?? 0))};</p>
+        </section>
+        <section class="vicram-report-section">
+          <h3>Highest Grid Cells</h3>
+          ${vicramTopCellsTableMarkup(result)}
+        </section>
+        <section class="vicram-report-section vicram-report-summary-section">
+          <h3>Full Summary</h3>
+          <pre>${escapeHtml(result.summary_report || "")}</pre>
+        </section>
+      </div>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  document.body.classList.add("vicram-report-modal-open");
+  modal.querySelector(".vicram-report-close")?.focus();
+}
+
+async function refreshVicramAnalysis({ showGridAfter = false } = {}) {
+  const source = getVicramAnalysisSource();
+  const vicram = vicramState();
+  if (!source.kind || vicram.loading) {
+    renderVicramDashboardPanel();
+    return;
+  }
+
+  vicram.loading = true;
+  vicram.error = "";
+  vicram.targetUrl = source.label;
+  renderVicramDashboardPanel();
+  try {
+    vicram.result = await analyzeVicramSource(source.payload, {
+      rows: VICRAM_GRID_ROWS,
+      columns: VICRAM_GRID_COLUMNS,
+      viewportWidth: 1366,
+      viewportHeight: 768,
+    });
+    vicram.error = "";
+    if (showGridAfter || vicram.gridVisible) {
+      showVicramGridOverlay();
+    }
+  } catch (error) {
+    vicram.result = null;
+    vicram.gridVisible = false;
+    vicram.error = error?.message || "ViCRAM analysis failed.";
+  } finally {
+    vicram.loading = false;
+    renderVicramDashboardPanel();
+  }
 }
 
 /**
@@ -2522,9 +2773,119 @@ function buildPreviewHtml(html) {
   return `${baseMarkup}${source}`;
 }
 
+function buildVicramGridHtml(result) {
+  const screenshot = result?.artifacts?.screenshot_png_base64 || "";
+  const overlay = result?.artifacts?.overlay_svg_base64 || "";
+  const width = Number(result?.page?.width || 1);
+  const height = Number(result?.page?.height || 1);
+  const vcs = Number(result?.page?.vcs || 0).toFixed(4);
+  const rows = result?.grid?.rows || VICRAM_GRID_ROWS;
+  const columns = result?.grid?.columns || VICRAM_GRID_COLUMNS;
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #e5e7eb;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #0f172a;
+    }
+    .vicram-bar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      min-height: 44px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+    }
+    .vicram-bar strong {
+      font-size: 14px;
+    }
+    .vicram-bar span {
+      color: rgba(226, 232, 240, 0.86);
+      font-size: 12px;
+    }
+    .vicram-stage {
+      position: relative;
+      width: ${width}px;
+      height: ${height}px;
+      max-width: none;
+      background: #fff;
+    }
+    .vicram-stage img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="vicram-bar">
+    <strong>ViCRAM VCS ${escapeHtml(vcs)}</strong>
+    <span>${escapeHtml(String(rows))} x ${escapeHtml(String(columns))} grid</span>
+  </div>
+  <div class="vicram-stage">
+    <img src="data:image/png;base64,${screenshot}" alt="Rendered webpage screenshot">
+    <img src="data:image/svg+xml;base64,${overlay}" alt="ViCRAM grid overlay">
+  </div>
+</body>
+</html>`;
+}
+
+function showVicramGridOverlay() {
+  const vicram = vicramState();
+  if (!vicram.result) {
+    refreshVicramAnalysis({ showGridAfter: true });
+    return;
+  }
+  const frame = document.getElementById("websitePreviewFrame");
+  if (!frame) {
+    return;
+  }
+  setWorkspaceMode("website");
+  frame.removeAttribute("src");
+  frame.srcdoc = buildVicramGridHtml(vicram.result);
+  frame.dataset.vicramGrid = "1";
+  vicram.gridVisible = true;
+  setWebsiteStatus("Showing ViCRAM grid overlay. Use the ViCRAM button to return to the webpage preview.");
+  renderVicramDashboardPanel();
+}
+
+function restoreWebsitePreviewFromVicram() {
+  const vicram = vicramState();
+  vicram.gridVisible = false;
+  const frame = document.getElementById("websitePreviewFrame");
+  if (frame) {
+    frame.dataset.vicramGrid = "";
+    frame.dataset.previewUrl = "";
+    frame.dataset.previewHtml = "";
+    frame.removeAttribute("srcdoc");
+    frame.removeAttribute("src");
+  }
+  setWorkspaceMode("website");
+  loadWebsitePreview();
+  renderVicramDashboardPanel();
+}
+
 function loadWebsitePreview() {
   const frame = document.getElementById("websitePreviewFrame");
   if (!frame) {
+    return;
+  }
+
+  if (frame.dataset.vicramGrid === "1") {
     return;
   }
 
@@ -3868,6 +4229,7 @@ function renderResult(result, html, options = {}) {
   renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
+  renderVicramDashboardPanel();
   renderDetectionGauge(result);
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
@@ -3892,6 +4254,7 @@ function renderResult(result, html, options = {}) {
   }
   renderAssistantMessages();
   syncEyeTrackingNavAndStorage();
+  void refreshVicramAnalysis();
 }
 
 function applySidebarState() {
@@ -4287,6 +4650,38 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-vicram-report-close]")) {
+      event.preventDefault();
+      closeVicramReportModal();
+      return;
+    }
+
+    const vicramRefresh = event.target.closest("#vicramRefreshButton");
+    if (vicramRefresh) {
+      event.preventDefault();
+      void refreshVicramAnalysis();
+      return;
+    }
+
+    const vicramToggle = event.target.closest("#vicramToggleGridButton");
+    if (vicramToggle) {
+      event.preventDefault();
+      const vicram = vicramState();
+      if (vicram.gridVisible) {
+        restoreWebsitePreviewFromVicram();
+      } else {
+        showVicramGridOverlay();
+      }
+      return;
+    }
+
+    const vicramReport = event.target.closest("#vicramReportButton");
+    if (vicramReport) {
+      event.preventDefault();
+      showVicramReportModal();
+      return;
+    }
+
     const issueElementTrigger = event.target.closest("[data-issue-element]");
     if (issueElementTrigger) {
       event.preventDefault();
@@ -4315,6 +4710,12 @@ function bindEvents() {
       payload: { kind: "issue", dimensionName: trigger.dataset.highlightDimension, ruleId: trigger.dataset.highlightIssue },
       affected_systems: ["state", "highlight", "workspace", "render"],
     });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.getElementById("vicramReportModal")) {
+      closeVicramReportModal();
+    }
   });
 
   if (websitePreviewFrame) {

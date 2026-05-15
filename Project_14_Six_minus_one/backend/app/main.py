@@ -11,6 +11,7 @@ from .routers.assistant import router as assistant_router
 from .routers.eye import router as eye_router
 from .routers.history import router as history_router
 from .routers.system import router as system_router
+from .routers.vicram import router as vicram_router
 
 init_history_store()
 
@@ -28,6 +29,7 @@ app.include_router(history_router)
 app.include_router(eye_router)
 app.include_router(analysis_router)
 app.include_router(assistant_router)
+app.include_router(vicram_router)
 
 app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")

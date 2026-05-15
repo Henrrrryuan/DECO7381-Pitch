@@ -4,6 +4,7 @@ import { DocsPage } from "./pages/DocsPage.jsx";
 import { HistoryPage } from "./pages/HistoryPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { LoadingPage } from "./pages/LoadingPage.jsx";
+import { VicramPage } from "./pages/VicramPage.jsx";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/docs" element={<DocsPage />} />
+        <Route path="/vicram" element={<VicramPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

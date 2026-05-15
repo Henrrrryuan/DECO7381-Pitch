@@ -31,6 +31,23 @@ class AnalyzeUrlPayload(BaseModel):
     baseline_run_id: str | None = None
 
 
+class VicramUrlPayload(BaseModel):
+    url: str
+    rows: int = 20
+    columns: int = 20
+    viewport_width: int = 1366
+    viewport_height: int = 768
+
+
+class VicramAnalyzePayload(BaseModel):
+    url: str | None = None
+    html: str | None = None
+    rows: int = 20
+    columns: int = 20
+    viewport_width: int = 1366
+    viewport_height: int = 768
+
+
 class EyeTempHtmlUploadPayload(BaseModel):
     html: str
 

@@ -119,6 +119,35 @@ async function analyzeUrl(url, baselineRunId = null) {
   });
 }
 
+async function analyzeVicramUrl(url, options = {}) {
+  return fetchJson(`${API_BASE}/api/vicram/analyze-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url,
+      rows: options.rows ?? 20,
+      columns: options.columns ?? 20,
+      viewport_width: options.viewportWidth ?? 1366,
+      viewport_height: options.viewportHeight ?? 768,
+    }),
+  });
+}
+
+async function analyzeVicramSource(source, options = {}) {
+  return fetchJson(`${API_BASE}/api/vicram/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: source?.url || null,
+      html: source?.html || null,
+      rows: options.rows ?? 20,
+      columns: options.columns ?? 20,
+      viewport_width: options.viewportWidth ?? 1366,
+      viewport_height: options.viewportHeight ?? 768,
+    }),
+  });
+}
+
 async function chatWithAssistant(payload) {
   return fetchJson(`${API_BASE}/assistant/chat`, {
     method: "POST",
@@ -377,7 +406,9 @@ export {
   API_BASE,
   STORAGE_KEY,
   analyzeHtmlText,
+  analyzeVicramSource,
   analyzeUrl,
+  analyzeVicramUrl,
   analyzeUploadFile,
   buildAnalysisView,
   chatWithAssistant,
