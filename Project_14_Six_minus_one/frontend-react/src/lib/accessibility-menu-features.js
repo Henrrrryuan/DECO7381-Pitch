@@ -68,6 +68,12 @@ export const ACCESSIBILITY_MENU_FEATURES = [
 
 export const ACCESSIBILITY_PROFILE_OPTIONS = [
   {
+    id: "cognitive",
+    label: "Cognitive",
+    tooltip: "Highlight links and headings, and show helpful tooltips for easier scanning.",
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a4 4 0 0 1 7.4-2.1A4.5 4.5 0 0 1 20 6.3a4.3 4.3 0 0 1-2 7.5V18a2 2 0 0 1-2 2h-1.5M9 4a4.2 4.2 0 0 0-4 4.3 4.4 4.4 0 0 0 2 3.7V20h4" /><path d="M8 14h8M8 17h5M10 8h4" /></svg>',
+  },
+  {
     id: "dyslexia",
     label: "Dyslexia",
     tooltip: "Apply reading support: text reader, readable fonts, stop animation, and helpful tooltips.",
