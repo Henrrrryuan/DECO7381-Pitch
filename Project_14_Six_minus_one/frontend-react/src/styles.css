@@ -1552,9 +1552,9 @@ body.analysis-loading-active {
 .sidebar-detail-kicker {
   margin: 0;
   color: #42526b;
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -2119,6 +2119,36 @@ body.analysis-loading-active {
   line-height: 1;
 }
 
+.vicram-dashboard-level {
+  width: fit-content;
+  margin: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.vicram-dashboard-level-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.vicram-dashboard-level-moderate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.vicram-dashboard-level-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.vicram-dashboard-level-neutral {
+  background: #e2e8f0;
+  color: #475569;
+}
+
 .vicram-dashboard-copy small {
   overflow: hidden;
   color: var(--muted);
@@ -2195,7 +2225,7 @@ body.analysis-loading-active {
 }
 
 .vicram-dashboard-actions button {
-  min-height: 34px;
+  min-height: 38px;
   padding: 0 10px;
   border: 1px solid rgba(47, 111, 235, 0.28);
   border-radius: 7px;
@@ -2206,10 +2236,15 @@ body.analysis-loading-active {
   cursor: pointer;
 }
 
-.vicram-dashboard-actions button:last-child {
+.vicram-dashboard-actions .vicram-dashboard-primary-action {
   background: #1d4ed8;
+  border-color: #1d4ed8;
   color: #fff;
-  grid-column: 1 / -1;
+}
+
+.vicram-dashboard-actions .vicram-dashboard-link-action {
+  background: #fff;
+  color: #1d4ed8;
 }
 
 .vicram-dashboard-actions button:disabled {

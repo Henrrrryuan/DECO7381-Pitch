@@ -452,7 +452,7 @@ function resetVicramStateForNewResult() {
   }
 }
 
-function renderVicramDashboardPanel() {
+function renderVicramDashboardPanelLegacy() {
   const panel = document.getElementById("vicramDashboardPanel");
   if (!panel) {
     return;
@@ -468,14 +468,29 @@ function renderVicramDashboardPanel() {
       ? "Calculating"
       : "Not run";
   const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
-  const canAnalyze = Boolean(source.kind) && !vicram.loading;
   const canToggle = Boolean(source.kind);
   const canShowReport = hasResultForTarget && !vicram.loading;
   const page = hasResultForTarget ? vicram.result?.page || {} : {};
   const grid = hasResultForTarget ? vicram.result?.grid || {} : {};
-  const debug = hasResultForTarget ? vicram.result?.debug || {} : {};
-  const topCell = hasResultForTarget ? topVicramCells(vicram.result, 1)[0] : null;
+  const topCells = hasResultForTarget ? topVicramCells(vicram.result, 3) : [];
   const targetLabel = source.label || "Waiting for analysis source";
+  const numericVcs = Number(vcs);
+  const complexityLevel = hasResultForTarget && Number.isFinite(numericVcs)
+    ? numericVcs >= 7
+      ? "High visual complexity"
+      : numericVcs >= 4
+        ? "Moderate visual complexity"
+        : "Low visual complexity"
+    : vicram.loading
+      ? "Calculating visual complexity"
+      : "Waiting for ViCRAM analysis";
+  const complexityTone = hasResultForTarget && Number.isFinite(numericVcs)
+    ? numericVcs >= 7
+      ? "high"
+      : numericVcs >= 4
+        ? "moderate"
+        : "low"
+    : "neutral";
   const metricsMarkup = hasResultForTarget
     ? `
       <dl class="vicram-dashboard-metrics">
@@ -501,7 +516,7 @@ function renderVicramDashboardPanel() {
   panel.innerHTML = `
     <div class="vicram-dashboard-card">
       <div class="vicram-dashboard-copy">
-        <span class="vicram-dashboard-label">ViCRAM VCS</span>
+        <span class="vicram-dashboard-label">Visual Complexity Score</span>
         <strong>${escapeHtml(scoreText)}</strong>
         ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
       </div>
@@ -543,6 +558,84 @@ function renderVicramDashboardPanel() {
         <li><strong>Grid colour:</strong> cells are ranked by their VCS, then limited by the whole-page VCS so a simple page cannot become fully red.</li>
         <li><strong>Factors:</strong> words, images, TLC, and detected style or element positions are mapped into the visible grid.</li>
         <li><strong>Formula:</strong> base + TLC weight + word weight + image weight, normalized to the 0-10 VCS scale.</li>
+      </ul>
+    </section>
+  `;
+}
+
+function renderVicramDashboardPanel() {
+  const panel = document.getElementById("vicramDashboardPanel");
+  if (!panel) {
+    return;
+  }
+
+  const vicram = vicramState();
+  const source = getVicramAnalysisSource();
+  const vcs = vicram.result?.page?.vcs;
+  const hasResultForTarget = vicram.result && vicram.targetUrl === source.label;
+  const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
+    ? Number(vcs).toFixed(4)
+    : vicram.loading
+      ? "Calculating"
+      : "Not run";
+  const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
+  const canToggle = Boolean(source.kind);
+  const canShowReport = hasResultForTarget && !vicram.loading;
+  const numericVcs = Number(vcs);
+  const complexityLevel = hasResultForTarget && Number.isFinite(numericVcs)
+    ? numericVcs >= 7
+      ? "High visual complexity"
+      : numericVcs >= 4
+        ? "Moderate visual complexity"
+        : "Low visual complexity"
+    : vicram.loading
+      ? "Calculating visual complexity"
+      : "Waiting for ViCRAM analysis";
+  const complexityTone = hasResultForTarget && Number.isFinite(numericVcs)
+    ? numericVcs >= 7
+      ? "high"
+      : numericVcs >= 4
+        ? "moderate"
+        : "low"
+    : "neutral";
+
+  panel.innerHTML = `
+    <div class="vicram-dashboard-card">
+      <div class="vicram-dashboard-copy">
+        <span class="vicram-dashboard-label">Visual Complexity Score</span>
+        <strong>${escapeHtml(scoreText)}</strong>
+        <p class="vicram-dashboard-level vicram-dashboard-level-${escapeHtml(complexityTone)}">${escapeHtml(complexityLevel)}</p>
+        ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
+      </div>
+      <div class="vicram-dashboard-actions">
+        <button
+          id="vicramToggleGridButton"
+          class="vicram-dashboard-primary-action"
+          type="button"
+          ${canToggle ? "" : "disabled"}
+          data-accessibility-tooltip="Toggle the right preview between the webpage and the ViCRAM grid overlay."
+        >${escapeHtml(buttonLabel)}</button>
+        <button
+          id="vicramReportButton"
+          class="vicram-dashboard-link-action"
+          type="button"
+          ${canShowReport ? "" : "disabled"}
+          data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
+        >View calculation details</button>
+      </div>
+    </div>
+    <section class="vicram-dashboard-summary-card" aria-label="ViCRAM summary rules">
+      <h3>How to read the grid</h3>
+      <div class="vicram-dashboard-scale">
+        <span>0</span>
+        <div class="vicram-dashboard-scale-track" aria-hidden="true"></div>
+        <span>10</span>
+      </div>
+      <p>0 means visually simple; 10 means highly complex. The overlay highlights where complexity is concentrated.</p>
+      <ul>
+        <li><strong>Green to red:</strong> lower to higher grid complexity.</li>
+        <li><strong>Score factors:</strong> text, images, TLC, and layout/style density.</li>
+        <li><strong>Use it with issues:</strong> switch to Issues to see actionable accessibility guidance.</li>
       </ul>
     </section>
   `;
