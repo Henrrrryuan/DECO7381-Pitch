@@ -323,6 +323,23 @@ function renderPatientSwitcher() {
   });
 }
 
+function setSidebarDetailMode(mode) {
+  const sidebar = document.getElementById("toolSidebar");
+  if (!sidebar) {
+    return;
+  }
+  const nextMode = mode === "issues" ? "issues" : "vcs";
+  sidebar.dataset.sidebarDetailMode = nextMode;
+  sidebar.querySelectorAll("[data-sidebar-panel]").forEach((panel) => {
+    const isActive = panel.dataset.sidebarPanel === nextMode;
+    panel.toggleAttribute("hidden", !isActive);
+    panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+  });
+  sidebar.querySelectorAll("[data-sidebar-panel-target]").forEach((button) => {
+    button.setAttribute("aria-expanded", String(button.dataset.sidebarPanelTarget === nextMode));
+  });
+}
+
 function setActivePatientProfile(profileName) {
   if (!PATIENT_PROFILES[profileName] || state.activeProfile === profileName) {
     return;
@@ -454,6 +471,32 @@ function renderVicramDashboardPanel() {
   const canAnalyze = Boolean(source.kind) && !vicram.loading;
   const canToggle = Boolean(source.kind);
   const canShowReport = hasResultForTarget && !vicram.loading;
+  const page = hasResultForTarget ? vicram.result?.page || {} : {};
+  const grid = hasResultForTarget ? vicram.result?.grid || {} : {};
+  const debug = hasResultForTarget ? vicram.result?.debug || {} : {};
+  const topCell = hasResultForTarget ? topVicramCells(vicram.result, 1)[0] : null;
+  const targetLabel = source.label || "Waiting for analysis source";
+  const metricsMarkup = hasResultForTarget
+    ? `
+      <dl class="vicram-dashboard-metrics">
+        <div><dt>Words</dt><dd>${escapeHtml(String(page.word_count ?? 0))}</dd></div>
+        <div><dt>Images</dt><dd>${escapeHtml(String(page.images ?? 0))}</dd></div>
+        <div><dt>TLC</dt><dd>${escapeHtml(String(page.tlc ?? 0))}</dd></div>
+        <div><dt>Grid</dt><dd>${escapeHtml(`${grid.rows || VICRAM_GRID_ROWS} x ${grid.columns || VICRAM_GRID_COLUMNS}`)}</dd></div>
+      </dl>
+      <div class="vicram-dashboard-detail-list">
+        <p><span>Source</span><strong>${escapeHtml(targetLabel)}</strong></p>
+        <p><span>Formula</span><strong>${escapeHtml(grid.formula || "1.743 + 0.097*TLC + 0.053*Words + 0.003*Images")}</strong></p>
+        <p><span>Detected positions</span><strong>text ${escapeHtml(String(debug.text_rects ?? 0))}, images ${escapeHtml(String(debug.image_rects ?? 0))}, elements ${escapeHtml(String(debug.element_rects ?? 0))}</strong></p>
+        ${topCell ? `<p><span>Highest cell</span><strong>${escapeHtml(`${topCell.row}-${topCell.column}`)} · ${Number(topCell.vcs || 0).toFixed(4)} VCS</strong></p>` : ""}
+      </div>
+    `
+    : `
+      <div class="vicram-dashboard-detail-list">
+        <p><span>Source</span><strong>${escapeHtml(targetLabel)}</strong></p>
+        <p><span>Status</span><strong>${vicram.loading ? "Calculating visual complexity..." : "Run analysis to show VCS metrics."}</strong></p>
+      </div>
+    `;
 
   panel.innerHTML = `
     <div class="vicram-dashboard-card">
@@ -462,6 +505,7 @@ function renderVicramDashboardPanel() {
         <strong>${escapeHtml(scoreText)}</strong>
         ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
       </div>
+      ${metricsMarkup}
       <div class="vicram-dashboard-actions">
         <button
           id="vicramRefreshButton"
@@ -483,6 +527,24 @@ function renderVicramDashboardPanel() {
         >Show Report</button>
       </div>
     </div>
+    <section class="vicram-dashboard-summary-card" aria-label="ViCRAM summary rules">
+      <h3>Summary report guide</h3>
+      <div class="vicram-dashboard-scale">
+        <span>0</span>
+        <div class="vicram-dashboard-scale-track" aria-hidden="true"></div>
+        <span>10</span>
+      </div>
+      <p>
+        The Visual Complexity Score ranges from 0 to 10. Lower scores indicate a simpler page;
+        higher scores indicate stronger visual complexity.
+      </p>
+      <ul>
+        <li><strong>Colour range:</strong> green = lower grid complexity, yellow = medium, red = higher.</li>
+        <li><strong>Grid colour:</strong> cells are ranked by their VCS, then limited by the whole-page VCS so a simple page cannot become fully red.</li>
+        <li><strong>Factors:</strong> words, images, TLC, and detected style or element positions are mapped into the visible grid.</li>
+        <li><strong>Formula:</strong> base + TLC weight + word weight + image weight, normalized to the 0-10 VCS scale.</li>
+      </ul>
+    </section>
   `;
 }
 
@@ -4838,6 +4900,7 @@ function bindEvents() {
   const websitePreviewFrame = document.getElementById("websitePreviewFrame");
   const explanationContent = document.getElementById("explanationContent");
   const navLinks = Array.from(document.querySelectorAll(".app-nav-links a[href]"));
+  setSidebarDetailMode("vcs");
   renderPatientSwitcher();
   initDimensionInfoTooltip();
   initBackToAnalysisButton();
@@ -4946,6 +5009,13 @@ function bindEvents() {
   }
 
   document.addEventListener("click", (event) => {
+    const sidebarPanelSwitch = event.target.closest("[data-sidebar-panel-target]");
+    if (sidebarPanelSwitch) {
+      event.preventDefault();
+      setSidebarDetailMode(sidebarPanelSwitch.dataset.sidebarPanelTarget || "vcs");
+      return;
+    }
+
     if (event.target.closest("[data-vicram-report-close]")) {
       event.preventDefault();
       closeVicramReportModal();

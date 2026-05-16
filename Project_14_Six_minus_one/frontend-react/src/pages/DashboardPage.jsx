@@ -99,34 +99,65 @@ export function DashboardPage() {
               ‹
             </span>
           </button>
-          <aside id="toolSidebar" className="tool-sidebar">
+          <aside id="toolSidebar" className="tool-sidebar" data-sidebar-detail-mode="vcs">
             <div className="tool-sidebar-inner">
-              <PriorityLensPanel />
-
-              <section
-                id="vicramDashboardPanel"
-                className="vicram-dashboard-panel"
-                aria-label="ViCRAM visual complexity"
-              />
-
-              <DetectionGauge detected={gauge.detected} />
-
-              <section className="sidebar-section sidebar-explanation-section">
-                <div className="sidebar-explanation-content">
-                  <div id="dashboardSummaryText" className="overall-summary" />
-                  <section id="printSummary" className="print-summary" aria-label="Printable summary">
-                    <div className="print-summary-top">
-                      <div className="print-summary-copy">
-                        <h3 id="printSourceName">Waiting for upload</h3>
-                        <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
-                      </div>
-                    </div>
-                  </section>
-                  <section id="printProfileReport" className="print-profile-report" aria-label="Printable profile report" />
-                  <div id="explanationContent" className="pane-scroll rich-text empty">
-                    Analysis explanations will appear here after the current page is processed.
+              <section className="sidebar-detail-panel sidebar-detail-panel-vcs" data-sidebar-panel="vcs" aria-label="ViCRAM details">
+                <div className="sidebar-detail-scroll">
+                  <div className="sidebar-detail-heading">
+                    <p className="sidebar-detail-kicker">Visual complexity</p>
+                    <h2>ViCRAM overview</h2>
                   </div>
+                  <section
+                    id="vicramDashboardPanel"
+                    className="vicram-dashboard-panel"
+                    aria-label="ViCRAM visual complexity"
+                  />
                 </div>
+                <button
+                  id="sidebarIssuesPanelButton"
+                  className="sidebar-panel-switch sidebar-panel-switch-bottom"
+                  type="button"
+                  data-sidebar-panel-target="issues"
+                  aria-label="Show issue details"
+                  data-accessibility-tooltip="Open detected issue details in the sidebar."
+                >
+                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-up" aria-hidden="true" />
+                </button>
+              </section>
+
+              <section className="sidebar-detail-panel sidebar-detail-panel-issues" data-sidebar-panel="issues" aria-label="Detected issue details">
+                <button
+                  id="sidebarVcsPanelButton"
+                  className="sidebar-panel-switch sidebar-panel-switch-top"
+                  type="button"
+                  data-sidebar-panel-target="vcs"
+                  aria-label="Show ViCRAM details"
+                  data-accessibility-tooltip="Return to ViCRAM visual complexity details."
+                >
+                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-down" aria-hidden="true" />
+                </button>
+
+                <PriorityLensPanel />
+
+                <DetectionGauge detected={gauge.detected} />
+
+                <section className="sidebar-section sidebar-explanation-section">
+                  <div className="sidebar-explanation-content">
+                    <div id="dashboardSummaryText" className="overall-summary" />
+                    <section id="printSummary" className="print-summary" aria-label="Printable summary">
+                      <div className="print-summary-top">
+                        <div className="print-summary-copy">
+                          <h3 id="printSourceName">Waiting for upload</h3>
+                          <p id="printSummaryText">Run an analysis to populate the printable summary.</p>
+                        </div>
+                      </div>
+                    </section>
+                    <section id="printProfileReport" className="print-profile-report" aria-label="Printable profile report" />
+                    <div id="explanationContent" className="pane-scroll rich-text empty">
+                      Analysis explanations will appear here after the current page is processed.
+                    </div>
+                  </div>
+                </section>
               </section>
             </div>
           </aside>
