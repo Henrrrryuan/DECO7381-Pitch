@@ -414,7 +414,8 @@ export function HomePage() {
                   aria-label="CogniLens help assistant"
                   aria-live="polite"
                 >
-                  <ul
+                  <div className="guide-bubble-card">
+                    <ul
                     className="guide-bubble-dots"
                     aria-label={`Help topic ${guideStepIndex + 1} of ${GUIDE_BUBBLE_STEPS.length}`}
                   >
@@ -454,6 +455,7 @@ export function HomePage() {
                         Next →
                       </button>
                     ) : null}
+                  </div>
                   </div>
                 </div>
                 <div className="character-stage">
