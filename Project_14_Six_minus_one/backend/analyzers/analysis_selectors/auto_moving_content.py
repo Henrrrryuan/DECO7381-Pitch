@@ -239,8 +239,8 @@ def detect_auto_moving_content(
     # Preserve the "max underlying issue wins" severity while aggregating evidence.
     winner.rule_id = "AMC-1"
     winner.title = "Auto-Moving Content"
-    winner.description = "Automatic movement interrupts concentration and distracts users."
-    winner.suggestion = "Disable autoplay and infinite animation unless movement is user initiated and essential."
+    winner.description = "Static autoplay or motion signals can pull attention away from the main task and reduce users' sense of control."
+    winner.suggestion = "Disable non-essential autoplay or continuous motion by default; this signal does not verify full WCAG pause, stop, hide compliance."
     winner.locations = merged_locations
     winner.evidence = {
         **(winner.evidence or {}),

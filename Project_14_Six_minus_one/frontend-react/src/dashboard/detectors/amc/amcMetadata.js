@@ -8,18 +8,17 @@ const amcMetadata = {
   },
   coga_objective: "Objective 5: Help users focus",
   tooltip: {
-    issue: "Automatic movement may distract users.",
-    impact: "We check autoplay media and continuously moving components.",
+    issue: "Static motion or autoplay signals may distract users.",
+    impact: "We check autoplay media and motion or animation hints; this does not verify whether every motion control meets WCAG timing or pause-control requirements.",
   },
   guidance: {
     steps: [
-      "Disable autoplay by default.",
-      "Reduce non-essential continuous motion or make it user initiated.",
+      "Disable autoplay or automatic motion by default where it is not essential to the task.",
+      "Reduce non-essential continuous motion, or make it user initiated with clear controls.",
     ],
-    goal: "Keep motion under user control instead of starting automatically.",
-    done_when: "Done when media or animation starts only after the user chooses it.",
+    goal: "Treat autoplay and motion findings as static risk signals and keep non-essential movement under user control.",
+    done_when: "Done when flagged motion or autoplay no longer starts automatically, or users have clear control before it competes for attention.",
   },
 };
 
 export { amcMetadata };
-

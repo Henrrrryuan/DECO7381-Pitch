@@ -8,18 +8,17 @@ const phsMetadata = {
   },
   coga_objective: "Objective 2: Help users find what they need",
   tooltip: {
-    issue: "Heading hierarchy may make orientation harder.",
-    impact: "h1–h6 hierarchy heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings (not title tag or visual typography).",
+    issue: "Semantic heading order may make page orientation harder.",
+    impact: "h1–h6 markup-order heuristic: missing h1, multiple h1, skipped levels, duplicate or empty headings, or no headings; this does not evaluate visual size, styling, or viewport prominence.",
   },
   guidance: {
     steps: [
-      "Add one clear h1 that describes the page purpose.",
-      "Use lower-level headings in order to mark major sections.",
+      "Use one clear semantic h1 where appropriate to describe the page purpose.",
+      "Use h2–h6 in a predictable order to mark real sections, avoiding skipped levels, duplicates, and empty headings.",
     ],
-    goal: "Create a predictable heading hierarchy.",
-    done_when: "Done when headings follow a clear order from the main page heading down.",
+    goal: "Create a predictable semantic h1–h6 structure.",
+    done_when: "Done when heading markup follows a clear order and each heading communicates a section purpose.",
   },
 };
 
 export { phsMetadata };
-

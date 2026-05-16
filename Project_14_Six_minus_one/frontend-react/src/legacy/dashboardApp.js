@@ -3270,6 +3270,245 @@ function positionGuidancePopover(popoverEl, anchorElement, doc) {
   popoverEl.style.top = `${topInViewport + (view.scrollY || 0)}px`;
 }
 
+function parsePopoverElementNumber(elementLabel) {
+  const match = String(elementLabel || "").match(/\bElement\s+(\d+)\b/i);
+  if (!match) {
+    return 0;
+  }
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function locationFieldText(location, keys) {
+  for (const key of keys) {
+    const value = location?.[key];
+    if (value === null || value === undefined) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const items = value.map((item) => String(item || "").trim()).filter(Boolean);
+      if (items.length) {
+        return items.slice(0, 6).join(", ");
+      }
+      continue;
+    }
+    const text = String(value).trim();
+    if (text) {
+      return text;
+    }
+  }
+  return "";
+}
+
+function percentageText(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return "";
+  }
+  const percent = number <= 1 ? number * 100 : number;
+  return `${Math.round(percent)}%`;
+}
+
+function selectedPopoverLocation(issue, elementNumber) {
+  if (!elementNumber || !Array.isArray(issue?.locations)) {
+    return null;
+  }
+  return issue.locations[elementNumber - 1] || null;
+}
+
+function popoverLocationName(issue, location) {
+  const ruleId = issue?.rule_id || "";
+  const label = friendlyLocationLabel(location, ruleId);
+  const preview = conciseText(
+    locationFieldText(location, ["label", "preview", "text", "sentence_preview", "summary"]),
+    "",
+    64,
+  );
+  if (preview && preview !== label && !looksLikeTechnicalSelector(preview)) {
+    return `${label}: "${preview}"`;
+  }
+  return label || "this element";
+}
+
+function locationDescriptor(location) {
+  const tag = String(location?.tag || "").toLowerCase();
+  const blob = [
+    location?.selector,
+    location?.summary,
+    location?.label,
+    location?.preview,
+    location?.region,
+    location?.attrs?.class,
+    location?.attrs?.id,
+  ].map((value) => String(value || "").toLowerCase()).join(" ");
+  const role = String(location?.attrs?.role || location?.role || "").toLowerCase();
+  const category = String(location?.contributorCategory || "").toLowerCase();
+  const isOverlay = /modal|banner|sticky|overlay|toast|popup|chat|promo|offer|newsletter|consent/.test(blob);
+  const isNavigation = tag === "nav" || category === "navigation" || Boolean(location?.nav_link_count || location?.nesting_depth);
+  const isAction = category === "interactive"
+    || ["button", "a", "input", "select", "textarea"].includes(tag)
+    || ["button", "link"].includes(role);
+  const isHeading = /^h[1-6]$/.test(tag) || Boolean(location?.violationType || location?.headingLevel || location?.currentHeadingLevel);
+  const isText = ["p", "li", "article", "section", "blockquote", "td", "th", "label"].includes(tag)
+    || Boolean(location?.word_count || location?.paragraph_count || location?.sentence_word_count);
+  return { blob, category, isAction, isHeading, isNavigation, isOverlay, isText, tag };
+}
+
+function actionMoveForLocation(location) {
+  const descriptor = locationDescriptor(location);
+  if (descriptor.isNavigation) {
+    return "Group related links and reduce visible navigation choices where possible.";
+  }
+  if (descriptor.isOverlay) {
+    return "Delay this prompt, reduce its visual dominance, or make it easy to dismiss without blocking the main task.";
+  }
+  if (descriptor.isAction) {
+    return "Keep one primary action visually dominant and move secondary actions into a lower-priority area.";
+  }
+  if (descriptor.isHeading) {
+    return "Adjust the heading order so the page structure follows a clear h1-h6 hierarchy.";
+  }
+  if (descriptor.isText) {
+    return "Break this content into shorter chunks, add a clear heading, or convert supporting details into bullets.";
+  }
+  return "Reduce the element's cognitive burden by simplifying, grouping, or lowering its visual priority.";
+}
+
+function selectedElementPopoverGuidance(issue, location) {
+  if (!location) {
+    return null;
+  }
+  const ruleId = issue?.rule_id || "";
+  const descriptor = locationDescriptor(location);
+  const name = popoverLocationName(issue, location);
+  const intro = name && name !== "this element" ? `For ${name}, ` : "";
+
+  if (ruleId === "VO-1") {
+    if (descriptor.isOverlay) {
+      return {
+        why: "This element competes with the main task and can interrupt the user's attention.",
+        moves: ["Delay this prompt, reduce its visual dominance, or make it easy to dismiss without blocking the main task."],
+        action: `${intro}move it away from the first task path or make it less dominant until the user needs it.`,
+      };
+    }
+    if (descriptor.isAction) {
+      return {
+        why: "This element adds another visible action choice, which can make it harder for users to identify the main next step.",
+        moves: ["Keep one primary action visually dominant and move secondary actions into a lower-priority area."],
+        action: `${intro}decide whether this should be the primary action or be visually demoted.`,
+      };
+    }
+    if (descriptor.isHeading || descriptor.isText) {
+      return {
+        why: "This content adds to early-page density, which can make the main task harder to scan and prioritize.",
+        moves: ["Shorten, group, or defer supporting content so the main task is easier to find first."],
+        action: `${intro}simplify or group it so it supports the main path instead of competing with it.`,
+      };
+    }
+    return {
+      why: "This element contributes to the detected early-page structural density signal in this part of the page.",
+      moves: ["Reduce the element's cognitive burden by simplifying, grouping, or lowering its visual priority."],
+      action: `${intro}check whether it needs to appear this early, or move it into a clearer group.`,
+    };
+  }
+
+  if (ruleId === "LC-1") {
+    const ratio = percentageText(location?.complex_word_ratio ?? location?.complexWordRatio);
+    const samples = locationFieldText(location, ["sample_words", "sampleWords"]);
+    return {
+      why: `This text may increase reading effort because the lexical complexity estimate is higher${ratio ? ` (${ratio})` : ""}.`,
+      moves: ["Replace avoidably dense words with simpler terms and explain necessary specialist wording nearby."],
+      action: `${intro}${samples ? `review terms such as ${samples} and ` : ""}simplify wording where the meaning can stay the same.`,
+    };
+  }
+
+  if (ruleId === "SC-1") {
+    const sentence = conciseText(locationFieldText(location, ["sentence_preview", "preview", "text"]), "", 120);
+    return {
+      why: "This sentence may require users to hold multiple ideas in memory before they can understand the main point.",
+      moves: ["Split or simplify this sentence so each sentence carries one main idea."],
+      action: `${intro}${sentence ? `rewrite "${sentence}" into shorter sentence units.` : "split the sentence into shorter units."}`,
+    };
+  }
+
+  if (ruleId === "DT-1") {
+    return {
+      why: "This text block adds reading effort because users must scan and process a dense section before moving forward.",
+      moves: ["Break this content into shorter chunks, add a clear heading, or convert supporting details into bullets."],
+      action: `${intro}make the block easier to scan with shorter paragraphs or clearer breaks.`,
+    };
+  }
+
+  if (ruleId === "LCC-1") {
+    const landmarks = [
+      location?.heading_count !== undefined ? `${location.heading_count} headings` : "",
+      location?.list_count !== undefined ? `${location.list_count} lists` : "",
+    ].filter(Boolean).join(" and ");
+    return {
+      why: `This long region may be harder to navigate because it has limited chunking landmarks${landmarks ? ` (${landmarks})` : ""}.`,
+      moves: ["Add section headings, summaries, or lists so users can scan the region before reading in full."],
+      action: `${intro}add visible chunking cues before asking users to read the full section.`,
+    };
+  }
+
+  if (ruleId === "PHS-1") {
+    const violation = formatViolationTypeLabel(location?.violationType || "heading structure");
+    return {
+      why: "This heading affects page orientation because users rely on headings to understand structure and priority.",
+      moves: ["Adjust the heading order so the page structure follows a clear h1-h6 hierarchy."],
+      action: `${intro}fix the ${violation.toLowerCase()} signal in the semantic heading structure.`,
+    };
+  }
+
+  if (ruleId === "NC-1") {
+    const metrics = [
+      location?.nav_link_count ? `${location.nav_link_count} links` : "",
+      location?.nesting_depth ? `nesting depth ${location.nesting_depth}` : "",
+    ].filter(Boolean).join(" · ");
+    return {
+      why: "This navigation area adds multiple choices, which may increase decision effort.",
+      moves: ["Group related links and reduce visible navigation choices where possible."],
+      action: `${intro}${metrics ? `reduce or regroup the ${metrics} so the path is easier to choose.` : "group related links and flatten nested paths."}`,
+    };
+  }
+
+  if (ruleId === "AMC-1") {
+    const subtype = locationFieldText(location, ["movement_subtype", "movementSubtype", "underlying_issue", "underlyingIssue"]);
+    return {
+      why: "This element may pull attention away from the main task because it is a static motion or autoplay signal.",
+      moves: ["Pause or remove automatic movement, or provide a clear pause/stop control."],
+      action: `${intro}${subtype ? `treat the ${subtype.replace(/_/g, " ")} as optional motion and ` : ""}keep movement under user control.`,
+    };
+  }
+
+  if (ruleId === "EI-1") {
+    const type = locationFieldText(location, ["interrupt_type", "interruptType"]) || "interruption-like candidate";
+    const isBlocking = location?.covers_primary_region || location?.blocks_scroll || location?.dismiss_required;
+    return {
+      why: "This element competes with the main task and can interrupt the user's attention.",
+      moves: ["Avoid showing this interruption before the user has completed the main reading or decision task."],
+      action: `${intro}${isBlocking ? "make it non-blocking, easy to dismiss, or delay it until after the main task." : `treat this ${type} prompt as secondary to the main task.`}`,
+    };
+  }
+
+  const genericMove = actionMoveForLocation(location);
+  return {
+    why: descriptor.isNavigation
+      ? "This navigation area adds multiple choices, which may increase decision effort."
+      : descriptor.isOverlay
+        ? "This element competes with the main task and can interrupt the user's attention."
+        : descriptor.isAction
+          ? "This element adds another visible action choice, which can make it harder for users to identify the main next step."
+          : descriptor.isHeading
+            ? "This heading affects page orientation because users rely on headings to understand structure and priority."
+            : descriptor.isText
+              ? "This text block adds reading effort because users must scan and process it before moving forward."
+              : "This element contributes to the detected cognitive accessibility risk in this part of the page.",
+    moves: [genericMove],
+    action: `${intro}${genericMove.charAt(0).toLowerCase()}${genericMove.slice(1)}`,
+  };
+}
+
 function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuseIfSameKey = false } = {}) {
   if (!doc || !anchorElement || !record?.issue) {
     return;
@@ -3285,25 +3524,35 @@ function renderGuidancePopover(doc, anchorElement, record, elementLabel, { reuse
   removeGuidancePopover(doc);
 
   const { issue, dimension } = record;
+  const elementNumber = parsePopoverElementNumber(elementLabel);
+  const selectedLocation = selectedPopoverLocation(issue, elementNumber);
+  const elementGuidance = selectedElementPopoverGuidance(issue, selectedLocation);
   const goal = issueGoalText(issue, dimension.dimension);
-  const steps = recommendedFixSteps(issue, dimension.dimension)
+  const issueSteps = recommendedFixSteps(issue, dimension.dimension)
     .slice(0, 2)
     .map((step) => step.text)
     .filter(Boolean);
+  const steps = elementGuidance?.moves?.length ? elementGuidance.moves.slice(0, 2) : issueSteps;
+  const whyText = elementGuidance?.why || issue.description || "This pattern can increase cognitive load and interrupt users' task flow.";
+  const suggestedAction = elementGuidance?.action || "";
   const container = doc.createElement("aside");
   container.id = "cognilens-guidance-popover";
   container.setAttribute("role", "dialog");
   container.setAttribute("aria-label", `${elementLabel} guidance`);
   const listMarkup = steps.length
-    ? `<ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
+    ? `<p>${escapeHtml(steps[0])}</p>`
     : `<p>${escapeHtml(goal)}</p>`;
   container.innerHTML = `
     <button type="button" class="cognilens-popover-close" aria-label="Close guidance popover"></button>
     <h5>${escapeHtml(elementLabel)}</h5>
     <h5>Why this matters</h5>
-    <p>${escapeHtml(issue.description || "This pattern can increase cognitive load and interrupt users' task flow.")}</p>
+    <p>${escapeHtml(whyText)}</p>
     <h5>First redesign move</h5>
     ${listMarkup}
+    ${suggestedAction ? `
+      <h5>Suggested action for this element</h5>
+      <p>${escapeHtml(suggestedAction)}</p>
+    ` : ""}
   `;
   doc.body?.appendChild(container);
   setActiveGuidancePopoverKey(state, expectedKey);

@@ -87,8 +87,8 @@ def detect_language_complexity(soup: BeautifulSoup):
         rule_id="LC-1",
         title="Language Complexity",
         base_penalty=REGULAR_BASE_PENALTY,
-        description="Complex vocabulary reduces comprehension speed and increases cognitive effort.",
-        suggestion="Replace uncommon or jargon-heavy wording with clear, familiar language.",
+        description="Text blocks with a high complex-word ratio can slow comprehension and increase cognitive effort.",
+        suggestion="Review complex-word signals and replace avoidable dense wording with clearer terms; explain necessary specialist terms near where they appear.",
         evidence={
             "complex_region_count": len(complex_regions),
             "highest_complex_word_ratio": max(item["complex_word_ratio"] for item in complex_regions),
