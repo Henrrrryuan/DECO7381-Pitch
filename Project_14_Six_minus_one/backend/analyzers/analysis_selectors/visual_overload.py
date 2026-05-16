@@ -344,11 +344,11 @@ def detect_visual_overload(soup: BeautifulSoup, parser: VisualHTMLParser):
         title="Visual Overload",
         base_penalty=REGULAR_BASE_PENALTY,
         description=(
-            "A high concentration of elements early in the DOM structure can divide attention and reduce focus "
-            "(early-page structural density heuristic)."
+            "Many elements or controls early in the page markup can make it harder to identify the main task "
+            "or decide where to focus first (early-page structural density heuristic, not rendered visual salience analysis)."
         ),
         suggestion=(
-            "Reduce competing actions and dense blocks in the early-page markup; group related content into clearer regions."
+            "Reduce early-page structural density by grouping related content and removing or deferring non-essential controls."
         ),
         evidence={
             "visible_element_count": len(first_viewport_elements),

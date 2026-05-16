@@ -8,18 +8,17 @@ const lcMetadata = {
   },
   coga_objective: "Objective 3: Use clear and understandable content",
   tooltip: {
-    issue: "Vocabulary may be harder to understand quickly.",
-    impact: "We check complex or uncommon word density.",
+    issue: "Some text blocks may have a high lexical complexity estimate.",
+    impact: "We use a complex-word ratio heuristic; this is not a full reading-level or vocabulary familiarity assessment.",
   },
   guidance: {
     steps: [
-      "Replace dense or specialist words with familiar terms where possible.",
-      "Keep necessary technical terms, but explain them in plain language.",
+      "Review words flagged by the complex-word ratio heuristic and replace avoidable dense wording with clearer terms.",
+      "Keep necessary specialist terms, but explain them briefly near where they appear.",
     ],
-    goal: "Use familiar wording that users can decode quickly.",
-    done_when: "Done when key wording is familiar or briefly explained.",
+    goal: "Reduce lexical complexity where simpler wording would preserve meaning.",
+    done_when: "Done when important terms are either simplified, necessary, or briefly explained.",
   },
 };
 
 export { lcMetadata };
-

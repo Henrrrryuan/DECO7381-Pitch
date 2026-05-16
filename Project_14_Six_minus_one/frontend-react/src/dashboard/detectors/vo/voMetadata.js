@@ -8,18 +8,17 @@ const voMetadata = {
   },
   coga_objective: "Objective 5: Help users focus",
   tooltip: {
-    issue: "The early-page DOM may contain a high concentration of competing elements.",
-    impact: "We use an early-page structural density heuristic (element and interactive counts), not rendered viewport geometry.",
+    issue: "Many elements or controls may appear early in the page markup.",
+    impact: "We use an early-page structural density heuristic based on DOM elements and interactive counts; this is not a full rendered visual-salience analysis.",
   },
   guidance: {
     steps: [
-      "Reduce competing elements in the early-page markup structure.",
-      "Group related content and remove non-essential cards, banners, or controls.",
+      "Reduce the number of elements and controls that appear early in the page markup.",
+      "Group related content so users can identify the main task and decide where to focus first.",
     ],
-    goal: "Reduce competing focal points and support one dominant task path.",
-    done_when: "Done when one clear primary focus dominates the early-page structure.",
+    goal: "Reduce early-page structural density so users encounter fewer competing regions and controls at the start of the page.",
+    done_when: "Done when early-page markup has fewer competing elements and clearer grouping around the main task.",
   },
 };
 
 export { voMetadata };
-

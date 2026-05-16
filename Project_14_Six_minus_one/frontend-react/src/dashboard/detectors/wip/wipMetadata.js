@@ -8,18 +8,17 @@ const wipMetadata = {
   },
   coga_objective: "Objective 2: Help users find what they need",
   tooltip: {
-    issue: "Many competing primary actions appear early in the page structure.",
-    impact: "Early-page CTA density heuristic: multiple CTA-like controls in DOM order—not rendered salience or viewport analysis.",
+    issue: "Multiple CTA-like controls appear early in DOM order.",
+    impact: "Early-page CTA density heuristic: multiple CTA-like controls in markup order can make the next step unclear; this is not a rendered visual prominence test.",
   },
   guidance: {
     steps: [
-      "Establish one clear primary action in the flow and demote or relocate competing CTAs.",
+      "Choose one primary action for the early-page flow and demote or defer competing CTA-like controls.",
       "Group secondary actions so the markup suggests a single dominant next step.",
     ],
-    goal: "Reduce competing primary actions so one next step reads clearly from structure.",
+    goal: "Reduce competing primary actions so the next step is clearer from early-page markup.",
     done_when: "Done when early-page markup presents one clear primary action and secondary CTAs are grouped or deferred.",
   },
 };
 
 export { wipMetadata };
-

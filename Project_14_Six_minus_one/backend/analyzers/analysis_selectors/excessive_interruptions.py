@@ -64,6 +64,6 @@ def detect_excessive_interruptions(
         })
     issue.rule_id = "EI-1"
     issue.title = "Excessive Interruptions"
-    issue.description = "Interruptions disrupt task continuity and increase cognitive load."
-    issue.suggestion = "Avoid auto-opening overlays; provide a clear dismiss control and keep interruptions out of the primary task flow."
+    issue.description = "Static signs of initial-load interruptions can break task continuity and increase cognitive load."
+    issue.suggestion = "Avoid initial dialogs, sticky prompts, overlays, and assertive notices that compete with the main task; this check does not simulate all focus or input-triggered changes."
     return issue
