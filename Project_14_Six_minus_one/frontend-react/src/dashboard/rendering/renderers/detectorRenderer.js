@@ -18,6 +18,8 @@ function renderExplanationMarkup({
   issueCardStandardsSummary,
   selectedIssueId,
   selectedElementNumber,
+  expandedIssueElementKeys,
+  issueElementDisclosureOpenKeys,
   issueRenderCtx,
 } = {}) {
   const orderedDimensions = [...(result?.dimensions || [])]
@@ -89,6 +91,8 @@ function renderExplanationMarkup({
       const issueNumber = globalIssueIndex + issueIndex + 1;
       const issueId = issueDomId(dimension.dimension, issue.rule_id);
       const { coga: cogaSummary, iso: isoSummary } = issueCardStandardsSummary(issue.rule_id || "");
+      const issueElementsExpanded = Boolean(expandedIssueElementKeys?.[issueId]);
+      const issueElementsDisclosureOpen = Boolean(issueElementDisclosureOpenKeys?.[issueId]);
       return renderIssueSummaryCard(
         issueRenderCtx,
         {
@@ -100,6 +104,8 @@ function renderExplanationMarkup({
           selectedElementNumber,
           cogaSummary,
           isoSummary,
+          issueElementsExpanded,
+          issueElementsDisclosureOpen,
         },
       );
     }).join("")}</div>`;

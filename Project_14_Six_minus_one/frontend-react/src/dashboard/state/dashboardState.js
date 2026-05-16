@@ -16,6 +16,8 @@ function createDashboardState() {
     activeHighlightIssueId: "",
     selectedIssueId: "",
     selectedElementNumber: 0,
+    expandedIssueElementKeys: {},
+    issueElementDisclosureOpenKeys: {},
     activeGuidancePopoverKey: "",
     chatMessages: [],
     chatPending: false,
@@ -30,4 +32,3 @@ function createDashboardState() {
 const dashboardState = createDashboardState();
 
 export { createDashboardState, dashboardState };
-

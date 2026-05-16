@@ -1,6 +1,66 @@
 import { cogaGuidanceMarkup, standardsPillsMarkup } from "../shared/renderHelpers.js";
 import { dtLineageEnabled, summarizeDtLocationArray } from "../../observability/dtLocationLineage.js";
 
+const ISSUE_ELEMENT_DISPLAY_LIMIT = 3;
+
+function issueLocationDisplayEntries(locations, limit = ISSUE_ELEMENT_DISPLAY_LIMIT) {
+  if (!Array.isArray(locations)) {
+    return [];
+  }
+  return locations.map((location, index) => ({
+    location,
+    elementNumber: index + 1,
+  })).slice(0, limit);
+}
+
+function hiddenCountLabel(ruleId, hiddenCount) {
+  if (!hiddenCount) {
+    return "";
+  }
+  const labelsByRule = {
+    "PHS-1": ["heading structure signal", "heading structure signals"],
+    "WIP-1": ["competing action signal", "competing action signals"],
+    "VO-1": ["visual overload signal", "visual overload signals"],
+    "AMC-1": ["motion signal", "motion signals"],
+    "EI-1": ["interruption signal", "interruption signals"],
+  };
+  const [singular, plural] = labelsByRule[String(ruleId || "")] || ["affected element", "affected elements"];
+  return `+${hiddenCount} more ${hiddenCount === 1 ? singular : plural}`;
+}
+
+function elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded, escapeHtml }) {
+  const hasToggle = expanded || hiddenCount > 0;
+  if (!hasToggle) {
+    return "";
+  }
+  const label = expanded ? "Show less" : hiddenCountLabel(issue?.rule_id, hiddenCount);
+  return `
+    <button
+      class="issue-element-hidden-count issue-element-toggle"
+      type="button"
+      data-expand-issue-elements="${expanded ? "collapse" : "expand"}"
+      data-issue-dimension="${escapeHtml(dimensionName)}"
+      data-issue-rule="${escapeHtml(issue?.rule_id || "")}"
+      aria-expanded="${expanded ? "true" : "false"}"
+    >${escapeHtml(label)}</button>
+  `;
+}
+
+function groupEntriesBy(entries, keyForEntry) {
+  const groups = {};
+  if (!Array.isArray(entries)) {
+    return groups;
+  }
+  entries.forEach((entry) => {
+    const key = keyForEntry(entry);
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(entry);
+  });
+  return groups;
+}
+
 function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber, chipOptions = {}) {
   const {
     escapeHtml,
@@ -144,9 +204,12 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
   `;
 }
 
-function issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber) {
-  const { escapeHtml, groupLocationsByViolationType, orderPhsViolationGroupKeys, formatViolationTypeLabel } = ctx;
-  const grouped = groupLocationsByViolationType(visibleSlice);
+function issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber) {
+  const { escapeHtml, orderPhsViolationGroupKeys, formatViolationTypeLabel } = ctx;
+  const grouped = groupEntriesBy(visibleEntries, ({ location }) => {
+    const raw = location?.violationType;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : "unknown";
+  });
   const keys = orderPhsViolationGroupKeys(Object.keys(grouped));
   return keys.map((violationKey) => {
     const entries = grouped[violationKey];
@@ -165,9 +228,12 @@ function issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSli
   }).join("");
 }
 
-function issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber) {
-  const { escapeHtml, groupLocationsByContributorCategory, orderVoContributorCategoryKeys, formatContributorCategoryLabel } = ctx;
-  const grouped = groupLocationsByContributorCategory(visibleSlice);
+function issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber) {
+  const { escapeHtml, orderVoContributorCategoryKeys, formatContributorCategoryLabel } = ctx;
+  const grouped = groupEntriesBy(visibleEntries, ({ location }) => {
+    const raw = location?.contributorCategory;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : "unknown";
+  });
   const keys = orderVoContributorCategoryKeys(Object.keys(grouped));
   return keys.map((categoryKey) => {
     const entries = grouped[categoryKey];
@@ -186,11 +252,11 @@ function issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlic
   }).join("");
 }
 
-function issueWipSingleGroupChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber, totalLocationCount) {
+function issueWipSingleGroupChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber, totalLocationCount) {
   const { escapeHtml } = ctx;
   const title = `Competing Primary Actions (${totalLocationCount})`;
-  const chips = visibleSlice.map((location, index) => (
-    issueElementChipRowMarkup(ctx, issue, dimensionName, location, index + 1, activeElementNumber)
+  const chips = visibleEntries.map(({ location, elementNumber }) => (
+    issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber)
   )).join("");
   return `
       <section class="issue-phs-violation-group issue-wip-single-group" aria-label="Competing Primary Actions">
@@ -202,15 +268,15 @@ function issueWipSingleGroupChipSectionsMarkup(ctx, issue, dimensionName, visibl
     `;
 }
 
-function issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber) {
+function issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber) {
   const {
     escapeHtml,
-    groupAmcLocationsBySubtype,
     amcSubtypeLabel,
     amcSubtypeOrder,
   } = ctx;
-  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
-  const grouped = groupAmcLocationsBySubtype(locations);
+  const grouped = groupEntriesBy(visibleEntries, ({ location }) => {
+    return String(location?.movement_subtype || location?.movementSubtype || "").trim() || "other_motion";
+  });
   const subtypeKeys = Object.keys(grouped);
   const ordered = subtypeKeys.sort((a, b) => amcSubtypeOrder(a) - amcSubtypeOrder(b));
   return ordered.map((subtype) => {
@@ -231,15 +297,16 @@ function issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElem
   }).join("");
 }
 
-function issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber) {
+function issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber) {
   const {
     escapeHtml,
-    groupEiLocationsBySubtype,
     eiSubtypeLabel,
     eiSubtypeOrder,
   } = ctx;
-  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
-  const grouped = groupEiLocationsBySubtype(locations);
+  const grouped = groupEntriesBy(visibleEntries, ({ location }) => {
+    const raw = String(location?.interrupt_type || location?.interruptType || "").trim();
+    return raw || "other";
+  });
   const subtypeKeys = Object.keys(grouped);
   const ordered = subtypeKeys.sort((a, b) => eiSubtypeOrder(a) - eiSubtypeOrder(b));
   return ordered.map((subtype) => {
@@ -260,9 +327,10 @@ function issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeEleme
   }).join("");
 }
 
-function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber) {
+function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber, issueElementsExpanded = false) {
   const { escapeHtml, issueDomId } = ctx;
   const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  const displayLimit = issueElementsExpanded ? locations.length : ISSUE_ELEMENT_DISPLAY_LIMIT;
   const selectedIdForIssue = issueDomId(dimensionName, issue.rule_id);
   const activeElementNumber = String(selectedIssueId || "") === String(selectedIdForIssue || "")
     ? Number(selectedElementNumber || 0)
@@ -277,41 +345,41 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
   }
 
   if ((issue.rule_id || "") === "PHS-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const groupedSections = issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber);
+    const visibleEntries = issueLocationDisplayEntries(locations, displayLimit);
+    const hiddenCount = issueElementsExpanded ? 0 : Math.max(0, locations.length - visibleEntries.length);
+    const groupedSections = issuePhsGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <div class="issue-phs-grouped-wrap">
           ${groupedSections}
         </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+        ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
       </div>
     `;
   }
 
   if ((issue.rule_id || "") === "VO-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
-    const groupedSections = issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleSlice, activeElementNumber);
+    const visibleEntries = issueLocationDisplayEntries(locations, displayLimit);
+    const hiddenCount = issueElementsExpanded ? 0 : Math.max(0, locations.length - visibleEntries.length);
+    const groupedSections = issueVoGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <div class="issue-phs-grouped-wrap issue-vo-contributor-wrap">
           ${groupedSections}
         </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+        ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
       </div>
     `;
   }
 
   if ((issue.rule_id || "") === "WIP-1" && locations.length > 0) {
-    const visibleSlice = locations.slice(0, 12);
-    const hiddenCount = Math.max(0, locations.length - visibleSlice.length);
+    const visibleEntries = issueLocationDisplayEntries(locations, displayLimit);
+    const hiddenCount = issueElementsExpanded ? 0 : Math.max(0, locations.length - visibleEntries.length);
     const groupedSections = issueWipSingleGroupChipSectionsMarkup(
       ctx,
       issue,
       dimensionName,
-      visibleSlice,
+      visibleEntries,
       activeElementNumber,
       locations.length,
     );
@@ -320,57 +388,71 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
         <div class="issue-phs-grouped-wrap issue-wip-single-wrap">
           ${groupedSections}
         </div>
-        ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+        ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
       </div>
     `;
   }
 
   if ((issue.rule_id || "") === "AMC-1" && locations.length > 0) {
-    const groupedSections = issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
+    const visibleEntries = issueLocationDisplayEntries(locations, displayLimit);
+    const hiddenCount = issueElementsExpanded ? 0 : Math.max(0, locations.length - visibleEntries.length);
+    const groupedSections = issueAmcGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <div class="issue-phs-grouped-wrap issue-amc-grouped-wrap">
           ${groupedSections}
         </div>
+        ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
       </div>
     `;
   }
 
   if ((issue.rule_id || "") === "EI-1" && locations.length > 0) {
-    const groupedSections = issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, activeElementNumber);
+    const visibleEntries = issueLocationDisplayEntries(locations, displayLimit);
+    const hiddenCount = issueElementsExpanded ? 0 : Math.max(0, locations.length - visibleEntries.length);
+    const groupedSections = issueEiGroupedChipSectionsMarkup(ctx, issue, dimensionName, visibleEntries, activeElementNumber);
     return `
       <div class="issue-summary-row issue-summary-row-elements">
         <div class="issue-phs-grouped-wrap issue-ei-grouped-wrap">
           ${groupedSections}
         </div>
+        ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
       </div>
     `;
   }
 
-  const inferredCount = Math.max(1, locations.length || 0);
-  const shown = locations.slice(0, 12);
-  const hiddenCount = Math.max(0, inferredCount - shown.length);
+  const fallbackEntries = [{
+    location: {
+      label: "Structural evidence, not directly highlightable",
+      highlightable: false,
+      status: "No visible target found",
+    },
+    elementNumber: 1,
+  }];
+  const shownEntries = locations.length ? issueLocationDisplayEntries(locations, displayLimit) : fallbackEntries;
+  const hiddenCount = locations.length && !issueElementsExpanded ? Math.max(0, locations.length - shownEntries.length) : 0;
+  const shownLocations = shownEntries.map(({ location }) => location);
   if (dtLineageEnabled() && (issue?.rule_id || "") === "DT-1") {
     console.log("[DT-1 location lineage]", {
       stage: "grouped.issue.locations",
-      ...summarizeDtLocationArray(shown),
+      ...summarizeDtLocationArray(shownLocations),
       dimension: dimensionName,
       hidden_count: hiddenCount,
     });
   }
-  const chips = shown.map((location, index) => (
-    issueElementChipRowMarkup(ctx, issue, dimensionName, location, index + 1, activeElementNumber)
+  const chips = shownEntries.map(({ location, elementNumber }) => (
+    issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementNumber, activeElementNumber)
   )).join("");
   if (dtLineageEnabled() && (issue?.rule_id || "") === "DT-1") {
     console.log("[DT-1 location lineage]", {
       stage: "issue.template.output",
-      dt_location_count: shown.length,
-      dt_location_ids: summarizeDtLocationArray(shown).dt_location_ids,
-      duplicate_selector_count: summarizeDtLocationArray(shown).duplicate_selector_count,
-      duplicate_text_count: summarizeDtLocationArray(shown).duplicate_text_count,
+      dt_location_count: shownLocations.length,
+      dt_location_ids: summarizeDtLocationArray(shownLocations).dt_location_ids,
+      duplicate_selector_count: summarizeDtLocationArray(shownLocations).duplicate_selector_count,
+      duplicate_text_count: summarizeDtLocationArray(shownLocations).duplicate_text_count,
       grouped_keys: [],
       collapsed_ids: [],
-      surviving_ids: summarizeDtLocationArray(shown).dt_location_ids,
+      surviving_ids: summarizeDtLocationArray(shownLocations).dt_location_ids,
       markup_length: chips.length,
       dimension: dimensionName,
     });
@@ -380,22 +462,36 @@ function issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, sele
       <div class="issue-element-chip-list">
         ${chips}
       </div>
-      ${hiddenCount ? `<p class="issue-element-hidden-count">+${hiddenCount} more affected element${hiddenCount === 1 ? "" : "s"}.</p>` : ""}
+      ${elementListToggleMarkup({ issue, dimensionName, hiddenCount, expanded: issueElementsExpanded, escapeHtml })}
     </div>
   `;
 }
 
 function issueSummaryCardMarkup(ctx, issueContext) {
   const { escapeHtml } = ctx;
-  const { issue, dimensionName, issueNumber, selectedClass, cogaSummary, isoSummary, issueId, selectedIssueId, selectedElementNumber } = issueContext;
+  const {
+    issue,
+    dimensionName,
+    issueNumber,
+    selectedClass,
+    cogaSummary,
+    isoSummary,
+    issueId,
+    selectedIssueId,
+    selectedElementNumber,
+    issueElementsExpanded,
+    issueElementsDisclosureOpen,
+  } = issueContext;
   const cogaMarkup = cogaGuidanceMarkup({ summaryText: cogaSummary, escapeHtml });
   const isoMarkup = standardsPillsMarkup({ summaryText: isoSummary, fallbackText: "Effectiveness, efficiency, satisfaction.", escapeHtml });
+  const openAttribute = issueElementsExpanded || issueElementsDisclosureOpen ? " open" : "";
 
   return `
     <details
       class="issue-highlight-button issue-summary-card${selectedClass}"
       data-highlight-issue="${escapeHtml(issue.rule_id)}"
       data-highlight-dimension="${escapeHtml(dimensionName)}"
+      ${openAttribute}
     >
       <summary
         class="issue-summary-toggle"
@@ -428,15 +524,15 @@ function issueSummaryCardMarkup(ctx, issueContext) {
             </div>
           </details>
         </div>
-        ${issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber)}
+        ${issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber, issueElementsExpanded)}
       </div>
     </details>
   `;
 }
 
 export {
+  ISSUE_ELEMENT_DISPLAY_LIMIT,
   issueElementChipRowMarkup,
   issueElementListMarkup,
   issueSummaryCardMarkup,
 };
-
