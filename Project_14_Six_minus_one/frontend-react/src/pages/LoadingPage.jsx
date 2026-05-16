@@ -126,6 +126,7 @@ export function LoadingPage() {
           html: payload.html_content || "",
           sourceName: pending.fileName,
           sourceType: "zip",
+          sourceUrl: payload.preview_url || "",
         };
       }
 
@@ -140,6 +141,7 @@ export function LoadingPage() {
         html,
         sourceName: pending.fileName || "uploaded.html",
         sourceType: "html",
+        sourceUrl: payload.preview_url || "",
       };
     }
 
@@ -229,6 +231,16 @@ export function LoadingPage() {
       try {
         ensureNotCancelled();
         const pending = loadPendingAnalysis();
+        const loadingTitleEl = document.getElementById("analysisLoadingTitle");
+        if (loadingTitleEl) {
+          if (pending.mode === "url") {
+            loadingTitleEl.textContent = "Analyzing your website";
+          } else if (pending.sourceType === "zip") {
+            loadingTitleEl.textContent = "Analyzing your ZIP package";
+          } else {
+            loadingTitleEl.textContent = "Analyzing your HTML file";
+          }
+        }
         setProgress(12);
         const result =
           pending.mode === "url" ? await analyzePendingUrl(pending) : await analyzePendingFile(pending);
