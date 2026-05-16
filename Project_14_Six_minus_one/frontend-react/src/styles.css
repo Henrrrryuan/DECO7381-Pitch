@@ -559,6 +559,87 @@ button.nav-cta {
   transform-origin: top left;
 }
 
+.guide-bubble {
+  position: absolute;
+  left: -208px;
+  top: -520px;
+  width: 292px;
+  min-height: 138px;
+  padding: 16px 18px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(153, 208, 255, 0.5);
+  background: linear-gradient(180deg, rgba(8, 30, 60, 0.95), rgba(8, 25, 49, 0.95));
+  color: rgba(236, 246, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(6, 17, 36, 0.42);
+  pointer-events: auto;
+  z-index: 8;
+  text-align: center;
+  display: grid;
+  place-items: center;
+}
+
+.guide-bubble::before {
+  content: "";
+  position: absolute;
+  right: 54px;
+  bottom: -22px;
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 22px solid rgba(153, 208, 255, 0.5);
+}
+
+.guide-bubble::after {
+  content: "";
+  position: absolute;
+  right: 57px;
+  bottom: -18px;
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 13px solid transparent;
+  border-top: 18px solid rgba(8, 25, 49, 0.95);
+}
+
+.guide-bubble p {
+  margin: 0;
+  max-width: 240px;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #f3f8ff;
+  text-shadow: 0 2px 10px rgba(10, 28, 54, 0.45);
+  text-align: center;
+  transform: translateY(-8px);
+}
+
+.guide-bubble-next {
+  margin-top: 0;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #8dc5ff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  position: absolute;
+  right: 30px;
+  bottom: 14px;
+}
+
+.guide-bubble-next::after {
+  content: " \2192";
+}
+
+.guide-bubble-next:hover {
+  filter: brightness(1.06);
+}
+
 .character-stage::after {
   content: "";
   position: absolute;
@@ -776,6 +857,11 @@ button.nav-cta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.guide-locked-dim {
+  opacity: 0.2;
+  filter: saturate(0.6);
 }
 
 .workflow-option {
@@ -7404,6 +7490,14 @@ body.accessibility-reading-mask-active .accessibility-menu {
 
   .character-stage {
     transform: scale(0.26);
+  }
+
+  .guide-bubble {
+    left: -146px;
+    top: -460px;
+    width: 236px;
+    min-height: 124px;
+    padding: 14px 14px 12px;
   }
 
   .upload-copy h1,

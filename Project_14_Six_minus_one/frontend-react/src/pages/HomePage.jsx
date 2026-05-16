@@ -14,6 +14,14 @@ import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
+const GUIDE_BUBBLE_STEPS = [
+  "1. Choose Website URL or Upload File, then click Analyze.",
+  "2. In the dashboard, choose a target audience first.",
+  "3. Open issue cards and inspect Element evidence in preview.",
+  "4. Use Why this matters and First redesign move to improve the page.",
+  "5. Detected issues is a count of triggered findings, not a score.",
+  "6. Use Eye Tracking for behavior evidence and History to revisit runs.",
+];
 
 function dt1FrontendForensicEnabled() {
   return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_FORENSIC === "1");
@@ -107,9 +115,12 @@ export function HomePage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ message: "", isError: false });
   const [dropDragging, setDropDragging] = useState(false);
+  const [guideStepIndex, setGuideStepIndex] = useState(0);
+  const [viewedGuideSteps, setViewedGuideSteps] = useState(() => new Set([0]));
 
   const urlValid = useMemo(() => Boolean(String(url).trim()) && !loading, [url, loading]);
   const fileValid = useMemo(() => Boolean(file) && !loading, [file, loading]);
+  const guideUnlocked = viewedGuideSteps.size >= GUIDE_BUBBLE_STEPS.length;
 
   useEffect(() => {
     const onShow = () => {
@@ -187,6 +198,9 @@ export function HomePage() {
 
   const onUrlSubmit = async (event) => {
     event.preventDefault();
+    if (!guideUnlocked) {
+      return;
+    }
     if (loading) {
       return;
     }
@@ -222,6 +236,9 @@ export function HomePage() {
 
   const onFileSubmit = async (event) => {
     event.preventDefault();
+    if (!guideUnlocked) {
+      return;
+    }
     if (!file || loading) {
       return;
     }
@@ -306,6 +323,9 @@ export function HomePage() {
   };
 
   const onFileInputChange = (event) => {
+    if (!guideUnlocked) {
+      return;
+    }
     const [next] = event.target.files || [];
     if (!next) {
       setFile(null);
@@ -323,6 +343,10 @@ export function HomePage() {
 
   const onDrop = (event) => {
     event.preventDefault();
+    if (!guideUnlocked) {
+      setDropDragging(false);
+      return;
+    }
     setDropDragging(false);
     const [dropped] = event.dataTransfer?.files || [];
     if (!dropped) {
@@ -347,6 +371,17 @@ export function HomePage() {
   };
 
   const isUrlWorkflow = workflow === "url";
+  const onGuideNext = () => {
+    setGuideStepIndex((prev) => {
+      const next = (prev + 1) % GUIDE_BUBBLE_STEPS.length;
+      setViewedGuideSteps((current) => {
+        const updated = new Set(current);
+        updated.add(next);
+        return updated;
+      });
+      return next;
+    });
+  };
 
   return (
     <>
@@ -367,13 +402,23 @@ export function HomePage() {
 
       <main className="upload-page">
         <section className="upload-hero">
-          <div className="upload-copy">
+          <div className={`upload-copy${!guideUnlocked ? " guide-locked-dim" : ""}`}>
             <h1>Cognitive Accessibility Evaluation</h1>
           </div>
 
           <section className="input-workflow" aria-label="CogniLens input workflow">
             <div className="workflow-card">
-              <aside className="upload-character-panel" aria-hidden="true">
+              <aside className="upload-character-panel">
+                <div className="guide-bubble" role="status" aria-live="polite">
+                  <p>{GUIDE_BUBBLE_STEPS[guideStepIndex]}</p>
+                  <button
+                    type="button"
+                    className="guide-bubble-next"
+                    onClick={onGuideNext}
+                  >
+                    Next
+                  </button>
+                </div>
                 <div className="character-stage">
                   <div className="character figure-purple">
                     <div className="character-eyes">
@@ -419,13 +464,18 @@ export function HomePage() {
                 </div>
               </aside>
 
-              <div className="workflow-options" role="tablist" aria-label="Input method">
+              <div
+                className={`workflow-options${!guideUnlocked ? " guide-locked-dim" : ""}`}
+                role="tablist"
+                aria-label="Input method"
+              >
                 <button
                   className={`workflow-option${isUrlWorkflow ? " is-active" : ""}`}
                   type="button"
                   role="tab"
                   aria-selected={isUrlWorkflow}
                   aria-controls="urlForm"
+                  disabled={!guideUnlocked}
                   data-workflow-option="url"
                   data-accessibility-tooltip="Use this option when the page is running in a browser and can be reached by URL."
                   onClick={() => setWorkflow("url")}
@@ -441,6 +491,7 @@ export function HomePage() {
                   role="tab"
                   aria-selected={!isUrlWorkflow}
                   aria-controls="uploadForm"
+                  disabled={!guideUnlocked}
                   data-workflow-option="file"
                   data-accessibility-tooltip="Use this option when you want to analyze a saved HTML file or ZIP package."
                   onClick={() => {
@@ -453,7 +504,7 @@ export function HomePage() {
                 </button>
               </div>
 
-              <div className="workflow-panels">
+              <div className={`workflow-panels${!guideUnlocked ? " guide-locked-dim" : ""}`}>
                 <form
                   id="urlForm"
                   className={`workflow-panel primary-input-card${isUrlWorkflow ? " is-active" : ""}`}
@@ -477,6 +528,7 @@ export function HomePage() {
                       id="urlInput"
                       className="url-input"
                       type="url"
+                      disabled={!guideUnlocked || loading}
                       inputMode="url"
                       placeholder="http://127.0.0.1:5173"
                       autoComplete="url"
@@ -490,7 +542,7 @@ export function HomePage() {
                     id="analyzeUrlButton"
                     className="upload-analyze-button"
                     type="submit"
-                    disabled={!urlValid}
+                    disabled={!guideUnlocked || !urlValid}
                     data-accessibility-tooltip="Start analyzing this website URL and open the cognitive accessibility report."
                   >
                     {loading && isUrlWorkflow ? "Analyzing..." : "Analyze"}
@@ -515,16 +567,20 @@ export function HomePage() {
                     id="dropzone"
                     className={`dropzone${dropDragging ? " dragging" : ""}`}
                     htmlFor="uploadInput"
+                    aria-disabled={!guideUnlocked}
                     data-accessibility-tooltip="Choose or drop an HTML file or ZIP package to prepare it for analysis."
                     onDragEnter={(event) => {
+                      if (!guideUnlocked) return;
                       event.preventDefault();
                       setDropDragging(true);
                     }}
                     onDragOver={(event) => {
+                      if (!guideUnlocked) return;
                       event.preventDefault();
                       setDropDragging(true);
                     }}
                     onDragLeave={(event) => {
+                      if (!guideUnlocked) return;
                       event.preventDefault();
                       setDropDragging(false);
                     }}
@@ -533,6 +589,7 @@ export function HomePage() {
                     <input
                       id="uploadInput"
                       type="file"
+                      disabled={!guideUnlocked || loading}
                       accept=".html,.htm,text/html,.zip,application/zip"
                       data-accessibility-tooltip="Select an HTML file or ZIP package from your computer."
                       onChange={onFileInputChange}
@@ -547,7 +604,7 @@ export function HomePage() {
                     id="analyzeButton"
                     className="upload-analyze-button secondary-action"
                     type="submit"
-                    disabled={!fileValid}
+                    disabled={!guideUnlocked || !fileValid}
                     data-accessibility-tooltip="Start analyzing the selected file and open the cognitive accessibility report."
                   >
                     {loading && !isUrlWorkflow ? "Analyzing..." : "Analyze"}
@@ -559,7 +616,7 @@ export function HomePage() {
 
           <p
             id="uploadStatus"
-            className={`upload-status${status.isError ? " error" : ""}`}
+            className={`upload-status${status.isError ? " error" : ""}${!guideUnlocked ? " guide-locked-dim" : ""}`}
             aria-live="polite"
           >
             {status.message}
