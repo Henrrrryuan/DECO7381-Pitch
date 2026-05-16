@@ -83,6 +83,8 @@ function setCurrentResultAndHtml(state, result, html) {
   transition(state, "setCurrentResultAndHtml", () => {
     state.currentResult = result;
     state.currentHtml = html || "";
+    state.expandedIssueElementKeys = {};
+    state.issueElementDisclosureOpenKeys = {};
   });
 }
 
@@ -151,4 +153,3 @@ export {
   setWorkspaceMode,
   toggleSidebarCollapsed,
 };
-

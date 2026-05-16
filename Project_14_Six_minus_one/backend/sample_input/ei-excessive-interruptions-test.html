@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EI-1 Excessive Interruptions Test</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      color: #111827;
+      background: #f8fafc;
+    }
+    body.modal-open {
+      overflow: hidden;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 72px 24px 160px;
+      background: #ffffff;
+      min-height: 900px;
+    }
+    .initial-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      background: rgba(15, 23, 42, 0.72);
+    }
+    .modal-card {
+      width: min(92vw, 520px);
+      border-radius: 12px;
+      background: #ffffff;
+      padding: 28px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+    }
+    .cookie-banner {
+      position: fixed;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      z-index: 940;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 10px;
+      background: #111827;
+      color: #ffffff;
+      padding: 16px 18px;
+    }
+    .floating-chat {
+      position: fixed;
+      right: 22px;
+      top: 96px;
+      z-index: 930;
+      width: 280px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 2px solid #2563eb;
+      box-shadow: 0 18px 44px rgba(37, 99, 235, 0.22);
+    }
+    .floating-chat strong,
+    .floating-chat p {
+      display: block;
+      margin: 0;
+      padding: 14px 16px;
+    }
+    .notification-toast {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      z-index: 920;
+      border-radius: 10px;
+      background: #f97316;
+      color: #ffffff;
+      padding: 14px 18px;
+      box-shadow: 0 14px 32px rgba(249, 115, 22, 0.3);
+    }
+    .promo-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      z-index: 910;
+      background: #7c3aed;
+      color: #ffffff;
+      padding: 14px 24px;
+      text-align: center;
+      font-weight: 700;
+    }
+    .newsletter-popup {
+      position: fixed;
+      left: 24px;
+      top: 160px;
+      z-index: 925;
+      width: 260px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 2px solid #059669;
+      padding: 16px;
+      box-shadow: 0 18px 44px rgba(5, 150, 105, 0.18);
+    }
+    .is-dismissed {
+      display: none !important;
+    }
+    button, a {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div id="fixed-promotion-bar" class="promo-bar sticky-promotion">Limited offer: choose a plan before reading the page.</div>
+
+  <main id="primary-task">
+    <h1>Task Page With Multiple Interruptions</h1>
+    <p>This page is intentionally simple. The main task is reading this short content, but several fixed and modal interface elements compete for attention before the user has time to continue.</p>
+    <p>The interruption elements have stable ids and classes so the dashboard preview can highlight each signal.</p>
+  </main>
+
+  <section id="initial-offer-modal" class="initial-modal overlay-interruption" role="dialog" aria-modal="true" aria-label="Initial offer">
+    <div class="modal-card">
+      <h2>Before you continue</h2>
+      <p>This modal appears on initial load and covers the main task.</p>
+      <button type="button" data-dismiss-target="#initial-offer-modal">Dismiss modal</button>
+    </div>
+  </section>
+
+  <aside id="floating-help-panel" class="floating-chat chat-widget sticky-help" aria-live="polite">
+    <strong>Need help now?</strong>
+    <p>This floating help panel stays open while the user reads.</p>
+  </aside>
+
+  <section id="cookie-consent-banner" class="cookie-banner sticky-consent" aria-live="assertive">
+    <span>Cookie consent interrupts the bottom of the page and asks for a decision.</span>
+    <button type="button" data-dismiss-target="#cookie-consent-banner">Accept cookies</button>
+  </section>
+
+  <div id="system-toast" class="notification-toast toast-notification" role="status">
+    New notification: your trial reminder is ready.
+    <button type="button" data-dismiss-target="#system-toast">Close</button>
+  </div>
+
+  <aside id="newsletter-popup" class="newsletter-popup popup-signup" role="dialog" aria-label="Newsletter signup">
+    <strong>Join the newsletter</strong>
+    <p>This popup asks for another decision while the page is loading.</p>
+    <a href="#signup" data-dismiss-target="#newsletter-popup">Sign up</a>
+  </aside>
+
+  <script>
+    document.querySelectorAll("[data-dismiss-target]").forEach((control) => {
+      control.addEventListener("click", (event) => {
+        event.preventDefault();
+        const target = document.querySelector(control.getAttribute("data-dismiss-target"));
+        target?.classList.add("is-dismissed");
+      });
+    });
+
+    window.setTimeout(function showModalAgain() {
+      document.querySelector("#initial-offer-modal")?.setAttribute("data-opened", "true");
+    }, 200);
+    function toastNotification() {
+      return "notification";
+    }
+    function cookiePopup() {
+      return "cookie";
+    }
+  </script>
+</body>
+</html>

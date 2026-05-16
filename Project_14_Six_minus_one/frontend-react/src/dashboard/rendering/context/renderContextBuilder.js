@@ -7,6 +7,8 @@ function buildIssueRenderContext({
   selectedElementNumber,
   cogaSummary,
   isoSummary,
+  issueElementsExpanded,
+  issueElementsDisclosureOpen,
 } = {}) {
   const safeIssue = issue || {};
   const safeDimensionName = String(dimensionName || "");
@@ -25,8 +27,9 @@ function buildIssueRenderContext({
     activeElementNumber,
     cogaSummary: String(cogaSummary || ""),
     isoSummary: String(isoSummary || ""),
+    issueElementsExpanded: Boolean(issueElementsExpanded),
+    issueElementsDisclosureOpen: Boolean(issueElementsDisclosureOpen),
   };
 }
 
 export { buildIssueRenderContext };
-

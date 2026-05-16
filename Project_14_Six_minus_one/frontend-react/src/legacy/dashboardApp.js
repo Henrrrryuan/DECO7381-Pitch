@@ -2380,6 +2380,8 @@ function resetIssueWorkspaceForProfileChange() {
   // A profile switch changes the audience lens, so old issue guidance/highlights
   // should not stay visible under a different user group.
   resetSelectionToSummary(state);
+  state.expandedIssueElementKeys = {};
+  state.issueElementDisclosureOpenKeys = {};
   state.previewGuidancePinned = false;
 
   clearWebsiteHighlights();
@@ -2681,6 +2683,8 @@ function renderExplanation(result) {
     issueCardStandardsSummary,
     selectedIssueId: state.selectedIssueId,
     selectedElementNumber: state.selectedElementNumber,
+    expandedIssueElementKeys: state.expandedIssueElementKeys || {},
+    issueElementDisclosureOpenKeys: state.issueElementDisclosureOpenKeys || {},
     issueRenderCtx: {
       escapeHtml,
       friendlyLocationLabel,
@@ -2745,6 +2749,25 @@ function renderExplanation(result) {
   } catch (_) {
     // ignore
   }
+}
+
+function toggleIssueElementExpansion(dimensionName, ruleId, expanded) {
+  if (!state.currentResult) {
+    return;
+  }
+  const key = issueDomId(dimensionName, ruleId);
+  state.expandedIssueElementKeys = {
+    ...(state.expandedIssueElementKeys || {}),
+    [key]: expanded,
+  };
+  state.issueElementDisclosureOpenKeys = {
+    ...(state.issueElementDisclosureOpenKeys || {}),
+    [key]: true,
+  };
+  if (!expanded) {
+    delete state.expandedIssueElementKeys[key];
+  }
+  renderExplanation(state.currentResult);
 }
 
 function isProbablyUrl(value) {
@@ -3885,6 +3908,7 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
     && state.rightPanelMode === "preview"
   );
   if (isSameElementActive) {
+    setSelectedIssueId(state, "");
     setSelectedElementNumber(state, 0);
     clearActiveHighlight(state);
     setActiveGuidancePopoverKey(state, "");
@@ -3926,6 +3950,15 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
   }
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => {
+    const stillSelectedSameElement = (
+      state.selectedIssueId === issueId
+      && state.selectedElementNumber === elementNumber
+      && state.activeHighlightIssueId === issueId
+      && state.rightPanelMode === "preview"
+    );
+    if (!stillSelectedSameElement) {
+      return;
+    }
     void highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
   });
 }
@@ -4701,6 +4734,18 @@ function bindEvents() {
     if (vicramReport) {
       event.preventDefault();
       showVicramReportModal();
+      return;
+    }
+
+    const issueElementExpansionTrigger = event.target.closest("[data-expand-issue-elements]");
+    if (issueElementExpansionTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleIssueElementExpansion(
+        issueElementExpansionTrigger.dataset.issueDimension || "",
+        issueElementExpansionTrigger.dataset.issueRule || "",
+        issueElementExpansionTrigger.dataset.expandIssueElements !== "collapse",
+      );
       return;
     }
 

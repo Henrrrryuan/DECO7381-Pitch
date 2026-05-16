@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PHS-1 Heading Structure Test</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      color: #111827;
+      background: #f8fafc;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    .heading-fixture {
+      background: #ffffff;
+      border: 2px solid #7c3aed;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .heading-fixture h1,
+    .heading-fixture h2,
+    .heading-fixture h3,
+    .heading-fixture h4 {
+      margin: 18px 0 8px;
+      padding: 8px;
+      border-left: 4px solid #7c3aed;
+      background: #f5f3ff;
+    }
+    .empty-heading {
+      min-height: 26px;
+      border-left-color: #dc2626;
+      background: #fef2f2;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="heading-structure-fixture" class="heading-fixture">
+      <h1 id="main-title">Primary Page Title</h1>
+      <p>Introductory copy stays short so the page focuses on heading structure signals.</p>
+
+      <h1 id="second-h1">Second Primary Heading</h1>
+      <p>This extra h1 should be reported as a multiple h1 signal.</p>
+
+      <h4 id="jumped-heading">Jumped Directly To H4</h4>
+      <p>This heading follows an h1 and skips h2 and h3.</p>
+
+      <h2 id="duplicate-heading-one">Repeated Section Name</h2>
+      <p>The first repeated heading is visible.</p>
+
+      <h2 id="duplicate-heading-two">Repeated Section Name</h2>
+      <p>The duplicate heading should be visible and highlightable.</p>
+
+      <h3 id="empty-heading" class="empty-heading"></h3>
+      <p>The empty h3 is intentionally present as a visible blank heading row.</p>
+
+      <h4 id="second-jump">Another Jumped H4</h4>
+      <p>This second jump gives the dashboard more than three heading structure signals.</p>
+    </section>
+  </main>
+</body>
+</html>

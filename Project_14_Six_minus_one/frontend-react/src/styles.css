@@ -4372,7 +4372,7 @@ button.dimension-row.is-linked-active {
 
 .accessibility-profile-options-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 24px 20px 10px;
   border-bottom: 1px solid #e4e1ef;
@@ -5762,6 +5762,30 @@ body.accessibility-reading-mask-active .accessibility-menu {
   margin: 0;
   font-size: 11px;
   color: #64748b;
+}
+
+.issue-element-toggle {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  color: #2563eb;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.issue-element-toggle:hover,
+.issue-element-toggle:focus-visible {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.issue-element-toggle:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .back-to-summary-button.secondary {
@@ -7629,7 +7653,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
   }
 
   .accessibility-profile-options-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     padding: 20px 16px 10px;
   }

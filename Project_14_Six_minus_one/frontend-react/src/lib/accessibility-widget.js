@@ -179,7 +179,7 @@ function createAccessibilityWidget() {
       menuTitle: "Accessibility Menu",
       restoreDefault: "Restore Default",
       featureLabels: { language: "Language", profiles: "Accessibility Profiles", "main-options": "Main Options", statement: "Accessibility Statement" },
-      profiles: { dyslexia: "Dyslexia", autism: "Autism", adhd: "ADHD" },
+      profiles: { cognitive: "Cognitive", dyslexia: "Dyslexia", autism: "Autism", adhd: "ADHD" },
       options: {
         "text-reader": "Text Reader",
         saturation: "Saturation",
@@ -223,7 +223,7 @@ function createAccessibilityWidget() {
       menuTitle: "无障碍菜单",
       restoreDefault: "恢复默认",
       featureLabels: { language: "语言", profiles: "无障碍模式", "main-options": "主要选项", statement: "无障碍声明" },
-      profiles: { dyslexia: "阅读障碍", autism: "自闭症", adhd: "ADHD" },
+      profiles: { cognitive: "认知辅助", dyslexia: "阅读障碍", autism: "自闭症", adhd: "ADHD" },
       options: {
         "text-reader": "文本阅读器",
         saturation: "饱和度",
@@ -1443,6 +1443,19 @@ function createAccessibilityWidget() {
     setAccessibilityOptionActive("stop-animation", true);
   }
 
+  function applyCognitiveProfile(profileButton) {
+    if (activeProfileIds.has("cognitive")) {
+      restoreAccessibilityWidgetDefaults();
+      return;
+    }
+    setMenuSectionExpanded("main-options", true);
+    activeProfileIds.add("cognitive");
+    setAccessibilityProfileButtonActive(profileButton, true);
+    setAccessibilityOptionActive("highlight-links", true);
+    setAccessibilityOptionActive("highlight-titles", true);
+    setAccessibilityOptionActive("tooltips", true);
+  }
+
   function applyDyslexiaProfile(profileButton) {
     if (activeProfileIds.has("dyslexia")) {
       restoreAccessibilityWidgetDefaults();
@@ -1676,6 +1689,9 @@ function createAccessibilityWidget() {
   menu.querySelectorAll("[data-accessibility-profile]").forEach((profileButton) => {
     profileButton.addEventListener("click", () => {
       const profileId = profileButton.dataset.accessibilityProfile || "";
+      if (profileId === "cognitive") {
+        applyCognitiveProfile(profileButton);
+      }
       if (profileId === "dyslexia") {
         applyDyslexiaProfile(profileButton);
       }
