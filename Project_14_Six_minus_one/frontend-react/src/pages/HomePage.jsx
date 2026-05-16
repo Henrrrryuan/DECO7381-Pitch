@@ -389,7 +389,7 @@ export function HomePage() {
       <header className="app-nav">
         <div className="app-nav-inner">
           <Link className="app-brand" to="/">
-            <span className="app-brand-mark">C</span>
+            <img className="app-brand-mark" src="/logo-mascot.png" alt="CogniLens mascot" />
             <span className="app-brand-name">CogniLens</span>
           </Link>
 
