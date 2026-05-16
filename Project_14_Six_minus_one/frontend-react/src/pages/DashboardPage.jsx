@@ -115,26 +115,32 @@ export function DashboardPage() {
                 </div>
                 <button
                   id="sidebarIssuesPanelButton"
-                  className="sidebar-panel-switch sidebar-panel-switch-bottom"
+                  className="sidebar-panel-switch sidebar-panel-nav sidebar-panel-nav-next sidebar-panel-switch-bottom"
                   type="button"
                   data-sidebar-panel-target="issues"
-                  aria-label="Show issue details"
-                  data-accessibility-tooltip="Open detected issue details in the sidebar."
+                  aria-label="Next section: Issue Findings. Page 1 of 2."
+                  data-accessibility-tooltip="Open Issue Findings: choose a target audience and review detected issue categories for this analysis."
                 >
-                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-up" aria-hidden="true" />
+                  <span className="sidebar-panel-nav-page">Page 1 of 2</span>
+                  <span className="sidebar-panel-nav-kicker">Next section</span>
+                  <span className="sidebar-panel-nav-title">Issue Findings</span>
+                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-down" aria-hidden="true" />
                 </button>
               </section>
 
               <section className="sidebar-detail-panel sidebar-detail-panel-issues" data-sidebar-panel="issues" aria-label="Detected issue details">
                 <button
                   id="sidebarVcsPanelButton"
-                  className="sidebar-panel-switch sidebar-panel-switch-top"
+                  className="sidebar-panel-switch sidebar-panel-nav sidebar-panel-nav-prev sidebar-panel-switch-top"
                   type="button"
                   data-sidebar-panel-target="vcs"
-                  aria-label="Show ViCRAM details"
-                  data-accessibility-tooltip="Return to ViCRAM visual complexity details."
+                  aria-label="Previous section: Visual Complexity. Page 2 of 2."
+                  data-accessibility-tooltip="Return to Visual Complexity: page-level ViCRAM score and grid overview, independent of audience profile."
                 >
-                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-down" aria-hidden="true" />
+                  <span className="sidebar-panel-nav-page">Page 2 of 2</span>
+                  <span className="sidebar-panel-switch-icon sidebar-panel-switch-icon-up" aria-hidden="true" />
+                  <span className="sidebar-panel-nav-kicker">Previous section</span>
+                  <span className="sidebar-panel-nav-title">Visual Complexity</span>
                 </button>
 
                 <PriorityLensPanel />
