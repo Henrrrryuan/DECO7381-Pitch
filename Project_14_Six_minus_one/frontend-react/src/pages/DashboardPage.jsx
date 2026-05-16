@@ -105,7 +105,6 @@ export function DashboardPage() {
                 <div className="sidebar-detail-scroll">
                   <div className="sidebar-detail-heading">
                     <p className="sidebar-detail-kicker">Visual complexity</p>
-                    <h2>ViCRAM overview</h2>
                   </div>
                   <section
                     id="vicramDashboardPanel"

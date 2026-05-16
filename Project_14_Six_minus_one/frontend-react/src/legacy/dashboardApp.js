@@ -635,6 +635,7 @@ function renderVicramDashboardPanel() {
       <ul>
         <li><strong>Green to red:</strong> lower to higher grid complexity.</li>
         <li><strong>Score factors:</strong> text, images, TLC, and layout/style density.</li>
+        <li><strong>TLC:</strong> Top Left Corner count, estimating distinct visual sections from layout cues.</li>
         <li><strong>Use it with issues:</strong> switch to Issues to see actionable accessibility guidance.</li>
       </ul>
     </section>
@@ -722,7 +723,19 @@ function showVicramReportModal() {
       <div class="vicram-report-metrics">
         <article><span>Words</span><strong>${escapeHtml(String(page.word_count ?? 0))}</strong></article>
         <article><span>Images</span><strong>${escapeHtml(String(page.images ?? 0))}</strong></article>
-        <article><span>TLC</span><strong>${escapeHtml(String(page.tlc ?? 0))}</strong></article>
+        <article>
+          <span class="vicram-report-metric-label">
+            TLC
+            <button
+              type="button"
+              class="vicram-report-help"
+              aria-label="TLC definition"
+              title="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
+              data-accessibility-tooltip="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
+            >?</button>
+          </span>
+          <strong>${escapeHtml(String(page.tlc ?? 0))}</strong>
+        </article>
         <article><span>Grid</span><strong>${escapeHtml(`${result.grid?.rows || 0} x ${result.grid?.columns || 0}`)}</strong></article>
       </div>
       <div class="vicram-report-content">
