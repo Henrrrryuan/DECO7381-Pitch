@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  analyzeUploadFile,
-  isHtmlFile,
-  isZipFile,
-  loadDashboardSession,
-  saveDashboardSession,
-} from "../lib/common.js";
+import { isHtmlFile, isZipFile, loadDashboardSession } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { spaGuideLandingHref, spaLandingHistoryHref } from "../lib/siteUrls.js";
-import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
-import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
@@ -22,19 +14,6 @@ const GUIDE_BUBBLE_STEPS = [
   "5. Detected issues is a count of triggered findings, not a score.",
   "6. Use Eye Tracking for behavior evidence and History to revisit runs.",
 ];
-
-function dt1FrontendForensicEnabled() {
-  return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_FORENSIC === "1");
-}
-
-function dtLocationsFromPayload(payload) {
-  const dims = payload?.dimensions || payload?.result?.dimensions || payload?.analysis?.dimensions || [];
-  const dtDim = Array.isArray(dims) ? dims.find((d) => d?.dimension === "Dense Text Detection") : null;
-  const issues = dtDim?.issues || [];
-  const issue = issues.find((i) => i?.rule_id === "DT-1") || issues[0] || null;
-  const locs = issue?.locations || [];
-  return Array.isArray(locs) ? locs.length : 0;
-}
 
 function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
@@ -100,6 +79,15 @@ function normalizeUrl(rawUrl) {
 
 function savePendingAnalysis(payload) {
   sessionStorage.setItem(PENDING_ANALYSIS_STORAGE_KEY, JSON.stringify(payload));
+}
+
+function readFileAsDataUrl(uploadFile) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("Failed to read file."));
+    reader.readAsDataURL(uploadFile);
+  });
 }
 
 export function HomePage() {
@@ -243,81 +231,47 @@ export function HomePage() {
       return;
     }
     setLoading(true);
-    setStatusMessage("Preparing the analysis page...");
+    setStatusMessage("Opening the analysis progress page...");
     try {
       const previousSession = loadDashboardSession();
       const baselineRunId = previousSession?.current?.payload?.run?.run_id || null;
-      const payload = await analyzeUploadFile(file, baselineRunId);
-      const sourceType = isZipFile(file) ? "zip" : "html";
-      const sourceName = payload.resource_bundle?.entry_name || file.name;
-      const sourceUrl = payload.preview_url || "";
-      const html = payload.html_content || "";
+      const createdAt = new Date().toISOString();
 
-      const savedAt = new Date().toISOString();
-      if (dt1FrontendForensicEnabled()) {
-        const runId = String(payload?.run?.run_id || payload?.run_id || "");
-        console.log("[DT lineage] analyze.response", {
-          sourceType,
-          sourceName,
-          run_id: runId,
-          dt_locations: dtLocationsFromPayload(payload),
+      if (isZipFile(file)) {
+        const fileDataUrl = await readFileAsDataUrl(file);
+        savePendingAnalysis({
+          mode: "file",
+          sourceType: "zip",
+          fileDataUrl,
+          fileName: file.name,
+          fileType: file.type || "application/zip",
+          baselineRunId,
+          createdAt,
         });
-      }
-      logLineageTimeline("analyze.response", {
-        owner: "pages/HomePage.onFileSubmit",
-        sourceType,
-        sourceName,
-        incoming: summarizeRun(payload),
-        dt_locations: dtLocationsFromPayload(payload),
-      });
-      logDtLineage("frontend.fetch.payload", payload, {
-        owner: "pages/HomePage.onFileSubmit",
-        sourceType,
-        sourceName,
-      });
-      saveDashboardSession({
-        current: {
-          payload,
+      } else {
+        const html = await file.text();
+        savePendingAnalysis({
+          mode: "file",
           html,
-          sourceName,
-          sourceType,
-          sourceUrl,
-          savedAt,
-        },
-        previous: previousSession?.current || null,
-        html,
-        sourceName,
-        sourceUrl,
-        savedAt,
-      });
-      if (dt1FrontendForensicEnabled()) {
-        const stored = loadDashboardSession();
-        const storedRun = String(stored?.current?.payload?.run?.run_id || stored?.current?.payload?.run_id || "");
-        console.log("[DT lineage] session.persisted", {
-          stored_run_id: storedRun,
-          stored_sourceType: stored?.current?.sourceType || "",
-          stored_sourceName: stored?.current?.sourceName || "",
+          fileName: file.name,
+          baselineRunId,
+          createdAt,
         });
       }
-      const stored = loadDashboardSession();
-      logLineageTimeline("session.persisted", {
-        owner: "pages/HomePage.onFileSubmit",
-        stored: summarizeRun(stored?.current?.payload || null),
-        stored_sourceType: stored?.current?.sourceType || "",
-        stored_sourceName: stored?.current?.sourceName || "",
-      });
-      logDtLineage("frontend.session.persisted", stored?.current?.payload || null, {
-        owner: "pages/HomePage.onFileSubmit",
-        stored_sourceType: stored?.current?.sourceType || "",
-      });
-      logLineageTimeline("navigation.before", {
-        owner: "pages/HomePage.onFileSubmit",
-        to: "/dashboard",
-        stored: summarizeRun(stored?.current?.payload || null),
-      });
-      navigate("/dashboard");
+      navigate("/loading");
     } catch (err) {
-      setStatusMessage(err.message, true);
+      const isQuota =
+        err?.name === "QuotaExceededError" ||
+        err?.code === 22 ||
+        (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "QuotaExceededError");
+      if (isQuota) {
+        setStatusMessage(
+          "The file is too large for the browser to stage. Try a smaller ZIP package or clear site data for this app.",
+          true,
+        );
+      } else {
+        setStatusMessage(err.message || String(err), true);
+      }
       setLoading(false);
     }
   };
