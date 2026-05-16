@@ -2,18 +2,49 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { isHtmlFile, isZipFile, loadDashboardSession } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { spaGuideLandingHref, spaLandingHistoryHref } from "../lib/siteUrls.js";
+import { spaLandingHistoryHref } from "../lib/siteUrls.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
+const GUIDE_COMPLETE_STORAGE_KEY = "cognilens.home-guide.complete";
+
 const GUIDE_BUBBLE_STEPS = [
-  { title: "Choose Input", body: "Paste a website URL or upload a file." },
-  { title: "Pick an Audience", body: "Choose who the page is designed for first." },
-  { title: "Open Issue Cards", body: "Review each finding and its evidence." },
-  { title: "Use Redesign Hints", body: "Read why it matters and the first fix to try." },
-  { title: "Issues Count", body: "This number lists findings, not a score." },
-  { title: "More Tools", body: "Use Eye Tracking and History when you need them." },
+  {
+    title: "Choose Input",
+    body: "Use Website URL or Upload on the right to start an analysis.",
+  },
+  {
+    title: "Use the Dashboard",
+    body: "Pick an audience, then browse issue cards and the page preview.",
+  },
+  {
+    title: "Open Issue Cards",
+    body: "Each card shows a finding, its evidence, and where it appears.",
+  },
+  {
+    title: "Read Redesign Hints",
+    body: "See why it matters and the first change to try for each issue.",
+  },
+  {
+    title: "Issues Count",
+    body: "The number lists findings for this run—not a pass/fail score.",
+  },
+  {
+    title: "Use Eye Tracking",
+    body: "Open Eye Tracking from the top bar; History saves past runs.",
+  },
 ];
+
+function loadInitialViewedGuideSteps() {
+  try {
+    if (localStorage.getItem(GUIDE_COMPLETE_STORAGE_KEY) === "1") {
+      return new Set(GUIDE_BUBBLE_STEPS.map((_, index) => index));
+    }
+  } catch {
+    // ignore
+  }
+  return new Set([0]);
+}
 
 function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
@@ -104,7 +135,7 @@ export function HomePage() {
   const [status, setStatus] = useState({ message: "", isError: false });
   const [dropDragging, setDropDragging] = useState(false);
   const [guideStepIndex, setGuideStepIndex] = useState(0);
-  const [viewedGuideSteps, setViewedGuideSteps] = useState(() => new Set([0]));
+  const [viewedGuideSteps, setViewedGuideSteps] = useState(loadInitialViewedGuideSteps);
 
   const urlValid = useMemo(() => Boolean(String(url).trim()) && !loading, [url, loading]);
   const fileValid = useMemo(() => Boolean(file) && !loading, [file, loading]);
@@ -180,16 +211,35 @@ export function HomePage() {
     }
   }, [url]);
 
+  useEffect(() => {
+    setViewedGuideSteps((current) => {
+      if (current.has(guideStepIndex)) {
+        return current;
+      }
+      const updated = new Set(current);
+      updated.add(guideStepIndex);
+      return updated;
+    });
+  }, [guideStepIndex]);
+
+  useEffect(() => {
+    if (!guideUnlocked) {
+      return;
+    }
+    try {
+      localStorage.setItem(GUIDE_COMPLETE_STORAGE_KEY, "1");
+    } catch {
+      // ignore
+    }
+  }, [guideUnlocked]);
+
   const setStatusMessage = (message, isError = false) => {
     setStatus({ message, isError });
   };
 
   const onUrlSubmit = async (event) => {
     event.preventDefault();
-    if (!guideUnlocked) {
-      return;
-    }
-    if (loading) {
+    if (!guideUnlocked || loading) {
       return;
     }
     let normalizedUrl;
@@ -224,10 +274,7 @@ export function HomePage() {
 
   const onFileSubmit = async (event) => {
     event.preventDefault();
-    if (!guideUnlocked) {
-      return;
-    }
-    if (!file || loading) {
+    if (!guideUnlocked || !file || loading) {
       return;
     }
     setLoading(true);
@@ -325,33 +372,15 @@ export function HomePage() {
   };
 
   const isUrlWorkflow = workflow === "url";
-  const isFinalGuideStep = guideStepIndex >= GUIDE_BUBBLE_STEPS.length - 1;
+  const isFirstGuideStep = guideStepIndex === 0;
+  const isLastGuideStep = guideStepIndex >= GUIDE_BUBBLE_STEPS.length - 1;
 
-  const unlockGuide = () => {
-    setViewedGuideSteps(new Set(GUIDE_BUBBLE_STEPS.map((_, index) => index)));
+  const onGuidePrev = () => {
+    setGuideStepIndex((prev) => Math.max(prev - 1, 0));
   };
 
   const onGuideNext = () => {
-    if (isFinalGuideStep) {
-      return;
-    }
-    setGuideStepIndex((prev) => {
-      const next = Math.min(prev + 1, GUIDE_BUBBLE_STEPS.length - 1);
-      setViewedGuideSteps((current) => {
-        const updated = new Set(current);
-        updated.add(next);
-        return updated;
-      });
-      return next;
-    });
-  };
-
-  const onGuideSkip = () => {
-    unlockGuide();
-  };
-
-  const onGuideFinish = () => {
-    unlockGuide();
+    setGuideStepIndex((prev) => Math.min(prev + 1, GUIDE_BUBBLE_STEPS.length - 1));
   };
 
   return (
@@ -365,7 +394,6 @@ export function HomePage() {
           </Link>
 
           <nav className="app-nav-links" aria-label="Primary">
-            <Link to={spaGuideLandingHref}>Guide</Link>
             <Link to={spaLandingHistoryHref}>History</Link>
           </nav>
         </div>
@@ -373,23 +401,27 @@ export function HomePage() {
 
       <main className="upload-page">
         <section className="upload-hero">
-          <div className={`upload-copy${!guideUnlocked ? " guide-locked-dim" : ""}`}>
+          <div className="upload-copy">
             <h1>Cognitive Accessibility Evaluation</h1>
           </div>
 
           <section className="input-workflow" aria-label="CogniLens input workflow">
             <div className="workflow-card">
               <aside className="upload-character-panel">
-                {!guideUnlocked ? (
-                <div className="guide-bubble" role="status" aria-live="polite">
+                <div
+                  className="guide-bubble"
+                  role="region"
+                  aria-label="CogniLens help assistant"
+                  aria-live="polite"
+                >
                   <ul
                     className="guide-bubble-dots"
-                    aria-label={`Tutorial progress, step ${guideStepIndex + 1} of ${GUIDE_BUBBLE_STEPS.length}`}
+                    aria-label={`Help topic ${guideStepIndex + 1} of ${GUIDE_BUBBLE_STEPS.length}`}
                   >
                     {GUIDE_BUBBLE_STEPS.map((_, index) => (
                       <li
                         key={index}
-                        className={index <= guideStepIndex ? "is-filled" : ""}
+                        className={index === guideStepIndex ? "is-filled" : ""}
                         aria-current={index === guideStepIndex ? "step" : undefined}
                       />
                     ))}
@@ -398,37 +430,32 @@ export function HomePage() {
                     <h2 className="guide-bubble-title">{GUIDE_BUBBLE_STEPS[guideStepIndex].title}</h2>
                     <p className="guide-bubble-body">{GUIDE_BUBBLE_STEPS[guideStepIndex].body}</p>
                   </div>
-                  <div className="guide-bubble-actions">
+                  <div className={`guide-bubble-actions${isLastGuideStep ? " is-final" : ""}`}>
                     <button
                       type="button"
-                      className="guide-bubble-skip"
-                      onClick={onGuideSkip}
-                      aria-label="Skip and unlock analysis"
+                      className="guide-bubble-prev"
+                      onClick={onGuidePrev}
+                      disabled={isFirstGuideStep}
+                      aria-label={
+                        isFirstGuideStep
+                          ? "Previous help topic (unavailable)"
+                          : `Previous help topic: ${GUIDE_BUBBLE_STEPS[guideStepIndex - 1].title}`
+                      }
                     >
-                      Skip
+                      ← Prev
                     </button>
-                    {isFinalGuideStep ? (
-                      <button
-                        type="button"
-                        className="guide-bubble-finish"
-                        onClick={onGuideFinish}
-                        aria-label="Finish tutorial and unlock analysis"
-                      >
-                        Finish &amp; Unlock
-                      </button>
-                    ) : (
+                    {!isLastGuideStep ? (
                       <button
                         type="button"
                         className="guide-bubble-next"
                         onClick={onGuideNext}
-                        aria-label={`Go to step ${guideStepIndex + 2} of ${GUIDE_BUBBLE_STEPS.length}`}
+                        aria-label={`Next help topic: ${GUIDE_BUBBLE_STEPS[guideStepIndex + 1].title}`}
                       >
-                        Next
+                        Next →
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
-                ) : null}
                 <div className="character-stage">
                   <div className="character figure-purple">
                     <div className="character-eyes">

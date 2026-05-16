@@ -4,7 +4,7 @@ import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount
 import { PriorityLensPanel } from "../components/dashboard/PriorityLensPanel.jsx";
 import { DetectionGauge } from "../components/DetectionGauge.jsx";
 import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
-import { eyeTrackingHref, spaGuideAnalysisHref, spaHistoryHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
@@ -60,9 +60,6 @@ export function DashboardPage() {
             {lockTopNav ? (
               <>
                 <span className="disabled-nav-link" aria-disabled="true">
-                  Guide
-                </span>
-                <span className="disabled-nav-link" aria-disabled="true">
                   Eye Tracking
                 </span>
                 <span className="disabled-nav-link" aria-disabled="true">
@@ -74,7 +71,6 @@ export function DashboardPage() {
               </>
             ) : (
               <>
-                <Link to={spaGuideAnalysisHref}>Guide</Link>
                 <a className="nav-eye-tracking" href={eyeTrackingHref}>
                   Eye Tracking
                 </a>

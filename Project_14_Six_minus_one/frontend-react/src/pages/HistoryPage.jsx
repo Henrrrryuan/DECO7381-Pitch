@@ -10,7 +10,7 @@ import {
   getRiskDrivers,
 } from "../lib/eyeEvidenceSummary.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { eyeTrackingHref, spaGuideAnalysisHref, spaGuideLandingHref, spaHistoryHref } from "../lib/siteUrls.js";
+import { eyeTrackingHref, spaHistoryHref } from "../lib/siteUrls.js";
 
 const DESKTOP_MIN_PAGE_SIZE = 8;
 const DESKTOP_MAX_PAGE_SIZE = 12;
@@ -667,15 +667,11 @@ export function HistoryPage() {
 
           <nav className="app-nav-links" aria-label="Primary">
             {isLandingHistory ? (
-              <>
-                <Link to={spaGuideLandingHref}>Guide</Link>
-                <Link className="nav-cta" to="/">
-                  Back to start
-                </Link>
-              </>
+              <Link className="nav-cta" to="/">
+                Back to start
+              </Link>
             ) : (
               <>
-                <Link to={spaGuideAnalysisHref}>Guide</Link>
                 <a className="nav-eye-tracking" href={eyeTrackingHref}>
                   Eye Tracking
                 </a>

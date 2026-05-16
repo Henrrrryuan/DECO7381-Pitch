@@ -8,7 +8,6 @@ import {
   saveDashboardSession,
 } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
-import { spaGuideAnalysisHref } from "../lib/siteUrls.js";
 import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
 import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
@@ -313,11 +312,6 @@ export function LoadingPage() {
             <span className="app-brand-name">CogniLens</span>
           </Link>
 
-          <nav className="app-nav-links" aria-label="Primary">
-            <Link className="active-link" to={spaGuideAnalysisHref}>
-              Guide
-            </Link>
-          </nav>
         </div>
       </header>
 

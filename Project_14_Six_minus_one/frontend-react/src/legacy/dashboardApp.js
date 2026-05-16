@@ -4899,13 +4899,9 @@ function bindEvents() {
       href.includes("127.0.0.1:8001/eye/") ||
       href.includes(":8001/eye/") ||
       href.endsWith("/history.html") ||
-      href.endsWith("/docs.html") ||
       href === "./history.html" ||
-      href === "./docs.html" ||
       href === "/history" ||
-      href.startsWith("/history?") ||
-      href === "/docs" ||
-      href.startsWith("/docs?")
+      href.startsWith("/history?")
     ) {
       link.addEventListener("click", rememberAnalysisReturnUrl);
     }
