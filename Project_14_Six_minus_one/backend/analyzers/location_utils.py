@@ -485,6 +485,17 @@ def _find_candidate_tags_phs(soup: BeautifulSoup, location: dict[str, Any]) -> l
 
 def _phs_extended_heading_selector_path(tag: Tag) -> str:
     """Ancestor chain for repeated section > header > h1 blocks (unique per section id/nth)."""
+    return _extended_ancestor_selector_path(tag, max_segments=10)
+
+
+def _lc_extended_text_selector_path(tag: Tag) -> str:
+    """Ancestor chain for LC text blocks inside repeated section/article shells (prefer section#id prefixes)."""
+
+    return _extended_ancestor_selector_path(tag, max_segments=12)
+
+
+def _extended_ancestor_selector_path(tag: Tag, *, max_segments: int) -> str:
+    """Walk from `tag` toward `body`, using nth-of-type until an ancestor `id`, then reverse to CSS path."""
     parts: list[str] = []
     current: Tag | None = tag
     while isinstance(current, Tag) and (current.name or "").lower() not in {"[document]", "html", "body"}:
@@ -509,7 +520,7 @@ def _phs_extended_heading_selector_path(tag: Tag) -> str:
                 break
         parts.append(f"{name}:nth-of-type({index})")
         current = current.parent if isinstance(current.parent, Tag) else None
-        if len(parts) >= 10:
+        if len(parts) >= max_segments:
             break
     return " > ".join(reversed(parts))
 
@@ -654,7 +665,7 @@ def sanitize_issue_locations(
         ):
             locked_lc = _lc_try_lock_unique_selector_text_block(soup, location, dimension_name, rule_id)
             if locked_lc is not None:
-                selector_lc = stable_selector(locked_lc)
+                selector_lc = _lc_grounding_selector(soup, locked_lc, location)
                 if selector_lc:
                     dedupe_key_lc = _location_dedupe_key(rule_id, selector_lc, location)
                     if dedupe_key_lc in used_keys:
@@ -717,6 +728,8 @@ def sanitize_issue_locations(
             continue
         if rule_id == "PHS-1" and (candidate.name or "").lower() in PHS_HEADING_TAG_NAMES:
             selector = _phs_grounding_selector(soup, candidate)
+        elif rule_id == "LC-1":
+            selector = _lc_grounding_selector(soup, candidate, location)
         else:
             selector = stable_selector(candidate)
         if not selector:
@@ -1066,6 +1079,107 @@ DT_TEXT_BLOCK_TAG_NAMES = frozenset({"p", "li", "td", "th"})
 LC_TEXT_BLOCK_TAG_NAMES = frozenset({"p", "li", "td", "th", "label", "button", "a"})
 
 
+def _lc_grounding_selector(
+    soup: BeautifulSoup,
+    tag: Tag,
+    location: dict[str, Any] | None,
+) -> str:
+    """LC-1 grounding: mirror PHS prioritization — unique id / extended ancestor path / stable, else incoming."""
+    if not isinstance(tag, Tag):
+        return ""
+
+    incoming = ""
+    if isinstance(location, dict):
+        incoming = str(location.get("selector") or "").strip()
+
+    cognilens_id = tag.get("data-cognilens-id")
+    if cognilens_id:
+        cognilens_sel = f'[data-cognilens-id="{css_attr_escape(str(cognilens_id))}"]'
+        if len(select_safely(soup, cognilens_sel)) == 1:
+            return cognilens_sel
+
+    element_id = tag.get("id")
+    if element_id:
+        id_sel = f"#{css_identifier_escape(str(element_id))}"
+        if len(select_safely(soup, id_sel)) == 1:
+            return id_sel
+
+    extended = _lc_extended_text_selector_path(tag)
+    if extended and len(select_safely(soup, extended)) == 1:
+        return extended
+
+    stable = stable_selector(tag)
+    if stable and len(select_safely(soup, stable)) == 1:
+        return stable
+
+    return incoming or extended or stable
+
+
+def _lc_disambiguate_raw_multi_match(
+    sel_tags: list[Tag],
+    location: dict[str, Any],
+    dimension_name: str,
+    rule_id: str,
+) -> Tag | None:
+    """When detector selector matches multiple nodes, narrow by attrs.id or excerpt text blobs."""
+    pool = [t for t in sel_tags if isinstance(t, Tag)]
+    if not pool:
+        return None
+
+    attrs = location.get("attrs") if isinstance(location.get("attrs"), dict) else {}
+    if attrs.get("id"):
+        el_id = str(attrs["id"]).strip()
+        hit = [
+            t
+            for t in pool
+            if str(t.get("id") or "").strip() == el_id and (t.name or "").lower() in LC_TEXT_BLOCK_TAG_NAMES
+        ]
+        hit = [t for t in hit if is_candidate_highlightable(t, dimension_name, rule_id)]
+        if len(hit) == 1:
+            return hit[0]
+
+    tag_hint = normalized_tag(location.get("tag"))
+    blobs: list[str] = []
+    for key in ("text", "preview", "sentence_preview", "label"):
+        raw = str(location.get(key) or "").strip()
+        if raw:
+            blobs.append(normalize_text(raw).lower())
+    if not blobs:
+        return None
+
+    hits: list[Tag] = []
+    seen: set[int] = set()
+    for t in pool:
+        tag_name_lower = (t.name or "").lower()
+        if tag_name_lower not in LC_TEXT_BLOCK_TAG_NAMES:
+            continue
+        if tag_hint and tag_name_lower != tag_hint:
+            continue
+        if not is_candidate_highlightable(t, dimension_name, rule_id):
+            continue
+
+        node_text = normalize_text(t.get_text(" ", strip=True)).lower()
+        if not node_text:
+            continue
+        for blob in blobs:
+            if not blob:
+                continue
+            if blob == node_text or (len(blob) >= 24 and blob in node_text):
+                cid = id(t)
+                if cid not in seen:
+                    seen.add(cid)
+                    hits.append(t)
+                break
+            if text_matches_without_short_false_positive(node_text, blob):
+                cid = id(t)
+                if cid not in seen:
+                    seen.add(cid)
+                    hits.append(t)
+                break
+
+    return hits[0] if len(hits) == 1 else None
+
+
 def _sc_try_lock_unique_selector_text_block(
     soup: BeautifulSoup,
     location: dict[str, Any],
@@ -1097,7 +1211,7 @@ def _lc_try_lock_unique_selector_text_block(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """LC-1: unique selector resolves to exactly one allowed text/interaction block — lock identity."""
+    """LC-1: lock highlighted node — single-match raw selector, or attrs/text disambiguation on multi-match."""
     if rule_id != "LC-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1106,10 +1220,14 @@ def _lc_try_lock_unique_selector_text_block(
     if not raw_selector:
         return None
     sel_tags = select_safely(soup, raw_selector)
-    if len(sel_tags) != 1:
-        return None
-    tag = sel_tags[0]
-    if (tag.name or "").lower() not in LC_TEXT_BLOCK_TAG_NAMES:
+
+    tag: Tag | None = None
+    if len(sel_tags) == 1 and isinstance(sel_tags[0], Tag):
+        tag = sel_tags[0]
+    elif len(sel_tags) > 1:
+        tag = _lc_disambiguate_raw_multi_match(sel_tags, location, dimension_name, rule_id)
+
+    if tag is None or (tag.name or "").lower() not in LC_TEXT_BLOCK_TAG_NAMES:
         return None
     if not is_candidate_highlightable(tag, dimension_name, rule_id):
         return None

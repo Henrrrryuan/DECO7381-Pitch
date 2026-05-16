@@ -7,6 +7,98 @@ from typing import Any
 from bs4 import BeautifulSoup, Tag
 
 from ...schemas import Issue
+from ..location_utils import css_attr_escape, select_safely, stable_selector
+
+
+def _owner_beautifulsoup(tag: Tag) -> BeautifulSoup | None:
+    """Ascend from a Tag to the owning BeautifulSoup document (best-effort)."""
+    parent = getattr(tag, "parent", None)
+    while parent is not None:
+        if isinstance(parent, BeautifulSoup):
+            return parent
+        parent = getattr(parent, "parent", None)
+    return None
+
+
+def _unique_stable_selector(soup: BeautifulSoup | None, tag: Tag) -> str:
+    """`stable_selector` only when it resolves to exactly one node in this document."""
+    if soup is None or not isinstance(tag, Tag):
+        return ""
+    resolved = stable_selector(tag)
+    if resolved and len(select_safely(soup, resolved)) == 1:
+        return resolved
+    return ""
+
+
+def _ei_grounding_selector(soup: BeautifulSoup | None, tag: Tag | None) -> str:
+    """EI-1: grounding only; empty when not uniquely resolvable."""
+    if soup is None or not isinstance(tag, Tag):
+        return ""
+    return _unique_stable_selector(soup, tag)
+
+
+def _amc_src_match_candidates(raw_src: str) -> list[str]:
+    """Try several substrings so `iframe[src*="…"]`-style selectors can discriminate."""
+    s = (raw_src or "").strip()
+    if not s:
+        return []
+    fragments: list[str] = []
+    sl = s.lower()
+    needles = ("autoplay=1", "autoplay=true", "autoplay%3d1", "autoplay%3dtrue")
+    for n in needles:
+        idx = sl.find(n)
+        if idx >= 0:
+            span = s[max(0, idx - 28) : idx + len(n) + 32].strip()
+            if span:
+                fragments.append(span)
+            break
+    if "/" in s:
+        tail = s.rsplit("/", 1)[-1].strip()
+        if tail and tail not in fragments:
+            fragments.append(tail[:96])
+    if len(s) <= 120:
+        fragments.insert(0, s)
+    else:
+        if s[:72] not in fragments:
+            fragments.append(s[:72])
+        if s[-72:] not in fragments:
+            fragments.append(s[-72:])
+        mid = len(s) // 2
+        fragments.append(s[max(0, mid - 36) : mid + 36])
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for frag in fragments:
+        if frag and frag not in seen:
+            seen.add(frag)
+            deduped.append(frag)
+    return deduped
+
+
+def _amc_unique_src_attribute_selector(soup: BeautifulSoup, tag: Tag) -> str:
+    name = (tag.name or "").lower()
+    if name not in {"iframe", "video", "audio"}:
+        return ""
+    raw_src = tag.get("src")
+    raw_str = str(raw_src).strip() if raw_src else ""
+    if not raw_str:
+        return ""
+    for frag in _amc_src_match_candidates(raw_str):
+        candidate = f'{name}[src*="{css_attr_escape(frag)}"]'
+        if len(select_safely(soup, candidate)) == 1:
+            return candidate
+    return ""
+
+
+def _amc_grounding_selector(soup: BeautifulSoup | None, tag: Tag) -> str:
+    """AMC aggregated locations: stable path, then discriminative media src*=, else caller may fallback to summary."""
+    if soup is None or not isinstance(tag, Tag):
+        return ""
+    unique = _unique_stable_selector(soup, tag)
+    if unique:
+        return unique
+    if (tag.name or "").lower() in {"iframe", "video", "audio"}:
+        return _amc_unique_src_attribute_selector(soup, tag)
+    return ""
 
 REGULAR_BASE_PENALTY = 3
 SERIOUS_BASE_PENALTY = 4
@@ -173,39 +265,45 @@ def detect_id1_autoplay_media(
         muted = video.has_attr("muted")
         if muted:
             autoplay_muted_videos += 1
-        autoplay_locations.append(
-            {
-                "summary": get_tag_summary(video),
-                "html_snippet": get_tag_snippet(video),
-                "tag": "video",
-                "muted": muted,
-            }
-        )
+        vk: dict[str, Any] = {
+            "summary": get_tag_summary(video),
+            "html_snippet": get_tag_snippet(video),
+            "tag": "video",
+            "muted": muted,
+        }
+        grounded = _amc_grounding_selector(soup, video)
+        if grounded:
+            vk["selector"] = grounded
+        autoplay_locations.append(vk)
 
     for audio in soup.select("audio[autoplay]"):
         autoplay_audios += 1
-        autoplay_locations.append(
-            {
-                "summary": get_tag_summary(audio),
-                "html_snippet": get_tag_snippet(audio),
-                "tag": "audio",
-                "muted": audio.has_attr("muted"),
-            }
-        )
+        ak: dict[str, Any] = {
+            "summary": get_tag_summary(audio),
+            "html_snippet": get_tag_snippet(audio),
+            "tag": "audio",
+            "muted": audio.has_attr("muted"),
+        }
+        grounded_a = _amc_grounding_selector(soup, audio)
+        if grounded_a:
+            ak["selector"] = grounded_a
+        autoplay_locations.append(ak)
 
     for iframe in soup.find_all("iframe"):
         src = iframe.get("src", "")
-        src_lower = src.lower()
+        src_lower = str(src).lower()
         if "autoplay=1" in src_lower or "autoplay=true" in src_lower:
             autoplay_iframes += 1
-            autoplay_locations.append(
-                {
-                    "summary": get_tag_summary(iframe),
-                    "html_snippet": get_tag_snippet(iframe),
-                    "tag": "iframe",
-                    "src": src,
-                }
-            )
+            ik: dict[str, Any] = {
+                "summary": get_tag_summary(iframe),
+                "html_snippet": get_tag_snippet(iframe),
+                "tag": "iframe",
+                "src": src,
+            }
+            grounded_if = _amc_grounding_selector(soup, iframe)
+            if grounded_if:
+                ik["selector"] = grounded_if
+            autoplay_locations.append(ik)
 
     total_autoplay_media = autoplay_videos + autoplay_audios + autoplay_iframes
     js_autoplay_count = js_hints["autoplay_count"]
@@ -314,13 +412,16 @@ def detect_id2_too_many_animated_elements(
             }
         )
         for tag in item["animated_tags"][:3]:
-            locations.append(
-                {
-                    "summary": get_tag_summary(tag),
-                    "html_snippet": get_tag_snippet(tag),
-                    "region": get_tag_summary(item["region"]),
-                }
-            )
+            region_soup = _owner_beautifulsoup(tag)
+            lk: dict[str, Any] = {
+                "summary": get_tag_summary(tag),
+                "html_snippet": get_tag_snippet(tag),
+                "region": get_tag_summary(item["region"]),
+            }
+            gk = _amc_grounding_selector(region_soup, tag)
+            if gk:
+                lk["selector"] = gk
+            locations.append(lk)
 
     for sample in js_hints["motion_samples"][:2]:
         locations.append(
@@ -435,20 +536,23 @@ def detect_id3_dynamic_interruptions(
                 "covers_primary_region": item["covers_primary_region"],
             }
         )
-        locations.append(
-            {
-                "summary": item["summary"],
-                "html_snippet": item["html_snippet"],
-                "interrupt_type": item["interrupt_type"],
-                "initial_load_visible": item["initial_load_visible"],
-                "fixed_or_sticky": item["fixed_or_sticky"],
-                "overlay_like": item["overlay_like"],
-                "blocks_scroll": item["blocks_scroll"],
-                "takes_focus": item["takes_focus"],
-                "covers_primary_region": item["covers_primary_region"],
-                "dismiss_required": item["dismiss_required"],
-            }
-        )
+        ei_tag = item.get("tag")
+        ei_sel = _ei_grounding_selector(soup, ei_tag) if isinstance(ei_tag, Tag) else ""
+        loc_dict: dict[str, Any] = {
+            "summary": item["summary"],
+            "html_snippet": item["html_snippet"],
+            "interrupt_type": item["interrupt_type"],
+            "initial_load_visible": item["initial_load_visible"],
+            "fixed_or_sticky": item["fixed_or_sticky"],
+            "overlay_like": item["overlay_like"],
+            "blocks_scroll": item["blocks_scroll"],
+            "takes_focus": item["takes_focus"],
+            "covers_primary_region": item["covers_primary_region"],
+            "dismiss_required": item["dismiss_required"],
+        }
+        if ei_sel:
+            loc_dict["selector"] = ei_sel
+        locations.append(loc_dict)
 
     for sample in js_hints["interruption_samples"][:2]:
         locations.append(
@@ -689,16 +793,28 @@ def interruption_context_text(tag: Tag) -> str:
 
 
 def is_initially_visible(tag: Tag) -> bool:
-    if tag.has_attr("hidden"):
-        return False
-    if tag.get("aria-hidden", "").lower() == "true":
-        return False
-    if tag.name == "dialog" and not tag.has_attr("open"):
-        return False
+    """Static visibility for EI: treat elements under hidden subtrees as non-visible.
 
-    style = tag.get("style", "").lower().replace(" ", "")
-    if any(fragment in style for fragment in ("display:none", "visibility:hidden", "opacity:0")):
-        return False
+    Walks the inclusive ancestor chain so `hidden`, aria-hidden, closing native
+    `<dialog>`, and basic inline hiding apply to descendants—not only the leaf.
+    Class/id heuristics (`sr-only`, etc.) stay on the candidate tag only.
+    """
+
+    current: Tag | None = tag
+    while isinstance(current, Tag):
+        if current.has_attr("hidden"):
+            return False
+        if current.get("aria-hidden", "").lower() == "true":
+            return False
+        if (current.name or "").lower() == "dialog" and not current.has_attr("open"):
+            return False
+
+        style = str(current.get("style", "") or "").lower().replace(" ", "")
+        if any(fragment in style for fragment in ("display:none", "visibility:hidden", "opacity:0")):
+            return False
+
+        parent = getattr(current, "parent", None)
+        current = parent if isinstance(parent, Tag) else None
 
     attrs_text = interruption_context_text(tag)
     return not any(keyword in attrs_text for keyword in ("hidden", "collapsed", "is-hidden", "sr-only"))

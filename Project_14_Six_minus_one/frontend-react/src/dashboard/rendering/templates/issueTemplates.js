@@ -408,13 +408,25 @@ function issueSummaryCardMarkup(ctx, issueContext) {
         <strong class="issue-summary-title">${escapeHtml(issue.title || "Review this issue")}</strong>
       </summary>
       <div class="issue-summary-body">
-        <div class="issue-summary-row issue-summary-row-standards">
-          <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
-          ${cogaMarkup}
-        </div>
-        <div class="issue-summary-row issue-summary-row-standards">
-          <span class="issue-highlight-label">ISO 9241-11</span>
-          ${isoMarkup}
+        <div class="issue-summary-row issue-summary-row-rationale">
+          <details class="issue-rationale-details">
+            <summary class="issue-rationale-summary">
+              <span class="issue-rationale-label">Accessibility rationale</span>
+              <span class="issue-rationale-arrow" aria-hidden="true"></span>
+            </summary>
+            <div class="issue-rationale-expand-wrap">
+              <div class="issue-rationale-inner">
+                <div class="issue-summary-row issue-summary-row-standards">
+                  <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
+                  ${cogaMarkup}
+                </div>
+                <div class="issue-summary-row issue-summary-row-standards">
+                  <span class="issue-highlight-label">ISO 9241-11</span>
+                  ${isoMarkup}
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
         ${issueElementListMarkup(ctx, issue, dimensionName, selectedIssueId, selectedElementNumber)}
       </div>

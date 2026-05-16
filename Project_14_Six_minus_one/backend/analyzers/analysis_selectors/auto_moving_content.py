@@ -111,8 +111,9 @@ def _amc_merge_locations(issues: list[Issue]) -> tuple[list[dict[str, Any]], dic
             if not isinstance(loc, dict):
                 continue
             loc = dict(loc)  # do not mutate original dict objects
-            # Non-breaking: expose a selector hint for highlight resolution when possible.
-            # For ID-1/ID-2, summary is usually a CSS-ish tag summary (e.g. video#id.class).
+            # Prefer unique selectors produced in interaction_helpers (`ID-1` / `ID-2` payloads):
+            # stable_selector(unique) → media `[src*="…"]` when needed. Only fall back to
+            # legacy `summary` (often `iframe`/`video`/tag-shape) when no unique grounding was found.
             if not loc.get("selector") and isinstance(loc.get("summary"), str) and loc.get("summary").strip():
                 loc["selector"] = loc.get("summary").strip()
             sig = _amc_location_signature(loc)
