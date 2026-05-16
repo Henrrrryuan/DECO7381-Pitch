@@ -3005,7 +3005,12 @@ function applyIframePreviewBootstrap(doc) {
   injectHighlightStyles(doc);
   bindPreviewElementClick(doc);
   updatePreviewIssueHeader();
-  if (state.rightPanelMode === "preview" && state.selectedIssueId && state.selectedElementNumber > 0) {
+  clearWebsiteHighlights(doc);
+
+  // Only restore a highlight the user explicitly chose (left-sidebar element chip).
+  // Do not auto-highlight whole issues or dimensions on iframe load — that flashes
+  // "all answers" before the user interacts.
+  if (state.selectedIssueId && state.selectedElementNumber > 0) {
     const selected = selectedIssueRecord();
     if (selected) {
       void highlightIssueElementInPreview(
@@ -3014,18 +3019,6 @@ function applyIframePreviewBootstrap(doc) {
         state.selectedElementNumber,
       );
     }
-  } else if (state.rightPanelMode === "preview" && state.selectedIssueId) {
-    highlightSelectedIssueInPreview();
-  } else if (state.activeHighlightIssueId) {
-    const [dimensionName, ...ruleIdParts] = state.activeHighlightIssueId.split(":");
-    highlightIssue(dimensionName, ruleIdParts.join(":"), true);
-  } else if (state.selectedIssueId) {
-    const selected = findIssueById(state.selectedIssueId);
-    if (selected) {
-      highlightIssueInLoadedPreview(selected.dimension.dimension, selected.issue.rule_id);
-    }
-  } else if (state.activeHighlightDimension) {
-    highlightDimension(state.activeHighlightDimension);
   }
 }
 
@@ -4276,10 +4269,13 @@ function renderResult(result, html, options = {}) {
   dtFrontendStateLog("renderResult", state.currentPayload, state.currentResult, state.sourceName);
   if (options.preserveSelectedIssue && findIssueById(previousSelectedIssueId)) {
     setSelectedIssueId(state, previousSelectedIssueId);
+    clearActiveHighlight(state);
+    setSelectedElementNumber(state, 0);
+    setActiveGuidancePopoverKey(state, "");
   } else {
-    setSelectedIssueId(state, "");
-    setRightPanelMode(state, "summary");
+    resetSelectionToSummary(state);
   }
+  clearWebsiteHighlights();
   resetVicramStateForNewResult();
   renderReportId();
   renderScoreSlider(result);
@@ -4936,6 +4932,10 @@ export function notifyDashboardUnmount() {
 export async function initDashboard(options = {}) {
   onDetectionGaugeUpdate =
     typeof options.onDetectionGaugeUpdate === "function" ? options.onDetectionGaugeUpdate : null;
+
+  // SPA navigation reuses module state; clear stale highlight selection from a prior visit.
+  resetSelectionToSummary(state);
+  clearWebsiteHighlights();
 
   if (detectorEnablementAuditEnabled()) {
     detectorEnablementAuditLog("profile.storage.read", {

@@ -7,12 +7,12 @@ import { spaGuideLandingHref, spaLandingHistoryHref } from "../lib/siteUrls.js";
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const GUIDE_BUBBLE_STEPS = [
-  "1. Choose Website URL or Upload File, then click Analyze.",
-  "2. In the dashboard, choose a target audience first.",
-  "3. Open issue cards and inspect Element evidence in preview.",
-  "4. Use Why this matters and First redesign move to improve the page.",
-  "5. Detected issues is a count of triggered findings, not a score.",
-  "6. Use Eye Tracking for behavior evidence and History to revisit runs.",
+  { title: "Choose Input", body: "Paste a website URL or upload a file." },
+  { title: "Pick an Audience", body: "Choose who the page is designed for first." },
+  { title: "Open Issue Cards", body: "Review each finding and its evidence." },
+  { title: "Use Redesign Hints", body: "Read why it matters and the first fix to try." },
+  { title: "Issues Count", body: "This number lists findings, not a score." },
+  { title: "More Tools", body: "Use Eye Tracking and History when you need them." },
 ];
 
 function normalizeUrl(rawUrl) {
@@ -325,9 +325,18 @@ export function HomePage() {
   };
 
   const isUrlWorkflow = workflow === "url";
+  const isFinalGuideStep = guideStepIndex >= GUIDE_BUBBLE_STEPS.length - 1;
+
+  const unlockGuide = () => {
+    setViewedGuideSteps(new Set(GUIDE_BUBBLE_STEPS.map((_, index) => index)));
+  };
+
   const onGuideNext = () => {
+    if (isFinalGuideStep) {
+      return;
+    }
     setGuideStepIndex((prev) => {
-      const next = (prev + 1) % GUIDE_BUBBLE_STEPS.length;
+      const next = Math.min(prev + 1, GUIDE_BUBBLE_STEPS.length - 1);
       setViewedGuideSteps((current) => {
         const updated = new Set(current);
         updated.add(next);
@@ -335,6 +344,14 @@ export function HomePage() {
       });
       return next;
     });
+  };
+
+  const onGuideSkip = () => {
+    unlockGuide();
+  };
+
+  const onGuideFinish = () => {
+    unlockGuide();
   };
 
   return (
@@ -363,16 +380,55 @@ export function HomePage() {
           <section className="input-workflow" aria-label="CogniLens input workflow">
             <div className="workflow-card">
               <aside className="upload-character-panel">
+                {!guideUnlocked ? (
                 <div className="guide-bubble" role="status" aria-live="polite">
-                  <p>{GUIDE_BUBBLE_STEPS[guideStepIndex]}</p>
-                  <button
-                    type="button"
-                    className="guide-bubble-next"
-                    onClick={onGuideNext}
+                  <ul
+                    className="guide-bubble-dots"
+                    aria-label={`Tutorial progress, step ${guideStepIndex + 1} of ${GUIDE_BUBBLE_STEPS.length}`}
                   >
-                    Next
-                  </button>
+                    {GUIDE_BUBBLE_STEPS.map((_, index) => (
+                      <li
+                        key={index}
+                        className={index <= guideStepIndex ? "is-filled" : ""}
+                        aria-current={index === guideStepIndex ? "step" : undefined}
+                      />
+                    ))}
+                  </ul>
+                  <div className="guide-bubble-copy">
+                    <h2 className="guide-bubble-title">{GUIDE_BUBBLE_STEPS[guideStepIndex].title}</h2>
+                    <p className="guide-bubble-body">{GUIDE_BUBBLE_STEPS[guideStepIndex].body}</p>
+                  </div>
+                  <div className="guide-bubble-actions">
+                    <button
+                      type="button"
+                      className="guide-bubble-skip"
+                      onClick={onGuideSkip}
+                      aria-label="Skip and unlock analysis"
+                    >
+                      Skip
+                    </button>
+                    {isFinalGuideStep ? (
+                      <button
+                        type="button"
+                        className="guide-bubble-finish"
+                        onClick={onGuideFinish}
+                        aria-label="Finish tutorial and unlock analysis"
+                      >
+                        Finish &amp; Unlock
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="guide-bubble-next"
+                        onClick={onGuideNext}
+                        aria-label={`Go to step ${guideStepIndex + 2} of ${GUIDE_BUBBLE_STEPS.length}`}
+                      >
+                        Next
+                      </button>
+                    )}
+                  </div>
                 </div>
+                ) : null}
                 <div className="character-stage">
                   <div className="character figure-purple">
                     <div className="character-eyes">
