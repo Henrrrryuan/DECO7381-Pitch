@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LCC-1 Long Content Without Chunking Test</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.65;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    header {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 32px 24px 10px;
+    }
+    article {
+      max-width: 820px;
+      margin: 18px auto 60px;
+      padding: 28px;
+      border: 2px solid #0f766e;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    p {
+      margin: 0 0 18px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Long Content Without Chunking Fixture</h1>
+    <p>The article below has no headings, no summary, and no lists. It is intentionally long so LCC-1 can detect an unchunked content block.</p>
+  </header>
+
+  <article id="long-unchunked-article" class="long-content-fixture">
+    <p>The service team receives many requests during a normal week, and each request needs careful review before a decision can be made. The team reads the form, checks the account history, compares the request with current policy, and records the next action in the shared workspace.</p>
+    <p>When the page presents this process as one continuous block, readers must hold the whole path in memory while they search for the next useful detail. A person may understand each sentence on its own, but the full page still feels demanding because there is no visible place to pause.</p>
+    <p>The same problem appears when instructions describe setup, review, approval, delivery, and follow up without clear breaks. People need to scan the page before they commit to reading every line, and they benefit when related ideas are grouped into smaller parts.</p>
+    <p>This fixture avoids those helpful breaks on purpose. It does not provide a summary, a step list, or section headings inside the article. The words are simple, but the block is long enough to make scanning and memory management harder than necessary.</p>
+    <p>Readers who are tired, distracted, anxious, or new to the service may lose their place when the content keeps going without landmarks. They may reread the same paragraph, skip an important condition, or stop before they find the answer that would help them complete the task.</p>
+    <p>A better design would divide the content into named parts, such as what to prepare, what happens after submission, how long review takes, and where to ask for help. This test page leaves those divisions out so the long content detector has a stable target.</p>
+    <p>The article also avoids bullet points and numbered steps because those structures would count as chunking support. The detector should treat this article as one long region that relies on paragraph breaks alone and does not offer enough organisation for quick scanning.</p>
+    <p>In a real service page, the same pattern can appear in policy explanations, onboarding instructions, consent statements, or help articles. The page may not be visually cluttered, but the reader still has to build their own structure while working through a long stream of text.</p>
+    <p>That extra structuring effort can increase cognitive load because the user must decide which details matter, remember earlier conditions, and connect related ideas across several paragraphs. Clear chunking reduces that burden by making the shape of the information visible.</p>
+    <p>This paragraph continues the unchunked block with more simple words so the article crosses the detector threshold. The goal is not to make the language difficult, but to create a long region that lacks headings or list structure and therefore becomes harder to scan.</p>
+    <p>Another short paragraph keeps the same continuous flow. It describes ordinary service review work, shared notes, user questions, document checks, and confirmation messages without offering a new heading or a clear breakpoint for the reader.</p>
+    <p>The final paragraph closes the fixture while preserving the same structure. The article remains one long content region, with many paragraphs, no internal headings, no lists, and no summary, so it should reliably trigger long content without chunking.</p>
+    <p>The page keeps adding plain service detail without a heading. Staff read the request, compare dates, check the account, and prepare a reply. The user still has no clear landmark that says where one idea ends and the next idea begins.</p>
+    <p>The content also avoids short labels that could work like section names. It describes review notes, contact records, service limits, timing questions, and final confirmation in one continuous article. That makes the article longer while keeping the organisation weak.</p>
+    <p>A reader may want to know what action comes first. Another reader may want to know what happens after approval. Both readers must scan the same long block because the fixture does not separate the information into clear parts.</p>
+    <p>This extra paragraph keeps the vocabulary simple and the sentences direct. It adds enough length for a stable test case. The detector should find the article because it is long, has no internal heading, and contains no list-based chunking.</p>
+  </article>
+</body>
+</html>

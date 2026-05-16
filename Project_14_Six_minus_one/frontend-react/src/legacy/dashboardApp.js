@@ -3908,6 +3908,7 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
     && state.rightPanelMode === "preview"
   );
   if (isSameElementActive) {
+    setSelectedIssueId(state, "");
     setSelectedElementNumber(state, 0);
     clearActiveHighlight(state);
     setActiveGuidancePopoverKey(state, "");
@@ -3949,6 +3950,15 @@ function focusIssueElement(dimensionName, ruleId, elementNumber) {
   }
   updateActiveHighlightButtons();
   runHighlightAfterIframeLayoutStable(() => {
+    const stillSelectedSameElement = (
+      state.selectedIssueId === issueId
+      && state.selectedElementNumber === elementNumber
+      && state.activeHighlightIssueId === issueId
+      && state.rightPanelMode === "preview"
+    );
+    if (!stillSelectedSameElement) {
+      return;
+    }
     void highlightIssueElementInPreview(dimensionName, ruleId, elementNumber);
   });
 }

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NC-1 Navigation Complexity Test</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    #complex-primary-nav {
+      border: 2px solid #2563eb;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 18px;
+      margin: 24px 0;
+    }
+    #complex-primary-nav h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+    #complex-primary-nav ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+    #complex-primary-nav li {
+      margin: 6px 0;
+    }
+    #complex-primary-nav a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+    main {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Navigation Complexity Fixture</h1>
+      <p>This page keeps the main content short and uses one intentionally complex navigation region.</p>
+    </header>
+
+    <nav id="complex-primary-nav" class="test-nav complex-navigation-region" aria-label="Complex test navigation">
+      <h2>Product Navigation</h2>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#features">Features</a></li>
+        <li>
+          <a href="#solutions">Solutions</a>
+          <ul>
+            <li><a href="#education">Education</a></li>
+            <li><a href="#health">Health</a></li>
+            <li><a href="#finance">Finance</a></li>
+            <li>
+              <a href="#enterprise">Enterprise</a>
+              <ul>
+                <li><a href="#enterprise-admin">Admin Console</a></li>
+                <li><a href="#enterprise-security">Security Controls</a></li>
+                <li>
+                  <a href="#enterprise-integrations">Integrations</a>
+                  <ul>
+                    <li><a href="#enterprise-api">API Access</a></li>
+                    <li><a href="#enterprise-sso">Single Sign On</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#customers">Customers</a></li>
+        <li><a href="#partners">Partners</a></li>
+        <li><a href="#resources">Resources</a></li>
+        <li><a href="#docs">Documentation</a></li>
+        <li><a href="#tutorials">Tutorials</a></li>
+        <li><a href="#webinars">Webinars</a></li>
+        <li><a href="#blog">Blog</a></li>
+        <li><a href="#support">Support</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <main id="main-content">
+      <h2>Short Main Content</h2>
+      <p>The navigation above intentionally contains more than twelve links and nested menu levels.</p>
+    </main>
+  </div>
+</body>
+</html>
