@@ -21,6 +21,8 @@ from ...schemas import (
     HistoryRunDetail,
     HistoryRunSummary,
     Issue,
+    VisualComplexityDetailForHistory,
+    VisualComplexitySummaryForHistory,
 )
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "analysis_history.sqlite3"
@@ -132,6 +134,7 @@ def save_analysis_run(
         created_at=created_at,
         source_name=resolved_source_name,
         eye_tracking_summary=EyeTrackingSummaryForHistory(available=False),
+        visual_complexity_summary=VisualComplexitySummaryForHistory(available=False),
     )
 
 
@@ -178,6 +181,273 @@ def _fetch_latest_eye_summary_by_run_ids(
             eye_evidence=eye_evidence,
         )
     return result
+
+
+def _vicram_risk_from_vcs(vcs: float) -> tuple[str, str]:
+    if vcs < 4:
+        return "low", "Low visual complexity"
+    if vcs < 7:
+        return "medium", "Moderate visual complexity"
+    return "high", "High visual complexity"
+
+
+def _vicram_summary_text(vcs: float, risk_label: str) -> str:
+    return f"VCS {vcs:.1f}: {risk_label}."
+
+
+def _top_vicram_cells(cells: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
+    active = [
+        cell
+        for cell in cells
+        if _safe_int(cell.get("word_count")) > 0
+        or _safe_int(cell.get("images")) > 0
+        or _safe_int(cell.get("tlc")) > 0
+    ]
+    return sorted(active, key=lambda cell: _safe_float(cell.get("vcs")), reverse=True)[:limit]
+
+
+def _normalize_vicram_result_payload(result: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(result.get("page"), dict):
+        return result
+    nested = result.get("result")
+    if isinstance(nested, dict) and isinstance(nested.get("page"), dict):
+        return nested
+    return result
+
+
+def save_visual_complexity_result(
+    run_id: str,
+    result: dict[str, Any],
+    *,
+    source_label: str | None = None,
+    source_type: str | None = None,
+    db_path: Path | None = None,
+) -> VisualComplexitySummaryForHistory:
+    if not has_history_run(run_id, db_path=db_path):
+        raise ValueError(f"History run not found: {run_id}")
+
+    payload = _normalize_vicram_result_payload(result)
+    page = payload.get("page") if isinstance(payload.get("page"), dict) else {}
+    grid = payload.get("grid") if isinstance(payload.get("grid"), dict) else {}
+    artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
+    debug = payload.get("debug") if isinstance(payload.get("debug"), dict) else {}
+
+    vcs = _safe_float(page.get("vcs"), -1.0)
+    if vcs < 0:
+        raise ValueError("ViCRAM result must include a numeric page.vcs value.")
+
+    risk_level, risk_label = _vicram_risk_from_vcs(vcs)
+    summary_text = _vicram_summary_text(vcs, risk_label)
+    cells = grid.get("cells") if isinstance(grid.get("cells"), list) else []
+    top_cells = _top_vicram_cells([cell for cell in cells if isinstance(cell, dict)])
+
+    grid_rows = _safe_int(grid.get("rows"))
+    grid_cols = _safe_int(grid.get("columns"))
+    word_count = _safe_int(page.get("word_count"))
+    image_count = _safe_int(page.get("images"))
+    tlc = _safe_int(page.get("tlc"))
+    page_width = _safe_int(page.get("width"))
+    page_height = _safe_int(page.get("height"))
+
+    summary_report = str(payload.get("summary_report") or "")
+    overlay_svg_base64 = str(artifacts.get("overlay_svg_base64") or "").strip()
+    if len(overlay_svg_base64) > 2_000_000:
+        overlay_svg_base64 = ""
+
+    resolved_source_type = (source_type or payload.get("source_type") or "unknown").strip() or "unknown"
+    resolved_source_label = (
+        source_label
+        or payload.get("title")
+        or payload.get("url")
+        or "ViCRAM analysis"
+    ).strip() or "ViCRAM analysis"
+
+    record_id = uuid4().hex
+    created_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    summary_json = _dump_json(
+        {
+            "summary_report": summary_report,
+            "debug": debug,
+            "url": payload.get("url"),
+            "title": payload.get("title"),
+        }
+    )
+
+    with _connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO visual_complexity_results (
+                id,
+                run_id,
+                created_at,
+                source_type,
+                source_label,
+                vcs,
+                risk_level,
+                risk_label,
+                page_width,
+                page_height,
+                word_count,
+                image_count,
+                tlc,
+                grid_rows,
+                grid_cols,
+                grid_cells_json,
+                top_cells_json,
+                summary_text,
+                summary_json,
+                overlay_svg_base64,
+                screenshot_ref
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                record_id,
+                run_id,
+                created_at,
+                resolved_source_type,
+                resolved_source_label,
+                vcs,
+                risk_level,
+                risk_label,
+                page_width,
+                page_height,
+                word_count,
+                image_count,
+                tlc,
+                grid_rows,
+                grid_cols,
+                _dump_json(cells),
+                _dump_json(top_cells),
+                summary_text,
+                summary_json,
+                overlay_svg_base64 or None,
+                None,
+            ),
+        )
+
+    return VisualComplexitySummaryForHistory(
+        available=True,
+        vcs=vcs,
+        risk_level=risk_level,
+        risk_label=risk_label,
+        summary_text=summary_text,
+        word_count=word_count,
+        image_count=image_count,
+        tlc=tlc,
+        grid_rows=grid_rows,
+        grid_cols=grid_cols,
+    )
+
+
+def _fetch_latest_visual_complexity_row(
+    connection: sqlite3.Connection,
+    run_id: str,
+) -> sqlite3.Row | None:
+    return connection.execute(
+        """
+        SELECT *
+        FROM visual_complexity_results
+        WHERE run_id = ?
+        ORDER BY rowid DESC
+        LIMIT 1
+        """,
+        (run_id,),
+    ).fetchone()
+
+
+def get_latest_visual_complexity_for_run(
+    run_id: str,
+    db_path: Path | None = None,
+) -> VisualComplexityDetailForHistory | None:
+    with _connect(db_path) as connection:
+        row = _fetch_latest_visual_complexity_row(connection, run_id)
+    if row is None:
+        return None
+    return _visual_complexity_row_to_detail(row)
+
+
+def _fetch_latest_visual_complexity_by_run_ids(
+    connection: sqlite3.Connection,
+    run_ids: list[str],
+) -> dict[str, VisualComplexitySummaryForHistory]:
+    if not run_ids:
+        return {}
+    placeholders = ",".join("?" * len(run_ids))
+    rows = connection.execute(
+        f"""
+        SELECT *
+        FROM visual_complexity_results
+        WHERE run_id IN ({placeholders})
+        ORDER BY rowid DESC
+        """,
+        run_ids,
+    ).fetchall()
+    result: dict[str, VisualComplexitySummaryForHistory] = {}
+    for row in rows:
+        rid = str(row["run_id"])
+        if rid in result:
+            continue
+        result[rid] = _visual_complexity_row_to_summary(row)
+    return result
+
+
+def _visual_complexity_row_to_summary(row: sqlite3.Row) -> VisualComplexitySummaryForHistory:
+    return VisualComplexitySummaryForHistory(
+        available=True,
+        vcs=_safe_float(row["vcs"]),
+        risk_level=str(row["risk_level"]),
+        risk_label=str(row["risk_label"]),
+        summary_text=str(row["summary_text"]),
+        word_count=_safe_int(row["word_count"]),
+        image_count=_safe_int(row["image_count"]),
+        tlc=_safe_int(row["tlc"]),
+        grid_rows=_safe_int(row["grid_rows"]),
+        grid_cols=_safe_int(row["grid_cols"]),
+    )
+
+
+def _visual_complexity_row_to_detail(row: sqlite3.Row) -> VisualComplexityDetailForHistory:
+    summary = _visual_complexity_row_to_summary(row)
+    cells = _load_json(row["grid_cells_json"], [])
+    top_cells = _load_json(row["top_cells_json"], [])
+    meta = _load_json(row["summary_json"], {})
+    overlay = str(row["overlay_svg_base64"] or "").strip()
+    artifacts: dict[str, Any] = {}
+    if overlay:
+        artifacts["overlay_svg_base64"] = overlay
+
+    page = {
+        "width": _safe_int(row["page_width"]),
+        "height": _safe_int(row["page_height"]),
+        "vcs": _safe_float(row["vcs"]),
+        "word_count": _safe_int(row["word_count"]),
+        "images": _safe_int(row["image_count"]),
+        "tlc": _safe_int(row["tlc"]),
+    }
+    grid = {
+        "rows": _safe_int(row["grid_rows"]),
+        "columns": _safe_int(row["grid_cols"]),
+        "cells": cells if isinstance(cells, list) else [],
+    }
+
+    return VisualComplexityDetailForHistory(
+        available=summary.available,
+        vcs=summary.vcs,
+        risk_level=summary.risk_level,
+        risk_label=summary.risk_label,
+        summary_text=summary.summary_text,
+        word_count=summary.word_count,
+        image_count=summary.image_count,
+        tlc=summary.tlc,
+        grid_rows=summary.grid_rows,
+        grid_cols=summary.grid_cols,
+        page=page,
+        grid=grid,
+        top_cells=top_cells if isinstance(top_cells, list) else [],
+        summary_report=str(meta.get("summary_report") or ""),
+        artifacts=artifacts,
+    )
 
 
 def get_latest_eye_tracking_session_for_run(
@@ -249,10 +519,15 @@ def list_history_runs(
 
         run_ids = [str(row["id"]) for row in rows]
         eye_map = _fetch_latest_eye_summary_by_run_ids(connection, run_ids)
+        visual_map = _fetch_latest_visual_complexity_by_run_ids(connection, run_ids)
 
     return HistoryListResponse(
         items=[
-            _row_to_run_summary(row, eye_tracking_summary=eye_map.get(str(row["id"])))
+            _row_to_run_summary(
+                row,
+                eye_tracking_summary=eye_map.get(str(row["id"])),
+                visual_complexity_summary=visual_map.get(str(row["id"])),
+            )
             for row in rows
         ],
         total=int(total),
@@ -354,6 +629,13 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
         ).fetchall()
 
         eye_map = _fetch_latest_eye_summary_by_run_ids(connection, [run_id])
+        visual_map = _fetch_latest_visual_complexity_by_run_ids(connection, [run_id])
+        visual_row = _fetch_latest_visual_complexity_row(connection, run_id)
+        visual_detail = (
+            _visual_complexity_row_to_detail(visual_row)
+            if visual_row is not None
+            else VisualComplexityDetailForHistory(available=False)
+        )
 
     analysis = AnalysisResult(
         dimensions=dimensions,
@@ -361,12 +643,14 @@ def get_history_run(run_id: str, db_path: Path | None = None) -> HistoryRunDetai
     run = _row_to_run_summary(
         run_row,
         eye_tracking_summary=eye_map.get(run_id),
+        visual_complexity_summary=visual_map.get(run_id),
     )
 
     return HistoryRunDetail(
         run=run,
         html_content=run_row["html_content"],
         analysis=analysis,
+        visual_complexity_detail=visual_detail,
     )
 
 
@@ -606,6 +890,7 @@ def _row_to_run_summary(
     row: sqlite3.Row,
     *,
     eye_tracking_summary: EyeTrackingSummaryForHistory | None = None,
+    visual_complexity_summary: VisualComplexitySummaryForHistory | None = None,
 ) -> HistoryRunSummary:
     return HistoryRunSummary(
         run_id=row["id"],
@@ -613,6 +898,8 @@ def _row_to_run_summary(
         source_name=row["source_name"],
         eye_tracking_summary=eye_tracking_summary
         or EyeTrackingSummaryForHistory(available=False),
+        visual_complexity_summary=visual_complexity_summary
+        or VisualComplexitySummaryForHistory(available=False),
     )
 
 
@@ -907,6 +1194,34 @@ def _apply_schema(connection: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_eye_tracking_sessions_run_id
         ON eye_tracking_sessions(run_id);
+
+        CREATE TABLE IF NOT EXISTS visual_complexity_results (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            source_type TEXT NOT NULL,
+            source_label TEXT NOT NULL,
+            vcs REAL NOT NULL,
+            risk_level TEXT NOT NULL,
+            risk_label TEXT NOT NULL,
+            page_width INTEGER NOT NULL,
+            page_height INTEGER NOT NULL,
+            word_count INTEGER NOT NULL,
+            image_count INTEGER NOT NULL,
+            tlc INTEGER NOT NULL,
+            grid_rows INTEGER NOT NULL,
+            grid_cols INTEGER NOT NULL,
+            grid_cells_json TEXT NOT NULL,
+            top_cells_json TEXT NOT NULL,
+            summary_text TEXT NOT NULL,
+            summary_json TEXT NOT NULL,
+            overlay_svg_base64 TEXT,
+            screenshot_ref TEXT,
+            FOREIGN KEY (run_id) REFERENCES analysis_runs(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_visual_complexity_results_run_id
+        ON visual_complexity_results(run_id);
         """
     )
     _ensure_column(connection, "issues", "issue_json", "TEXT NOT NULL DEFAULT '{}'")

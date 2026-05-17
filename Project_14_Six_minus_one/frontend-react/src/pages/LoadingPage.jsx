@@ -7,6 +7,7 @@ import {
   analyzeVicramSource,
   loadDashboardSession,
   saveDashboardSession,
+  saveVisualComplexityForRun,
 } from "../lib/common.js";
 import {
   buildVicramSourcePayloadFromMain,
@@ -285,6 +286,21 @@ export function LoadingPage() {
       }
     }
 
+    async function persistVisualComplexityToHistory(result, vicramCache) {
+      const runId = String(result?.payload?.run?.run_id || "").trim();
+      if (!runId || !vicramCache?.result) {
+        return;
+      }
+      try {
+        await saveVisualComplexityForRun(runId, vicramCache.result, {
+          sourceLabel: resolveVicramTargetLabel(result),
+          sourceType: vicramCache.result?.source_type,
+        });
+      } catch (error) {
+        console.warn("ViCRAM visual complexity history save failed:", error);
+      }
+    }
+
     function showError(error) {
       document.querySelector(".analysis-loading-page")?.setAttribute("aria-busy", "false");
       setMessage("");
@@ -317,6 +333,7 @@ export function LoadingPage() {
         setProgress(86);
         setMessage("Preparing the report");
         saveResult(result, vicramCache);
+        await persistVisualComplexityToHistory(result, vicramCache);
         ensureNotCancelled();
         sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
         const elapsed = Date.now() - startedAt;

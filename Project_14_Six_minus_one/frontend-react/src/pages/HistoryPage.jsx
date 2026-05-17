@@ -325,9 +325,54 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
   );
 }
 
-function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
+function formatVisualComplexityRiskLabel(riskLevel) {
+  const level = String(riskLevel || "").trim().toLowerCase();
+  if (level === "high") {
+    return "High risk";
+  }
+  if (level === "medium") {
+    return "Medium risk";
+  }
+  if (level === "low") {
+    return "Low risk";
+  }
+  return "";
+}
+
+function VisualComplexityEvidenceCell({ summary, onViewComplexityMap, complexityBusy }) {
+  const riskLevel = String(summary?.risk_level || "").toLowerCase();
+  const riskLabel = formatVisualComplexityRiskLabel(riskLevel);
+  const summaryText =
+    summary?.summary_text ||
+    (summary?.vcs != null && summary?.risk_label
+      ? `VCS ${Number(summary.vcs).toFixed(1)}: ${summary.risk_label}.`
+      : "Visual complexity evidence is available for this report.");
+
+  return (
+    <div className="history-supporting-cell">
+      <div className="history-supporting-heading">
+        <p className="history-supporting-available">Visual complexity available</p>
+        {riskLabel ? (
+          <span className={`history-risk-pill is-${riskLevel || "medium"}`}>{riskLabel}</span>
+        ) : null}
+      </div>
+      <p className="history-supporting-summary">{summaryText}</p>
+      <button
+        className="history-heatmap-btn"
+        type="button"
+        data-accessibility-tooltip="Open the ViCRAM complexity map saved for this analysis report."
+        onClick={onViewComplexityMap}
+        disabled={complexityBusy}
+      >
+        View Complexity Map
+      </button>
+    </div>
+  );
+}
+
+function EyeEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
   if (!summary?.available) {
-    return <div className="history-supporting-none">No behavioral evidence</div>;
+    return null;
   }
   const riskDrivers = getRiskDrivers(summary);
   const eyeEvidence = summary.eye_evidence || {};
@@ -358,7 +403,123 @@ function SupportingEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
   );
 }
 
-function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, onPrintReport, heatmapLoading }) {
+function SupportingEvidenceColumn({
+  eyeSummary,
+  visualSummary,
+  onViewHeatmap,
+  onViewComplexityMap,
+  heatmapBusy,
+  complexityBusy,
+}) {
+  const hasEye = Boolean(eyeSummary?.available);
+  const hasVisual = Boolean(visualSummary?.available);
+  if (!hasEye && !hasVisual) {
+    return <div className="history-supporting-none">No supporting evidence</div>;
+  }
+  return (
+    <div className="history-supporting-column">
+      {hasVisual ? (
+        <VisualComplexityEvidenceCell
+          summary={visualSummary}
+          onViewComplexityMap={onViewComplexityMap}
+          complexityBusy={complexityBusy}
+        />
+      ) : null}
+      {hasEye ? (
+        <EyeEvidenceCell summary={eyeSummary} onViewHeatmap={onViewHeatmap} heatmapBusy={heatmapBusy} />
+      ) : null}
+    </div>
+  );
+}
+
+function VisualComplexityMapModal({ open, onClose, detail, loading, error }) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) {
+    return null;
+  }
+
+  const overlay = detail?.artifacts?.overlay_svg_base64 || "";
+  const overlaySrc = overlay ? `data:image/svg+xml;base64,${overlay}` : "";
+
+  return (
+    <div
+      className="history-behavioral-modal-backdrop"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="history-behavioral-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="history-visual-complexity-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="history-behavioral-modal-header">
+          <div className="history-modal-title-wrap">
+            <h2 id="history-visual-complexity-modal-title">Visual Complexity Map</h2>
+            <p className="history-behavioral-modal-note">
+              ViCRAM grid overlay for this saved analysis. Descriptive complexity evidence only.
+            </p>
+          </div>
+          <button
+            className="history-modal-close-btn"
+            type="button"
+            data-accessibility-tooltip="Close the complexity map dialog and return to history."
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="history-behavioral-modal-body">
+          {loading ? <p className="history-empty">Loading…</p> : null}
+          {!loading && error ? <p className="history-empty">{error}</p> : null}
+          {!loading && !error && detail?.available ? (
+            <>
+              <p className="history-behavioral-modal-meta">
+                {detail.summary_text || `VCS ${Number(detail.vcs || 0).toFixed(1)}`}
+              </p>
+              {overlaySrc ? (
+                <div className="history-vicram-map-shell">
+                  <img
+                    className="history-vicram-map-image"
+                    src={overlaySrc}
+                    alt="ViCRAM visual complexity map overlay"
+                  />
+                </div>
+              ) : (
+                <p className="history-empty">No complexity map overlay was stored for this report.</p>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReportRows({
+  items,
+  status,
+  emptyMessage,
+  onOpenReport,
+  onOpenHeatmap,
+  onOpenComplexityMap,
+  onPrintReport,
+  heatmapLoading,
+  complexityLoading,
+}) {
   if (status.loading) {
     return <p className="history-empty">Loading analysis history…</p>;
   }
@@ -377,10 +538,13 @@ function ReportRows({ items, status, emptyMessage, onOpenReport, onOpenHeatmap, 
       </span>
       <span className="history-cell">{formatDate(item.created_at)}</span>
       <span className="history-cell history-supporting-wrap">
-        <SupportingEvidenceCell
-          summary={item.eye_tracking_summary}
+        <SupportingEvidenceColumn
+          eyeSummary={item.eye_tracking_summary}
+          visualSummary={item.visual_complexity_summary}
           onViewHeatmap={() => onOpenHeatmap(item.run_id)}
+          onViewComplexityMap={() => onOpenComplexityMap(item.run_id)}
           heatmapBusy={heatmapLoading}
+          complexityBusy={complexityLoading}
         />
       </span>
       <span className="history-cell action">
@@ -420,8 +584,10 @@ function ReportHistoryPanel({
   onPageChange,
   onOpenReport,
   onOpenHeatmap,
+  onOpenComplexityMap,
   onPrintReport,
   heatmapLoading,
+  complexityLoading,
 }) {
   const emptyMessage = query
     ? "No reports match the current file name or ID search."
@@ -442,8 +608,10 @@ function ReportHistoryPanel({
           emptyMessage={emptyMessage}
           onOpenReport={onOpenReport}
           onOpenHeatmap={onOpenHeatmap}
+          onOpenComplexityMap={onOpenComplexityMap}
           onPrintReport={onPrintReport}
           heatmapLoading={heatmapLoading}
+          complexityLoading={complexityLoading}
         />
       </div>
       <Pagination
@@ -487,6 +655,11 @@ export function HistoryPage() {
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [heatmapError, setHeatmapError] = useState("");
 
+  const [complexityOpen, setComplexityOpen] = useState(false);
+  const [complexityDetail, setComplexityDetail] = useState(null);
+  const [complexityLoading, setComplexityLoading] = useState(false);
+  const [complexityError, setComplexityError] = useState("");
+
   useEffect(() => {
     const updatePageSize = () => {
       const next = computeReportPageSize(window.innerHeight, window.innerWidth);
@@ -527,6 +700,7 @@ export function HistoryPage() {
         const items = rawItems.map((row) => ({
           ...row,
           eye_tracking_summary: row.eye_tracking_summary || { available: false },
+          visual_complexity_summary: row.visual_complexity_summary || { available: false },
         }));
 
         setReports({
@@ -587,6 +761,37 @@ export function HistoryPage() {
         setHeatmapDetail(null);
         setHeatmapLoading(false);
         setHeatmapError(error.message || "Could not load heatmap.");
+      });
+  }, []);
+
+  const closeComplexityMap = useCallback(() => {
+    setComplexityOpen(false);
+    setComplexityDetail(null);
+    setComplexityError("");
+    setComplexityLoading(false);
+  }, []);
+
+  const openComplexityMap = useCallback((runId) => {
+    setComplexityOpen(true);
+    setComplexityDetail(null);
+    setComplexityError("");
+    setComplexityLoading(true);
+
+    fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`, { cache: "no-store" })
+      .then((data) => {
+        const detail = data?.visual_complexity_detail || { available: false };
+        if (!detail.available) {
+          setComplexityDetail(null);
+          setComplexityError("No visual complexity evidence was saved for this report.");
+        } else {
+          setComplexityDetail(detail);
+        }
+        setComplexityLoading(false);
+      })
+      .catch((error) => {
+        setComplexityDetail(null);
+        setComplexityLoading(false);
+        setComplexityError(error.message || "Could not load visual complexity map.");
       });
   }, []);
 
@@ -745,8 +950,10 @@ export function HistoryPage() {
             onPageChange={setReportPage}
             onOpenReport={openReport}
             onOpenHeatmap={openHeatmap}
+            onOpenComplexityMap={openComplexityMap}
             onPrintReport={printReport}
             heatmapLoading={heatmapLoading}
+            complexityLoading={complexityLoading}
           />
         </div>
       </main>
@@ -757,6 +964,13 @@ export function HistoryPage() {
         detail={heatmapDetail}
         loading={heatmapLoading}
         error={heatmapError}
+      />
+      <VisualComplexityMapModal
+        open={complexityOpen}
+        onClose={closeComplexityMap}
+        detail={complexityDetail}
+        loading={complexityLoading}
+        error={complexityError}
       />
     </>
   );

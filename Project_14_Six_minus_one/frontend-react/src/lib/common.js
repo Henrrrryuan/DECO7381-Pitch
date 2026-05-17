@@ -402,6 +402,23 @@ function findDimension(result, name) {
   return result?.dimensions?.find((dimension) => dimension.dimension === name);
 }
 
+async function saveVisualComplexityForRun(runId, vicramResult, options = {}) {
+  const body = {
+    ...(vicramResult || {}),
+  };
+  if (options.sourceLabel) {
+    body.source_label = options.sourceLabel;
+  }
+  if (options.sourceType) {
+    body.source_type = options.sourceType;
+  }
+  return fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}/visual-complexity`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 export {
   API_BASE,
   STORAGE_KEY,
@@ -423,4 +440,5 @@ export {
   isZipFile,
   loadDashboardSession,
   saveDashboardSession,
+  saveVisualComplexityForRun,
 };

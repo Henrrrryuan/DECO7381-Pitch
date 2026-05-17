@@ -377,12 +377,69 @@ class EyeTrackingSummaryForHistory:
 
 
 @dataclass
+class VisualComplexitySummaryForHistory:
+    available: bool = False
+    vcs: float | None = None
+    risk_level: str | None = None
+    risk_label: str | None = None
+    summary_text: str | None = None
+    word_count: int | None = None
+    image_count: int | None = None
+    tlc: int | None = None
+    grid_rows: int | None = None
+    grid_cols: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        if not self.available:
+            return {"available": False}
+        return {
+            "available": True,
+            "vcs": float(self.vcs) if self.vcs is not None else None,
+            "risk_level": self.risk_level,
+            "risk_label": self.risk_label,
+            "summary_text": self.summary_text,
+            "word_count": int(self.word_count) if self.word_count is not None else None,
+            "image_count": int(self.image_count) if self.image_count is not None else None,
+            "tlc": int(self.tlc) if self.tlc is not None else None,
+            "grid_rows": int(self.grid_rows) if self.grid_rows is not None else None,
+            "grid_cols": int(self.grid_cols) if self.grid_cols is not None else None,
+        }
+
+
+@dataclass
+class VisualComplexityDetailForHistory(VisualComplexitySummaryForHistory):
+    page: dict[str, Any] = field(default_factory=dict)
+    grid: dict[str, Any] = field(default_factory=dict)
+    top_cells: list[dict[str, Any]] = field(default_factory=list)
+    summary_report: str = ""
+    artifacts: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        if not self.available:
+            return {"available": False}
+        payload = super().to_dict()
+        payload.update(
+            {
+                "page": self.page,
+                "grid": self.grid,
+                "top_cells": self.top_cells,
+                "summary_report": self.summary_report,
+                "artifacts": self.artifacts,
+            }
+        )
+        return payload
+
+
+@dataclass
 class HistoryRunSummary:
     run_id: str
     created_at: str
     source_name: str
     eye_tracking_summary: EyeTrackingSummaryForHistory = field(
         default_factory=lambda: EyeTrackingSummaryForHistory(available=False),
+    )
+    visual_complexity_summary: VisualComplexitySummaryForHistory = field(
+        default_factory=lambda: VisualComplexitySummaryForHistory(available=False),
     )
 
     def to_dict(self) -> dict[str, Any]:
@@ -391,6 +448,7 @@ class HistoryRunSummary:
             "created_at": self.created_at,
             "source_name": self.source_name,
             "eye_tracking_summary": self.eye_tracking_summary.to_dict(),
+            "visual_complexity_summary": self.visual_complexity_summary.to_dict(),
         }
 
 
@@ -399,12 +457,16 @@ class HistoryRunDetail:
     run: HistoryRunSummary
     html_content: str
     analysis: AnalysisResult
+    visual_complexity_detail: VisualComplexityDetailForHistory = field(
+        default_factory=lambda: VisualComplexityDetailForHistory(available=False),
+    )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "run": self.run.to_dict(),
             "html_content": self.html_content,
             "analysis": self.analysis.to_dict(),
+            "visual_complexity_detail": self.visual_complexity_detail.to_dict(),
         }
 
 

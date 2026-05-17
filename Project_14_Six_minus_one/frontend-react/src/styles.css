@@ -7489,6 +7489,26 @@ body.accessibility-reading-mask-active .accessibility-menu {
   outline: none;
 }
 
+.history-supporting-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-vicram-map-shell {
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.history-vicram-map-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .history-supporting-none {
   font-size: 12px;
   color: #94a3b8;
