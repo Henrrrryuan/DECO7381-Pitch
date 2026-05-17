@@ -15,7 +15,6 @@ import {
   getEyeHeatmapPageMetrics,
   getHeatmapGridPixelLayout,
 } from "../lib/heatmapDisplay.js";
-import { formatVicramScoreLabel, getVicramComplexityDisplay } from "../lib/vicramDisplay.js";
 
 const DESKTOP_MIN_PAGE_SIZE = 8;
 const DESKTOP_MAX_PAGE_SIZE = 12;
@@ -364,21 +363,7 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
   );
 }
 
-function formatEyeAttentionStatusLabel(riskLevel) {
-  const level = String(riskLevel || "").trim().toLowerCase();
-  if (level === "high") {
-    return "High attention risk";
-  }
-  if (level === "medium") {
-    return "Medium attention risk";
-  }
-  if (level === "low") {
-    return "Low attention risk";
-  }
-  return "";
-}
-
-function getEyeEvidenceBadgeTone(riskLevel) {
+function getVicramBadgeTone(riskLevel) {
   const level = String(riskLevel || "").trim().toLowerCase();
   if (level === "high") {
     return "high";
@@ -386,72 +371,55 @@ function getEyeEvidenceBadgeTone(riskLevel) {
   if (level === "medium") {
     return "moderate";
   }
-  if (level === "low") {
-    return "low";
+  return "low";
+}
+
+function getEyeEvidenceBadgeTone(riskLevel) {
+  return getVicramBadgeTone(riskLevel);
+}
+
+function formatVicramScoreMeta(vcs) {
+  const numericVcs = Number(vcs);
+  if (!Number.isFinite(numericVcs)) {
+    return "";
   }
-  return "neutral";
+  return `Score: ${numericVcs.toFixed(2)}`;
 }
 
 function HistoryEvidenceEmpty() {
   return <span className="history-evidence-empty">Not available</span>;
 }
 
-function HistoryEvidenceCell({
-  statusLabel,
-  tone,
-  statusAriaLabel,
-  actionLabel,
-  actionTooltip,
-  onAction,
-  busy = false,
-}) {
-  return (
-    <div className="history-evidence-row">
-      <span
-        className={`history-evidence-status history-evidence-status--${tone}`}
-        aria-label={statusAriaLabel || statusLabel}
-      >
-        {statusLabel}
-      </span>
-      <button
-        className="history-action-btn history-action-btn--primary history-action-btn--compact"
-        type="button"
-        data-accessibility-tooltip={actionTooltip}
-        onClick={onAction}
-        disabled={busy}
-      >
-        <span>{actionLabel}</span>
-        <span className="history-action-arrow" aria-hidden="true">
-          ↗
-        </span>
-      </button>
-    </div>
-  );
-}
-
 function VisualComplexityColumn({ summary, onViewComplexityMap, complexityBusy }) {
   if (!summary?.available) {
     return <HistoryEvidenceEmpty />;
   }
-  const { complexityLevel, tone } = getVicramComplexityDisplay(
-    summary.vcs,
-    summary.risk_label,
-  );
-  const statusAriaLabel =
+  const riskLevel = String(summary.risk_level || "").toLowerCase();
+  const complexityLevel = String(summary.risk_label || "").trim() || "Visual complexity";
+  const tone = getVicramBadgeTone(riskLevel);
+  const ariaLabel =
     summary.vcs != null && Number.isFinite(Number(summary.vcs))
       ? `Visual complexity score ${Number(summary.vcs).toFixed(2)}, ${complexityLevel}`
       : complexityLevel;
 
   return (
-    <HistoryEvidenceCell
-      statusLabel={complexityLevel}
-      tone={tone}
-      statusAriaLabel={statusAriaLabel}
-      actionLabel="Map"
-      actionTooltip="Open the ViCRAM complexity map saved for this analysis report."
-      onAction={onViewComplexityMap}
-      busy={complexityBusy}
-    />
+    <div className="history-supporting-cell">
+      <p
+        className={`vicram-dashboard-level vicram-dashboard-level-${tone}`}
+        aria-label={ariaLabel}
+      >
+        {complexityLevel}
+      </p>
+      <button
+        className="history-heatmap-btn"
+        type="button"
+        data-accessibility-tooltip="Open the ViCRAM complexity map saved for this analysis report."
+        onClick={onViewComplexityMap}
+        disabled={complexityBusy}
+      >
+        View Complexity Map
+      </button>
+    </div>
   );
 }
 
@@ -462,19 +430,29 @@ function EyeEvidenceColumn({ summary, onViewHeatmap, heatmapBusy }) {
   const riskDrivers = getRiskDrivers(summary);
   const eyeEvidence = summary.eye_evidence || {};
   const overallRisk = getOverallEvidenceRisk(riskDrivers, eyeEvidence);
-  const statusLabel = formatEyeAttentionStatusLabel(overallRisk) || "Eye evidence available";
+  const riskLabel = overallRisk ? formatAttentionRiskLabel(overallRisk) : "";
   const tone = getEyeEvidenceBadgeTone(overallRisk);
 
   return (
-    <HistoryEvidenceCell
-      statusLabel={statusLabel}
-      tone={tone}
-      statusAriaLabel={statusLabel}
-      actionLabel="Heatmap"
-      actionTooltip="Open the gaze heatmap linked to this analysis report."
-      onAction={onViewHeatmap}
-      busy={heatmapBusy}
-    />
+    <div className="history-supporting-cell">
+      {riskLabel ? (
+        <p
+          className={`vicram-dashboard-level vicram-dashboard-level-${tone}`}
+          aria-label={riskLabel}
+        >
+          {riskLabel}
+        </p>
+      ) : null}
+      <button
+        className="history-heatmap-btn"
+        type="button"
+        data-accessibility-tooltip="Open the gaze heatmap linked to this analysis report."
+        onClick={onViewHeatmap}
+        disabled={heatmapBusy}
+      >
+        View Heatmap
+      </button>
+    </div>
   );
 }
 
@@ -533,8 +511,8 @@ function VisualComplexityMapModal({ open, onClose, detail, loading, error }) {
           {!loading && error ? <p className="history-empty">{error}</p> : null}
           {!loading && !error && detail?.available ? (
             <>
-              {formatVicramScoreLabel(detail.vcs) ? (
-                <p className="history-behavioral-modal-meta">{formatVicramScoreLabel(detail.vcs)}</p>
+              {formatVicramScoreMeta(detail.vcs) ? (
+                <p className="history-behavioral-modal-meta">{formatVicramScoreMeta(detail.vcs)}</p>
               ) : null}
               {overlaySrc ? (
                 <div className="history-vicram-map-shell">
