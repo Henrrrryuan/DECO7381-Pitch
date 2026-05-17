@@ -519,7 +519,7 @@ function renderVicramDashboardPanelLegacy() {
   const vcs = vicram.result?.page?.vcs;
   const hasResultForTarget = vicramHasResultForSource(vicram, source.label);
   const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
-    ? Number(vcs).toFixed(4)
+    ? Number(vcs).toFixed(2)
     : vicram.loading
       ? "Calculating"
       : "Not run";
@@ -723,7 +723,7 @@ function renderVicramDashboardPanel() {
   const vcs = vicram.result?.page?.vcs;
   const hasResultForTarget = vicramHasResultForSource(vicram, source.label);
   const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
-    ? Number(vcs).toFixed(4)
+    ? Number(vcs).toFixed(2)
     : vicram.loading
       ? "Calculating"
       : "Not run";
@@ -895,8 +895,7 @@ function showVicramReportModal() {
               type="button"
               class="vicram-report-help"
               aria-label="TLC definition"
-              title="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
-              data-accessibility-tooltip="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
+              data-tlc-tooltip="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
             >?</button>
           </span>
           <strong>${escapeHtml(String(page.tlc ?? 0))}</strong>
