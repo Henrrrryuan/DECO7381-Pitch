@@ -6,6 +6,43 @@ import { DetectionGauge } from "../components/DetectionGauge.jsx";
 import { bumpDashboardLifecycle } from "../lib/dashboardLifecycle.js";
 import { eyeTrackingHref, spaHistoryHref } from "../lib/siteUrls.js";
 
+function ReportSectionSwitcher({ activeSection }) {
+  const isVisualActive = activeSection === "vcs";
+
+  return (
+    <section className="sidebar-section-switcher sidebar-panel-nav-slot" aria-label="Report sections">
+      <div className="sidebar-section-tabs" role="tablist" aria-label="Report sections">
+        <button
+          id={isVisualActive ? "sidebarVcsPanelCurrentButton" : "sidebarVcsPanelButton"}
+          className={`sidebar-section-tab${isVisualActive ? " is-active" : ""}`}
+          type="button"
+          role="tab"
+          aria-selected={isVisualActive ? "true" : "false"}
+          aria-current={isVisualActive ? "page" : undefined}
+          data-sidebar-panel-target="vcs"
+          data-accessibility-tooltip="Open Visual Complexity: page-level ViCRAM score and grid overview."
+        >
+          <span className="sidebar-section-tab-title">Visual Complexity</span>
+          <span className="sidebar-section-tab-subtitle">Grid-based risk overview</span>
+        </button>
+        <button
+          id={isVisualActive ? "sidebarIssuesPanelButton" : "sidebarIssuesPanelCurrentButton"}
+          className={`sidebar-section-tab${!isVisualActive ? " is-active" : ""}`}
+          type="button"
+          role="tab"
+          aria-selected={!isVisualActive ? "true" : "false"}
+          aria-current={!isVisualActive ? "page" : undefined}
+          data-sidebar-panel-target="issues"
+          data-accessibility-tooltip="Open Accessibility Findings: review detected cognitive accessibility risk signals and guidance."
+        >
+          <span className="sidebar-section-tab-title">Accessibility Findings</span>
+          <span className="sidebar-section-tab-subtitle">Issue-level guidance</span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const lockTopNav = new URLSearchParams(window.location.search).get("from") === "history";
 
@@ -102,18 +139,7 @@ export function DashboardPage() {
           <aside id="toolSidebar" className="tool-sidebar" data-sidebar-detail-mode="vcs">
             <div className="tool-sidebar-inner">
               <section className="sidebar-detail-panel sidebar-detail-panel-vcs" data-sidebar-panel="vcs" aria-label="ViCRAM details">
-                <button
-                  id="sidebarIssuesPanelButton"
-                  className="sidebar-panel-switch sidebar-panel-nav sidebar-panel-nav-slot"
-                  type="button"
-                  data-sidebar-panel-target="issues"
-                  aria-label="Next section: Issue Findings. Page 1 of 2."
-                  data-accessibility-tooltip="Open Issue Findings: choose an accessibility focus and review detected issue categories for this analysis."
-                >
-                  <span className="sidebar-panel-nav-page">Page 1 of 2</span>
-                  <span className="sidebar-panel-nav-direction">Next section ↓</span>
-                  <span className="sidebar-panel-nav-title">Issue Findings</span>
-                </button>
+                <ReportSectionSwitcher activeSection="vcs" />
                 <div className="sidebar-detail-scroll">
                   <div className="sidebar-detail-heading">
                     <p className="sidebar-detail-kicker">Visual complexity</p>
@@ -127,18 +153,7 @@ export function DashboardPage() {
               </section>
 
               <section className="sidebar-detail-panel sidebar-detail-panel-issues" data-sidebar-panel="issues" aria-label="Detected issue details">
-                <button
-                  id="sidebarVcsPanelButton"
-                  className="sidebar-panel-switch sidebar-panel-nav sidebar-panel-nav-slot"
-                  type="button"
-                  data-sidebar-panel-target="vcs"
-                  aria-label="Previous section: Visual Complexity. Page 2 of 2."
-                  data-accessibility-tooltip="Return to Visual Complexity: page-level ViCRAM score and grid overview, independent of audience profile."
-                >
-                  <span className="sidebar-panel-nav-page">Page 2 of 2</span>
-                  <span className="sidebar-panel-nav-direction">↑ Previous section</span>
-                  <span className="sidebar-panel-nav-title">Visual Complexity</span>
-                </button>
+                <ReportSectionSwitcher activeSection="issues" />
 
                 <div className="sidebar-detail-scroll">
                   <div className="sidebar-detail-heading">
