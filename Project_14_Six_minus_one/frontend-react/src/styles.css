@@ -569,8 +569,8 @@ button.nav-cta {
   pointer-events: auto;
   z-index: 8;
   filter:
-    drop-shadow(0 12px 40px rgba(0, 0, 0, 0.22))
-    drop-shadow(0 8px 28px rgba(242, 237, 228, 0.38));
+    drop-shadow(0 14px 36px rgba(0, 0, 0, 0.38))
+    drop-shadow(0 0 28px rgba(47, 111, 235, 0.14));
 }
 
 .guide-bubble-card {
@@ -578,10 +578,16 @@ button.nav-cta {
   width: 100%;
   padding: 14px 18px 30px;
   border-radius: 22px;
-  border: 1px solid #d4c8bb;
-  background: linear-gradient(180deg, #f7f6ec 0%, #f0ebe3 58%, #ede6dc 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  color: #1e293b;
+  border: 1px solid rgba(132, 186, 255, 0.38);
+  background: linear-gradient(
+    180deg,
+    rgba(22, 40, 72, 0.96) 0%,
+    rgba(14, 28, 52, 0.98) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(8, 16, 32, 0.35);
+  color: #e8f0ff;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -589,6 +595,7 @@ button.nav-cta {
   justify-content: center;
   gap: 9px;
   box-sizing: border-box;
+  backdrop-filter: blur(12px);
 }
 
 .guide-bubble-card::before {
@@ -598,7 +605,7 @@ button.nav-cta {
   bottom: 0;
   width: 36px;
   height: 3px;
-  background: #ede6dc;
+  background: rgba(14, 28, 52, 0.98);
   z-index: 2;
 }
 
@@ -609,8 +616,8 @@ button.nav-cta {
   bottom: -10px;
   width: 18px;
   height: 18px;
-  background: #ede6dc;
-  border: 1px solid #d4c8bb;
+  background: rgba(14, 28, 52, 0.98);
+  border: 1px solid rgba(132, 186, 255, 0.38);
   border-top: none;
   border-left: none;
   border-radius: 0 0 5px 0;
@@ -638,14 +645,15 @@ button.nav-cta {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  border: 1.5px solid #b8afa3;
+  border: 1.5px solid rgba(148, 180, 230, 0.45);
   background: transparent;
   flex-shrink: 0;
 }
 
 .guide-bubble-dots li.is-filled {
-  background: #7b6fa6;
-  border-color: #7b6fa6;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(47, 111, 235, 0.45);
 }
 
 .guide-bubble-copy {
@@ -666,7 +674,7 @@ button.nav-cta {
   line-height: 1.25;
   font-weight: 800;
   letter-spacing: 0.01em;
-  color: #1e293b;
+  color: #eef4ff;
   text-align: center;
   text-wrap: balance;
 }
@@ -678,7 +686,7 @@ button.nav-cta {
   font-size: 15px;
   line-height: 1.4;
   font-weight: 500;
-  color: #64748b;
+  color: #9eb4d4;
   text-align: center;
   text-wrap: pretty;
 }
@@ -715,9 +723,9 @@ button.nav-cta {
 .guide-bubble-prev {
   min-height: 29px;
   padding: 0 10px;
-  border: 1px solid #c9bfb2;
-  background: rgba(255, 255, 255, 0.35);
-  color: #475569;
+  border: 1px solid rgba(132, 186, 255, 0.32);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c5d7f2;
   font-size: 12px;
 }
 
@@ -739,9 +747,9 @@ button.nav-cta {
 
 .guide-bubble-prev:hover:not(:disabled),
 .guide-bubble-prev:focus-visible:not(:disabled) {
-  border-color: #a89888;
-  background: rgba(255, 255, 255, 0.55);
-  outline: 2px solid #7b6fa6;
+  border-color: rgba(132, 186, 255, 0.55);
+  background: rgba(255, 255, 255, 0.12);
+  outline: 2px solid rgba(88, 170, 255, 0.65);
   outline-offset: 2px;
 }
 
@@ -750,7 +758,7 @@ button.nav-cta {
   filter: brightness(1.06);
   border-color: #1d4ed8;
   box-shadow: 0 6px 18px rgba(47, 111, 235, 0.4);
-  outline: 2px solid #7b6fa6;
+  outline: 2px solid rgba(88, 170, 255, 0.65);
   outline-offset: 2px;
 }
 
