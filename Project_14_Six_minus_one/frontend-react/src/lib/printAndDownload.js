@@ -35,7 +35,7 @@ function canonicalDimensionName(name) {
 
 function profileDisplayLabel(profileName, deps) {
   const profile = deps.PATIENT_PROFILES?.[profileName] || {};
-  return profile.condition || profile.label || profileName;
+  return profile.label || profile.condition || profileName;
 }
 
 function isDetectorEnabledForProfile(name, profileName, deps) {
@@ -66,16 +66,21 @@ function profileDimensionConfigs(profileName, deps) {
 
 export function printProfileDimensionRows(result, profileLabel, deps) {
   const { displayDimensionName } = deps;
-  return profileDimensionConfigs(profileLabel, deps).map(({ name }) => {
-    const dimension = findDimension(result, name);
-    const issueCount = dimension?.issues?.length || 0;
-    return `
+  return profileDimensionConfigs(profileLabel, deps)
+    .map(({ name }) => {
+      const dimension = findDimension(result, name);
+      const issueCount = dimension?.issues?.length || 0;
+      if (!issueCount) {
+        return "";
+      }
+      return `
       <div class="print-profile-risk-row">
         <span>${escapeHtml(displayDimensionName(name))}</span>
         <span>${Number(issueCount || 0)} issue${Number(issueCount || 0) === 1 ? "" : "s"}</span>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
@@ -107,14 +112,18 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
 export function printProfileDimensionCards(result, profileLabel, deps) {
   const { displayDimensionName } = deps;
   let issueNumber = 0;
-  return profileDimensionConfigs(profileLabel, deps).map(({ name }) => {
-    const dimension = findDimension(result, name);
-    const issues = dimension?.issues || [];
-    const issueCards = issues.map((issue) => {
-      issueNumber += 1;
-      return printIssueCardMarkup(issue, dimension?.dimension || name, issueNumber, deps);
-    }).join("");
-    return `
+  return profileDimensionConfigs(profileLabel, deps)
+    .map(({ name }) => {
+      const dimension = findDimension(result, name);
+      const issues = dimension?.issues || [];
+      if (!issues.length) {
+        return "";
+      }
+      const issueCards = issues.map((issue) => {
+        issueNumber += 1;
+        return printIssueCardMarkup(issue, dimension?.dimension || name, issueNumber, deps);
+      }).join("");
+      return `
       <details class="print-profile-dimension-card" open>
         <summary>
           <span>${escapeHtml(displayDimensionName(name))}</span>
@@ -125,7 +134,8 @@ export function printProfileDimensionCards(result, profileLabel, deps) {
         </div>
       </details>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 export function renderPrintableProfileReport(result, deps) {
