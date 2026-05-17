@@ -4,9 +4,18 @@ import {
   analyzeHtmlText,
   analyzeUrl,
   analyzeUploadFile,
+  analyzeVicramSource,
   loadDashboardSession,
   saveDashboardSession,
 } from "../lib/common.js";
+import {
+  buildVicramSourcePayloadFromMain,
+  buildVicramSourcePayloadFromPending,
+  clearPendingVicramResult,
+  resolveVicramTargetLabel,
+  savePendingVicramResult,
+  VICRAM_LOADING_OPTIONS,
+} from "../lib/pendingVicramSession.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
 import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
@@ -160,7 +169,58 @@ export function LoadingPage() {
       };
     }
 
-    function saveResult(result) {
+    async function runVicramAnalysis(pending, mainResult = null) {
+      const { payload, targetUrl } = mainResult
+        ? buildVicramSourcePayloadFromMain(mainResult)
+        : buildVicramSourcePayloadFromPending(pending);
+
+      if (!payload?.url && !payload?.html) {
+        return null;
+      }
+
+      try {
+        const result = await analyzeVicramSource(payload, VICRAM_LOADING_OPTIONS);
+        return { result, targetUrl };
+      } catch {
+        return null;
+      }
+    }
+
+    async function analyzePendingWithVicram(pending) {
+      ensureNotCancelled();
+
+      if (pending.mode === "url") {
+        setProgress(24);
+        setMessage("Fetching the live page and visual complexity");
+        const [main, vicram] = await Promise.all([
+          analyzePendingUrl(pending),
+          runVicramAnalysis(pending),
+        ]);
+        ensureNotCancelled();
+        return { main, vicram };
+      }
+
+      if (pending.sourceType === "zip") {
+        setProgress(24);
+        setMessage("Reading the uploaded package");
+        const mainPromise = analyzePendingFile(pending);
+        const vicramPromise = mainPromise.then((main) => runVicramAnalysis(pending, main));
+        const [main, vicram] = await Promise.all([mainPromise, vicramPromise]);
+        ensureNotCancelled();
+        return { main, vicram };
+      }
+
+      setProgress(28);
+      setMessage("Reading the uploaded HTML and visual complexity");
+      const [main, vicram] = await Promise.all([
+        analyzePendingFile(pending),
+        runVicramAnalysis(pending),
+      ]);
+      ensureNotCancelled();
+      return { main, vicram };
+    }
+
+    function saveResult(result, vicramCache) {
       ensureNotCancelled();
       setProgress(92);
       sessionStorage.removeItem(DASHBOARD_HISTORY_CONTEXT_KEY);
@@ -214,6 +274,16 @@ export function LoadingPage() {
       } catch (_) {
         // ignore
       }
+
+      if (vicramCache?.result) {
+        const targetUrl = vicramCache.targetUrl || resolveVicramTargetLabel(result);
+        savePendingVicramResult({
+          result: vicramCache.result,
+          targetUrl,
+        });
+      } else {
+        clearPendingVicramResult();
+      }
     }
 
     function showError(error) {
@@ -229,6 +299,7 @@ export function LoadingPage() {
       const startedAt = Date.now();
       try {
         ensureNotCancelled();
+        clearPendingVicramResult();
         const pending = loadPendingAnalysis();
         const loadingTitleEl = document.getElementById("analysisLoadingTitle");
         if (loadingTitleEl) {
@@ -241,13 +312,12 @@ export function LoadingPage() {
           }
         }
         setProgress(12);
-        const result =
-          pending.mode === "url" ? await analyzePendingUrl(pending) : await analyzePendingFile(pending);
+        const { main: result, vicram: vicramCache } = await analyzePendingWithVicram(pending);
 
         ensureNotCancelled();
         setProgress(86);
         setMessage("Preparing the report");
-        saveResult(result);
+        saveResult(result, vicramCache);
         ensureNotCancelled();
         sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
         const elapsed = Date.now() - startedAt;
@@ -283,6 +353,7 @@ export function LoadingPage() {
       }
       cancelRequestedRef.current = true;
       sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
+      clearPendingVicramResult();
       if (loadingError) {
         loadingError.hidden = true;
       }

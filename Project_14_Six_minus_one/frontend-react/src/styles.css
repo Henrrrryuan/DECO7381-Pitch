@@ -1543,6 +1543,13 @@ body.analysis-loading-active {
   padding-top: 10px;
 }
 
+.sidebar-detail-panel-vcs .sidebar-detail-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .sidebar-detail-heading {
   display: grid;
   gap: 4px;
@@ -2143,9 +2150,12 @@ body.analysis-loading-active {
 }
 
 .vicram-dashboard-panel {
-  margin: 4px 0 10px;
-  display: grid;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .vicram-dashboard-card {
@@ -2367,6 +2377,288 @@ body.analysis-loading-active {
   border-radius: 999px;
   background: linear-gradient(90deg, #66d36e 0%, #fff06a 52%, #ef6464 100%);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.vicram-dashboard-score-card {
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+.vicram-dashboard-score-main {
+  display: grid;
+  gap: 8px;
+}
+
+.vicram-dashboard-score-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-copy {
+  display: grid;
+  gap: 15px;
+  justify-items: center;
+  text-align: center;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-score-row {
+  gap: 20px;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-copy strong {
+  font-size: 35px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-level {
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-error {
+  text-align: center;
+}
+
+.vicram-vcs-scale {
+  width: min(100%, 220px);
+  margin: 2px auto 0;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  cursor: default;
+  user-select: none;
+}
+
+.vicram-vcs-scale-track {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: default;
+  pointer-events: none;
+}
+
+.vicram-vcs-scale-line {
+  display: block;
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #81c784 0%,
+    #fff176 30%,
+    #ffb74d 60%,
+    #e57373 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+
+.vicram-vcs-scale-marker {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: block;
+  width: 18px;
+  height: 50px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: default;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.vicram-vcs-scale-arrow {
+  display: block;
+  width: 28px;
+  height: 35px;
+  overflow: visible;
+}
+
+.vicram-vcs-scale-ticks {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1;
+}
+
+.vicram-vcs-scale-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.vicram-vcs-scale-tick--start {
+  left: 0;
+  transform: none;
+}
+
+.vicram-vcs-scale-tick--end {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-actions--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-actions--stacked .vicram-dashboard-primary-action {
+  width: 100%;
+  min-height: 38px;
+  font-size: 12px;
+}
+
+.vicram-dashboard-actions--stacked .vicram-dashboard-details-link {
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  padding: 2px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: center;
+}
+
+.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:hover:not(:disabled),
+.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:focus-visible:not(:disabled) {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:focus-visible {
+  outline: 2px solid rgba(47, 111, 235, 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.vicram-dashboard-section-title {
+  margin: 0;
+  color: #42526b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vicram-dashboard-preview-section {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+
+.vicram-grid-preview {
+  width: 76%;
+  margin: 0 auto;
+  aspect-ratio: var(--vicram-preview-aspect, 4 / 3);
+  max-height: min(42vh, 320px);
+  min-height: 132px;
+  border: 1px solid rgba(47, 111, 235, 0.16);
+  border-radius: 8px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+button.vicram-grid-preview {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  appearance: none;
+}
+
+button.vicram-grid-preview--map {
+  display: flex;
+}
+
+button.vicram-grid-preview--cells {
+  display: grid;
+}
+
+.vicram-grid-preview--interactive {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vicram-grid-preview--interactive:hover {
+  border-color: rgba(47, 111, 235, 0.42);
+  box-shadow: 0 4px 14px rgba(47, 111, 235, 0.12);
+}
+
+.vicram-grid-preview--interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.vicram-grid-preview--empty {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.vicram-grid-preview-placeholder {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.vicram-grid-preview--map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2f7;
+}
+
+.vicram-grid-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.vicram-grid-preview--cells {
+  display: grid;
+  grid-template-columns: repeat(var(--vicram-preview-columns, 20), minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.vicram-grid-preview-cell {
+  display: block;
+  min-height: 0;
+  aspect-ratio: 1;
+}
+
+.vicram-dashboard-learn {
+  flex-shrink: 0;
+}
+
+.vicram-dashboard-learn-body {
+  display: grid;
+  gap: 10px;
 }
 
 .vicram-report-modal-open {

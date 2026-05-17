@@ -10,6 +10,7 @@ import {
   loadDashboardSession,
 } from "../lib/common.js";
 import { bumpDashboardLifecycle, getDashboardLifecycleSnapshot } from "../lib/dashboardLifecycle.js";
+import { clearPendingVicramResult, readPendingVicramResult } from "../lib/pendingVicramSession.js";
 import {
   DASHBOARD_SOURCE_TYPES,
   getRunIdFromPayload,
@@ -430,6 +431,8 @@ function vicramState() {
       gridVisible: false,
       targetUrl: "",
       pendingShowGridAfterLoad: false,
+      /** User's latest preview choice: only apply grid overlay when this is "grid". */
+      gridViewIntent: "webpage",
     };
   }
   return state.vicram;
@@ -443,12 +446,50 @@ function resetVicramStateForNewResult() {
   vicram.gridVisible = false;
   vicram.targetUrl = "";
   vicram.pendingShowGridAfterLoad = false;
+  vicram.gridViewIntent = "webpage";
   const frame = document.getElementById("websitePreviewFrame");
   if (frame?.dataset.vicramGrid === "1") {
     frame.dataset.vicramGrid = "";
     frame.removeAttribute("srcdoc");
     frame.removeAttribute("src");
   }
+}
+
+function tryHydratePendingVicramFromSession(expectedLabel) {
+  const entry = readPendingVicramResult();
+  if (!entry) {
+    return false;
+  }
+
+  const storedLabel = String(entry.targetUrl || "").trim();
+  const currentLabel = String(expectedLabel || "").trim();
+  if (!storedLabel || storedLabel !== currentLabel) {
+    return false;
+  }
+
+  const vicram = vicramState();
+  vicram.loading = false;
+  vicram.error = "";
+  vicram.activeRequestTarget = "";
+  vicram.result = entry.result;
+  vicram.targetUrl = storedLabel;
+  vicram.gridVisible = false;
+  vicram.pendingShowGridAfterLoad = false;
+  vicram.gridViewIntent = "webpage";
+  clearPendingVicramResult();
+  return true;
+}
+
+function syncVicramAfterMainAnalysis() {
+  const source = getVicramAnalysisSource();
+  if (tryHydratePendingVicramFromSession(source.label)) {
+    renderVicramDashboardPanel();
+    return;
+  }
+
+  resetVicramStateForNewResult();
+  renderVicramDashboardPanel();
+  void refreshVicramAnalysis();
 }
 
 function renderVicramDashboardPanelLegacy() {
@@ -562,6 +603,99 @@ function renderVicramDashboardPanelLegacy() {
   `;
 }
 
+function buildVicramGridPreviewMarkup({ hasResultForTarget, vicram, loading }) {
+  if (!hasResultForTarget) {
+    const placeholder = loading
+      ? "Calculating grid preview…"
+      : "Run analysis to preview complexity distribution.";
+    return `
+      <div
+        class="vicram-grid-preview vicram-grid-preview--empty"
+        aria-busy="${loading ? "true" : "false"}"
+      >
+        <span class="vicram-grid-preview-placeholder">${escapeHtml(placeholder)}</span>
+      </div>
+    `;
+  }
+
+  const pageWidth = Math.max(1, Number(vicram.result?.page?.width) || 4);
+  const pageHeight = Math.max(1, Number(vicram.result?.page?.height) || 3);
+  const aspectRatio = `${pageWidth} / ${pageHeight}`;
+  const overlay = vicram.result?.artifacts?.overlay_svg_base64 || "";
+
+  if (overlay) {
+    return `
+      <button
+        type="button"
+        class="vicram-grid-preview vicram-grid-preview--map vicram-grid-preview--interactive"
+        style="--vicram-preview-aspect: ${aspectRatio};"
+        data-vicram-show-grid
+        aria-label="Show complexity grid on page preview"
+        data-accessibility-tooltip="Open the full complexity grid overlay in the page preview."
+      >
+        <img
+          class="vicram-grid-preview-image"
+          src="data:image/svg+xml;base64,${overlay}"
+          alt=""
+          decoding="async"
+        />
+      </button>
+    `;
+  }
+
+  const grid = vicram.result?.grid || {};
+  const columns = Number(grid.columns) || VICRAM_GRID_COLUMNS;
+  const cells = Array.isArray(grid.cells) ? grid.cells : [];
+  const cellMarkup = cells.length
+    ? cells.map((cell) => (
+      `<span class="vicram-grid-preview-cell" style="background-color:${escapeHtml(String(cell.color || "#006400"))}" title="Row ${Number(cell.row) + 1}, column ${Number(cell.column) + 1}"></span>`
+    )).join("")
+    : `<span class="vicram-grid-preview-placeholder">No grid cells returned.</span>`;
+
+  return `
+    <button
+      type="button"
+      class="vicram-grid-preview vicram-grid-preview--cells vicram-grid-preview--interactive"
+      style="--vicram-preview-columns: ${columns}; --vicram-preview-aspect: ${aspectRatio};"
+      data-vicram-show-grid
+      aria-label="Show complexity grid on page preview"
+      data-accessibility-tooltip="Open the full complexity grid overlay in the page preview."
+    >
+      ${cellMarkup}
+    </button>
+  `;
+}
+
+function buildVicramScoreScaleMarkup({ hasResultForTarget, numericVcs }) {
+  if (!hasResultForTarget || !Number.isFinite(numericVcs)) {
+    return "";
+  }
+
+  const clamped = Math.min(10, Math.max(0, numericVcs));
+  const displayScore = clamped.toFixed(1);
+  const markerPercent = ((clamped / 10) * 100).toFixed(2);
+  const ariaLabel = `Visual complexity score ${displayScore} out of 10`;
+
+  return `
+    <div class="vicram-vcs-scale" role="img" aria-label="${escapeHtml(ariaLabel)}">
+      <div class="vicram-vcs-scale-track" aria-hidden="true">
+        <span class="vicram-vcs-scale-line"></span>
+        <span class="vicram-vcs-scale-marker" style="left: ${markerPercent}%">
+          <svg class="vicram-vcs-scale-arrow" viewBox="0 0 10 7" width="14" height="10" aria-hidden="true" focusable="false">
+            <path d="M5 6.25 1.1 1.25h7.8L5 6.25z" fill="#d73527" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+      <div class="vicram-vcs-scale-ticks" aria-hidden="true">
+        <span class="vicram-vcs-scale-tick vicram-vcs-scale-tick--start">0</span>
+        <span class="vicram-vcs-scale-tick" style="left: 30%">3</span>
+        <span class="vicram-vcs-scale-tick" style="left: 60%">6</span>
+        <span class="vicram-vcs-scale-tick vicram-vcs-scale-tick--end">10</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderVicramDashboardPanel() {
   const panel = document.getElementById("vicramDashboardPanel");
   if (!panel) {
@@ -597,46 +731,62 @@ function renderVicramDashboardPanel() {
         ? "moderate"
         : "low"
     : "neutral";
+  const gridPreviewMarkup = buildVicramGridPreviewMarkup({
+    hasResultForTarget,
+    vicram,
+    loading: vicram.loading,
+  });
+  const scoreScaleMarkup = buildVicramScoreScaleMarkup({
+    hasResultForTarget,
+    numericVcs,
+  });
 
   panel.innerHTML = `
-    <div class="vicram-dashboard-card">
-      <div class="vicram-dashboard-copy">
-        <span class="vicram-dashboard-label">Visual Complexity Score</span>
-        <strong>${escapeHtml(scoreText)}</strong>
-        <p class="vicram-dashboard-level vicram-dashboard-level-${escapeHtml(complexityTone)}">${escapeHtml(complexityLevel)}</p>
-        ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
-      </div>
-      <div class="vicram-dashboard-actions">
-        <button
-          id="vicramToggleGridButton"
-          class="vicram-dashboard-primary-action"
-          type="button"
-          ${canToggle ? "" : "disabled"}
-          data-accessibility-tooltip="Toggle the right preview between the webpage and the ViCRAM grid overlay."
-        >${escapeHtml(buttonLabel)}</button>
-        <button
-          id="vicramReportButton"
-          class="vicram-dashboard-link-action"
-          type="button"
-          ${canShowReport ? "" : "disabled"}
-          data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
-        >View calculation details</button>
+    <div class="vicram-dashboard-card vicram-dashboard-score-card">
+      <div class="vicram-dashboard-score-main">
+        <div class="vicram-dashboard-copy">
+          <span class="vicram-dashboard-label">Visual Complexity Score</span>
+          <div class="vicram-dashboard-score-row">
+            <strong>${escapeHtml(scoreText)}</strong>
+            <p class="vicram-dashboard-level vicram-dashboard-level-${escapeHtml(complexityTone)}">${escapeHtml(complexityLevel)}</p>
+          </div>
+          ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
+        </div>
+        ${scoreScaleMarkup}
+        <div class="vicram-dashboard-actions vicram-dashboard-actions--stacked">
+          <button
+            id="vicramToggleGridButton"
+            class="vicram-dashboard-primary-action"
+            type="button"
+            ${canToggle ? "" : "disabled"}
+            data-accessibility-tooltip="Toggle the right preview between the webpage and the ViCRAM grid overlay."
+          >${escapeHtml(buttonLabel)}</button>
+          <button
+            id="vicramReportButton"
+            class="vicram-dashboard-details-link"
+            type="button"
+            ${canShowReport ? "" : "disabled"}
+            data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
+          >Calculation details</button>
+        </div>
       </div>
     </div>
-    <section class="vicram-dashboard-summary-card" aria-label="ViCRAM summary rules">
-      <h3>How to read the grid</h3>
-      <div class="vicram-dashboard-scale">
-        <span>0</span>
-        <div class="vicram-dashboard-scale-track" aria-hidden="true"></div>
-        <span>10</span>
+
+    <section class="vicram-dashboard-preview-section" aria-label="Grid preview">
+      <h3 class="vicram-dashboard-section-title">Complexity Map Preview</h3>
+      ${gridPreviewMarkup}
+    </section>
+
+    <section class="vicram-dashboard-learn vicram-dashboard-summary-card" aria-label="How to read this map">
+      <h3>How to read this map</h3>
+      <div class="vicram-dashboard-learn-body">
+        <ul>
+          <li>Green = simpler areas</li>
+          <li>Red = busier areas</li>
+          <li>Higher score = higher cognitive load</li>
+          <li>See Issues for suggestions</li>
+        </ul>
       </div>
-      <p>0 means visually simple; 10 means highly complex. The overlay highlights where complexity is concentrated.</p>
-      <ul>
-        <li><strong>Green to red:</strong> lower to higher grid complexity.</li>
-        <li><strong>Score factors:</strong> text, images, TLC, and layout/style density.</li>
-        <li><strong>TLC:</strong> Top Left Corner count, estimating distinct visual sections from layout cues.</li>
-        <li><strong>Use it with issues:</strong> switch to Issues to see actionable accessibility guidance.</li>
-      </ul>
     </section>
   `;
 }
@@ -771,10 +921,15 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
   }
   if (vicram.loading && !force) {
     if (showGridAfter) {
+      vicram.gridViewIntent = "grid";
       vicram.pendingShowGridAfterLoad = true;
     }
     renderVicramDashboardPanel();
     return;
+  }
+
+  if (showGridAfter) {
+    vicram.gridViewIntent = "grid";
   }
 
   vicram.loading = true;
@@ -795,8 +950,8 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
     }
     vicram.result = result;
     vicram.error = "";
-    if (showGridAfter || vicram.pendingShowGridAfterLoad || vicram.gridVisible) {
-      vicram.pendingShowGridAfterLoad = false;
+    vicram.pendingShowGridAfterLoad = false;
+    if (vicram.gridViewIntent === "grid") {
       applyVicramGridOverlay(result);
     }
   } catch (error) {
@@ -3066,9 +3221,10 @@ function applyVicramGridOverlay(result) {
 function showVicramGridOverlay() {
   const vicram = vicramState();
   const source = getVicramAnalysisSource();
+  vicram.gridViewIntent = "grid";
   if (!vicram.result || vicram.targetUrl !== source.label) {
     vicram.pendingShowGridAfterLoad = true;
-    refreshVicramAnalysis({ showGridAfter: true });
+    void refreshVicramAnalysis({ showGridAfter: true });
     return;
   }
   applyVicramGridOverlay(vicram.result);
@@ -3076,6 +3232,8 @@ function showVicramGridOverlay() {
 
 function restoreWebsitePreviewFromVicram() {
   const vicram = vicramState();
+  vicram.gridViewIntent = "webpage";
+  vicram.pendingShowGridAfterLoad = false;
   vicram.gridVisible = false;
   const frame = document.getElementById("websitePreviewFrame");
   if (frame) {
@@ -4692,11 +4850,10 @@ function renderResult(result, html, options = {}) {
     resetSelectionToSummary(state);
   }
   clearWebsiteHighlights();
-  resetVicramStateForNewResult();
   renderReportId();
   renderScoreSlider(result);
   renderDashboardSummary(result);
-  renderVicramDashboardPanel();
+  syncVicramAfterMainAnalysis();
   renderDetectionGauge(result);
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
@@ -4721,7 +4878,6 @@ function renderResult(result, html, options = {}) {
   }
   renderAssistantMessages();
   syncEyeTrackingNavAndStorage();
-  void refreshVicramAnalysis();
 }
 
 function applySidebarState() {
@@ -5134,6 +5290,13 @@ function bindEvents() {
       return;
     }
 
+    const vicramPreviewGrid = event.target.closest("[data-vicram-show-grid]");
+    if (vicramPreviewGrid) {
+      event.preventDefault();
+      showVicramGridOverlay();
+      return;
+    }
+
     const vicramToggle = event.target.closest("#vicramToggleGridButton");
     if (vicramToggle) {
       event.preventDefault();
@@ -5141,7 +5304,7 @@ function bindEvents() {
       if (vicram.gridVisible) {
         restoreWebsitePreviewFromVicram();
       } else {
-        void refreshVicramAnalysis({ showGridAfter: true, force: true });
+        showVicramGridOverlay();
       }
       return;
     }
