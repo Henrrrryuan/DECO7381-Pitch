@@ -62,6 +62,10 @@ const state = {
 
 let calibrationLayoutSyncQueued = false;
 
+function shouldShowCalibrationUiGroup() {
+  return state.previewVisible && state.started && !state.calibrated;
+}
+
 function syncCalibrationUiGroup() {
   if (!calibrationUiGroup) {
     return;
@@ -82,7 +86,7 @@ function syncCalibrationUiGroup() {
     calibrationUiGroup.appendChild(calibrationCard);
   }
 
-  calibrationUiGroup.hidden = false;
+  calibrationUiGroup.hidden = !shouldShowCalibrationUiGroup();
 }
 
 function queueCalibrationLayoutSync() {
@@ -1511,6 +1515,7 @@ function handleGaze(data) {
   if (typeof data.state === "number") {
     if (data.state === 0 && !state.calibrated) {
       state.calibrated = true;
+      queueCalibrationLayoutSync();
     }
     updateTrackerState(data.state);
     if (data.state !== 0 || !state.calibrated) {
@@ -1628,6 +1633,7 @@ function beginTracking() {
   window.GazeCloudAPI.OnCalibrationComplete = () => {
     state.calibrated = true;
     state.lastTrackerState = null;
+    queueCalibrationLayoutSync();
     if (!state.paused) {
       setStatus("Calibration complete. Tracking active.");
     }
