@@ -92,7 +92,7 @@ export function VicramPage() {
         <section className="vicram-header">
           <div>
             <h1>ViCRAM Visual Complexity</h1>
-            <p>Render a webpage, calculate page and grid complexity, and inspect the coloured overlay.</p>
+            <p>Render a webpage, calculate page complexity, and inspect the coloured complexity map.</p>
           </div>
         </section>
 
@@ -161,7 +161,7 @@ export function VicramPage() {
               <div className="vicram-section-title">
                 <h2>Screenshot Overlay</h2>
                 <span>
-                  {result.grid?.rows} x {result.grid?.columns} grid
+                  {result.grid?.rows} x {result.grid?.columns} map cells
                 </span>
               </div>
               <div className="vicram-overlay-frame">
@@ -172,7 +172,7 @@ export function VicramPage() {
                   }}
                 >
                   <img src={screenshotSrc} alt="Rendered page screenshot" />
-                  <img src={overlaySrc} alt="ViCRAM grid overlay" />
+                  <img src={overlaySrc} alt="ViCRAM complexity map" />
                 </div>
               </div>
             </section>
@@ -180,14 +180,14 @@ export function VicramPage() {
             <section className="vicram-grid-split">
               <article className="vicram-panel">
                 <div className="vicram-section-title">
-                  <h2>Highest Grid Cells</h2>
+                  <h2>Highest Map Cells</h2>
                   <span>{activeCells.length} active cells</span>
                 </div>
                 <div className="vicram-table-wrap">
                   <table className="vicram-table">
                     <thead>
                       <tr>
-                        <th>Grid</th>
+                        <th>Map cell</th>
                         <th>VCS</th>
                         <th>Words</th>
                         <th>Images</th>

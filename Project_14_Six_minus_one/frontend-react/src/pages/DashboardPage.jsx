@@ -20,10 +20,10 @@ function ReportSectionSwitcher({ activeSection }) {
           aria-selected={isVisualActive ? "true" : "false"}
           aria-current={isVisualActive ? "page" : undefined}
           data-sidebar-panel-target="vcs"
-          data-accessibility-tooltip="Open Visual Complexity: page-level ViCRAM score and grid overview."
+          data-accessibility-tooltip="Open Visual Complexity: page-level ViCRAM score and complexity map overview."
         >
           <span className="sidebar-section-tab-title">Visual Complexity</span>
-          <span className="sidebar-section-tab-subtitle">Grid-based risk overview</span>
+          <span className="sidebar-section-tab-subtitle">Complexity map overview</span>
         </button>
         <button
           id={isVisualActive ? "sidebarIssuesPanelButton" : "sidebarIssuesPanelCurrentButton"}
