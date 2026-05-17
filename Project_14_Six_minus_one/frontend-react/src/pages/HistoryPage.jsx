@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE, fetchJson, formatDate, formatReportTimestamp } from "../lib/common.js";
 import {
   EYE_EVIDENCE_DETAIL_FALLBACK,
   formatAttentionRiskLabel,
   getHeatmapEvidenceSummary,
-  getHistoryEvidenceSummary,
   getOverallEvidenceRisk,
   getRiskDrivers,
 } from "../lib/eyeEvidenceSummary.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { eyeTrackingHref, spaHistoryHref } from "../lib/siteUrls.js";
+import {
+  formatHeatmapPageSizeLabel,
+  getEyeHeatmapPageMetrics,
+  getHeatmapGridPixelLayout,
+} from "../lib/heatmapDisplay.js";
 
 const DESKTOP_MIN_PAGE_SIZE = 8;
 const DESKTOP_MAX_PAGE_SIZE = 12;
@@ -147,35 +151,60 @@ function Pagination({
   );
 }
 
-function HeatmapGrid({ gridCols, gridRows, cellCounts }) {
+function HeatmapGrid({ gridCols, gridRows, cellCounts, pageMetrics }) {
   const cols = Math.max(1, Number(gridCols) || 1);
-  const expected = cols * Math.max(1, Number(gridRows) || 1);
+  const rows = Math.max(1, Number(gridRows) || 1);
+  const expected = cols * rows;
   const list = Array.isArray(cellCounts) ? cellCounts.map((c) => Math.max(0, Number(c) || 0)) : [];
   while (list.length < expected) {
     list.push(0);
   }
   const trimmed = list.slice(0, expected);
   const max = Math.max(1, ...trimmed);
+  const shellRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(320);
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) {
+      return undefined;
+    }
+    const updateWidth = () => {
+      setContainerWidth(Math.max(220, shell.clientWidth || 320));
+    };
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
+
+  const layout = getHeatmapGridPixelLayout(pageMetrics, cols, rows, containerWidth);
 
   return (
-    <div
-      className="history-heatmap-grid"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${Math.max(1, Number(gridRows) || 1)}, minmax(0, 1fr))`,
-      }}
-    >
-      {trimmed.map((count, index) => {
-        const t = count / max;
-        const alpha = 0.07 + t * 0.38;
-        return (
-          <div
-            key={`cell-${index}`}
-            className="history-heatmap-cell"
-            style={{ background: `rgba(51, 65, 85, ${alpha})` }}
-          />
-        );
-      })}
+    <div ref={shellRef} className="history-heatmap-grid-scroll">
+      <div
+        className="history-heatmap-grid"
+        style={{
+          width: layout.width,
+          height: layout.height,
+          minWidth: layout.width,
+          minHeight: layout.height,
+          gridTemplateColumns: layout.gridTemplateColumns,
+          gridTemplateRows: layout.gridTemplateRows,
+        }}
+      >
+        {trimmed.map((count, index) => {
+          const t = count / max;
+          const alpha = 0.07 + t * 0.38;
+          return (
+            <div
+              key={`cell-${index}`}
+              className="history-heatmap-cell"
+              style={{ background: `rgba(51, 65, 85, ${alpha})` }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -264,6 +293,8 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
 
   const session = detail?.session;
   const eyeEvidence = detail?.eye_evidence || {};
+  const pageMetrics = getEyeHeatmapPageMetrics(detail);
+  const pageSizeLabel = formatHeatmapPageSizeLabel(pageMetrics);
   const evidenceSummary = {
     ...(detail?.summary || {}),
     eye_evidence: eyeEvidence,
@@ -286,7 +317,8 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
           <div className="history-modal-title-wrap">
             <h2 id="history-behavioral-modal-title">Heatmap</h2>
             <p className="history-behavioral-modal-note">
-              Relative attention by region (descriptive). Not a usability or accessibility score.
+              Full-page attention grid ({detail?.grid_cols || 24}×{detail?.grid_rows || 14} regions).
+              Scroll the map to see below-the-fold areas on long pages. Descriptive evidence only.
             </p>
           </div>
           <button
@@ -307,12 +339,18 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
               <p className="history-behavioral-modal-meta">
                 Attention coverage: {Number(session.coverage_percent ?? 0).toFixed(1)}% · Gaze samples:{" "}
                 {session.sample_count} · Duration: {formatDuration(session.duration_ms)}
+                {pageSizeLabel ? ` · ${pageSizeLabel}` : ""}
+                {!pageMetrics.hasDocumentSize
+                  ? " · Page size estimated — re-save Eye session for exact proportions"
+                  : ""}
+                {" · Scroll or drag inside the map"}
               </p>
                 <div className="history-heatmap-grid-shell">
                   <HeatmapGrid
                     gridCols={detail.grid_cols}
                     gridRows={detail.grid_rows}
                     cellCounts={detail.cell_counts}
+                    pageMetrics={pageMetrics}
                   />
                 </div>
               </div>
@@ -325,18 +363,27 @@ function BehavioralHeatmapModal({ open, onClose, detail, loading, error }) {
   );
 }
 
-function formatVisualComplexityRiskLabel(riskLevel) {
+function getVicramBadgeTone(riskLevel) {
   const level = String(riskLevel || "").trim().toLowerCase();
   if (level === "high") {
-    return "High risk";
+    return "high";
   }
   if (level === "medium") {
-    return "Medium risk";
+    return "moderate";
   }
-  if (level === "low") {
-    return "Low risk";
+  return "low";
+}
+
+function getEyeEvidenceBadgeTone(riskLevel) {
+  return getVicramBadgeTone(riskLevel);
+}
+
+function formatVicramScoreMeta(vcs) {
+  const numericVcs = Number(vcs);
+  if (!Number.isFinite(numericVcs)) {
+    return "";
   }
-  return "";
+  return `Score: ${numericVcs.toFixed(2)}`;
 }
 
 function HistoryEvidenceEmpty() {
@@ -348,21 +395,21 @@ function VisualComplexityColumn({ summary, onViewComplexityMap, complexityBusy }
     return <HistoryEvidenceEmpty />;
   }
   const riskLevel = String(summary.risk_level || "").toLowerCase();
-  const riskLabel = formatVisualComplexityRiskLabel(riskLevel);
-  const summaryText =
-    summary?.summary_text ||
-    (summary?.vcs != null && summary?.risk_label
-      ? `VCS ${Number(summary.vcs).toFixed(1)}: ${summary.risk_label}.`
-      : "Visual complexity evidence is available for this report.");
+  const complexityLevel = String(summary.risk_label || "").trim() || "Visual complexity";
+  const tone = getVicramBadgeTone(riskLevel);
+  const ariaLabel =
+    summary.vcs != null && Number.isFinite(Number(summary.vcs))
+      ? `Visual complexity score ${Number(summary.vcs).toFixed(2)}, ${complexityLevel}`
+      : complexityLevel;
 
   return (
     <div className="history-supporting-cell">
-      {riskLabel ? (
-        <div className="history-supporting-risk-row">
-          <span className={`history-risk-pill is-${riskLevel || "medium"}`}>{riskLabel}</span>
-        </div>
-      ) : null}
-      <p className="history-supporting-summary">{summaryText}</p>
+      <p
+        className={`vicram-dashboard-level vicram-dashboard-level-${tone}`}
+        aria-label={ariaLabel}
+      >
+        {complexityLevel}
+      </p>
       <button
         className="history-heatmap-btn"
         type="button"
@@ -383,18 +430,19 @@ function EyeEvidenceColumn({ summary, onViewHeatmap, heatmapBusy }) {
   const riskDrivers = getRiskDrivers(summary);
   const eyeEvidence = summary.eye_evidence || {};
   const overallRisk = getOverallEvidenceRisk(riskDrivers, eyeEvidence);
-  const evidenceSummary = getHistoryEvidenceSummary(riskDrivers, eyeEvidence);
+  const riskLabel = overallRisk ? formatAttentionRiskLabel(overallRisk) : "";
+  const tone = getEyeEvidenceBadgeTone(overallRisk);
 
   return (
     <div className="history-supporting-cell">
-      {overallRisk ? (
-        <div className="history-supporting-risk-row">
-          <span className={`history-risk-pill is-${overallRisk}`}>
-            {formatAttentionRiskLabel(overallRisk)}
-          </span>
-        </div>
+      {riskLabel ? (
+        <p
+          className={`vicram-dashboard-level vicram-dashboard-level-${tone}`}
+          aria-label={riskLabel}
+        >
+          {riskLabel}
+        </p>
       ) : null}
-      <p className="history-supporting-summary">{evidenceSummary}</p>
       <button
         className="history-heatmap-btn"
         type="button"
@@ -463,9 +511,9 @@ function VisualComplexityMapModal({ open, onClose, detail, loading, error }) {
           {!loading && error ? <p className="history-empty">{error}</p> : null}
           {!loading && !error && detail?.available ? (
             <>
-              <p className="history-behavioral-modal-meta">
-                {detail.summary_text || `VCS ${Number(detail.vcs || 0).toFixed(1)}`}
-              </p>
+              {formatVicramScoreMeta(detail.vcs) ? (
+                <p className="history-behavioral-modal-meta">{formatVicramScoreMeta(detail.vcs)}</p>
+              ) : null}
               {overlaySrc ? (
                 <div className="history-vicram-map-shell">
                   <img
@@ -530,23 +578,25 @@ function ReportRows({
       <span className="history-cell action">
         <div className="history-actions">
           <button
-            className="history-print-btn"
-            type="button"
-            title="Open printable report view"
-            aria-label="Open printable report view"
-            data-accessibility-tooltip="Open this report in a printable dashboard view."
-            onClick={() => onPrintReport(item.run_id)}
-          >
-            <span aria-hidden="true">⬇</span>
-          </button>
-          <button
-            className="history-open-btn"
+            className="history-action-btn history-action-btn--primary"
             type="button"
             data-run-id={item.run_id}
             data-accessibility-tooltip="Open this saved analysis report in the dashboard."
             onClick={() => onOpenReport(item.run_id)}
           >
             View
+          </button>
+          <button
+            className="history-action-btn history-action-btn--icon"
+            type="button"
+            title="Open printable report view"
+            aria-label="Open printable report view"
+            data-accessibility-tooltip="Open this report in a printable dashboard view."
+            onClick={() => onPrintReport(item.run_id)}
+          >
+            <span className="history-action-icon" aria-hidden="true">
+              ⬇
+            </span>
           </button>
         </div>
       </span>

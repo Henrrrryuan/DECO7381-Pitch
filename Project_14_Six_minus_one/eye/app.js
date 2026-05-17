@@ -1116,6 +1116,9 @@ function buildEyeSessionPayload() {
     };
   }).filter((item) => item.hit_count > 0 || item.element_available);
 
+  const documentSize = getFrameDocumentSize();
+  const visibleSize = getFrameVisibleDocSize();
+
   return {
     run_id: runId,
     source_name: deriveSessionSourceName(),
@@ -1143,7 +1146,11 @@ function buildEyeSessionPayload() {
       attention_total_dwell_ms: state.attentionSummary.total_dwell_ms,
       attention_total_weighted_dwell_ms: Math.round(
         state.attentionSummary.total_weighted_dwell_ms
-      )
+      ),
+      document_width: Math.round(documentSize.width),
+      document_height: Math.round(documentSize.height),
+      viewport_width: Math.round(visibleSize.visW),
+      viewport_height: Math.round(visibleSize.visH)
     }
   };
 }
