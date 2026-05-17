@@ -8640,6 +8640,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
     height: auto;
     overflow: visible;
     background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .app-nav,
@@ -8676,6 +8678,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
   .tool-sidebar-shell,
   .tool-sidebar,
   .tool-sidebar-inner,
+  .sidebar-detail-panel,
+  .sidebar-detail-scroll,
   .sidebar-explanation-section,
   .sidebar-explanation-content {
     display: block !important;
@@ -8683,6 +8687,34 @@ body.accessibility-reading-mask-active .accessibility-menu {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
+  }
+
+  .tool-sidebar[data-sidebar-detail-mode] .sidebar-detail-panel-vcs,
+  .tool-sidebar[data-sidebar-detail-mode] .sidebar-detail-panel-issues {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    animation: none !important;
+  }
+
+  .sidebar-detail-panel-vcs {
+    margin-bottom: 28px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #d9dde5;
+  }
+
+  .sidebar-detail-panel-issues {
+    margin-top: 0;
+  }
+
+  .sidebar-section-switcher,
+  .sidebar-panel-switch,
+  .sidebar-panel-nav,
+  .sidebar-detail-panel-issues > .sidebar-detail-scroll > .sidebar-detail-heading,
+  .sidebar-audience-findings-card,
+  .print-summary,
+  .vicram-dashboard-actions {
+    display: none !important;
   }
 
   .comparison-section,
@@ -8698,7 +8730,6 @@ body.accessibility-reading-mask-active .accessibility-menu {
   .workspace-pane,
   .explanation-block,
   .print-summary,
-  .print-profile-section,
   .print-profile-dimension-card,
   .print-issue-card,
   .print-dimension-card,
@@ -8723,14 +8754,48 @@ body.accessibility-reading-mask-active .accessibility-menu {
     border: 0 !important;
   }
 
-  .print-summary {
-    display: block;
-    margin: 0 0 18px;
+  .sidebar-detail-panel-issues .sidebar-issues-findings-group {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .print-profile-report {
-    display: grid;
+    display: block;
     gap: 28px;
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .vicram-dashboard-scale-track {
+    background: linear-gradient(90deg, #66d36e 0%, #fff06a 52%, #ef6464 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12) !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .vicram-dashboard-level-low {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .vicram-dashboard-level-moderate {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .vicram-dashboard-level-high {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .assistant-messages {
