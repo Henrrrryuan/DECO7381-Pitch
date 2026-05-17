@@ -148,6 +148,7 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
         ${pillListMarkup(cogaTags, 99, "coga")}
       </div>
       <div class="print-issue-card__tags">
+        <span class="print-issue-card__standards-label">ISO 9241-11</span>
         ${pillListMarkup(issueIsoClauseTags(issue.rule_id), 99, "iso")}
       </div>
       ${printIssueElementsMarkup(issue, deps)}
