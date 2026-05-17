@@ -339,8 +339,15 @@ function formatVisualComplexityRiskLabel(riskLevel) {
   return "";
 }
 
-function VisualComplexityEvidenceCell({ summary, onViewComplexityMap, complexityBusy }) {
-  const riskLevel = String(summary?.risk_level || "").toLowerCase();
+function HistoryEvidenceEmpty() {
+  return <span className="history-evidence-empty">Not available</span>;
+}
+
+function VisualComplexityColumn({ summary, onViewComplexityMap, complexityBusy }) {
+  if (!summary?.available) {
+    return <HistoryEvidenceEmpty />;
+  }
+  const riskLevel = String(summary.risk_level || "").toLowerCase();
   const riskLabel = formatVisualComplexityRiskLabel(riskLevel);
   const summaryText =
     summary?.summary_text ||
@@ -350,12 +357,11 @@ function VisualComplexityEvidenceCell({ summary, onViewComplexityMap, complexity
 
   return (
     <div className="history-supporting-cell">
-      <div className="history-supporting-heading">
-        <p className="history-supporting-available">Visual complexity available</p>
-        {riskLabel ? (
+      {riskLabel ? (
+        <div className="history-supporting-risk-row">
           <span className={`history-risk-pill is-${riskLevel || "medium"}`}>{riskLabel}</span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <p className="history-supporting-summary">{summaryText}</p>
       <button
         className="history-heatmap-btn"
@@ -370,9 +376,9 @@ function VisualComplexityEvidenceCell({ summary, onViewComplexityMap, complexity
   );
 }
 
-function EyeEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
+function EyeEvidenceColumn({ summary, onViewHeatmap, heatmapBusy }) {
   if (!summary?.available) {
-    return null;
+    return <HistoryEvidenceEmpty />;
   }
   const riskDrivers = getRiskDrivers(summary);
   const eyeEvidence = summary.eye_evidence || {};
@@ -381,14 +387,13 @@ function EyeEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
 
   return (
     <div className="history-supporting-cell">
-      <div className="history-supporting-heading">
-        <p className="history-supporting-available">Eye evidence available</p>
-        {overallRisk ? (
+      {overallRisk ? (
+        <div className="history-supporting-risk-row">
           <span className={`history-risk-pill is-${overallRisk}`}>
             {formatAttentionRiskLabel(overallRisk)}
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <p className="history-supporting-summary">{evidenceSummary}</p>
       <button
         className="history-heatmap-btn"
@@ -399,35 +404,6 @@ function EyeEvidenceCell({ summary, onViewHeatmap, heatmapBusy }) {
       >
         View Heatmap
       </button>
-    </div>
-  );
-}
-
-function SupportingEvidenceColumn({
-  eyeSummary,
-  visualSummary,
-  onViewHeatmap,
-  onViewComplexityMap,
-  heatmapBusy,
-  complexityBusy,
-}) {
-  const hasEye = Boolean(eyeSummary?.available);
-  const hasVisual = Boolean(visualSummary?.available);
-  if (!hasEye && !hasVisual) {
-    return <div className="history-supporting-none">No supporting evidence</div>;
-  }
-  return (
-    <div className="history-supporting-column">
-      {hasVisual ? (
-        <VisualComplexityEvidenceCell
-          summary={visualSummary}
-          onViewComplexityMap={onViewComplexityMap}
-          complexityBusy={complexityBusy}
-        />
-      ) : null}
-      {hasEye ? (
-        <EyeEvidenceCell summary={eyeSummary} onViewHeatmap={onViewHeatmap} heatmapBusy={heatmapBusy} />
-      ) : null}
     </div>
   );
 }
@@ -537,14 +513,18 @@ function ReportRows({
         <small className="history-analysis-trace-id">ID: {formatReportTimestamp(item.created_at)}</small>
       </span>
       <span className="history-cell">{formatDate(item.created_at)}</span>
-      <span className="history-cell history-supporting-wrap">
-        <SupportingEvidenceColumn
-          eyeSummary={item.eye_tracking_summary}
-          visualSummary={item.visual_complexity_summary}
-          onViewHeatmap={() => onOpenHeatmap(item.run_id)}
+      <span className="history-cell history-evidence-cell">
+        <VisualComplexityColumn
+          summary={item.visual_complexity_summary}
           onViewComplexityMap={() => onOpenComplexityMap(item.run_id)}
-          heatmapBusy={heatmapLoading}
           complexityBusy={complexityLoading}
+        />
+      </span>
+      <span className="history-cell history-evidence-cell">
+        <EyeEvidenceColumn
+          summary={item.eye_tracking_summary}
+          onViewHeatmap={() => onOpenHeatmap(item.run_id)}
+          heatmapBusy={heatmapLoading}
         />
       </span>
       <span className="history-cell action">
@@ -598,7 +578,8 @@ function ReportHistoryPanel({
       <div className="history-table-head">
         <span>Analysis</span>
         <span>Date</span>
-        <span>Supporting Evidence</span>
+        <span>Visual Complexity</span>
+        <span>Eye Evidence</span>
         <span>Actions</span>
       </div>
       <div id="historyList" className="history-table-body">
