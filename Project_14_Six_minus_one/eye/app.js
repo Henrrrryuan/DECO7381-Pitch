@@ -16,6 +16,7 @@ const targetFrame = document.getElementById("targetFrame");
 const frameHint = document.getElementById("frameHint");
 const eyeIntroModal = document.getElementById("eyeIntroModal");
 const eyeIntroContinueBtn = document.getElementById("eyeIntroContinueBtn");
+const calibrationUiGroup = document.getElementById("calibrationUiGroup");
 
 const statusText = document.getElementById("statusText");
 const coordsText = document.getElementById("coordsText");
@@ -58,6 +59,47 @@ const state = {
   savedThisRun: false,
   lastSavedSessionId: ""
 };
+
+let calibrationLayoutSyncQueued = false;
+
+function syncCalibrationUiGroup() {
+  if (!calibrationUiGroup) {
+    return;
+  }
+
+  const cameraPreview = document.getElementById("camid");
+  const calibrationCard = document.getElementById("showinit");
+
+  if (!cameraPreview && !calibrationCard) {
+    calibrationUiGroup.hidden = true;
+    return;
+  }
+
+  if (cameraPreview && cameraPreview.parentElement !== calibrationUiGroup) {
+    calibrationUiGroup.appendChild(cameraPreview);
+  }
+  if (calibrationCard && calibrationCard.parentElement !== calibrationUiGroup) {
+    calibrationUiGroup.appendChild(calibrationCard);
+  }
+
+  calibrationUiGroup.hidden = false;
+}
+
+function queueCalibrationLayoutSync() {
+  if (calibrationLayoutSyncQueued) {
+    return;
+  }
+  calibrationLayoutSyncQueued = true;
+  window.requestAnimationFrame(() => {
+    calibrationLayoutSyncQueued = false;
+    syncCalibrationUiGroup();
+  });
+}
+
+if (calibrationUiGroup) {
+  const calibrationLayoutObserver = new MutationObserver(queueCalibrationLayoutSync);
+  calibrationLayoutObserver.observe(document.body, { childList: true, subtree: true });
+}
 
 const ATTENTION_BUCKETS = [
   { key: "main_text", label: "Main text" },
@@ -1403,6 +1445,7 @@ function updateCoverage(x, y, width, height) {
 function setPreviewVisibility(visible) {
   state.previewVisible = Boolean(visible);
   document.body.classList.toggle("gaze-preview-hidden", !state.previewVisible);
+  queueCalibrationLayoutSync();
 }
 
 function handleTrackerStop(message) {

@@ -726,38 +726,99 @@ button.start-tracking-primary:focus-visible {
   pointer-events: none !important;
 }
 
+.calibration-ui-group {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: 50%;
+  width: min(380px, calc(100% - 48px));
+  max-height: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.calibration-ui-group[hidden] {
+  display: none !important;
+}
+
 #camid,
 #showinit {
   z-index: 20 !important;
+  pointer-events: auto !important;
 }
 
 #camid {
-  position: fixed !important;
-  top: 18px !important;
-  right: 18px !important;
+  position: relative !important;
+  top: auto !important;
   left: auto !important;
-  margin-left: 0 !important;
+  right: auto !important;
+  align-self: center !important;
+  width: min(320px, 100%) !important;
+  aspect-ratio: 4 / 3 !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  flex: 0 0 auto;
+  order: 1;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  background: #020617 !important;
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.42) !important;
 }
 
 #showinit {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  align-self: center !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  flex: 0 0 auto;
+  order: 2;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 16px;
   padding: 12px;
   backdrop-filter: blur(10px);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
 }
 
 #showvideoid,
 #facemaskimgok,
 #facemaskimgno {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
   border-radius: 16px !important;
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.42);
+  box-shadow: none !important;
+}
+
+#showvideoid {
+  transform: scaleX(-1) !important;
+  transform-origin: center center !important;
 }
 
 body.gaze-preview-hidden #camid,
 body.gaze-preview-hidden #showinit,
-body.gaze-preview-hidden #GazeFlowContainer {
+body.gaze-preview-hidden #GazeFlowContainer,
+body.gaze-preview-hidden #calibrationUiGroup {
   display: none !important;
+}
+
+@media (max-width: 860px) {
+  .calibration-ui-group {
+    width: min(360px, calc(100% - 32px));
+  }
 }
 
 .stats-panel {

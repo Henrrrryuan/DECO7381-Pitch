@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CogniLens Eye Tracking</title>
-    <link rel="stylesheet" href="./styles.css?v=eye-calibration-cta-1" />
+    <link rel="stylesheet" href="./styles.css?v=eye-calibration-center-1" />
   </head>
   <body>
     <header class="app-nav">
@@ -67,6 +67,7 @@
 
         <canvas id="heatmapCanvas"></canvas>
         <div id="gazeDot" aria-hidden="true"></div>
+        <div id="calibrationUiGroup" class="calibration-ui-group" hidden></div>
       </section>
 
       <aside class="stats-panel">
@@ -149,6 +150,6 @@
     </div>
 
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-onboarding-modal-3"></script>
+    <script src="./app.js?v=eye-calibration-center-1"></script>
   </body>
 </html>
