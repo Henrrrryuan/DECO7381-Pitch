@@ -276,10 +276,9 @@ export function LoadingPage() {
       }
 
       if (vicramCache?.result) {
-        const targetUrl = vicramCache.targetUrl || resolveVicramTargetLabel(result);
         savePendingVicramResult({
           result: vicramCache.result,
-          targetUrl,
+          targetUrl: resolveVicramTargetLabel(result),
         });
       } else {
         clearPendingVicramResult();

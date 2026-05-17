@@ -13,6 +13,33 @@ function isProbablyUrl(value) {
   return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+/** Canonical label for matching pending ViCRAM cache to dashboard source. */
+export function normalizeVicramTargetLabel(label) {
+  const value = String(label || "").trim();
+  if (!value) {
+    return "";
+  }
+
+  if (isProbablyUrl(value)) {
+    try {
+      const url = new URL(value);
+      url.hash = "";
+      const pathname = url.pathname.replace(/\/+$/, "") || "";
+      return `${url.protocol}//${url.host.toLowerCase()}${pathname}${url.search}`;
+    } catch {
+      return value.toLowerCase().replace(/\/+$/, "");
+    }
+  }
+
+  return value.toLowerCase();
+}
+
+export function vicramTargetLabelsMatch(storedLabel, currentLabel) {
+  const left = normalizeVicramTargetLabel(storedLabel);
+  const right = normalizeVicramTargetLabel(currentLabel);
+  return Boolean(left) && left === right;
+}
+
 /** Label used by dashboard `getVicramAnalysisSource()` after session hydrate. */
 export function resolveVicramTargetLabel(sessionResult) {
   const previewUrl = String(sessionResult?.payload?.preview_url || "").trim();
@@ -82,11 +109,12 @@ function buildPendingVicramEntry({ result, targetUrl, includeScreenshot = true }
 }
 
 export function savePendingVicramResult({ result, targetUrl }) {
-  if (!result || !targetUrl) {
+  const canonicalTargetUrl = normalizeVicramTargetLabel(targetUrl);
+  if (!result || !canonicalTargetUrl) {
     return;
   }
 
-  const entry = buildPendingVicramEntry({ result, targetUrl, includeScreenshot: true });
+  const entry = buildPendingVicramEntry({ result, targetUrl: canonicalTargetUrl, includeScreenshot: true });
 
   try {
     sessionStorage.setItem(PENDING_VICRAM_RESULT_KEY, JSON.stringify(entry));
@@ -94,7 +122,7 @@ export function savePendingVicramResult({ result, targetUrl }) {
   } catch {
     // Large screenshots can exceed sessionStorage quota; keep score, grid, and preview overlay.
     try {
-      const slimEntry = buildPendingVicramEntry({ result, targetUrl, includeScreenshot: false });
+      const slimEntry = buildPendingVicramEntry({ result, targetUrl: canonicalTargetUrl, includeScreenshot: false });
       sessionStorage.setItem(PENDING_VICRAM_RESULT_KEY, JSON.stringify(slimEntry));
     } catch {
       clearPendingVicramResult();

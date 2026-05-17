@@ -10,7 +10,12 @@ import {
   loadDashboardSession,
 } from "../lib/common.js";
 import { bumpDashboardLifecycle, getDashboardLifecycleSnapshot } from "../lib/dashboardLifecycle.js";
-import { clearPendingVicramResult, readPendingVicramResult } from "../lib/pendingVicramSession.js";
+import {
+  clearPendingVicramResult,
+  readPendingVicramResult,
+  resolveVicramTargetLabel,
+  vicramTargetLabelsMatch,
+} from "../lib/pendingVicramSession.js";
 import {
   DASHBOARD_SOURCE_TYPES,
   getRunIdFromPayload,
@@ -396,12 +401,21 @@ function getVicramTargetUrl() {
   return isProbablyUrl(sourceName) ? sourceName : "";
 }
 
+function getVicramSessionLabel() {
+  return resolveVicramTargetLabel({
+    payload: state.currentPayload,
+    sourceUrl: state.sourceUrl,
+    sourceName: state.sourceName,
+  });
+}
+
 function getVicramAnalysisSource() {
+  const sessionLabel = getVicramSessionLabel();
   const targetUrl = getVicramTargetUrl();
   if (targetUrl) {
     return {
       kind: "url",
-      label: targetUrl,
+      label: sessionLabel,
       payload: { url: targetUrl },
     };
   }
@@ -410,7 +424,7 @@ function getVicramAnalysisSource() {
   if (html) {
     return {
       kind: "html",
-      label: state.sourceName || state.currentPayload?.run?.source_name || "Uploaded HTML",
+      label: sessionLabel,
       payload: { html },
     };
   }
@@ -420,6 +434,10 @@ function getVicramAnalysisSource() {
     label: "",
     payload: {},
   };
+}
+
+function vicramHasResultForSource(vicram, sourceLabel) {
+  return Boolean(vicram?.result) && vicramTargetLabelsMatch(vicram.targetUrl, sourceLabel);
 }
 
 function vicramState() {
@@ -461,9 +479,8 @@ function tryHydratePendingVicramFromSession(expectedLabel) {
     return false;
   }
 
-  const storedLabel = String(entry.targetUrl || "").trim();
   const currentLabel = String(expectedLabel || "").trim();
-  if (!storedLabel || storedLabel !== currentLabel) {
+  if (!vicramTargetLabelsMatch(entry.targetUrl, currentLabel)) {
     return false;
   }
 
@@ -472,11 +489,10 @@ function tryHydratePendingVicramFromSession(expectedLabel) {
   vicram.error = "";
   vicram.activeRequestTarget = "";
   vicram.result = entry.result;
-  vicram.targetUrl = storedLabel;
+  vicram.targetUrl = currentLabel;
   vicram.gridVisible = false;
   vicram.pendingShowGridAfterLoad = false;
   vicram.gridViewIntent = "webpage";
-  clearPendingVicramResult();
   return true;
 }
 
@@ -501,7 +517,7 @@ function renderVicramDashboardPanelLegacy() {
   const vicram = vicramState();
   const source = getVicramAnalysisSource();
   const vcs = vicram.result?.page?.vcs;
-  const hasResultForTarget = vicram.result && vicram.targetUrl === source.label;
+  const hasResultForTarget = vicramHasResultForSource(vicram, source.label);
   const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
     ? Number(vcs).toFixed(4)
     : vicram.loading
@@ -705,7 +721,7 @@ function renderVicramDashboardPanel() {
   const vicram = vicramState();
   const source = getVicramAnalysisSource();
   const vcs = vicram.result?.page?.vcs;
-  const hasResultForTarget = vicram.result && vicram.targetUrl === source.label;
+  const hasResultForTarget = vicramHasResultForSource(vicram, source.label);
   const scoreText = hasResultForTarget && Number.isFinite(Number(vcs))
     ? Number(vcs).toFixed(4)
     : vicram.loading
@@ -945,17 +961,20 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
       viewportWidth: 1366,
       viewportHeight: 768,
     });
-    if (getVicramAnalysisSource().label !== requestTarget || vicram.activeRequestTarget !== requestTarget) {
+    const currentLabel = getVicramSessionLabel();
+    if (!vicramTargetLabelsMatch(requestTarget, currentLabel) || vicram.activeRequestTarget !== requestTarget) {
       return;
     }
     vicram.result = result;
+    vicram.targetUrl = getVicramSessionLabel();
     vicram.error = "";
+    const shouldShowGrid = vicram.gridViewIntent === "grid" || vicram.pendingShowGridAfterLoad;
     vicram.pendingShowGridAfterLoad = false;
-    if (vicram.gridViewIntent === "grid") {
+    if (shouldShowGrid) {
       applyVicramGridOverlay(result);
     }
   } catch (error) {
-    if (getVicramAnalysisSource().label !== requestTarget || vicram.activeRequestTarget !== requestTarget) {
+    if (!vicramTargetLabelsMatch(requestTarget, getVicramSessionLabel()) || vicram.activeRequestTarget !== requestTarget) {
       return;
     }
     vicram.result = null;
@@ -3205,6 +3224,16 @@ function applyVicramGridOverlay(result) {
   if (!frame) {
     return;
   }
+
+  const screenshot = String(result?.artifacts?.screenshot_png_base64 || "").trim();
+  if (!screenshot) {
+    const vicram = vicramState();
+    vicram.gridViewIntent = "grid";
+    vicram.pendingShowGridAfterLoad = true;
+    void refreshVicramAnalysis({ showGridAfter: true, force: true });
+    return;
+  }
+
   const vicram = vicramState();
   frame.dataset.vicramGrid = "1";
   frame.dataset.previewUrl = "";
@@ -3222,7 +3251,7 @@ function showVicramGridOverlay() {
   const vicram = vicramState();
   const source = getVicramAnalysisSource();
   vicram.gridViewIntent = "grid";
-  if (!vicram.result || vicram.targetUrl !== source.label) {
+  if (!vicramHasResultForSource(vicram, source.label)) {
     vicram.pendingShowGridAfterLoad = true;
     void refreshVicramAnalysis({ showGridAfter: true });
     return;
@@ -5269,7 +5298,9 @@ function bindEvents() {
     }, true);
   }
 
-  document.addEventListener("click", (event) => {
+  if (!bindEvents.__documentClickBound) {
+    bindEvents.__documentClickBound = true;
+    document.addEventListener("click", (event) => {
     const sidebarPanelSwitch = event.target.closest("[data-sidebar-panel-target]");
     if (sidebarPanelSwitch) {
       event.preventDefault();
@@ -5360,6 +5391,7 @@ function bindEvents() {
       affected_systems: ["state", "highlight", "workspace", "render"],
     });
   });
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && document.getElementById("vicramReportModal")) {
@@ -5519,6 +5551,7 @@ export async function initDashboard(options = {}) {
   // SPA navigation reuses module state; clear stale highlight selection from a prior visit.
   resetSelectionToSummary(state);
   clearWebsiteHighlights();
+  resetVicramStateForNewResult();
 
   if (detectorEnablementAuditEnabled()) {
     detectorEnablementAuditLog("profile.storage.read", {
