@@ -6348,18 +6348,6 @@ body.accessibility-reading-mask-active .accessibility-menu {
   display: none;
 }
 
-.print-profile-dimension-card summary strong {
-  min-width: 28px;
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #2f6feb;
-  font-size: 13px;
-}
-
 .print-profile-dimension-body {
   display: grid;
   gap: 10px;

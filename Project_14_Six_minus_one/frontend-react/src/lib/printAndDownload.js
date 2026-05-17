@@ -174,7 +174,6 @@ export function printProfileDimensionCards(result, profileLabel, deps) {
       <details class="print-profile-dimension-card" open>
         <summary>
           <span>${escapeHtml(displayDimensionName(name))}</span>
-          <strong>${issues.length}</strong>
         </summary>
         <div class="print-profile-dimension-body">
           ${issues.length ? issueCards : `<p class="print-empty-note">No triggered issue for this profile in this detector.</p>`}
