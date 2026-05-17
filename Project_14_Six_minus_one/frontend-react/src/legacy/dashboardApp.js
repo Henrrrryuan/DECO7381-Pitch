@@ -496,9 +496,39 @@ function tryHydratePendingVicramFromSession(expectedLabel) {
   return true;
 }
 
+function tryHydrateVicramFromHistoryPayload(expectedLabel) {
+  const detail = state.currentPayload?.visual_complexity_detail;
+  if (!detail?.available || !detail.page || !detail.grid) {
+    return false;
+  }
+
+  const currentLabel = String(expectedLabel || "").trim();
+  const vicram = vicramState();
+  vicram.loading = false;
+  vicram.error = "";
+  vicram.activeRequestTarget = "";
+  vicram.result = {
+    ...detail,
+    page: detail.page,
+    grid: detail.grid,
+    top_cells: Array.isArray(detail.top_cells) ? detail.top_cells : [],
+    summary_report: detail.summary_report || "",
+    artifacts: detail.artifacts || {},
+  };
+  vicram.targetUrl = currentLabel || detail.source_label || state.sourceName || "";
+  vicram.gridVisible = false;
+  vicram.pendingShowGridAfterLoad = false;
+  vicram.gridViewIntent = "webpage";
+  return true;
+}
+
 function syncVicramAfterMainAnalysis() {
   const source = getVicramAnalysisSource();
   if (tryHydratePendingVicramFromSession(source.label)) {
+    renderVicramDashboardPanel();
+    return;
+  }
+  if (tryHydrateVicramFromHistoryPayload(source.label)) {
     renderVicramDashboardPanel();
     return;
   }
@@ -5446,6 +5476,7 @@ function buildDashboardSessionFromHistoryDetail(detail) {
         run: detail.run || analysis?.run,
         resource_bundle: detail.resource_bundle || analysis?.resource_bundle || null,
         html_content: detail.html_content || analysis?.html_content || "",
+        visual_complexity_detail: detail.visual_complexity_detail || analysis?.visual_complexity_detail || null,
       },
       html: detail.html_content || analysis?.html_content || "",
       sourceName,
