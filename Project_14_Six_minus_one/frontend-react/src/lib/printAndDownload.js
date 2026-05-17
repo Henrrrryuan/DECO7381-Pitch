@@ -20,6 +20,8 @@ import {
  *   pillListMarkup: (items: string[], limit?: number, className?: string) => string,
  *   issueIsoClauseTags: (ruleId: unknown) => string[],
  *   issueCogaGuidanceTags: (ruleId: unknown) => string[],
+ *   friendlyLocationLabel: (location: Record<string, unknown>, ruleId?: string) => string,
+ *   locationMetaText: (location: Record<string, unknown>, elementNumber?: number, ruleId?: string) => string,
  *   PATIENT_PROFILES?: Record<string, { label?: string, condition?: string, summary?: string, enabledDetectors?: string[], detectorOrder?: string[] }>,
  *   eyeTrackingSummary?: { available?: boolean, coverage_percent?: number, sample_count?: number, duration_ms?: number, attention_summary?: Array<Record<string, unknown>>, eye_evidence?: Record<string, unknown> } | null,
  * }} PrintMarkupDeps
@@ -89,6 +91,43 @@ export function printProfileDimensionRows(result, profileLabel, deps) {
     .join("");
 }
 
+function printIssueElementsMarkup(issue, deps) {
+  const locations = Array.isArray(issue?.locations) ? issue.locations : [];
+  if (!locations.length) {
+    return "";
+  }
+  const friendlyLocationLabel = typeof deps.friendlyLocationLabel === "function"
+    ? deps.friendlyLocationLabel
+    : () => "Affected page area";
+  const locationMetaText = typeof deps.locationMetaText === "function"
+    ? deps.locationMetaText
+    : () => "Location detail";
+  const items = locations.slice(0, 8).map((location, index) => {
+    const elementNumber = index + 1;
+    const label = friendlyLocationLabel(location, issue?.rule_id || "");
+    const meta = locationMetaText(location, elementNumber, issue?.rule_id || "")
+      .replace(/^Location: /, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return `
+      <li class="print-issue-element">
+        <strong>Element ${elementNumber}: ${escapeHtml(label)}</strong>
+        <span>${escapeHtml(meta || "Detected page evidence.")}</span>
+      </li>
+    `;
+  }).join("");
+  const extraCount = Math.max(0, locations.length - 8);
+  return `
+    <div class="print-issue-elements">
+      <span class="print-issue-card__standards-label">Affected elements</span>
+      <ol>
+        ${items}
+      </ol>
+      ${extraCount ? `<p class="print-issue-elements-more">+ ${extraCount} more affected element${extraCount === 1 ? "" : "s"}.</p>` : ""}
+    </div>
+  `;
+}
+
 export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
   const { conciseText, pillListMarkup, issueIsoClauseTags, issueCogaGuidanceTags } = deps;
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 180);
@@ -111,6 +150,7 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
       <div class="print-issue-card__tags">
         ${pillListMarkup(issueIsoClauseTags(issue.rule_id), 99, "iso")}
       </div>
+      ${printIssueElementsMarkup(issue, deps)}
     </article>
   `;
 }
@@ -216,7 +256,6 @@ export function renderPrintableProfileReport(result, deps) {
 
   const labels = printProfileLabels(result, deps);
   printProfileReport.innerHTML = `
-    ${printEyeTrackingReportMarkup(deps)}
     ${labels.map((profileName) => `
     <section class="print-profile-section">
       <h2>${escapeHtml(profileDisplayLabel(profileName, deps))}</h2>
@@ -229,6 +268,7 @@ export function renderPrintableProfileReport(result, deps) {
       </div>
     </section>
   `).join("")}
+    ${printEyeTrackingReportMarkup(deps)}
   `;
 }
 

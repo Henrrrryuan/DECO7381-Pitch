@@ -6164,7 +6164,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .print-eye-report {
   display: grid;
   gap: 14px;
-  margin-bottom: 30px;
+  margin-top: 30px;
   padding: 18px;
   border: 1px solid #d4dbea;
   border-radius: 14px;
@@ -6406,7 +6406,8 @@ body.accessibility-reading-mask-active .accessibility-menu {
 }
 
 .print-issue-card__standards,
-.print-issue-card__tags {
+.print-issue-card__tags,
+.print-issue-elements {
   display: grid;
   gap: 6px;
 }
@@ -6415,6 +6416,35 @@ body.accessibility-reading-mask-active .accessibility-menu {
   color: #315fd6;
   font-size: 12px;
   font-weight: 850;
+}
+
+.print-issue-elements ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.print-issue-element {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.print-issue-element strong,
+.print-issue-element span {
+  display: block;
+}
+
+.print-issue-element span,
+.print-issue-elements-more {
+  color: #64748b;
+}
+
+.print-issue-elements-more {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .print-empty-note {

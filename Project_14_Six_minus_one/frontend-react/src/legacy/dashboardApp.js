@@ -4723,6 +4723,8 @@ function printMarkupDeps() {
     pillListMarkup,
     issueIsoClauseTags,
     issueCogaGuidanceTags,
+    friendlyLocationLabel,
+    locationMetaText,
     PATIENT_PROFILES,
     eyeTrackingSummary: state.currentPayload?.run?.eye_tracking_summary || null,
   };
