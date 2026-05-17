@@ -1424,6 +1424,11 @@ function cogaGuidanceMarkup(summaryText) {
   `;
 }
 
+function issueCogaGuidanceTags(ruleId) {
+  const { coga } = issueCardStandardsSummary(ruleId || "");
+  return splitStandardItems(coga, "Help users focus");
+}
+
 function beneficiaryTags(ruleId, dimensionName) {
   const prefix = String(ruleId || "").split("-")[0] || "";
   const byPrefix = {
@@ -4687,6 +4692,7 @@ function printMarkupDeps() {
     conciseText,
     pillListMarkup,
     issueIsoClauseTags,
+    issueCogaGuidanceTags,
     PATIENT_PROFILES,
   };
 }

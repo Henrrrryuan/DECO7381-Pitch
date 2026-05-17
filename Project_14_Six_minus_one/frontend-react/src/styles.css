@@ -6273,6 +6273,18 @@ body.accessibility-reading-mask-active .accessibility-menu {
   line-height: 1.5;
 }
 
+.print-issue-card__standards,
+.print-issue-card__tags {
+  display: grid;
+  gap: 6px;
+}
+
+.print-issue-card__standards-label {
+  color: #315fd6;
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .print-empty-note {
   margin: 0;
   color: #64748b;
@@ -8768,6 +8780,22 @@ body.accessibility-reading-mask-active .accessibility-menu {
     gap: 28px;
     break-before: page;
     page-break-before: always;
+  }
+
+  .print-profile-section {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-profile-section:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-profile-section + .print-profile-section {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 
   .vicram-dashboard-scale-track {

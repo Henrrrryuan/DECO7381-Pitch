@@ -14,6 +14,7 @@ import { escapeHtml, findDimension } from "./common.js";
  *   conciseText: (text: unknown, fallback?: string, maxLength?: number) => string,
  *   pillListMarkup: (items: string[], limit?: number, className?: string) => string,
  *   issueIsoClauseTags: (ruleId: unknown) => string[],
+ *   issueCogaGuidanceTags: (ruleId: unknown) => string[],
  *   PATIENT_PROFILES?: Record<string, { label?: string, condition?: string, summary?: string, enabledDetectors?: string[], detectorOrder?: string[] }>,
  * }} PrintMarkupDeps
  */
@@ -78,9 +79,12 @@ export function printProfileDimensionRows(result, profileLabel, deps) {
 }
 
 export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
-  const { conciseText, pillListMarkup, issueIsoClauseTags } = deps;
+  const { conciseText, pillListMarkup, issueIsoClauseTags, issueCogaGuidanceTags } = deps;
   const firstFix = conciseText(issue.suggestion, "Review this issue and simplify the interaction.", 180);
   const description = conciseText(issue.description, "This issue may increase cognitive effort for users.", 220);
+  const cogaTags = typeof issueCogaGuidanceTags === "function"
+    ? issueCogaGuidanceTags(issue.rule_id)
+    : ["Help users focus"];
   return `
     <article class="print-issue-card">
       <div class="print-issue-card__meta">
@@ -89,6 +93,10 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
       <h4>${escapeHtml(issue.title || "Review this issue")}</h4>
       <p>${escapeHtml(description)}</p>
       <p><strong>First fix:</strong> ${escapeHtml(firstFix)}</p>
+      <div class="print-issue-card__standards">
+        <span class="print-issue-card__standards-label">WCAG Cognitive Accessibility Guidance</span>
+        ${pillListMarkup(cogaTags, 99, "coga")}
+      </div>
       <div class="print-issue-card__tags">
         ${pillListMarkup(issueIsoClauseTags(issue.rule_id), 99, "iso")}
       </div>
