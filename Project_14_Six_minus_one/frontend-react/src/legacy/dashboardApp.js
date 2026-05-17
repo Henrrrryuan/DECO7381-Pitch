@@ -4724,6 +4724,7 @@ function printMarkupDeps() {
     issueIsoClauseTags,
     issueCogaGuidanceTags,
     PATIENT_PROFILES,
+    eyeTrackingSummary: state.currentPayload?.run?.eye_tracking_summary || null,
   };
 }
 

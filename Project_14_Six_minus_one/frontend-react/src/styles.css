@@ -6161,6 +6161,138 @@ body.accessibility-reading-mask-active .accessibility-menu {
   border-top: 1px solid #d9dde5;
 }
 
+.print-eye-report {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 30px;
+  padding: 18px;
+  border: 1px solid #d4dbea;
+  border-radius: 14px;
+  background: #fbfcff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-eye-report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.print-eye-report-kicker {
+  margin: 0 0 4px;
+  color: #344b70;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.print-eye-report h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.print-eye-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.print-eye-metrics div {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dbe5f7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.print-eye-metrics span,
+.print-eye-driver-meta {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.print-eye-metrics strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.print-eye-summary {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.print-eye-summary p {
+  margin: 0;
+}
+
+.print-eye-driver-list {
+  display: grid;
+  gap: 10px;
+}
+
+.print-eye-driver-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-eye-driver-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.print-eye-driver-card p {
+  margin: 0;
+  color: #3f4a5c;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.print-eye-risk-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #2f6feb;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.print-eye-risk-pill.is-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.print-eye-risk-pill.is-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.print-eye-risk-pill.is-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .print-profile-section h2 {
   margin: 0;
   color: var(--ink);

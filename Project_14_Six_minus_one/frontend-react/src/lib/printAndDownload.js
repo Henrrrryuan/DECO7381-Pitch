@@ -4,6 +4,11 @@
  */
 
 import { escapeHtml, findDimension } from "./common.js";
+import {
+  getHeatmapEvidenceSummary,
+  getOverallEvidenceRisk,
+  getRiskDrivers,
+} from "./eyeEvidenceSummary.js";
 
 /**
  * @typedef {{
@@ -16,6 +21,7 @@ import { escapeHtml, findDimension } from "./common.js";
  *   issueIsoClauseTags: (ruleId: unknown) => string[],
  *   issueCogaGuidanceTags: (ruleId: unknown) => string[],
  *   PATIENT_PROFILES?: Record<string, { label?: string, condition?: string, summary?: string, enabledDetectors?: string[], detectorOrder?: string[] }>,
+ *   eyeTrackingSummary?: { available?: boolean, coverage_percent?: number, sample_count?: number, duration_ms?: number, attention_summary?: Array<Record<string, unknown>>, eye_evidence?: Record<string, unknown> } | null,
  * }} PrintMarkupDeps
  */
 
@@ -138,6 +144,70 @@ export function printProfileDimensionCards(result, profileLabel, deps) {
     .join("");
 }
 
+function formatEyeMetric(value, suffix = "") {
+  if (value === null || value === undefined || value === "") {
+    return "Not recorded";
+  }
+  const number = Number(value);
+  if (Number.isFinite(number)) {
+    return `${number.toFixed(suffix === "%" ? 1 : 0)}${suffix}`;
+  }
+  return `${value}${suffix}`;
+}
+
+function printEyeTrackingReportMarkup(deps) {
+  const summary = deps.eyeTrackingSummary || null;
+  if (!summary?.available) {
+    return "";
+  }
+
+  const riskDrivers = getRiskDrivers(summary);
+  const eyeEvidence = summary.eye_evidence || {};
+  const overallRisk = getOverallEvidenceRisk(riskDrivers, eyeEvidence);
+  const narrative = getHeatmapEvidenceSummary(riskDrivers, eyeEvidence);
+  const riskLabel = overallRisk ? `${overallRisk.charAt(0).toUpperCase()}${overallRisk.slice(1)} attention risk` : "Eye evidence available";
+  const driverMarkup = riskDrivers.length
+    ? riskDrivers.slice(0, 6).map((driver) => `
+        <article class="print-eye-driver-card">
+          <div class="print-eye-driver-header">
+            <strong>${escapeHtml(driver.label || "Attention area")}</strong>
+            <span class="print-eye-risk-pill is-${escapeHtml(driver.riskLevel || "medium")}">${escapeHtml(driver.riskLabel || "Risk")}</span>
+          </div>
+          <p>${escapeHtml(driver.interpretation || "Attention pattern needs review.")}</p>
+          <p class="print-eye-driver-meta">
+            Weighted share: ${escapeHtml(formatEyeMetric((Number(driver.weightedShare || 0) * 100), "%"))}
+            ${driver.firstFixationMs !== null && driver.firstFixationMs !== undefined ? ` · First fixation: ${escapeHtml(formatEyeMetric(driver.firstFixationMs, "ms"))}` : ""}
+          </p>
+        </article>
+      `).join("")
+    : `<p class="print-empty-note">Eye tracking evidence was saved, but element-level attention data is not available.</p>`;
+
+  return `
+    <section class="print-eye-report">
+      <div class="print-eye-report-header">
+        <div>
+          <p class="print-eye-report-kicker">Behavioral evidence</p>
+          <h2>Eye Tracking Evidence</h2>
+        </div>
+        <span class="print-eye-risk-pill is-${escapeHtml(overallRisk || "medium")}">${escapeHtml(riskLabel)}</span>
+      </div>
+      <div class="print-eye-metrics">
+        <div><span>Coverage</span><strong>${escapeHtml(formatEyeMetric(summary.coverage_percent, "%"))}</strong></div>
+        <div><span>Samples</span><strong>${escapeHtml(formatEyeMetric(summary.sample_count))}</strong></div>
+        <div><span>Duration</span><strong>${escapeHtml(formatEyeMetric(summary.duration_ms, "ms"))}</strong></div>
+      </div>
+      <div class="print-eye-summary">
+        <p>${escapeHtml(narrative.overall)}</p>
+        <p>${escapeHtml(narrative.risk)}</p>
+        <p>${escapeHtml(narrative.priority)}</p>
+      </div>
+      <div class="print-eye-driver-list">
+        ${driverMarkup}
+      </div>
+    </section>
+  `;
+}
+
 export function renderPrintableProfileReport(result, deps) {
   const printProfileReport = document.getElementById("printProfileReport");
   if (!printProfileReport) {
@@ -145,7 +215,9 @@ export function renderPrintableProfileReport(result, deps) {
   }
 
   const labels = printProfileLabels(result, deps);
-  printProfileReport.innerHTML = labels.map((profileName) => `
+  printProfileReport.innerHTML = `
+    ${printEyeTrackingReportMarkup(deps)}
+    ${labels.map((profileName) => `
     <section class="print-profile-section">
       <h2>${escapeHtml(profileDisplayLabel(profileName, deps))}</h2>
       ${deps.PATIENT_PROFILES?.[profileName]?.summary ? `<p class="print-profile-summary">${escapeHtml(deps.PATIENT_PROFILES[profileName].summary)}</p>` : ""}
@@ -156,7 +228,8 @@ export function renderPrintableProfileReport(result, deps) {
         ${printProfileDimensionCards(result, profileName, deps)}
       </div>
     </section>
-  `).join("");
+  `).join("")}
+  `;
 }
 
 export function renderPrintSummary(result, deps) {
