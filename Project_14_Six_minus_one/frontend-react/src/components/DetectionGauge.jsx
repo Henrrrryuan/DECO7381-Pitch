@@ -1,5 +1,5 @@
 /**
- * Axe-style metric card: big count + short label.
+ * Findings metric inside the combined audience + findings sidebar card.
  * Values are driven by legacy dashboardApp via initDashboard({ onDetectionGaugeUpdate }).
  */
 
@@ -11,13 +11,17 @@ export function DetectionGauge({ detected }) {
 
   return (
     <section
-      className={`detection-gauge-panel detection-gauge-card${placeholder ? " is-placeholder" : ""}`}
+      className={`detection-gauge-panel detection-gauge-findings${placeholder ? " is-placeholder" : ""}`}
       id="detectionGaugePanel"
-      aria-label="Detected issues"
+      aria-label="Issue categories triggered for the selected accessibility focus"
     >
-      <p className="detection-gauge-title">Detected issues</p>
-      <div className="detection-gauge-value" aria-live="polite">
-        <strong>{detectedText}</strong>
+      <div className="detection-gauge-metric">
+        <div className="detection-gauge-value" aria-live="polite">
+          <strong>{detectedText}</strong>
+        </div>
+        <div className="detection-gauge-copy">
+          <p className="detection-gauge-label">Issue categories triggered</p>
+        </div>
       </div>
     </section>
   );

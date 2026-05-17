@@ -8,11 +8,11 @@ function PriorityLensPanelInner() {
   const alison = PATIENT_PROFILES.Alison;
 
   return (
-    <section className="patient-profile-panel" aria-label="Target audience">
+    <section className="patient-profile-panel" aria-label="Accessibility focus">
       <div className="patient-profile-heading">
-        <h2 className="patient-profile-title">Target audience</h2>
+        <h2 className="patient-profile-title">Accessibility focus</h2>
       </div>
-      <div className="patient-profile-tabs" role="group" aria-label="Choose target audience">
+      <div className="patient-profile-tabs" role="group" aria-label="Choose accessibility focus">
         {PRIORITY_LENS_KEYS.map((key) => {
           const profile = PATIENT_PROFILES[key];
           const isAlison = key === "Alison";
@@ -22,7 +22,7 @@ function PriorityLensPanelInner() {
               type="button"
               className={`patient-profile-tab${isAlison ? " is-active" : ""}`}
               data-patient-profile={key}
-              data-accessibility-tooltip={`Show issues most relevant to ${profile.condition}. ${profile.summary}`}
+              data-accessibility-tooltip={`Show issues most relevant to ${profile.condition}. Focus: ${profile.focusKeywords.join(", ")}.`}
               aria-pressed={isAlison ? "true" : "false"}
             >
               {profile.label}
@@ -30,11 +30,11 @@ function PriorityLensPanelInner() {
           );
         })}
       </div>
-      <p id="patientProfileSummary" className="patient-profile-summary">
-        <span>
-          {alison.summary}
-        </span>
-      </p>
+      <div id="patientProfileSummary" className="patient-profile-selected-focus">
+        <p id="patientProfileFocusChips" className="patient-profile-focus-chips" aria-live="polite">
+          {alison.focusKeywords.join(" · ")}
+        </p>
+      </div>
     </section>
   );
 }

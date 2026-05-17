@@ -7,6 +7,7 @@ export const PATIENT_PROFILES = {
     label: "Mild Cognitive Impairment",
     condition: "Mild Cognitive Impairment",
     summary: "Needs familiar controls, clear navigation, low clutter, and forgiving task flow.",
+    focusKeywords: ["Familiar controls", "Clear navigation", "Low clutter", "Forgiving flow"],
     enabledDetectors: [
       "Weak Information Prominence",
       "Poor Heading Structure",
@@ -30,6 +31,7 @@ export const PATIENT_PROFILES = {
     label: "Autism-related Needs",
     condition: "Autism-related Needs",
     summary: "Needs literal language, consistent structure, low clutter, and reduced sensory distraction.",
+    focusKeywords: ["Clear language · Predictable flow · Low clutter · Calm layout"],
     enabledDetectors: [
       "Poor Heading Structure",
       "Navigation Complexity",
@@ -52,9 +54,10 @@ export const PATIENT_PROFILES = {
     ],
   },
   Tal: {
-    label: "Dyslexia & Motor Support",
+    label: "Dyslexia-related Needs",
     condition: "Dyslexia & Motor Support",
     summary: "Needs readable structure, stronger headings, clearer recovery, and easier interaction targets.",
+    focusKeywords: ["Readable content · Clear headings · Easier targets · Error recovery"],
     enabledDetectors: [
       "Dense Text Detection",
       "Sentence Complexity",
@@ -81,9 +84,10 @@ export const PATIENT_PROFILES = {
     ],
   },
   Yuki: {
-    label: "ADHD-friendly Focus",
+    label: "ADHD-related Needs",
     condition: "ADHD-friendly Focus",
     summary: "Needs reduced distraction, clear chunking, stronger focus guidance, and calmer task flow.",
+    focusKeywords: ["Low distraction · Clear chunks · Better focus · Calm flow"],
     enabledDetectors: [
       "Auto-Moving Content",
       "Excessive Interruptions",

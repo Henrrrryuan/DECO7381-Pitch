@@ -308,12 +308,11 @@ function dimensionBaseOrderIndex(name) {
 }
 
 function renderPatientSwitcher() {
-  const summaryNode = document.getElementById("patientProfileSummary");
-  if (summaryNode) {
+  const focusChipsNode = document.getElementById("patientProfileFocusChips");
+  if (focusChipsNode) {
     const profile = activePatientProfile();
-    summaryNode.innerHTML = `
-      <span>${escapeHtml(profile.summary)}</span>
-    `;
+    const keywords = Array.isArray(profile.focusKeywords) ? profile.focusKeywords : [];
+    focusChipsNode.textContent = keywords.length ? keywords.join(" · ") : "";
   }
 
   document.querySelectorAll("[data-patient-profile]").forEach((button) => {

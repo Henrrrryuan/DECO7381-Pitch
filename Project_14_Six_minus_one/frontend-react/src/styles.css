@@ -59,6 +59,7 @@ body {
 .dashboard-body {
   height: 100vh;
   overflow: hidden;
+  --sidebar-width: 520px;
 }
 
 button,
@@ -1448,7 +1449,7 @@ body.analysis-loading-active {
 
 .tool-sidebar-shell {
   position: relative;
-  width: var(--sidebar-width, 450px);
+  width: var(--sidebar-width, 500px);
   min-width: 80px;
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 100%);
@@ -1532,9 +1533,14 @@ body.analysis-loading-active {
   display: grid;
   align-content: start;
   gap: 14px;
-  padding: 18px 20px;
+  padding: 12px 20px 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.sidebar-detail-panel-vcs .sidebar-detail-scroll,
+.sidebar-detail-panel-issues .sidebar-detail-scroll {
+  padding-top: 10px;
 }
 
 .sidebar-detail-heading {
@@ -1578,10 +1584,10 @@ body.analysis-loading-active {
   max-width: 100%;
   align-self: center;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 0;
+  gap: 5px;
+  min-height: 92px;
   padding: 12px 14px;
   text-align: center;
   border: 1px solid #d7dbe3;
@@ -1599,10 +1605,12 @@ body.analysis-loading-active {
     background-color 250ms ease;
 }
 
-.sidebar-panel-nav.sidebar-panel-switch-bottom,
-.sidebar-panel-nav.sidebar-panel-switch-top {
+.sidebar-panel-nav-slot {
   flex: 0 0 auto;
-  margin: 8px 10px 10px;
+  margin: 10px 10px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
   border: 1px solid #d7dbe3;
   border-radius: 14px;
 }
@@ -1632,17 +1640,16 @@ body.analysis-loading-active {
   text-transform: uppercase;
 }
 
-.sidebar-panel-nav-kicker {
+.sidebar-panel-nav-direction {
   position: relative;
   z-index: 1;
   margin: 0;
-  color: inherit;
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
+  color: #2f6feb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
   text-transform: uppercase;
-  opacity: 0.72;
 }
 
 .sidebar-panel-nav-title {
@@ -1656,38 +1663,12 @@ body.analysis-loading-active {
   letter-spacing: 0.01em;
 }
 
-.sidebar-panel-nav:hover .sidebar-panel-nav-kicker {
-  opacity: 0.88;
-}
-
 .sidebar-panel-nav-meta {
   margin: 0;
   color: #475569;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
-}
-
-.sidebar-panel-nav .sidebar-panel-switch-icon {
-  position: relative;
-  z-index: 1;
-  align-self: center;
-}
-
-.sidebar-panel-nav-next .sidebar-panel-switch-icon {
-  margin-top: 4px;
-}
-
-.sidebar-panel-nav-prev .sidebar-panel-switch-icon {
-  margin: 2px auto 1px;
-}
-
-.sidebar-panel-nav .sidebar-panel-switch-icon-down {
-  border-top-color: currentColor;
-}
-
-.sidebar-panel-nav .sidebar-panel-switch-icon-up {
-  border-bottom-color: currentColor;
 }
 
 .sidebar-panel-switch:not(.sidebar-panel-nav):hover {
@@ -1852,6 +1833,75 @@ body.analysis-loading-active {
   padding-top: 4px;
 }
 
+.sidebar-detail-panel-issues .sidebar-detail-scroll .sidebar-audience-findings-card.vicram-dashboard-card,
+.sidebar-detail-panel-issues .sidebar-detail-scroll .sidebar-issues-findings-group {
+  margin: 0 0 12px;
+}
+
+.sidebar-audience-findings-card .patient-profile-panel {
+  border-bottom: 0;
+  padding: 0;
+  gap: 12px;
+  background: transparent;
+}
+
+.sidebar-audience-findings-card .patient-profile-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #42526b;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group {
+  padding: 18px 0px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .detection-gauge-panel {
+  margin: 0;
+  padding: 0 0 8px;
+  background: transparent;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .sidebar-issues-findings-list {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .sidebar-explanation-content .pane-scroll {
+  align-self: stretch;
+  width: 100%;
+  max-width: none;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .explanation-accordion-summary {
+  padding: 10px 16px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .explanation-accordion-content {
+  padding: 0 16px 16px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .issue-summary-toggle {
+  padding: 12px 16px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .issue-summary-body {
+  padding: 0 16px 14px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .issue-rationale-summary {
+  padding: 10px 14px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .issue-rationale-inner {
+  padding: 0 14px 12px;
+}
+
+.sidebar-detail-panel-issues .sidebar-issues-findings-group .issue-element-chip {
+  padding: 10px 12px;
+}
+
 .patient-profile-panel {
   display: grid;
   gap: 12px;
@@ -1920,49 +1970,61 @@ body.analysis-loading-active {
   box-shadow: 0 10px 20px rgba(47, 99, 245, 0.24);
 }
 
-.patient-profile-summary {
+.patient-profile-selected-focus {
   margin: 0;
   display: grid;
-  gap: 4px;
-  color: #475569;
+  gap: 6px;
+}
+.patient-profile-focus-chips {
+  margin: 0;
   font-size: 12px;
+  font-weight: 600;
   line-height: 1.45;
+  color: #334155;
+  text-wrap: balance;
 }
 
-.patient-profile-summary strong {
-  color: #0f172a;
-  font-size: 13px;
+.detection-gauge-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .detection-gauge-panel {
   border-bottom: 0;
-  padding: 14px 20px 0px;
+  padding: 14px 20px 0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
 .detection-gauge-value {
+  width: 100%;
   text-align: center;
+  line-height: 1;
 }
 
 .detection-gauge-value strong {
-  font-size: 3.1rem;
+  font-size: 3.25rem;
   font-weight: 850;
   color: #0f172a;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
-.detection-gauge-card {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
+.detection-gauge-findings.is-placeholder .detection-gauge-value strong {
+  color: #94a3b8;
 }
 
-.detection-gauge-title {
+.detection-gauge-copy {
+  width: 100%;
+}
+
+.detection-gauge-label {
   margin: 0;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
   color: #475569;
 }
 
