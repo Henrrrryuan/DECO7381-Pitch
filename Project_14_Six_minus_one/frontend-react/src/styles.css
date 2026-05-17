@@ -2508,45 +2508,59 @@ body.analysis-loading-active {
   transform: none;
 }
 
-.vicram-dashboard-score-card .vicram-dashboard-actions--stacked {
+.vicram-dashboard-score-card .vicram-dashboard-actions--inline {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.vicram-dashboard-score-card .vicram-dashboard-actions--stacked .vicram-dashboard-primary-action {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  min-height: 38px;
-  font-size: 12px;
 }
 
-.vicram-dashboard-actions--stacked .vicram-dashboard-details-link {
-  min-height: 0;
-  border: 0;
-  background: transparent;
-  padding: 2px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.35;
-  cursor: pointer;
-  text-align: center;
-}
-
-.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:hover:not(:disabled),
-.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:focus-visible:not(:disabled) {
+.vicram-dashboard-score-card .vicram-dashboard-secondary-action {
+  flex: 1 1 0;
+  min-width: min(100%, 148px);
+  min-height: 34px;
+  padding: 7px 16px;
+  border: 1px solid rgba(37, 99, 235, 0.52);
+  border-radius: 7px;
+  background: #fff;
   color: #1d4ed8;
-  text-decoration: underline;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(47, 111, 235, 0.14);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
-.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:focus-visible {
+.vicram-dashboard-score-card .vicram-dashboard-secondary-action:hover:not(:disabled) {
+  background: #edf4ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(47, 111, 235, 0.22);
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-secondary-action:focus-visible:not(:disabled) {
+  background: #edf4ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}
+
+.vicram-dashboard-score-card .vicram-dashboard-secondary-action:focus-visible {
   outline: 2px solid rgba(47, 111, 235, 0.45);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
-.vicram-dashboard-actions--stacked .vicram-dashboard-details-link:disabled {
+.vicram-dashboard-score-card .vicram-dashboard-secondary-action:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }

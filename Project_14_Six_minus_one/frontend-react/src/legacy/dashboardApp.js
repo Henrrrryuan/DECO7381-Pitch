@@ -507,7 +507,7 @@ function renderVicramDashboardPanelLegacy() {
     : vicram.loading
       ? "Calculating"
       : "Not run";
-  const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
+  const buttonLabel = vicram.gridVisible ? "View Webpage" : "Complexity Map";
   const canToggle = Boolean(source.kind);
   const canShowReport = hasResultForTarget && !vicram.loading;
   const page = hasResultForTarget ? vicram.result?.page || {} : {};
@@ -711,7 +711,7 @@ function renderVicramDashboardPanel() {
     : vicram.loading
       ? "Calculating"
       : "Not run";
-  const buttonLabel = vicram.gridVisible ? "Show Webpage" : "Show Grid";
+  const mapButtonLabel = vicram.gridVisible ? "View webpage" : "View complexity map";
   const canToggle = Boolean(source.kind);
   const canShowReport = hasResultForTarget && !vicram.loading;
   const numericVcs = Number(vcs);
@@ -753,17 +753,17 @@ function renderVicramDashboardPanel() {
           ${vicram.error ? `<p class="vicram-dashboard-error">${escapeHtml(vicram.error)}</p>` : ""}
         </div>
         ${scoreScaleMarkup}
-        <div class="vicram-dashboard-actions vicram-dashboard-actions--stacked">
+        <div class="vicram-dashboard-actions vicram-dashboard-actions--inline">
           <button
             id="vicramToggleGridButton"
-            class="vicram-dashboard-primary-action"
+            class="vicram-dashboard-secondary-action"
             type="button"
             ${canToggle ? "" : "disabled"}
             data-accessibility-tooltip="Toggle the right preview between the webpage and the ViCRAM grid overlay."
-          >${escapeHtml(buttonLabel)}</button>
+          >${escapeHtml(mapButtonLabel)}</button>
           <button
             id="vicramReportButton"
-            class="vicram-dashboard-details-link"
+            class="vicram-dashboard-secondary-action"
             type="button"
             ${canShowReport ? "" : "disabled"}
             data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
