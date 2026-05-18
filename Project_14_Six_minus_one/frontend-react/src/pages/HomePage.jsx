@@ -11,27 +11,31 @@ const GUIDE_COMPLETE_STORAGE_KEY = "cognilens.home-guide.complete";
 const GUIDE_BUBBLE_STEPS = [
   {
     title: "Choose Input",
-    body: "Use Website URL or Upload on the right to start an analysis.",
+    body: "Enter a URL or upload HTML / ZIP to start the analysis.",
   },
   {
-    title: "Use the Dashboard",
-    body: "Pick an audience, then browse issue cards and the page preview.",
+    title: "Review Complexity Map",
+    body: "Check the score and map to spot busier page areas.",
   },
   {
-    title: "Open Issue Cards",
-    body: "Each card shows a finding, its evidence, and where it appears.",
+    title: "Open Findings",
+    body: "Switch to issue-level cognitive accessibility risk signals.",
   },
   {
-    title: "Read Redesign Hints",
-    body: "See why it matters and the first change to try for each issue.",
+    title: "Choose Focus",
+    body: "Use a focus profile as a review lens, not a diagnosis.",
   },
   {
-    title: "Issues Count",
-    body: "The number lists findings for this run—not a pass/fail score.",
+    title: "Select Elements",
+    body: "Open issue cards and highlight affected elements in the preview.",
   },
   {
-    title: "Use Eye Tracking",
-    body: "Open Eye Tracking from the top bar; History saves past runs.",
+    title: "Read Guidance",
+    body: "Review why it matters and the first redesign move to try.",
+  },
+  {
+    title: "Optional Eye Tracking",
+    body: "Use gaze evidence as optional support, not proof of accessibility.",
   },
 ];
 
