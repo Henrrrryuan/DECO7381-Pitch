@@ -75,7 +75,6 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
     scSentenceEvidenceMetricsLine,
     scPrimaryPattern,
     scSecondaryPatterns,
-    scCompressedSentencePreview,
     lcLexicalEvidenceMetricsLine,
     lcCompactSampleWords,
     NC_GROUPED_METRICS_FALLBACK,
@@ -99,7 +98,6 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
   let ncMetricsLine = "";
   let ncTechnicalLine = "";
   let scMetricsLine = "";
-  let scPreviewLine = "";
   let lcMetricsLine = "";
   let lcSamplesLine = "";
   let meta = "";
@@ -116,7 +114,6 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
       console.warn("[SC-1 debug] Sentence metrics unavailable (chip) — raw location:", location);
     }
     scMetricsLine = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
-    scPreviewLine = String(location.sentence_preview || "").trim();
   } else if (isLc) {
     lcMetricsLine = lcLexicalEvidenceMetricsLine(location);
     lcSamplesLine = lcCompactSampleWords(location);
@@ -160,7 +157,6 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
       <small class="issue-element-chip__sc-primary">${escapeHtml(primaryLine)}</small>
       <small class="issue-element-chip__sc-metrics">${escapeHtml(scMetricsLine)}</small>
       ${secondaryLine ? `<small class="issue-element-chip__sc-secondary summary-muted">${escapeHtml(secondaryLine)}</small>` : ""}
-      ${scPreviewLine ? `<small class="issue-element-chip__sc-preview summary-muted">${escapeHtml(scCompressedSentencePreview(scPreviewLine))}</small>` : ""}
     </button>
   `;
   }

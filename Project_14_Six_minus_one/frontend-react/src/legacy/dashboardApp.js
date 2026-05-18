@@ -1799,11 +1799,7 @@ function locationMetaText(location, elementNumber = null, issueRuleId = "") {
     const primary = scPrimaryPattern(location);
     const secondary = scSecondaryPatterns(location);
     const secondaryPart = secondary.length ? ` · Secondary: ${secondary.join(" · ")}` : "";
-    const previewRaw = String(location.sentence_preview || "").trim();
-    const previewCompact = previewRaw
-      ? scCompressedSentencePreview(previewRaw).replace(/\n/g, " ")
-      : "";
-    const core = [primary, metrics, previewCompact].filter(Boolean).join(" — ");
+    const core = [primary, metrics].filter(Boolean).join(" — ");
     return `${elementPrefix}${core}${secondaryPart}`;
   }
   if (issueRuleId === "LC-1" || location?.rule_id === "LC-1") {
@@ -2066,7 +2062,6 @@ function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber
   let ncMetricsLine = "";
   let ncTechnicalLine = "";
   let scMetricsLine = "";
-  let scPreviewLine = "";
   let lcMetricsLine = "";
   let lcSamplesLine = "";
   let meta = "";
@@ -2083,7 +2078,6 @@ function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber
       console.warn("[SC-1 debug] Sentence metrics unavailable (chip) — raw location:", location);
     }
     scMetricsLine = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
-    scPreviewLine = String(location.sentence_preview || "").trim();
   } else if (isLc) {
     lcMetricsLine = lcLexicalEvidenceMetricsLine(location);
     lcSamplesLine = lcCompactSampleWords(location);
@@ -2126,7 +2120,6 @@ function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber
       <small class="issue-element-chip__sc-primary">${escapeHtml(primaryLine)}</small>
       <small class="issue-element-chip__sc-metrics">${escapeHtml(scMetricsLine)}</small>
       ${secondaryLine ? `<small class="issue-element-chip__sc-secondary summary-muted">${escapeHtml(secondaryLine)}</small>` : ""}
-      ${scPreviewLine ? `<small class="issue-element-chip__sc-preview summary-muted">${escapeHtml(scCompressedSentencePreview(scPreviewLine))}</small>` : ""}
     </button>
   `;
   }
