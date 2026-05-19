@@ -3314,7 +3314,7 @@ function describeVicramCellComplexity(cell) {
   }
 
   return [
-    `Grid position: ${Number(cell?.row || 0) + 1}-${Number(cell?.column || 0) + 1}`,
+    `Grid position: ${Number(cell?.row || 0)}-${Number(cell?.column || 0)}`,
     `VCS ${formatVicramMetric(cell?.vcs, 4)}`,
     `Reason: ${factors.join(", ")}`,
   ].join(" | ");
