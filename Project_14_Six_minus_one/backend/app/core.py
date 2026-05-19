@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EYE_DIR = PROJECT_ROOT / "eye"
 EYE_TEMP_HTML_DIR = PROJECT_ROOT / "backend" / "data" / "eye_temp_html"
 MAX_EYE_TEMP_HTML_BYTES = 2 * 1024 * 1024  # 2 MiB (UTF-8 encoded body)
-MAX_ZIP_UPLOAD_BYTES = 80 * 1024 * 1024  # 80MB
+MAX_ZIP_UPLOAD_BYTES = 100 * 1024 * 1024  # 100MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parents[1] / "sample_input"
 SAMPLE_FILE_MAP = {
     "simple": SAMPLE_INPUT_DIR / "simple-page.html",
@@ -73,4 +73,3 @@ class AssistantChatPayload(BaseModel):
 
 
 # Keep only shared app-level constants and request payload schemas here.
-

@@ -7,6 +7,16 @@ import { savePendingAnalysis } from "../lib/pendingAnalysisStore.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const GUIDE_COMPLETE_STORAGE_KEY = "cognilens.home-guide.complete";
+const BYTES_PER_MB = 1024 * 1024;
+const HTML_SOFT_LIMIT_BYTES = 2 * BYTES_PER_MB;
+const HTML_HARD_LIMIT_BYTES = 5 * BYTES_PER_MB;
+const ZIP_HARD_LIMIT_BYTES = 100 * BYTES_PER_MB;
+const LARGE_FILE_WARNING =
+  "Large files may take longer to stage and preview. For the most stable demo, use files under 10MB and avoid large media assets.";
+const HTML_HARD_LIMIT_MESSAGE =
+  "This HTML file is too large for the browser-based demo flow. Please use a self-contained HTML file under 5MB, or test a live/local URL instead.";
+const ZIP_HARD_LIMIT_MESSAGE =
+  "This ZIP package is too large for the browser-based demo flow. Please use a ZIP under 100MB, or test a live/local URL instead.";
 
 const GUIDE_BUBBLE_STEPS = [
   {
@@ -121,6 +131,35 @@ function readFileAsDataUrl(uploadFile) {
   });
 }
 
+function fileBoundaryFor(candidateFile) {
+  if (!candidateFile) {
+    return { level: "none", message: "" };
+  }
+  const size = Number(candidateFile.size || 0);
+  if (isHtmlFile(candidateFile)) {
+    if (size > HTML_HARD_LIMIT_BYTES) {
+      return { level: "error", message: HTML_HARD_LIMIT_MESSAGE };
+    }
+    if (size > HTML_SOFT_LIMIT_BYTES) {
+      return { level: "warning", message: LARGE_FILE_WARNING };
+    }
+    return { level: "none", message: "" };
+  }
+  if (isZipFile(candidateFile)) {
+    if (size > ZIP_HARD_LIMIT_BYTES) {
+      return { level: "error", message: ZIP_HARD_LIMIT_MESSAGE };
+    }
+    return { level: "none", message: "" };
+  }
+  return { level: "error", message: "Only HTML and ZIP files are supported on the upload page." };
+}
+
+function fileReadyMessage(candidateFile) {
+  const sizeMb = Number(candidateFile?.size || 0) / BYTES_PER_MB;
+  const sizeLabel = sizeMb >= 0.1 ? ` (${sizeMb.toFixed(1)}MB)` : "";
+  return `${candidateFile.name}${sizeLabel} is ready for analysis.`;
+}
+
 export function HomePage() {
   useEffect(() => {
     document.body.classList.add("upload-body");
@@ -133,12 +172,16 @@ export function HomePage() {
   const [workflow, setWorkflow] = useState("url");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ message: "", isError: false });
+  const [fileBoundary, setFileBoundary] = useState({ level: "none", message: "" });
   const [dropDragging, setDropDragging] = useState(false);
   const [guideStepIndex, setGuideStepIndex] = useState(0);
   const [viewedGuideSteps, setViewedGuideSteps] = useState(loadInitialViewedGuideSteps);
 
   const urlValid = useMemo(() => Boolean(String(url).trim()) && !loading, [url, loading]);
-  const fileValid = useMemo(() => Boolean(file) && !loading, [file, loading]);
+  const fileValid = useMemo(
+    () => Boolean(file) && !loading && fileBoundary.level !== "error",
+    [file, loading, fileBoundary.level],
+  );
   const guideUnlocked = viewedGuideSteps.size >= GUIDE_BUBBLE_STEPS.length;
 
   useEffect(() => {
@@ -277,6 +320,12 @@ export function HomePage() {
     if (!guideUnlocked || !file || loading) {
       return;
     }
+    const boundary = fileBoundaryFor(file);
+    setFileBoundary(boundary);
+    if (boundary.level === "error") {
+      setStatusMessage(boundary.message, true);
+      return;
+    }
     setLoading(true);
     setStatusMessage("Opening the analysis progress page...");
     try {
@@ -330,16 +379,26 @@ export function HomePage() {
     const [next] = event.target.files || [];
     if (!next) {
       setFile(null);
+      setFileBoundary({ level: "none", message: "" });
       return;
     }
     if (!isHtmlFile(next) && !isZipFile(next)) {
       event.target.value = "";
       setFile(null);
+      setFileBoundary({ level: "error", message: "Only HTML and ZIP files are supported on the upload page." });
       setStatusMessage("Only HTML and ZIP files are supported on the upload page.", true);
       return;
     }
+    const boundary = fileBoundaryFor(next);
+    setFileBoundary(boundary);
+    if (boundary.level === "error") {
+      event.target.value = "";
+      setFile(null);
+      setStatusMessage(boundary.message, true);
+      return;
+    }
     setFile(next);
-    setStatusMessage(`${next.name} is ready for analysis.`);
+    setStatusMessage(boundary.message || fileReadyMessage(next));
   };
 
   const onDrop = (event) => {
@@ -354,7 +413,20 @@ export function HomePage() {
       return;
     }
     if (!isHtmlFile(dropped) && !isZipFile(dropped)) {
+      setFile(null);
+      setFileBoundary({ level: "error", message: "Only HTML and ZIP files are supported on the upload page." });
       setStatusMessage("Only HTML and ZIP files are supported on the upload page.", true);
+      return;
+    }
+    const boundary = fileBoundaryFor(dropped);
+    setFileBoundary(boundary);
+    if (boundary.level === "error") {
+      const input = document.getElementById("uploadInput");
+      if (input) {
+        input.value = "";
+      }
+      setFile(null);
+      setStatusMessage(boundary.message, true);
       return;
     }
     const input = document.getElementById("uploadInput");
@@ -368,7 +440,7 @@ export function HomePage() {
       }
     }
     setFile(dropped);
-    setStatusMessage(`${dropped.name} is ready for analysis.`);
+    setStatusMessage(boundary.message || fileReadyMessage(dropped));
   };
 
   const isUrlWorkflow = workflow === "url";
@@ -517,7 +589,10 @@ export function HomePage() {
                   disabled={!guideUnlocked}
                   data-workflow-option="url"
                   data-accessibility-tooltip="Use this option when the page is running in a browser and can be reached by URL."
-                  onClick={() => setWorkflow("url")}
+                  onClick={() => {
+                    setWorkflow("url");
+                    setStatusMessage("");
+                  }}
                 >
                   <span className="workflow-option-title">Website URL</span>
                   <span className="workflow-option-copy">
@@ -535,7 +610,10 @@ export function HomePage() {
                   data-accessibility-tooltip="Use this option when you want to analyze a saved HTML file or ZIP package."
                   onClick={() => {
                     setWorkflow("file");
-                    setStatusMessage(file ? `${file.name} is ready for analysis.` : "");
+                    setStatusMessage(
+                      fileBoundary.message || (file ? fileReadyMessage(file) : ""),
+                      fileBoundary.level === "error",
+                    );
                   }}
                 >
                   <span className="workflow-option-title">Upload File</span>
