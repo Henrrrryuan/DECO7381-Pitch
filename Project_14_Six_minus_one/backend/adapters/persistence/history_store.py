@@ -192,7 +192,7 @@ def _vicram_risk_from_vcs(vcs: float) -> tuple[str, str]:
 
 
 def _vicram_summary_text(vcs: float, risk_label: str) -> str:
-    return f"VCS {vcs:.1f}: {risk_label}."
+    return f"Visual Complexity Score {vcs:.1f}: {risk_label}."
 
 
 def _top_vicram_cells(cells: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:

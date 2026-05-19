@@ -593,20 +593,20 @@ function renderVicramDashboardPanelLegacy() {
       <dl class="vicram-dashboard-metrics">
         <div><dt>Words</dt><dd>${escapeHtml(String(page.word_count ?? 0))}</dd></div>
         <div><dt>Images</dt><dd>${escapeHtml(String(page.images ?? 0))}</dd></div>
-        <div><dt>TLC</dt><dd>${escapeHtml(formatVicramWholeNumber(page.tlc))}</dd></div>
+        <div><dt>Top Left Corner Count</dt><dd>${escapeHtml(formatVicramWholeNumber(page.tlc))}</dd></div>
         <div><dt>Grid</dt><dd>${escapeHtml(`${grid.rows || VICRAM_GRID_ROWS} x ${grid.columns || VICRAM_GRID_COLUMNS}`)}</dd></div>
       </dl>
       <div class="vicram-dashboard-detail-list">
         <p><span>Source</span><strong>${escapeHtml(targetLabel)}</strong></p>
-        <p><span>Formula</span><strong>${escapeHtml(grid.formula || "1.743 + 0.097*TLC + 0.053*Words + 0.003*Images")}</strong></p>
+        <p><span>Formula</span><strong>${escapeHtml(grid.formula || "Grid Visual Complexity Score = (1.743 + 0.097 * Top Left Corner Count + 0.053 * Word Count + 0.003 * Images) / 10")}</strong></p>
         <p><span>Detected positions</span><strong>text ${escapeHtml(String(debug.text_rects ?? 0))}, images ${escapeHtml(String(debug.image_rects ?? 0))}, elements ${escapeHtml(String(debug.element_rects ?? 0))}</strong></p>
-        ${topCell ? `<p><span>Highest cell</span><strong>${escapeHtml(`${topCell.row}-${topCell.column}`)} · ${Number(topCell.vcs || 0).toFixed(4)} VCS</strong></p>` : ""}
+        ${topCell ? `<p><span>Highest cell</span><strong>${escapeHtml(`${topCell.row}-${topCell.column}`)} · ${Number(topCell.vcs || 0).toFixed(4)} Visual Complexity Score</strong></p>` : ""}
       </div>
     `
     : `
       <div class="vicram-dashboard-detail-list">
         <p><span>Source</span><strong>${escapeHtml(targetLabel)}</strong></p>
-        <p><span>Status</span><strong>${vicram.loading ? "Calculating visual complexity..." : "Run analysis to show VCS metrics."}</strong></p>
+        <p><span>Status</span><strong>${vicram.loading ? "Calculating visual complexity..." : "Run analysis to show Visual Complexity Score metrics."}</strong></p>
       </div>
     `;
 
@@ -652,9 +652,9 @@ function renderVicramDashboardPanelLegacy() {
       </p>
       <ul>
         <li><strong>Colour range:</strong> green = lower grid complexity, yellow = medium, red = higher.</li>
-        <li><strong>Grid colour:</strong> cells are ranked by their VCS, then limited by the whole-page VCS so a simple page cannot become fully red.</li>
-        <li><strong>Factors:</strong> words, images, TLC, and detected style or element positions are mapped into the visible grid.</li>
-        <li><strong>Formula:</strong> base + TLC weight + word weight + image weight, normalized to the 0-10 VCS scale.</li>
+        <li><strong>Grid colour:</strong> cells are ranked by their Visual Complexity Score, then limited by the whole-page Visual Complexity Score so a simple page cannot become fully red.</li>
+        <li><strong>Factors:</strong> words, images, Top Left Corner Count, and detected style or element positions are mapped into the visible grid.</li>
+        <li><strong>Formula:</strong> base + Top Left Corner Count weight + word weight + image weight, normalized to the 0-10 Visual Complexity Score scale.</li>
       </ul>
     </section>
   `;
@@ -867,10 +867,10 @@ function vicramTopCellsTableMarkup(result) {
         <thead>
           <tr>
             <th>Grid</th>
-            <th>VCS</th>
+            <th>Visual Complexity Score</th>
             <th>Words</th>
             <th>Images</th>
-            <th>TLC</th>
+            <th>Top Left Corner Count</th>
           </tr>
         </thead>
         <tbody>
@@ -921,7 +921,7 @@ function showVicramReportModal() {
       <header class="vicram-report-header">
         <div>
           <span>ViCRAM Summary Report</span>
-          <h2>${Number(page.vcs || 0).toFixed(4)} VCS</h2>
+          <h2>${Number(page.vcs || 0).toFixed(4)} Visual Complexity Score</h2>
           <p>${escapeHtml(sourceLabel)}</p>
         </div>
         <button type="button" class="vicram-report-close" data-vicram-report-close aria-label="Close ViCRAM report">Close</button>
@@ -931,12 +931,12 @@ function showVicramReportModal() {
         <article><span>Images</span><strong>${escapeHtml(String(page.images ?? 0))}</strong></article>
         <article>
           <span class="vicram-report-metric-label">
-            TLC
+            Top Left Corner Count
             <button
               type="button"
               class="vicram-report-help"
-              aria-label="TLC definition"
-              data-tlc-tooltip="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
+              aria-label="Top Left Corner Count definition"
+              data-tlc-tooltip="Top Left Corner Count means the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
             >?</button>
           </span>
           <strong>${escapeHtml(formatVicramWholeNumber(page.tlc))}</strong>
@@ -3315,9 +3315,10 @@ function describeVicramCellComplexity(cell) {
 
   return [
     `Grid position: ${Number(cell?.row || 0)}-${Number(cell?.column || 0)}`,
-    `VCS ${formatVicramMetric(cell?.vcs, 4)}`,
-    `Reason: ${factors.join(", ")}`,
-  ].join(" | ");
+    `Visual Complexity Score: ${formatVicramMetric(cell?.vcs, 4)}`,
+    "Reason:",
+    ...factors.map((factor) => `- ${factor}`),
+  ].join("\n");
 }
 
 function buildVicramHotspotMarkup(result) {
@@ -3335,9 +3336,10 @@ function buildVicramHotspotMarkup(result) {
       const row = Number(cell.row) || 0;
       const column = Number(cell.column) || 0;
       const tooltip = describeVicramCellComplexity(cell);
+      const side = column >= columns - 5 ? "left" : "right";
       return `
         <button
-          class="vicram-cell-hotspot"
+          class="vicram-cell-hotspot vicram-cell-hotspot--${side}"
           type="button"
           style="left:${(column / columns) * 100}%; top:${(row / rows) * 100}%; width:${100 / columns}%; height:${100 / rows}%;"
           data-tooltip="${escapeHtml(tooltip)}"
@@ -3405,8 +3407,8 @@ function buildVicramGridHtml(result) {
     .vicram-cell-hotspot::after {
       content: attr(data-tooltip);
       position: absolute;
-      left: 10px;
-      top: 10px;
+      left: calc(100% + 10px);
+      top: 50%;
       width: min(320px, 38vw);
       max-width: 360px;
       padding: 10px 12px;
@@ -3416,19 +3418,24 @@ function buildVicramGridHtml(result) {
       font-size: 13px;
       line-height: 1.45;
       text-align: left;
+      white-space: pre-line;
       box-shadow: 0 14px 32px rgba(15, 23, 42, 0.28);
       opacity: 0;
       visibility: hidden;
-      transform: translateY(-6px);
+      transform: translateY(-50%) translateX(-6px);
       transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
       pointer-events: none;
-      white-space: normal;
+    }
+    .vicram-cell-hotspot--left::after {
+      left: auto;
+      right: calc(100% + 10px);
+      transform: translateY(-50%) translateX(6px);
     }
     .vicram-cell-hotspot:hover::after,
     .vicram-cell-hotspot:focus-visible::after {
       opacity: 1;
       visibility: visible;
-      transform: translateY(0);
+      transform: translateY(-50%) translateX(0);
     }
   </style>
 </head>
