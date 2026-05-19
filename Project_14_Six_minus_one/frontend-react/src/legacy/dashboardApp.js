@@ -343,6 +343,12 @@ function setSidebarDetailMode(mode) {
   sidebar.querySelectorAll("[data-sidebar-panel-target]").forEach((button) => {
     button.setAttribute("aria-expanded", String(button.dataset.sidebarPanelTarget === nextMode));
   });
+
+  // Leaving Visual complexity while the grid map is open should restore the analyzed webpage
+  // in the right preview (Issue-level guidance expects webpage highlight, not ViCRAM overlay).
+  if (nextMode === "issues" && vicramState().gridVisible) {
+    restoreWebsitePreviewFromVicram();
+  }
 }
 
 function setActivePatientProfile(profileName) {
@@ -3136,6 +3142,50 @@ function toggleIssueElementExpansion(dimensionName, ruleId, expanded) {
     delete state.expandedIssueElementKeys[key];
   }
   renderExplanation(state.currentResult);
+  restoreActiveElementHighlightAfterIssueListChange(dimensionName, ruleId);
+}
+
+function restoreActiveElementHighlightAfterIssueListChange(dimensionName, ruleId) {
+  const issueId = issueDomId(dimensionName, ruleId);
+  updateActiveHighlightButtons();
+
+  if (
+    state.selectedIssueId !== issueId
+    || state.selectedElementNumber <= 0
+    || state.rightPanelMode !== "preview"
+  ) {
+    return;
+  }
+
+  const selected = selectedIssueRecord();
+  if (!selected) {
+    return;
+  }
+
+  const elementNumber = state.selectedElementNumber;
+  const locations = Array.isArray(selected.issue?.locations) ? selected.issue.locations : [];
+  const location = locations[elementNumber - 1] || null;
+  const isNonHighlightable = location?.highlightable === false
+    || (String(location?.tag || "").toLowerCase() === "audio" && /autoplay/i.test(String(location?.label || "")));
+  if (isNonHighlightable) {
+    return;
+  }
+
+  runHighlightAfterIframeLayoutStable(() => {
+    const stillSelected = (
+      state.selectedIssueId === issueId
+      && state.selectedElementNumber === elementNumber
+      && state.rightPanelMode === "preview"
+    );
+    if (!stillSelected) {
+      return;
+    }
+    void highlightIssueElementInPreview(
+      selected.dimension.dimension,
+      selected.issue.rule_id,
+      elementNumber,
+    );
+  });
 }
 
 function isProbablyUrl(value) {
