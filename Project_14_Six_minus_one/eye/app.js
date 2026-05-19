@@ -57,7 +57,9 @@ const state = {
   pausedAtPerf: 0,
   saving: false,
   savedThisRun: false,
-  lastSavedSessionId: ""
+  lastSavedSessionId: "",
+  /** When true, pause/review mode shows the heatmap overlay; hidden during active tracking. */
+  heatmapReviewVisible: false
 };
 
 let calibrationLayoutSyncQueued = false;
@@ -395,7 +397,8 @@ state.cellCounts = new Array(state.gridCols * state.gridRows).fill(0);
 state.attentionSummary = createAttentionSummaryState();
 const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
-const TRACKING_START_DELAY_MS = 1200;
+const TRACKING_START_DELAY_MS = 2000;
+const GAZE_CLOUD_CALIBRATION_TYPE = 0;
 const INTRO_PUPIL_MAX_OFFSET = 5.5;
 
 function distance(a, b) {
@@ -1096,7 +1099,7 @@ function attachFrameScrollTracking() {
     }
     rafId = window.requestAnimationFrame(() => {
       rafId = 0;
-      renderHeatmap();
+      renderHeatmapIfReviewVisible();
       drawCoverageMap();
     });
   };
@@ -1339,6 +1342,7 @@ function resetTrackingData() {
   coverageText.textContent = "0%";
   coordsText.textContent = "x: -, y: -";
   gazeDot.style.opacity = "0";
+  setHeatmapReviewVisible(false);
   drawCoverageMap();
   updateSaveButtonState();
 }
@@ -1452,6 +1456,22 @@ function setPreviewVisibility(visible) {
   queueCalibrationLayoutSync();
 }
 
+function setHeatmapReviewVisible(visible) {
+  const nextVisible = Boolean(visible);
+  state.heatmapReviewVisible = nextVisible;
+  document.body.classList.toggle("heatmap-review-visible", nextVisible);
+  if (!nextVisible) {
+    gazeDot.style.opacity = "0";
+  }
+}
+
+function renderHeatmapIfReviewVisible() {
+  if (!state.heatmapReviewVisible) {
+    return;
+  }
+  renderHeatmap();
+}
+
 function handleTrackerStop(message) {
   state.started = false;
   state.paused = false;
@@ -1460,6 +1480,7 @@ function handleTrackerStop(message) {
   pauseBtn.textContent = "Pause";
   setTrackingControlsEnabled(false);
   setPreviewVisibility(false);
+  setHeatmapReviewVisible(false);
   gazeDot.style.opacity = "0";
   setStatus(message);
   updateSaveButtonState();
@@ -1577,9 +1598,7 @@ function handleGaze(data) {
     y: anchorToViewport ? y : y + scrollOffsets.y
   };
 
-  gazeDot.style.opacity = "1";
-  gazeDot.style.left = `${x}px`;
-  gazeDot.style.top = `${y}px`;
+  gazeDot.style.opacity = "0";
 
   const needHeatSampleByTime = now - state.lastHeatSampleTime >= HEAT_SAMPLE_INTERVAL_MS;
   const needHeatSampleByMove =
@@ -1602,7 +1621,6 @@ function handleGaze(data) {
       y: y + scrollOffsets.y
     };
 
-    renderHeatmap();
     updateAttentionSummary(point, currentDurationMs());
     updateCoverage(
       coveragePoint.x,
@@ -1626,8 +1644,8 @@ function beginTracking() {
     throw new Error("GazeCloudAPI script did not load.");
   }
 
-  // Use the simplified calibration pattern (fewer points) for faster startup.
-  window.GazeCloudAPI.CalibrationType = 1;
+  // Use the fuller calibration path so users have more time to focus before data collection.
+  window.GazeCloudAPI.CalibrationType = GAZE_CLOUD_CALIBRATION_TYPE;
   window.GazeCloudAPI.UseClickRecalibration = false;
   window.GazeCloudAPI.OnResult = handleGaze;
   window.GazeCloudAPI.OnCalibrationComplete = () => {
@@ -1660,6 +1678,7 @@ function beginTracking() {
   state.pausedDurationMs = 0;
   state.pausedAtPerf = 0;
   state.lastSavedSessionId = "";
+  setHeatmapReviewVisible(false);
   setTrackingControlsEnabled(true);
   pauseBtn.textContent = "Pause";
   setPreviewVisibility(true);
@@ -1700,9 +1719,11 @@ pauseBtn.addEventListener("click", () => {
     }
     state.lastTrackerState = null;
     pauseBtn.textContent = "Pause";
+    setHeatmapReviewVisible(false);
+    gazeDot.style.opacity = "0";
     setStatus(
       state.calibrated
-        ? "Tracking resumed."
+        ? "Tracking resumed. Heatmap hidden; gaze collection continues."
         : "Calibration in progress. Follow the GazeCloudAPI overlay."
     );
   } else {
@@ -1710,14 +1731,24 @@ pauseBtn.addEventListener("click", () => {
     state.pausedAtPerf = performance.now();
     pauseBtn.textContent = "Resume";
     gazeDot.style.opacity = "0";
-    setStatus("Tracking paused locally. GazeCloudAPI is still running.");
+    renderHeatmap();
+    setHeatmapReviewVisible(true);
+    setStatus(
+      "Tracking paused. Heatmap shown for review — click Resume to continue collecting gaze data."
+    );
   }
   updateSaveButtonState();
 });
 
 clearBtn.addEventListener("click", () => {
   resetTrackingData();
-  setStatus(state.calibrated ? "Heatmap cleared. Tracking active." : "Heatmap cleared.");
+  setStatus(
+    state.paused
+      ? "Heatmap cleared. Tracking remains paused — click Resume to collect more gaze data."
+      : state.calibrated
+        ? "Heatmap cleared. Tracking active."
+        : "Heatmap cleared."
+  );
 });
 
 loadHtmlBtn?.addEventListener("click", () => {
@@ -1763,7 +1794,7 @@ if (targetFrame) {
     attachFrameScrollTracking();
     attachCoverageDocumentResizeTracking();
     ensureCoverageCanvasFixedSize();
-    renderHeatmap();
+    renderHeatmapIfReviewVisible();
     drawCoverageMap();
     if (!state.currentTargetUrl) {
       return;
@@ -1792,7 +1823,7 @@ if (targetFrame) {
 window.addEventListener("resize", () => {
   resizeHeatmapCanvas();
   ensureCoverageCanvasFixedSize();
-  renderHeatmap();
+  renderHeatmapIfReviewVisible();
   drawCoverageMap();
 });
 
@@ -1846,6 +1877,7 @@ window.addEventListener("pointerleave", () => {
 resizeHeatmapCanvas();
 ensureCoverageCanvasFixedSize();
 drawCoverageMap();
+setHeatmapReviewVisible(false);
 setPreviewVisibility(false);
 setTrackingControlsEnabled(false);
 
