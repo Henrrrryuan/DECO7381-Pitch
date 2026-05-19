@@ -3284,11 +3284,76 @@ function buildPreviewHtml(html) {
   return `${baseMarkup}${source}`;
 }
 
+function vicramCellIsBusy(cell) {
+  const color = String(cell?.color || "").toLowerCase();
+  return color === "#ffb74c" || color === "#ed1a3d";
+}
+
+function formatVicramMetric(value, decimals = 2) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(decimals) : "0.00";
+}
+
+function describeVicramCellComplexity(cell) {
+  const factors = [];
+  const words = Number(cell?.word_count || 0);
+  const images = Number(cell?.images || 0);
+  const tlc = Number(cell?.tlc || 0);
+
+  if (words > 0) {
+    factors.push("text is dense in this area");
+  }
+  if (images > 0) {
+    factors.push("image content is concentrated here");
+  }
+  if (tlc > 0) {
+    factors.push("layout boundaries or visual sections add complexity");
+  }
+  if (!factors.length) {
+    factors.push("High relative grid rank");
+  }
+
+  return [
+    `Grid position: ${Number(cell?.row || 0) + 1}-${Number(cell?.column || 0) + 1}`,
+    `VCS ${formatVicramMetric(cell?.vcs, 4)}`,
+    `Reason: ${factors.join(", ")}`,
+  ].join(" | ");
+}
+
+function buildVicramHotspotMarkup(result) {
+  const grid = result?.grid || {};
+  const rows = Number(grid.rows) || VICRAM_GRID_ROWS;
+  const columns = Number(grid.columns) || VICRAM_GRID_COLUMNS;
+  const cells = Array.isArray(grid.cells) ? grid.cells : [];
+  if (!cells.length) {
+    return "";
+  }
+
+  return cells
+    .filter(vicramCellIsBusy)
+    .map((cell) => {
+      const row = Number(cell.row) || 0;
+      const column = Number(cell.column) || 0;
+      const tooltip = describeVicramCellComplexity(cell);
+      return `
+        <button
+          class="vicram-cell-hotspot"
+          type="button"
+          style="left:${(column / columns) * 100}%; top:${(row / rows) * 100}%; width:${100 / columns}%; height:${100 / rows}%;"
+          data-tooltip="${escapeHtml(tooltip)}"
+          aria-label="${escapeHtml(tooltip)}"
+        ></button>
+      `;
+    })
+    .join("");
+}
+
 function buildVicramGridHtml(result) {
   const screenshot = result?.artifacts?.screenshot_png_base64 || "";
   const overlay = result?.artifacts?.overlay_svg_base64 || "";
   const width = Number(result?.page?.width || 1);
   const height = Number(result?.page?.height || 1);
+  const hotspots = buildVicramHotspotMarkup(result);
 
   return `<!doctype html>
 <html>
@@ -3316,12 +3381,62 @@ function buildVicramGridHtml(result) {
       height: 100%;
       display: block;
     }
+    .vicram-stage img:first-child {
+      z-index: 1;
+    }
+    .vicram-stage img:nth-child(2) {
+      z-index: 2;
+      pointer-events: none;
+    }
+    .vicram-cell-hotspot {
+      position: absolute;
+      z-index: 3;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      cursor: help;
+    }
+    .vicram-cell-hotspot:hover,
+    .vicram-cell-hotspot:focus-visible {
+      outline: 2px solid rgba(15, 23, 42, 0.78);
+      outline-offset: -2px;
+    }
+    .vicram-cell-hotspot::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      width: min(320px, 38vw);
+      max-width: 360px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.45;
+      text-align: left;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.28);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+      pointer-events: none;
+      white-space: normal;
+    }
+    .vicram-cell-hotspot:hover::after,
+    .vicram-cell-hotspot:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
   <div class="vicram-stage">
     <img src="data:image/png;base64,${screenshot}" alt="Rendered webpage screenshot">
     <img src="data:image/svg+xml;base64,${overlay}" alt="ViCRAM grid overlay">
+    ${hotspots}
   </div>
 </body>
 </html>`;
