@@ -39,14 +39,20 @@
             title="Target page URL"
           />
           <button id="loadUrlBtn" type="button">Load URL</button>
-          <input id="loadHtmlInput" type="file" accept=".html,.htm,text/html" hidden />
-          <button id="loadHtmlBtn" type="button">Load HTML…</button>
+          <input
+            id="loadHtmlInput"
+            type="file"
+            accept=".html,.htm,text/html,.zip,application/zip,application/x-zip-compressed"
+            hidden
+          />
+          <button id="loadHtmlBtn" type="button">Load HTML/ZIP…</button>
         </div>
         <div class="url-panel-actions">
           <button id="startBtn" type="button" class="start-tracking-primary">
             Start Tracking
           </button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
+          <button id="toggleHeatmapBtn" type="button" disabled>Show Heatmap</button>
           <button id="clearBtn" type="button" disabled>Clear Heatmap</button>
           <button id="saveBtn" type="button" disabled>Save Session</button>
           <button id="aboutEyeTrackingBtn" type="button" class="about-eye-btn">About Eye Tracking</button>
@@ -150,6 +156,6 @@
     </div>
 
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-calibration-duration-1"></script>
+    <script src="./app.js?v=eye-heatmap-toggle-1"></script>
   </body>
 </html>

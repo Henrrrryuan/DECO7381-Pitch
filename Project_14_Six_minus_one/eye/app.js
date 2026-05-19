@@ -5,6 +5,7 @@ const gazeDot = document.getElementById("gazeDot");
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
+const toggleHeatmapBtn = document.getElementById("toggleHeatmapBtn");
 const clearBtn = document.getElementById("clearBtn");
 const loadHtmlBtn = document.getElementById("loadHtmlBtn");
 const loadHtmlInput = document.getElementById("loadHtmlInput");
@@ -462,6 +463,16 @@ function hideEyeIntroModal() {
 function setTrackingControlsEnabled(enabled) {
   pauseBtn.disabled = !enabled;
   clearBtn.disabled = !enabled;
+  updateHeatmapToggleButton();
+}
+
+function updateHeatmapToggleButton() {
+  if (!toggleHeatmapBtn) {
+    return;
+  }
+  toggleHeatmapBtn.disabled = !state.started;
+  toggleHeatmapBtn.textContent = state.heatmapReviewVisible ? "Hide Heatmap" : "Show Heatmap";
+  toggleHeatmapBtn.setAttribute("aria-pressed", state.heatmapReviewVisible ? "true" : "false");
 }
 
 function updateSaveButtonState() {
@@ -1268,6 +1279,60 @@ async function saveCurrentSession() {
   }
 }
 
+function isHtmlUpload(file) {
+  const lower = String(file?.name || "").toLowerCase();
+  return lower.endsWith(".html") || lower.endsWith(".htm") || file?.type === "text/html";
+}
+
+function isZipUpload(file) {
+  const lower = String(file?.name || "").toLowerCase();
+  return (
+    lower.endsWith(".zip")
+    || file?.type === "application/zip"
+    || file?.type === "application/x-zip-compressed"
+  );
+}
+
+function extractAnalyzeZipRunId(payload) {
+  return String(
+    payload?.run?.run_id
+    || payload?.analysis_id
+    || payload?.run_id
+    || "",
+  ).trim();
+}
+
+async function readApiErrorDetail(response, fallbackMessage) {
+  let detail = fallbackMessage || `HTTP ${response.status}`;
+  try {
+    const errBody = await response.json();
+    if (errBody?.detail) {
+      detail =
+        typeof errBody.detail === "string"
+          ? errBody.detail
+          : JSON.stringify(errBody.detail);
+    }
+  } catch (_) {
+    // Keep the fallback status text.
+  }
+  return detail;
+}
+
+function applyEyeSessionRunLink(runId, sourceName) {
+  const linkedRunId = String(runId || "").trim();
+  if (!linkedRunId) {
+    return false;
+  }
+  state.relatedRunId = linkedRunId;
+  if (sourceName) {
+    state.sourceName = String(sourceName).trim();
+  }
+  persistEyeLocalContext(state.relatedRunId, state.sourceName);
+  updateLinkedRunIndicator();
+  updateSaveButtonState();
+  return true;
+}
+
 async function uploadHtmlForEyeSession(file) {
   if (!loadHtmlBtn) {
     return;
@@ -1285,19 +1350,7 @@ async function uploadHtmlForEyeSession(file) {
     });
 
     if (!response.ok) {
-      let detail = `HTTP ${response.status}`;
-      try {
-        const errBody = await response.json();
-        if (errBody?.detail) {
-          detail =
-            typeof errBody.detail === "string"
-              ? errBody.detail
-              : JSON.stringify(errBody.detail);
-        }
-      } catch (_) {
-        // Keep the fallback status text.
-      }
-      throw new Error(detail);
+      throw new Error(await readApiErrorDetail(response));
     }
 
     const payload = await response.json();
@@ -1306,6 +1359,47 @@ async function uploadHtmlForEyeSession(file) {
       throw new Error("Server did not return a preview path.");
     }
     loadTempHtmlPreview(path, file.name);
+  } finally {
+    loadHtmlBtn.disabled = false;
+  }
+}
+
+async function uploadZipForEyeSession(file) {
+  if (!loadHtmlBtn) {
+    return;
+  }
+  loadHtmlBtn.disabled = true;
+  setStatus("Uploading ZIP site package...");
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/analyze-zip", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(await readApiErrorDetail(response));
+    }
+
+    const payload = await response.json();
+    const previewUrl = String(payload?.preview_url || "").trim();
+    if (!previewUrl) {
+      throw new Error("Server did not return a preview URL.");
+    }
+
+    const runId = extractAnalyzeZipRunId(payload);
+    const linked = applyEyeSessionRunLink(runId, file.name);
+    loadTempHtmlPreview(previewUrl, file.name);
+
+    if (linked) {
+      setStatus("ZIP site loaded and linked to analysis history. Start tracking when ready.");
+    } else {
+      setStatus(
+        "ZIP preview loaded, but no analysis run ID was returned — eye evidence may not link to history. Start tracking when ready."
+      );
+    }
   } finally {
     loadHtmlBtn.disabled = false;
   }
@@ -1463,6 +1557,7 @@ function setHeatmapReviewVisible(visible) {
   if (!nextVisible) {
     gazeDot.style.opacity = "0";
   }
+  updateHeatmapToggleButton();
 }
 
 function renderHeatmapIfReviewVisible() {
@@ -1723,7 +1818,7 @@ pauseBtn.addEventListener("click", () => {
     gazeDot.style.opacity = "0";
     setStatus(
       state.calibrated
-        ? "Tracking resumed. Heatmap hidden; gaze collection continues."
+        ? "Tracking resumed. Heatmap hidden to reduce visual interference."
         : "Calibration in progress. Follow the GazeCloudAPI overlay."
     );
   } else {
@@ -1733,11 +1828,25 @@ pauseBtn.addEventListener("click", () => {
     gazeDot.style.opacity = "0";
     renderHeatmap();
     setHeatmapReviewVisible(true);
-    setStatus(
-      "Tracking paused. Heatmap shown for review — click Resume to continue collecting gaze data."
-    );
+    setStatus("Tracking paused. Heatmap shown for review.");
   }
   updateSaveButtonState();
+});
+
+toggleHeatmapBtn?.addEventListener("click", () => {
+  if (!state.started) {
+    return;
+  }
+  const nextVisible = !state.heatmapReviewVisible;
+  if (nextVisible) {
+    renderHeatmap();
+  }
+  setHeatmapReviewVisible(nextVisible);
+  setStatus(
+    nextVisible
+      ? "Heatmap preview shown. Tracking data collection continues."
+      : "Heatmap preview hidden. Tracking data collection continues."
+  );
 });
 
 clearBtn.addEventListener("click", () => {
@@ -1761,14 +1870,19 @@ loadHtmlInput?.addEventListener("change", () => {
   if (!file) {
     return;
   }
-  const lower = String(file.name || "").toLowerCase();
-  if (!lower.endsWith(".html") && !lower.endsWith(".htm") && file.type !== "text/html") {
-    setStatus("Please choose an .html or .htm file.");
+  if (isZipUpload(file)) {
+    uploadZipForEyeSession(file).catch((error) => {
+      setStatus(`ZIP upload failed: ${getErrorMessage(error)}`);
+    });
     return;
   }
-  uploadHtmlForEyeSession(file).catch((error) => {
-    setStatus(`Upload failed: ${getErrorMessage(error)}`);
-  });
+  if (isHtmlUpload(file)) {
+    uploadHtmlForEyeSession(file).catch((error) => {
+      setStatus(`Upload failed: ${getErrorMessage(error)}`);
+    });
+    return;
+  }
+  setStatus("Please choose an .html, .htm, or .zip file.");
 });
 
 saveBtn?.addEventListener("click", () => {

@@ -310,6 +310,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+#toggleHeatmapBtn[aria-pressed="true"] {
+  border-color: rgba(37, 99, 235, 0.55);
+  background: #eaf2ff;
+  color: #1d4ed8;
+}
+
 /* Next step after URL/HTML load — reads as the primary session action */
 button.start-tracking-primary {
   border: 1px solid rgba(37, 99, 235, 0.75);
