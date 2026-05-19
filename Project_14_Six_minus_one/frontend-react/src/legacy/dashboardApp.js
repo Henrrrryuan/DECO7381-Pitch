@@ -679,6 +679,12 @@ function buildVicramGridPreviewMarkup({ hasResultForTarget, vicram, loading }) {
   const pageHeight = Math.max(1, Number(vicram.result?.page?.height) || 3);
   const aspectRatio = `${pageWidth} / ${pageHeight}`;
   const overlay = vicram.result?.artifacts?.overlay_svg_base64 || "";
+  const previewToggleLabel = vicram.gridVisible
+    ? "Show webpage preview"
+    : "Show complexity map on page preview";
+  const previewToggleTooltip = vicram.gridVisible
+    ? "Return the right preview to the analyzed webpage."
+    : "Open the full complexity map overlay in the page preview.";
 
   if (overlay) {
     return `
@@ -687,8 +693,9 @@ function buildVicramGridPreviewMarkup({ hasResultForTarget, vicram, loading }) {
         class="vicram-grid-preview vicram-grid-preview--map vicram-grid-preview--interactive"
         style="--vicram-preview-aspect: ${aspectRatio};"
         data-vicram-show-grid
-        aria-label="Show complexity grid on page preview"
-        data-accessibility-tooltip="Open the full complexity grid overlay in the page preview."
+        aria-label="${escapeHtml(previewToggleLabel)}"
+        aria-pressed="${vicram.gridVisible ? "true" : "false"}"
+        data-accessibility-tooltip="${escapeHtml(previewToggleTooltip)}"
       >
         <img
           class="vicram-grid-preview-image"
@@ -715,8 +722,9 @@ function buildVicramGridPreviewMarkup({ hasResultForTarget, vicram, loading }) {
       class="vicram-grid-preview vicram-grid-preview--cells vicram-grid-preview--interactive"
       style="--vicram-preview-columns: ${columns}; --vicram-preview-aspect: ${aspectRatio};"
       data-vicram-show-grid
-      aria-label="Show complexity grid on page preview"
-      data-accessibility-tooltip="Open the full complexity grid overlay in the page preview."
+      aria-label="${escapeHtml(previewToggleLabel)}"
+      aria-pressed="${vicram.gridVisible ? "true" : "false"}"
+      data-accessibility-tooltip="${escapeHtml(previewToggleTooltip)}"
     >
       ${cellMarkup}
     </button>
@@ -3512,6 +3520,15 @@ function restoreWebsitePreviewFromVicram() {
   renderVicramDashboardPanel();
 }
 
+function toggleVicramPreviewMode() {
+  const vicram = vicramState();
+  if (vicram.gridVisible) {
+    restoreWebsitePreviewFromVicram();
+    return;
+  }
+  showVicramGridOverlay();
+}
+
 function loadWebsitePreview() {
   const frame = document.getElementById("websitePreviewFrame");
   if (!frame) {
@@ -5563,19 +5580,14 @@ function bindEvents() {
     const vicramPreviewGrid = event.target.closest("[data-vicram-show-grid]");
     if (vicramPreviewGrid) {
       event.preventDefault();
-      showVicramGridOverlay();
+      toggleVicramPreviewMode();
       return;
     }
 
     const vicramToggle = event.target.closest("#vicramToggleGridButton");
     if (vicramToggle) {
       event.preventDefault();
-      const vicram = vicramState();
-      if (vicram.gridVisible) {
-        restoreWebsitePreviewFromVicram();
-      } else {
-        showVicramGridOverlay();
-      }
+      toggleVicramPreviewMode();
       return;
     }
 
