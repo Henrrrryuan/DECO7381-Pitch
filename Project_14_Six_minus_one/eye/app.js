@@ -6,17 +6,13 @@ const gazeDot = document.getElementById("gazeDot");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const toggleHeatmapBtn = document.getElementById("toggleHeatmapBtn");
-const clearBtn = document.getElementById("clearBtn");
 const loadHtmlBtn = document.getElementById("loadHtmlBtn");
 const loadHtmlInput = document.getElementById("loadHtmlInput");
 const saveBtn = document.getElementById("saveBtn");
-const aboutEyeTrackingBtn = document.getElementById("aboutEyeTrackingBtn");
 const urlInput = document.getElementById("urlInput");
 const loadUrlBtn = document.getElementById("loadUrlBtn");
 const targetFrame = document.getElementById("targetFrame");
 const frameHint = document.getElementById("frameHint");
-const eyeIntroModal = document.getElementById("eyeIntroModal");
-const eyeIntroContinueBtn = document.getElementById("eyeIntroContinueBtn");
 const calibrationUiGroup = document.getElementById("calibrationUiGroup");
 
 const statusText = document.getElementById("statusText");
@@ -400,7 +396,6 @@ const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
 const TRACKING_START_DELAY_MS = 2000;
 const GAZE_CLOUD_CALIBRATION_TYPE = 0;
-const INTRO_PUPIL_MAX_OFFSET = 5.5;
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -412,57 +407,8 @@ function setStatus(text) {
   statusText.textContent = text;
 }
 
-function getIntroPupils() {
-  return Array.from(document.querySelectorAll(".eye-intro-pupil"));
-}
-
-function resetIntroPupils() {
-  getIntroPupils().forEach((pupil) => {
-    pupil.style.transform = "translate3d(0, 0, 0)";
-  });
-}
-
-function updateIntroPupils(clientX, clientY) {
-  if (!eyeIntroModal || eyeIntroModal.hidden) {
-    return;
-  }
-  getIntroPupils().forEach((pupil) => {
-    const eye = pupil.parentElement;
-    if (!eye) {
-      return;
-    }
-    const rect = eye.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    const angle = Math.atan2(dy, dx);
-    const distancePx = Math.min(INTRO_PUPIL_MAX_OFFSET, Math.hypot(dx, dy) * 0.09);
-    const x = Math.cos(angle) * distancePx;
-    const y = Math.sin(angle) * distancePx;
-    pupil.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-  });
-}
-
-function showEyeIntroModal() {
-  if (!eyeIntroModal) {
-    return;
-  }
-  eyeIntroModal.hidden = false;
-  resetIntroPupils();
-}
-
-function hideEyeIntroModal() {
-  if (!eyeIntroModal) {
-    return;
-  }
-  eyeIntroModal.hidden = true;
-  resetIntroPupils();
-}
-
 function setTrackingControlsEnabled(enabled) {
   pauseBtn.disabled = !enabled;
-  clearBtn.disabled = !enabled;
   updateHeatmapToggleButton();
 }
 
@@ -1849,17 +1795,6 @@ toggleHeatmapBtn?.addEventListener("click", () => {
   );
 });
 
-clearBtn.addEventListener("click", () => {
-  resetTrackingData();
-  setStatus(
-    state.paused
-      ? "Heatmap cleared. Tracking remains paused — click Resume to collect more gaze data."
-      : state.calibrated
-        ? "Heatmap cleared. Tracking active."
-        : "Heatmap cleared."
-  );
-});
-
 loadHtmlBtn?.addEventListener("click", () => {
   loadHtmlInput?.click();
 });
@@ -1960,34 +1895,6 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-aboutEyeTrackingBtn?.addEventListener("click", () => {
-  showEyeIntroModal();
-});
-
-eyeIntroContinueBtn?.addEventListener("click", () => {
-  hideEyeIntroModal();
-});
-
-eyeIntroModal?.addEventListener("click", (event) => {
-  if (event.target === eyeIntroModal) {
-    hideEyeIntroModal();
-  }
-});
-
-window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && eyeIntroModal && !eyeIntroModal.hidden) {
-    hideEyeIntroModal();
-  }
-});
-
-window.addEventListener("pointermove", (event) => {
-  updateIntroPupils(event.clientX, event.clientY);
-});
-
-window.addEventListener("pointerleave", () => {
-  resetIntroPupils();
-});
-
 resizeHeatmapCanvas();
 ensureCoverageCanvasFixedSize();
 drawCoverageMap();
@@ -2004,5 +1911,3 @@ if (urlInput && preferredTargetUrl) {
 if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
 }
-
-showEyeIntroModal();

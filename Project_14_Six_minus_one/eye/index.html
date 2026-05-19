@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CogniLens Eye Tracking</title>
-    <link rel="stylesheet" href="./styles.css?v=eye-calibration-center-1" />
+    <link rel="stylesheet" href="./styles.css?v=eye-controls-cleanup-1" />
   </head>
   <body>
     <header class="app-nav">
@@ -53,9 +53,7 @@
           </button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="toggleHeatmapBtn" type="button" disabled>Show Heatmap</button>
-          <button id="clearBtn" type="button" disabled>Clear Heatmap</button>
           <button id="saveBtn" type="button" disabled>Save Session</button>
-          <button id="aboutEyeTrackingBtn" type="button" class="about-eye-btn">About Eye Tracking</button>
         </div>
       </section>
 
@@ -103,59 +101,7 @@
       </aside>
     </div>
 
-    <div id="eyeIntroModal" class="eye-intro-modal" role="dialog" aria-modal="true" aria-labelledby="eyeIntroTitle" hidden>
-      <div class="eye-intro-card">
-        <div class="eye-intro-characters" aria-hidden="true">
-          <div class="eye-intro-character-stage">
-            <div class="eye-intro-character eye-intro-character-purple">
-              <div class="eye-intro-character-eyes">
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-              </div>
-            </div>
-            <div class="eye-intro-character eye-intro-character-dark">
-              <div class="eye-intro-character-eyes">
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-              </div>
-            </div>
-            <div class="eye-intro-character eye-intro-character-orange">
-              <div class="eye-intro-character-eyes">
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-              </div>
-            </div>
-            <div class="eye-intro-character eye-intro-character-yellow">
-              <div class="eye-intro-character-eyes">
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-                <span class="eye-intro-eye"><span class="eye-intro-pupil"></span></span>
-              </div>
-              <span class="eye-intro-character-mouth"></span>
-            </div>
-          </div>
-        </div>
-        <div class="eye-intro-content">
-          <h2 id="eyeIntroTitle">Behavioral Evidence Collection</h2>
-          <p>
-            CogniLens can optionally collect lightweight gaze data to provide supporting behavioral context
-            for an analysis.
-          </p>
-          <p>
-            This feature visualizes approximate attention distribution.
-          </p>
-          <ol class="eye-intro-steps">
-            <li>Load a page</li>
-            <li>Start tracking</li>
-            <li>Save behavioral evidence</li>
-          </ol>
-        </div>
-        <div class="eye-intro-actions">
-          <button id="eyeIntroContinueBtn" type="button">I Understand</button>
-        </div>
-      </div>
-    </div>
-
     <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
-    <script src="./app.js?v=eye-heatmap-toggle-1"></script>
+    <script src="./app.js?v=eye-controls-cleanup-1"></script>
   </body>
 </html>
