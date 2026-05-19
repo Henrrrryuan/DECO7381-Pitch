@@ -34,6 +34,29 @@ def _multiple_h1_locations(soup: BeautifulSoup) -> list[dict]:
 
 
 class Phs1SanitizeTests(unittest.TestCase):
+    def test_missing_h1_does_not_duplicate_first_heading_not_h1(self) -> None:
+        soup = BeautifulSoup("<html><body><main><h2>Students</h2><p>Directory content.</p></main></body></html>", "html.parser")
+        issue = detect_poor_heading_structure(soup)
+        self.assertIsNotNone(issue)
+        violation_types = [loc.get("violationType") for loc in issue.locations if isinstance(loc, dict)]
+        self.assertEqual(violation_types.count("missing_h1"), 1)
+        self.assertNotIn("first_heading_not_h1", violation_types)
+
+    def test_first_heading_not_h1_reported_when_h1_exists_later(self) -> None:
+        soup = BeautifulSoup("<html><body><main><h2>Students</h2><h1>Directory</h1></main></body></html>", "html.parser")
+        issue = detect_poor_heading_structure(soup)
+        self.assertIsNotNone(issue)
+        violation_types = [loc.get("violationType") for loc in issue.locations if isinstance(loc, dict)]
+        self.assertIn("first_heading_not_h1", violation_types)
+        self.assertNotIn("missing_h1", violation_types)
+
+    def test_first_heading_h1_has_no_h1_boundary_violation(self) -> None:
+        soup = BeautifulSoup("<html><body><main><h1>Students</h1><h2>Directory</h2></main></body></html>", "html.parser")
+        issue = detect_poor_heading_structure(soup)
+        violation_types = [loc.get("violationType") for loc in (issue.locations if issue else []) if isinstance(loc, dict)]
+        self.assertNotIn("missing_h1", violation_types)
+        self.assertNotIn("first_heading_not_h1", violation_types)
+
     def test_multiple_h1_count_preserved_after_sanitize(self) -> None:
         soup = BeautifulSoup(_MULTI_H1_HTML, "html.parser")
         raw = _multiple_h1_locations(soup)

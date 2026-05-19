@@ -150,7 +150,7 @@ def detect_poor_heading_structure(soup: BeautifulSoup) -> Issue | None:
             )
             violations_evidence.append({"violationType": "multiple_h1", "headingLevel": 1})
 
-    if first_heading_level != 1:
+    if h1_headings and first_heading_level != 1:
         tag = headings[0]["element"]
         locations.append(
             _location_from_tag(
