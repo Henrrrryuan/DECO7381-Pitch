@@ -70,6 +70,8 @@ Use the docs below for deeper reference while keeping this README focused on set
 - [API Contract](./docs/api-contract.md): endpoint definitions, request/response shapes, and integration expectations.
 - [Database Schema (DBML)](./docs/database-schema.dbml): MVP data model for runs, dimension results, issues, and compare pairs.
 - [Presentation Test Flow](./docs/presentation-test-flow.md): demo/test checklist and step-by-step presentation script.
+- [Eye Tracking README](./EYE_TRACKING_README.md): external gaze API usage, data handling, and ethical boundaries.
+- [Visual Complexity README](./VICRAM_README.md): ViCRAM-inspired source attribution, scoring workflow, and prototype limitations.
 
 ## Backend Refactor Summary (Apr 2026)
 
