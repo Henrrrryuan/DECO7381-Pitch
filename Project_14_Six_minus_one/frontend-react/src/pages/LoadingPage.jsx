@@ -17,11 +17,11 @@ import {
   savePendingVicramResult,
   VICRAM_LOADING_OPTIONS,
 } from "../lib/pendingVicramSession.js";
+import { clearPendingAnalysis, loadPendingAnalysis } from "../lib/pendingAnalysisStore.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lineageTimeline.js";
 import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
-const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const MIN_LOADING_TIME_MS = 2600;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
@@ -105,19 +105,6 @@ export function LoadingPage() {
       return new Promise((resolve) => {
         window.setTimeout(resolve, ms);
       });
-    }
-
-    function loadPendingAnalysis() {
-      const raw = sessionStorage.getItem(PENDING_ANALYSIS_STORAGE_KEY);
-      if (!raw) {
-        throw new Error("No pending analysis was found. Start a new analysis first.");
-      }
-      try {
-        return JSON.parse(raw);
-      } catch {
-        sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
-        throw new Error("The pending analysis could not be read. Start a new analysis again.");
-      }
     }
 
     async function analyzePendingFile(pending) {
@@ -335,7 +322,7 @@ export function LoadingPage() {
         saveResult(result, vicramCache);
         await persistVisualComplexityToHistory(result, vicramCache);
         ensureNotCancelled();
-        sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
+        clearPendingAnalysis();
         const elapsed = Date.now() - startedAt;
         if (elapsed < MIN_LOADING_TIME_MS) {
           await wait(MIN_LOADING_TIME_MS - elapsed);
@@ -368,7 +355,7 @@ export function LoadingPage() {
         return;
       }
       cancelRequestedRef.current = true;
-      sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
+      clearPendingAnalysis();
       clearPendingVicramResult();
       if (loadingError) {
         loadingError.hidden = true;

@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { isHtmlFile, isZipFile, loadDashboardSession } from "../lib/common.js";
 import { AccessibilityWidgetMount } from "../components/AccessibilityWidgetMount.jsx";
 import { spaLandingHistoryHref } from "../lib/siteUrls.js";
+import { savePendingAnalysis } from "../lib/pendingAnalysisStore.js";
 
 const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
-const PENDING_ANALYSIS_STORAGE_KEY = "cognilens.pending-analysis";
 const GUIDE_COMPLETE_STORAGE_KEY = "cognilens.home-guide.complete";
 
 const GUIDE_BUBBLE_STEPS = [
@@ -110,10 +110,6 @@ function normalizeUrl(rawUrl) {
   }
 
   return parsed.href;
-}
-
-function savePendingAnalysis(payload) {
-  sessionStorage.setItem(PENDING_ANALYSIS_STORAGE_KEY, JSON.stringify(payload));
 }
 
 function readFileAsDataUrl(uploadFile) {
