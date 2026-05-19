@@ -19,7 +19,7 @@ class GridCell:
     row: int
     column: int
     images: float = 0.0
-    tlc: int = 0
+    tlc: float = 0.0
     word_count: float = 0.0
 
     @property
@@ -164,8 +164,7 @@ def _render_and_analyze(
 
     for rect in element_rects:
         if _is_tlc_candidate(rect):
-            row, column = _center_grid(rect, page_width, page_height, rows, columns)
-            grid[row][column].tlc += 1
+            _add_area_weighted(grid, rect, page_width, page_height, rows, columns, "tlc", 1.0)
 
     page_vcs = _page_vcs(
         word_count=sum(_word_count(str(rect.get("text") or "")) for rect in text_rects),
@@ -240,7 +239,7 @@ def _word_count(text: str) -> int:
     return len(re.findall(r"[\w\u00C0-\uFFFF]+", text, flags=re.UNICODE))
 
 
-def _page_vcs(*, word_count: int, images: int, tlc: int) -> float:
+def _page_vcs(*, word_count: int, images: int, tlc: float) -> float:
     return _clamp_vcs((1.743 + 0.097 * tlc + 0.053 * word_count + 0.003 * images) / 10)
 
 

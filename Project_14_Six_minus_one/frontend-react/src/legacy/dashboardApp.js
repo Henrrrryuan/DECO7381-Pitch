@@ -990,11 +990,12 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
   vicram.activeRequestTarget = requestTarget;
   renderVicramDashboardPanel();
   try {
+    const viewport = getVicramPreviewViewport();
     const result = await analyzeVicramSource(source.payload, {
       rows: VICRAM_GRID_ROWS,
       columns: VICRAM_GRID_COLUMNS,
-      viewportWidth: 1366,
-      viewportHeight: 768,
+      viewportWidth: viewport.viewportWidth,
+      viewportHeight: viewport.viewportHeight,
     });
     const currentLabel = getVicramSessionLabel();
     if (!vicramTargetLabelsMatch(requestTarget, currentLabel) || vicram.activeRequestTarget !== requestTarget) {
@@ -3242,6 +3243,31 @@ function getPreviewUrl() {
   return isProbablyUrl(payloadPreviewUrl) || isPreviewRouteUrl(payloadPreviewUrl) ? payloadPreviewUrl : "";
 }
 
+function getVicramPreviewViewport() {
+  const frame = document.getElementById("websitePreviewFrame");
+  const rect = frame?.getBoundingClientRect?.();
+  const width = Math.round(rect?.width || 0);
+  const height = Math.round(rect?.height || 0);
+
+  return {
+    viewportWidth: Math.max(320, width || Number(vicramState().result?.page?.width) || 1366),
+    viewportHeight: Math.max(240, height || 768),
+  };
+}
+
+function vicramResultNeedsRenderedPreviewRefresh(result) {
+  const targetUrl = getVicramTargetUrl();
+  if (result?.source_type === "html" && targetUrl && targetUrl.includes("/preview/")) {
+    return true;
+  }
+
+  const frame = document.getElementById("websitePreviewFrame");
+  const rect = frame?.getBoundingClientRect?.();
+  const frameWidth = Math.round(rect?.width || 0);
+  const resultWidth = Number(result?.page?.width || 0);
+  return Boolean(frameWidth && resultWidth && Math.abs(frameWidth - resultWidth) > 80);
+}
+
 function buildPreviewHtml(html) {
   const baseMarkup = `
 <base href="about:srcdoc">
@@ -3331,6 +3357,11 @@ function showVicramGridOverlay() {
   if (!vicramHasResultForSource(vicram, source.label)) {
     vicram.pendingShowGridAfterLoad = true;
     void refreshVicramAnalysis({ showGridAfter: true });
+    return;
+  }
+  if (vicramResultNeedsRenderedPreviewRefresh(vicram.result)) {
+    vicram.pendingShowGridAfterLoad = true;
+    void refreshVicramAnalysis({ showGridAfter: true, force: true });
     return;
   }
   applyVicramGridOverlay(vicram.result);

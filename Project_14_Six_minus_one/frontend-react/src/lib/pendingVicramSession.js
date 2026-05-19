@@ -13,6 +13,24 @@ function isProbablyUrl(value) {
   return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+function isPreviewRouteUrl(value) {
+  return String(value || "").trim().startsWith("/preview/");
+}
+
+function absolutePreviewUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+  if (isProbablyUrl(text)) {
+    return text;
+  }
+  if (isPreviewRouteUrl(text) && typeof window !== "undefined") {
+    return new URL(text, window.location.origin).toString();
+  }
+  return "";
+}
+
 /** Canonical label for matching pending ViCRAM cache to dashboard source. */
 export function normalizeVicramTargetLabel(label) {
   const value = String(label || "").trim();
@@ -45,9 +63,10 @@ export function resolveVicramTargetLabel(sessionResult) {
   const previewUrl = String(sessionResult?.payload?.preview_url || "").trim();
   const sourceUrl = String(sessionResult?.sourceUrl || "").trim();
   const sourceName = String(sessionResult?.sourceName || "").trim();
+  const absolutePreview = absolutePreviewUrl(previewUrl);
 
-  if (isProbablyUrl(previewUrl)) {
-    return previewUrl;
+  if (absolutePreview) {
+    return absolutePreview;
   }
   if (isProbablyUrl(sourceUrl)) {
     return sourceUrl;
@@ -75,13 +94,14 @@ export function buildVicramSourcePayloadFromMain(main) {
   const previewUrl = String(main?.payload?.preview_url || "").trim();
   const sourceUrl = String(main?.sourceUrl || "").trim();
   const html = String(main?.html || main?.payload?.html_content || "").trim();
+  const absolutePreview = absolutePreviewUrl(previewUrl);
 
   if (main?.sourceType === "url" || isProbablyUrl(sourceUrl)) {
     const url = sourceUrl || previewUrl;
     return { payload: { url }, targetUrl: resolveVicramTargetLabel(main) };
   }
-  if (isProbablyUrl(previewUrl)) {
-    return { payload: { url: previewUrl }, targetUrl: resolveVicramTargetLabel(main) };
+  if (absolutePreview) {
+    return { payload: { url: absolutePreview }, targetUrl: resolveVicramTargetLabel(main) };
   }
   return {
     payload: { html },
