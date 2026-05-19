@@ -379,6 +379,13 @@ def _build_overlay_svg(
     return "".join(parts)
 
 
+def _format_whole_number(value: Any) -> str:
+    try:
+        return str(int(round(float(value))))
+    except (TypeError, ValueError):
+        return "0"
+
+
 def _build_summary_report(
     page_vcs: float,
     rows: int,
@@ -404,7 +411,7 @@ def _build_summary_report(
     for cell in cells:
         lines.append(
             "Grid (row-column): "
-            f"{cell['row']}-{cell['column']} | Images: {cell['images']} | TLC: {cell['tlc']} "
+            f"{cell['row']}-{cell['column']} | Images: {cell['images']} | TLC: {_format_whole_number(cell.get('tlc'))} "
             f"| Word Count: {cell['word_count']} | VCS = {cell['vcs']}"
         )
     lines.append("")

@@ -111,6 +111,11 @@ const ASSISTANT_MARGIN = 16;
 const VICRAM_GRID_ROWS = 20;
 const VICRAM_GRID_COLUMNS = 20;
 
+function formatVicramWholeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? String(Math.round(number)) : "0";
+}
+
 const DETECTOR_NAMES = [
   "Dense Text Detection",
   "Language Complexity",
@@ -588,7 +593,7 @@ function renderVicramDashboardPanelLegacy() {
       <dl class="vicram-dashboard-metrics">
         <div><dt>Words</dt><dd>${escapeHtml(String(page.word_count ?? 0))}</dd></div>
         <div><dt>Images</dt><dd>${escapeHtml(String(page.images ?? 0))}</dd></div>
-        <div><dt>TLC</dt><dd>${escapeHtml(String(page.tlc ?? 0))}</dd></div>
+        <div><dt>TLC</dt><dd>${escapeHtml(formatVicramWholeNumber(page.tlc))}</dd></div>
         <div><dt>Grid</dt><dd>${escapeHtml(`${grid.rows || VICRAM_GRID_ROWS} x ${grid.columns || VICRAM_GRID_COLUMNS}`)}</dd></div>
       </dl>
       <div class="vicram-dashboard-detail-list">
@@ -875,7 +880,7 @@ function vicramTopCellsTableMarkup(result) {
               <td>${Number(cell.vcs || 0).toFixed(4)}</td>
               <td>${Number(cell.word_count || 0).toFixed(2)}</td>
               <td>${Number(cell.images || 0).toFixed(2)}</td>
-              <td>${escapeHtml(String(cell.tlc || 0))}</td>
+              <td>${escapeHtml(formatVicramWholeNumber(cell.tlc))}</td>
             </tr>
           `).join("")}
         </tbody>
@@ -934,7 +939,7 @@ function showVicramReportModal() {
               data-tlc-tooltip="TLC means Top Left Corner count: the number of distinct visual sections identified from layout cues such as headings, backgrounds, borders, and standalone images."
             >?</button>
           </span>
-          <strong>${escapeHtml(String(page.tlc ?? 0))}</strong>
+          <strong>${escapeHtml(formatVicramWholeNumber(page.tlc))}</strong>
         </article>
         <article><span>Grid</span><strong>${escapeHtml(`${result.grid?.rows || 0} x ${result.grid?.columns || 0}`)}</strong></article>
       </div>
