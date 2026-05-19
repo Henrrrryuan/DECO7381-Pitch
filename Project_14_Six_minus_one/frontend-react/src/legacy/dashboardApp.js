@@ -915,7 +915,6 @@ function showVicramReportModal() {
   closeVicramReportModal();
   const result = vicram.result;
   const page = result.page || {};
-  const debug = result.debug || {};
   const sourceLabel = vicram.targetUrl || result.url || "Current analysis source";
   const modal = document.createElement("div");
   modal.id = "vicramReportModal";
@@ -929,7 +928,7 @@ function showVicramReportModal() {
       <header class="vicram-report-header">
         <div>
           <span>ViCRAM Summary Report</span>
-          <h2>${Number(page.vcs || 0).toFixed(4)} Visual Complexity Score</h2>
+          <h2>${Number(page.vcs || 0).toFixed(4)}</h2>
           <p>${escapeHtml(sourceLabel)}</p>
         </div>
         <button type="button" class="vicram-report-close" data-vicram-report-close aria-label="Close ViCRAM report">Close</button>
@@ -955,10 +954,6 @@ function showVicramReportModal() {
         <section class="vicram-report-section">
           <h3>Formula</h3>
           <code>${escapeHtml(result.grid?.formula || "")}</code>
-        </section>
-        <section class="vicram-report-section">
-          <h3>Debug</h3>
-          <p>textPositions=${escapeHtml(String(debug.text_rects ?? 0))}; imagePositions=${escapeHtml(String(debug.image_rects ?? 0))}; elementPositions=${escapeHtml(String(debug.element_rects ?? 0))};</p>
         </section>
         <section class="vicram-report-section">
           <h3>Highest Grid Cells</h3>
