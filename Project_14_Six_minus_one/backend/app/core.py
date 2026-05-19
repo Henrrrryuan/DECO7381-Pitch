@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EYE_DIR = PROJECT_ROOT / "eye"
+FRONTEND_PUBLIC_DIR = PROJECT_ROOT / "frontend-react" / "public"
 EYE_TEMP_HTML_DIR = PROJECT_ROOT / "backend" / "data" / "eye_temp_html"
 MAX_EYE_TEMP_HTML_BYTES = 2 * 1024 * 1024  # 2 MiB (UTF-8 encoded body)
 MAX_ZIP_UPLOAD_BYTES = 100 * 1024 * 1024  # 100MB

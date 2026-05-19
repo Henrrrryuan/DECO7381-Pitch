@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..adapters.persistence.history_store import init_history_store
-from .core import EYE_DIR, SAMPLE_INPUT_DIR
+from .core import EYE_DIR, FRONTEND_PUBLIC_DIR, SAMPLE_INPUT_DIR
 from .routers.analysis import router as analysis_router
 from .routers.assistant import router as assistant_router
 from .routers.eye import router as eye_router
@@ -30,6 +31,12 @@ app.include_router(eye_router)
 app.include_router(analysis_router)
 app.include_router(assistant_router)
 app.include_router(vicram_router)
+
+
+@app.get("/logo-mascot.png")
+def logo_mascot() -> FileResponse:
+    return FileResponse(FRONTEND_PUBLIC_DIR / "logo-mascot.png", media_type="image/png")
+
 
 app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
