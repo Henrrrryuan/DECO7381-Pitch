@@ -24,7 +24,6 @@ The prototype is designed for developers and designers who need clear, explainab
 - Local SQLite-backed analysis history.
 - History page support for visual complexity summaries, Eye Evidence summaries, heatmaps, and downloadable report views.
 - Optional Eye Tracking workflow using GazeCloudAPI to collect gaze coordinates and convert them into element-level Eye Evidence.
-- Optional WAVE API experiment folder for comparison/testing, not required for the main CogniLens workflow.
 
 ## Directory Structure
 
@@ -80,7 +79,6 @@ Project_14_Six_minus_one/
     styles.css
     README.md
     proxy_server.py                 standalone fallback/debug server
-    wave.api/                       optional WAVE API experiment
     GazeCloud-master/               third-party reference/example files
 
   docs/
@@ -95,7 +93,6 @@ Project_14_Six_minus_one/
 - [Third-party Sources](./THIRD_PARTY_SOURCES.md): external APIs, open-source libraries, local database note, and AI-use disclosure pointers.
 - [Frontend README](./frontend-react/README.md): React/Vite structure and development commands.
 - [Eye module README](./eye/README.md): short run notes for the Eye Tracking page.
-- [WAVE API README](./eye/wave.api/README.md): optional WAVE API experiment notes.
 - [API Contract](./docs/api-contract.md): endpoint definitions and integration expectations.
 - [Database Schema](./docs/database-schema.dbml): local persistence model.
 - [Presentation Test Flow](./docs/presentation-test-flow.md): demo and testing checklist.

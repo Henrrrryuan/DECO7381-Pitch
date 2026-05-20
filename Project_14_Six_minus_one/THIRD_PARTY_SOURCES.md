@@ -6,10 +6,9 @@ This document lists external APIs, open-source libraries, local database technol
 
 CogniLens does not use a third-party research dataset or a hosted third-party database service. It analyzes user-provided or team-created webpage inputs and stores local prototype history with SQLite.
 
-External sources mainly fall into four groups:
+External sources mainly fall into three groups:
 
 - browser-based gaze estimation through GazeCloudAPI
-- optional WAVE API development comparison script
 - open-source frontend/backend libraries
 - AI tools used for planning, debugging, refactoring, explanation, and documentation support
 
@@ -20,7 +19,6 @@ External sources mainly fall into four groups:
 | GazeCloudAPI / GazeRecorder | https://gazerecorder.com/gazecloudapi/ | Browser-based webcam gaze estimation. CogniLens uses returned gaze coordinates as input for heatmaps, element-hit detection, Eye Evidence scoring, and History display. | `eye/index.html`, `eye/app.js`, `EYE_TRACKING_README.md` |
 | GazeCloudAPI registration | https://api.gazerecorder.com/register/ | Registering local/demo origins if required by the gaze API provider. | Eye Tracking setup |
 | GazeCloudAPI script | https://api.gazerecorder.com/GazeCloudAPI.js | Runtime script loaded by the Eye Tracking page. | `eye/index.html` |
-| WAVE API by WebAIM | https://wave.webaim.org/api/ | Optional development comparison script for accessibility checking. It is not required for the core CogniLens workflow. | `eye/wave.api/` |
 
 ## Third-party Reference Material
 
