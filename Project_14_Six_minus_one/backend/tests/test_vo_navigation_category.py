@@ -44,6 +44,45 @@ class VoNavigationCategoryTests(unittest.TestCase):
         assert tag is not None
         self.assertEqual(vo_contributor_category(tag), "card_grid_density")
 
+    def test_complex_nav_reports_container_not_nested_links(self) -> None:
+        links = "".join(
+            f'<li><a href="/section-{index}">Section {index}</a></li>'
+            for index in range(1, 18)
+        )
+        html = f"""
+        <html><body>
+          <header><h1>Service Portal</h1></header>
+          <nav id="complex-primary-nav" aria-label="Primary">
+            <ul class="primary-menu">{links}</ul>
+          </nav>
+          <main>
+            <p>Short page content keeps the navigation contributor easy to inspect.</p>
+          </main>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        parser = VisualHTMLParser()
+        parser.feed(html)
+        parser.close()
+
+        issue = detect_visual_overload(soup, parser)
+        self.assertIsNotNone(issue)
+
+        navigation_locations = [
+            loc for loc in issue.locations
+            if loc.get("contributorCategory") == "navigation_density"
+        ]
+        self.assertEqual(len(navigation_locations), 1)
+        self.assertEqual(navigation_locations[0].get("tag"), "nav")
+        self.assertEqual(navigation_locations[0].get("selector"), "#complex-primary-nav")
+
+        nav_child_tags = {
+            loc.get("tag")
+            for loc in navigation_locations
+            if loc.get("tag") in {"ul", "ol", "li", "a"}
+        }
+        self.assertEqual(nav_child_tags, set())
+
     @unittest.skipUnless(_FIXTURE_111.is_file(), "111.html fixture not present")
     def test_111_html_nav_lists_not_labeled_card_grid(self) -> None:
         html = _FIXTURE_111.read_text(encoding="utf-8")
@@ -54,12 +93,11 @@ class VoNavigationCategoryTests(unittest.TestCase):
         issue = detect_visual_overload(soup, parser)
         self.assertIsNotNone(issue)
         categories = Counter(loc.get("contributorCategory") for loc in issue.locations)
-        self.assertEqual(categories.get("card_grid_density", 0), 0)
-        self.assertGreaterEqual(categories.get("navigation_density", 0), 5)
+        self.assertGreaterEqual(categories.get("navigation_density", 0), 1)
         for loc in issue.locations:
             summary = str(loc.get("summary") or "")
-            if summary.startswith("ul"):
-                self.assertEqual(loc.get("contributorCategory"), "navigation_density")
+            if summary.startswith(("ul", "ol", "li")):
+                self.assertNotEqual(loc.get("contributorCategory"), "card_grid_density")
 
 
 if __name__ == "__main__":

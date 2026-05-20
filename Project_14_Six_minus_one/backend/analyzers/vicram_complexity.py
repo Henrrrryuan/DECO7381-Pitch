@@ -196,8 +196,8 @@ def _render_and_analyze(
             "rows": rows,
             "columns": columns,
             "cells": cells,
-            "formula": "GridVCS = (1.743 + 0.097 * TLC + 0.053 * WordCount + 0.003 * Images) / 10",
-            "color_rule": "Original ViCRAM rank buckets constrained by whole-page VCS.",
+            "formula": "Grid Visual Complexity Score = (1.743 + 0.097 * Top Left Corner Count + 0.053 * Word Count + 0.003 * Images) / 10",
+            "color_rule": "Original ViCRAM rank buckets constrained by whole-page Visual Complexity Score.",
         },
         "artifacts": {
             "screenshot_png_base64": base64.b64encode(screenshot_bytes).decode("ascii"),
@@ -396,9 +396,9 @@ def _build_summary_report(
     lines = [
         "======= Web Page Visual Complexity =======",
         "",
-        f"VCS = {page_vcs}",
+        f"Visual Complexity Score = {page_vcs}",
         "",
-        "The Visual Complexity Score (VCS) ranges from 0 to 10, with 0 being very visually simple and 10 very visually complex.",
+        "The Visual Complexity Score ranges from 0 to 10, with 0 being very visually simple and 10 very visually complex.",
         "",
         "----- Complexity Visualization View -----",
         f"Debug: textPositions={len(capture.get('textRects', []))}; imagePositions={len(capture.get('imageRects', []))}; elementPositions={len(capture.get('elementRects', []))};",
@@ -411,8 +411,8 @@ def _build_summary_report(
     for cell in cells:
         lines.append(
             "Grid (row-column): "
-            f"{cell['row']}-{cell['column']} | Images: {cell['images']} | TLC: {_format_whole_number(cell.get('tlc'))} "
-            f"| Word Count: {cell['word_count']} | VCS = {cell['vcs']}"
+            f"{cell['row']}-{cell['column']} | Images: {cell['images']} | Top Left Corner Count: {_format_whole_number(cell.get('tlc'))} "
+            f"| Word Count: {cell['word_count']} | Visual Complexity Score = {cell['vcs']}"
         )
     lines.append("")
     lines.append(f"Grid size: {rows} x {columns}")

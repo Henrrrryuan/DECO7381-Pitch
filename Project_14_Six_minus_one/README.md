@@ -99,6 +99,7 @@ Project_14_Six_minus_one/
 - [API Contract](./docs/api-contract.md): endpoint definitions and integration expectations.
 - [Database Schema](./docs/database-schema.dbml): local persistence model.
 - [Presentation Test Flow](./docs/presentation-test-flow.md): demo and testing checklist.
+- [Visual Complexity README](./VICRAM_README.md): ViCRAM-inspired source attribution, scoring workflow, and prototype limitations.
 - [Limitations](./LIMITATIONS.md): known prototype limitations.
 - [Final Changelog](./FINAL_CHANGELOG.md): summary of larger product changes.
 

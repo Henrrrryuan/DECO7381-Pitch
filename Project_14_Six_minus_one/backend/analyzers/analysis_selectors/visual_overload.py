@@ -86,6 +86,27 @@ _VO_NAV_STRUCTURE_ATTR_HINTS = (
     "navigation",
 )
 
+_VO_DENSITY_CONTAINER_TAGS = frozenset({"nav", "form"})
+_VO_DENSITY_CONTAINER_HINTS = frozenset({
+    "nav",
+    "menu",
+    "sidebar",
+    "side-bar",
+    "toolbar",
+    "carousel",
+    "slider",
+    "card",
+    "tile",
+    "grid",
+    "deck",
+    "modal",
+    "popup",
+    "overlay",
+    "dialog",
+    "banner",
+    "promo",
+})
+
 
 def detect_visual_overload_selector(context: dict[str, Any]):
     return detect_visual_overload(context["soup"], context["visual_parser"])
@@ -288,11 +309,39 @@ def vo_contributor_category(tag: Tag) -> str:
     return "structural_density"
 
 
+def _is_vo_preferred_density_container(tag: Tag) -> bool:
+    """Region-level VO evidence that should stand in for dense child controls."""
+    name = (tag.name or "").lower()
+    blob = _attrs_blob(tag)
+    role = str(tag.get("role") or "").lower()
+
+    if name in _VO_DENSITY_CONTAINER_TAGS:
+        return True
+    if role in {"navigation", "dialog", "alertdialog", "menu", "menubar", "toolbar", "tablist"}:
+        return True
+    if name in {"ul", "ol"} and (_is_navigation_list_context(tag) or _list_cluster_bonus(tag) > 0):
+        return True
+    if looks_like_visual_component(tag):
+        return True
+    if any(hint in blob for hint in _VO_DENSITY_CONTAINER_HINTS):
+        return True
+    if name in {"section", "article", "aside", "header"}:
+        return _count_descendant_interactives(tag, limit=4) >= 3
+    return False
+
+
+def _tag_contains(ancestor: Tag, descendant: Tag) -> bool:
+    return ancestor is not descendant and ancestor in getattr(descendant, "parents", [])
+
+
 def collect_visual_overload_contributors(elements: list[Tag], *, max_locations: int = _VO_MAX_LOCATIONS) -> list[Tag]:
     """
     Rank candidates by `_vo_contributor_score`, stable tie-break by DOM-stream index.
 
     One pass over score-sorted tags preserves deterministic ordering (no random ties).
+    Region-level density containers suppress overlapping child controls so VO-1
+    explains a crowded area once instead of reporting the container and each
+    nested link/button as separate evidence.
     """
     if not elements:
         return []
@@ -306,11 +355,37 @@ def collect_visual_overload_contributors(elements: list[Tag], *, max_locations: 
     selected: list[Tag] = []
     seen: set[int] = set()
     for _, _, t in scored:
-        if len(selected) >= max_locations:
-            break
         marker = id(t)
         if marker in seen:
             continue
+
+        overlapping = [
+            existing
+            for existing in selected
+            if _tag_contains(existing, t) or _tag_contains(t, existing)
+        ]
+        if overlapping:
+            if _is_vo_preferred_density_container(t):
+                selected = [
+                    existing
+                    for existing in selected
+                    if not _tag_contains(t, existing)
+                ]
+            if any(
+                _tag_contains(existing, t) and _is_vo_preferred_density_container(existing)
+                for existing in selected
+            ):
+                seen.add(marker)
+                continue
+            if any(
+                _tag_contains(t, existing) and not _is_vo_preferred_density_container(t)
+                for existing in selected
+            ):
+                seen.add(marker)
+                continue
+
+        if len(selected) >= max_locations:
+            break
         seen.add(marker)
         selected.append(t)
 
