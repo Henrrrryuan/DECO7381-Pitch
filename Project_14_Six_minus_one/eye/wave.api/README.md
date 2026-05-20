@@ -1,64 +1,65 @@
-# WAVE API README
+# Optional WAVE API Experiment
 
-This folder contains `wave_check.py`, a script that calls WAVE API to check a web page.
+This folder contains an optional script for calling the WAVE API during development. It is not required for the main CogniLens dashboard, History page, Eye Tracking workflow, or final demo path.
 
-## 1. Install dependency
+If this folder is included in the final codebase, WAVE API should be listed in the third-party sources appendix.
 
-Run in VSCode terminal (PowerShell):
+## Files
 
-```powershell
-pip install requests
+```text
+eye/wave.api/
+  wave_check.py       optional WAVE API request script
+  wave_result.json    sample saved response, if generated
 ```
 
-## 2. Set `YOUR_API_KEY`
+## Install Dependency
 
-Recommended: use an environment variable (do not hardcode secrets in source code).
+The script uses `requests`. Install it separately if it is not already available:
 
-Set for current terminal session:
+```powershell
+python -m pip install requests
+```
+
+## Configure API Key
+
+Use an environment variable. Do not hardcode real API keys in source code.
+
+For the current PowerShell session:
 
 ```powershell
 $env:WAVE_API_KEY="YOUR_API_KEY"
 ```
 
-Save permanently for current Windows user:
+For the current Windows user:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("WAVE_API_KEY", "YOUR_API_KEY", "User")
 ```
 
-If you set it permanently, open a new terminal before running the script.
+Open a new terminal after setting a persistent user environment variable.
 
-## 3. Set target URL
+## Configure Target URL
 
-Open `wave_check.py` and update:
+Edit `TARGET_URL` in:
 
-```python
-TARGET_URL = "https://example.com"
+```text
+eye/wave.api/wave_check.py
 ```
 
-Replace `https://example.com` with the page you want to test.
+## Run
 
-## 4. Run the script
-
-From the project root:
+From `Project_14_Six_minus_one/`:
 
 ```powershell
-python .\wave.api\wave_check.py
+python .\eye\wave.api\wave_check.py
 ```
 
-## 5. Output
+On success, the script prints summary counts and saves the full JSON response to:
 
-On success, the script:
-
-1. Prints page title, item counts, category counts, and remaining credits.
-2. Saves full response JSON to `wave.api/wave_result.json`.
-
-## Optional: Put key directly in code
-
-If you do not want environment variables, set a fallback key in `wave_check.py`:
-
-```python
-API_KEY = os.getenv("WAVE_API_KEY", "YOUR_API_KEY")
+```text
+eye/wave.api/wave_result.json
 ```
 
-Do not commit real API keys to Git repositories.
+## Submission Note
+
+This WAVE API script is experimental support material. If it is not part of the final product workflow, describe it as an optional development comparison tool rather than a core CogniLens feature.

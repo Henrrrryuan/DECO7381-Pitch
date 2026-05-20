@@ -32,8 +32,10 @@ Project_14_Six_minus_one/
   backend/
     app/routers/eye.py            backend routes for eye sessions and temporary HTML
     app/routers/history.py        history routes that expose saved evidence
-    app/history_store.py          persistence layer for analysis and eye evidence
-    app/eye_evidence_service.py   scoring and interpretation for Eye Evidence
+    adapters/persistence/history_store.py
+                                    persistence layer for analysis and eye evidence
+    services/eye_evidence_service.py
+                                    scoring and interpretation for Eye Evidence
 ```
 
 ## External API and Third-Party Source

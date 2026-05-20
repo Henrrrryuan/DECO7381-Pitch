@@ -1,22 +1,23 @@
 # CogniLens Eye Tracking Tool
 
-This folder contains the Eye Tracking validation tool used by CogniLens. It tracks webcam gaze in real time and overlays:
+This folder contains the Eye Tracking validation tool used by CogniLens. For the fuller submission-facing documentation, see [`../EYE_TRACKING_README.md`](../EYE_TRACKING_README.md).
+
+The tool tracks webcam gaze in real time and can show:
 
 - current focus point
 - gaze heatmap
 - coverage map
+- element-level Eye Evidence summaries
 
-In the unified project setup, this tool is served by the main FastAPI app under `/eye/`.
+In the current project setup, the React app normally runs on `127.0.0.1:5173` and the FastAPI backend runs on `127.0.0.1:8001`. The backend serves this tool under `/eye/`, and Vite proxies `/eye` during frontend development.
 
 ## Run Through CogniLens
 
 From the `Project_14_Six_minus_one` folder, start the main FastAPI app:
 
 ```powershell
-python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
 ```
-
-(On macOS/Linux, use `python3` if `python` is not on your PATH.)
 
 Open:
 
@@ -24,13 +25,19 @@ Open:
 http://127.0.0.1:8001/eye/
 ```
 
-**Linking to an analysis:** Behavioral evidence is stored against a history `run_id`. After you run an analysis on the dashboard, use **Eye Tracking** in the top nav (the app sets `?run_id=…` and local storage), or open:
+Or, with the React dev server running:
+
+```text
+http://127.0.0.1:5173/eye/
+```
+
+**Linking to an analysis:** Behavioral evidence is stored against a history `run_id`. After running an analysis on the dashboard, use the Eye Tracking navigation entry so the app carries the related `run_id`, or open:
 
 ```text
 http://127.0.0.1:8001/eye/?run_id=<your-report-id>
 ```
 
-Saving a session **requires** a valid `run_id` that exists in analysis history.
+Saving a session requires a valid `run_id` that exists in analysis history.
 
 The target webpage iframe is loaded through:
 
@@ -43,6 +50,14 @@ Before using GazeCloudAPI, register this origin if required:
 ```text
 http://127.0.0.1:8001
 ```
+
+## Target Page Input Modes
+
+The current Eye Tracking page supports:
+
+- URL loading through `/eye/proxy?url=...`
+- single HTML upload
+- ZIP website upload for static sites with separate CSS/JS/assets
 
 ## Standalone Fallback
 
@@ -58,7 +73,7 @@ Then open:
 http://127.0.0.1:5600
 ```
 
-Use the unified FastAPI route for the main project demo unless standalone debugging is needed.
+Use the FastAPI/Vite route for the main project demo unless standalone debugging is needed.
 
 ## Notes
 

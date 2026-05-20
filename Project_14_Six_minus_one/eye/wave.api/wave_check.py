@@ -3,9 +3,9 @@ import os
 
 import requests
 
-# Preferred: set WAVE_API_KEY in your terminal.
-# Fallback: the key below (provided by user) is used if env var is missing.
-API_KEY = os.getenv("WAVE_API_KEY", "UKVNdWh86497")
+# Set WAVE_API_KEY in your terminal before running this optional script.
+# Do not commit real API keys to the repository.
+API_KEY = os.getenv("WAVE_API_KEY", "")
 TARGET_URL = (
     "https://uqshop.com.au/?srsltid=AfmBOoreuIpbfdBRPBfIYU63t75WJMwvo8RVkNDOqg6POb4-YahIW23P"
 )
