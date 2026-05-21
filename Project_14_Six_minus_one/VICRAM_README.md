@@ -261,8 +261,4 @@ Use this checklist before submitting the final codebase:
 - History can reopen the saved visual complexity map.
 - Print includes the Visual Complexity section and Accessibility Findings section.
 
-## Related Submission Notes
 
-For the final team project submission, this README should be included in the codebase zip together with the main `README.md` and `EYE_TRACKING_README.md`.
-
-External source attribution for Eclipse ACTF / ViCRAM and the visual complexity paper should also be included in the team report reference/source list. Any AI prompts used to design, debug, or implement this module should be included in the required AI prompts appendix.
