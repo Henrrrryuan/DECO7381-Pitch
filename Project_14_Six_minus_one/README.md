@@ -32,6 +32,8 @@ Project_14_Six_minus_one/
   README.md
   EYE_TRACKING_README.md
   THIRD_PARTY_SOURCES.md
+  AI_Prompt.pdf
+  Team AI Declaration Cover Sheet.pdf
   requirements.txt
 
   backend/
@@ -82,6 +84,7 @@ Project_14_Six_minus_one/
     GazeCloud-master/               third-party reference/example files
 
   docs/
+    AI_PROMPTS_USED.md
     api-contract.md
     database-schema.dbml
     presentation-test-flow.md
@@ -91,6 +94,7 @@ Project_14_Six_minus_one/
 
 - [Eye Tracking README](./EYE_TRACKING_README.md): GazeCloudAPI usage, Eye Evidence workflow, privacy limits, and verification.
 - [Third-party Sources](./THIRD_PARTY_SOURCES.md): external APIs, open-source libraries, local database note, and AI-use disclosure pointers.
+- [AI Prompts Used](./docs/AI_PROMPTS_USED.md): searchable Markdown summary of representative AI-assisted implementation prompts.
 - [Frontend README](./frontend-react/README.md): React/Vite structure and development commands.
 - [Eye module README](./eye/README.md): short run notes for the Eye Tracking page.
 - [API Contract](./docs/api-contract.md): endpoint definitions and integration expectations.
@@ -241,6 +245,24 @@ External libraries, APIs, and AI-assisted work must be disclosed for the final s
 
 - [THIRD_PARTY_SOURCES.md](./THIRD_PARTY_SOURCES.md) for external software/API/source attribution.
 - [EYE_TRACKING_README.md](./EYE_TRACKING_README.md) for the GazeCloudAPI integration details.
-- The team AI declaration cover sheet and AI prompt appendix for ChatGPT/Codex/Cursor usage.
+- [LIMITATIONS.md](./LIMITATIONS.md) for prototype scope boundaries and known limitations.
+- [AI_Prompt.pdf](./AI_Prompt.pdf) for the submitted AI prompts appendix.
+- [docs/AI_PROMPTS_USED.md](./docs/AI_PROMPTS_USED.md) for a searchable Markdown summary of representative AI-assisted implementation prompts.
+- [Team AI Declaration Cover Sheet.pdf](./Team%20AI%20Declaration%20Cover%20Sheet.pdf) for the team AI use declaration and signed cover sheet material.
 
 Before final submission, confirm whether any images, icons, logos, or generated visual assets are team-created or externally sourced, then list them in the third-party sources appendix.
+
+## Final Submission Packaging Notes
+
+The final codebase ZIP should include this project folder and the submission support files listed above. Do not package local runtime artifacts or generated development data. In particular, exclude:
+
+- `backend/data/`
+- `frontend-react/node_modules/`
+- `frontend-react/dist/`
+- `.run-logs/`
+- `.pytest_cache/`
+- `__pycache__/`
+- `.DS_Store`
+- `*.sqlite3`, `*.sqlite3-journal`, and `*.sqlite3-journal.bak-*`
+- `eye/GazeCloud-master.zip`
+- generated local ZIP files such as `Project_14_Six_minus_one.zip`
