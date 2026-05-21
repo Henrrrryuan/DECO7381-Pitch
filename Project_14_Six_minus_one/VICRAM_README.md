@@ -44,6 +44,18 @@ Project_14_Six_minus_one/
 
 This project adapts the logic and interaction concept from the open-source Eclipse ACTF example project, particularly the ViCRAM-related `org.eclipse.actf.examples` code structure.
 
+Original source repository:
+
+```text
+https://eclipse.googlesource.com/actf/org.eclipse.actf.examples
+```
+
+Reference clone command:
+
+```bash
+git clone https://eclipse.googlesource.com/actf/org.eclipse.actf.examples
+```
+
 The original ACTF / ViCRAM implementation is Java/Eclipse based. CogniLens does not run the Eclipse RCP application directly. Instead, this project reimplements the relevant idea in the CogniLens stack:
 
 - Python backend analysis instead of Java/Eclipse plug-ins
@@ -254,4 +266,3 @@ Use this checklist before submitting the final codebase:
 For the final team project submission, this README should be included in the codebase zip together with the main `README.md` and `EYE_TRACKING_README.md`.
 
 External source attribution for Eclipse ACTF / ViCRAM and the visual complexity paper should also be included in the team report reference/source list. Any AI prompts used to design, debug, or implement this module should be included in the required AI prompts appendix.
-
