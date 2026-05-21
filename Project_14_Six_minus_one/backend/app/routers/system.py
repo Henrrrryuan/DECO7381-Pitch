@@ -11,6 +11,7 @@ router = APIRouter()
 
 @router.get("/api")
 def api_root() -> dict[str, Any]:
+    # Lightweight service manifest for manual checks and frontend diagnostics.
     return {
         "name": "Cognitive Accessibility Assistant API",
         "status": "ok",
@@ -36,11 +37,13 @@ def api_root() -> dict[str, Any]:
 
 @router.get("/health")
 def health() -> dict[str, str]:
+    # Used by local startup checks to confirm the backend is listening.
     return {"status": "ok"}
 
 
 @router.get("/samples/{sample_name}")
 def get_sample(sample_name: str) -> dict[str, str]:
+    # Sample fixtures let the frontend run repeatable analyses without uploading files.
     sample_path = SAMPLE_FILE_MAP.get(sample_name)
     if sample_path is None:
         raise HTTPException(status_code=404, detail="Sample not found.")

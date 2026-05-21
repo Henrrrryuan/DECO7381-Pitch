@@ -25,6 +25,7 @@ def analyze_html(
         js_sources=merged_js_sources,
     )
     analysis = AnalysisResult(dimensions=dimensions)
+    # Location sanitization keeps highlighted elements aligned with the submitted HTML.
     return sanitize_analysis_locations(analysis, html)
 
 
@@ -35,6 +36,7 @@ def build_analysis_response(
     source_name: str | None,
     baseline_run_id: str | None,
 ) -> dict[str, Any]:
+    # Every persisted analysis response carries both the saved run metadata and raw HTML.
     saved_run = save_analysis_run(analysis, html_content, source_name)
     resolved_baseline_run_id = None
     # Comparison links are only recorded when the requested baseline still exists.

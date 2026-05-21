@@ -18,6 +18,7 @@ router = APIRouter(tags=["vicram"])
 @router.post("/api/vicram/analyze-url")
 def analyze_vicram(payload: VicramUrlPayload) -> dict[str, Any]:
     try:
+        # Keep both legacy and current URL endpoints mapped to the same analyzer.
         return analyze_vicram_url(
             payload.url,
             rows=payload.rows,
@@ -26,6 +27,7 @@ def analyze_vicram(payload: VicramUrlPayload) -> dict[str, Any]:
             viewport_height=payload.viewport_height,
         )
     except VicramAnalysisError as exc:
+        # Analysis failures are user-correctable input/rendering issues, not server crashes.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
@@ -51,4 +53,5 @@ def analyze_vicram_source(payload: VicramAnalyzePayload) -> dict[str, Any]:
             )
         raise VicramAnalysisError("Provide either a URL or HTML content for ViCRAM analysis.")
     except VicramAnalysisError as exc:
+        # Surface analyzer messages directly so the dashboard can explain what failed.
         raise HTTPException(status_code=422, detail=str(exc)) from exc

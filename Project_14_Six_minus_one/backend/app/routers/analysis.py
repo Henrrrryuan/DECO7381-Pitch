@@ -25,6 +25,8 @@ from ..core import (
 )
 
 router = APIRouter()
+
+# Uploaded ZIP sites are expanded here so the dashboard iframe can preview them.
 PREVIEW_ROOT_DIR = PROJECT_ROOT / "backend" / "data" / "uploaded_previews"
 ABSOLUTE_ASSET_ATTR_PATTERN = re.compile(
     r"""(?P<attr>(?:href|src|action))=(?P<quote>["'])/(?P<asset>[^"']+) (?P=quote)""".replace(" ", ""),
@@ -58,6 +60,7 @@ def _extract_zip_to_preview_dir(zip_bytes: bytes, preview_dir: Path) -> None:
 
 
 def _find_preview_entry_file(preview_dir: Path) -> Path:
+    # Prefer index files because most static website exports expect them as entry points.
     root_indexes = [
         candidate
         for candidate in (preview_dir / "index.html", preview_dir / "index.htm")
@@ -126,6 +129,7 @@ def _rewrite_html_for_preview(html: str, preview_id: str, rel_path: str) -> str:
 
 @router.get("/preview/{preview_id}/{asset_path:path}")
 def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
+    # Serve only files inside the generated preview folder for this upload.
     preview_dir = PREVIEW_ROOT_DIR / preview_id
     if not preview_dir.exists():
         raise HTTPException(status_code=404, detail="Preview not found.")
@@ -153,6 +157,7 @@ def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
 
 @router.post("/analyze")
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
+    # Direct HTML analysis is used for pasted/uploaded single-file pages.
     analysis = analyze_html(payload.html)
     if not payload.persist_result:
         # Some UI flows need a transient analysis without adding a history record.
@@ -316,11 +321,13 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
     final_url = ""
 
     try:
+        # Render first when possible so modern client-side pages expose hydrated markup.
         snapshot = capture_rendered_snapshot(payload.url)
         html_content = snapshot.html
         final_url = snapshot.final_url or payload.url
         rendered_snapshot_used = True
     except SnapshotInputError:
+        # Fallback keeps URL analysis usable when Playwright is unavailable locally.
         try:
             proxied = fetch_proxied_response(payload.url)
         except EyeProxyBadRequest as exc:
@@ -406,6 +413,7 @@ async def analyze_zip(
     preview_dir = PREVIEW_ROOT_DIR / preview_id
     preview_dir.mkdir(parents=True, exist_ok=True)
     try:
+        # Build the browser preview before extracting the analyzable resource bundle.
         _extract_zip_to_preview_dir(zip_bytes, preview_dir)
         entry_file = _find_preview_entry_file(preview_dir)
         entry_rel = _rel_preview_path(preview_dir, entry_file)

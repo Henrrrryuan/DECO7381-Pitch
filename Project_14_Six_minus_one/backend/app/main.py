@@ -13,6 +13,7 @@ from .routers.history import router as history_router
 from .routers.system import router as system_router
 from .routers.vicram import router as vicram_router
 
+# Ensure the local SQLite history store exists before any route handles requests.
 init_history_store()
 
 # FastAPI owns the API surface; Vite serves the React app during development.
@@ -34,9 +35,11 @@ app.include_router(vicram_router)
 
 @app.get("/logo-mascot.png")
 def logo_mascot() -> FileResponse:
+    # Serve the shared mascot asset directly from the backend for non-Vite pages.
     return FileResponse(FRONTEND_PUBLIC_DIR / "logo-mascot.png", media_type="image/png")
 
 
+# Static mounts used by sample pages and the standalone eye tracking workflow.
 app.mount("/sample-input", StaticFiles(directory=SAMPLE_INPUT_DIR, html=False), name="sample_input")
 app.mount("/eye", StaticFiles(directory=EYE_DIR, html=True), name="eye")
 # Web UI is the Vite React app (typically http://127.0.0.1:5173); this process serves API + /eye only.

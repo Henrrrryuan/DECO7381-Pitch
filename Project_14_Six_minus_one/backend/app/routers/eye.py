@@ -20,6 +20,7 @@ router = APIRouter()
 
 @router.get("/eye/proxy")
 def eye_proxy(url: str = Query(...)) -> Response:
+    # Fetch target pages through the backend so the eye tool can inspect cross-origin pages.
     try:
         proxied = fetch_proxied_response(url)
     except EyeProxyBadRequest as exc:
@@ -41,6 +42,7 @@ def eye_proxy(url: str = Query(...)) -> Response:
 
 @router.post("/eye/temp-html")
 def post_eye_temp_html(payload: EyeTempHtmlUploadPayload) -> dict[str, Any]:
+    # Store uploaded HTML behind a short token so the browser can load it as a page.
     try:
         token = save_temp_html(payload.html)
     except ValueError as exc:
@@ -50,6 +52,7 @@ def post_eye_temp_html(payload: EyeTempHtmlUploadPayload) -> dict[str, Any]:
 
 @router.get("/eye/temp-html/{token}")
 def get_eye_temp_html(token: str) -> Response:
+    # Temporary HTML is served without caching to avoid replaying stale test pages.
     body = read_temp_html_bytes(token)
     if body is None:
         raise HTTPException(status_code=404, detail="Temporary HTML not found or expired.")
@@ -71,6 +74,7 @@ def eye_sessions(
     query: str | None = Query(default=None),
     run_id: str | None = Query(default=None),
 ) -> dict[str, Any]:
+    # Session list powers the Eye Evidence history and optional run filtering.
     return list_eye_tracking_sessions(
         limit=limit,
         offset=offset,
@@ -81,6 +85,7 @@ def eye_sessions(
 
 @router.get("/eye/sessions/by-run/{run_id}")
 def eye_session_detail_for_run(run_id: str) -> dict[str, Any]:
+    # Dashboard reports use the latest behavioral evidence linked to their run id.
     if not has_history_run(run_id):
         raise HTTPException(status_code=404, detail="History run not found.")
     detail = get_latest_eye_tracking_session_for_run(run_id)
@@ -102,6 +107,7 @@ def eye_session_detail(session_id: str) -> dict[str, Any]:
 
 @router.post("/eye/sessions")
 def save_eye_session(payload: SaveEyeTrackingSessionPayload) -> dict[str, Any]:
+    # Eye evidence must be attached to a saved analysis run to keep reports traceable.
     run_id = (payload.run_id or "").strip()
     if not run_id:
         raise HTTPException(
@@ -124,6 +130,7 @@ def save_eye_session(payload: SaveEyeTrackingSessionPayload) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Session metrics must be non-negative.")
 
     expected_cells = payload.grid_cols * payload.grid_rows
+    # The heatmap grid is stored as a flat array, so dimensions must match exactly.
     if payload.grid_cols <= 0 or payload.grid_rows <= 0:
         raise HTTPException(status_code=400, detail="Grid dimensions must be greater than zero.")
     if len(payload.cell_counts) != expected_cells:

@@ -15,6 +15,7 @@ from ...adapters.persistence.history_store import (
 
 router = APIRouter()
 
+# History responses should always reflect the latest local SQLite state.
 _HISTORY_NO_CACHE = {"Cache-Control": "no-store, max-age=0", "Pragma": "no-cache"}
 
 
@@ -24,12 +25,14 @@ def history(
     offset: int = Query(default=0, ge=0),
     query: str | None = Query(default=None),
 ) -> JSONResponse:
+    # List view supports pagination and simple text filtering for the History page.
     body = list_history_runs(limit=limit, offset=offset, query=query).to_dict()
     return JSONResponse(content=body, headers=_HISTORY_NO_CACHE)
 
 
 @router.get("/history/{run_id}")
 def history_detail(run_id: str) -> JSONResponse:
+    # Detail view includes the saved analysis payload used to reopen dashboard reports.
     detail = get_history_run(run_id)
     if detail is None:
         raise HTTPException(status_code=404, detail="History run not found.")
@@ -38,6 +41,7 @@ def history_detail(run_id: str) -> JSONResponse:
 
 @router.delete("/history/{run_id}")
 def delete_history(run_id: str) -> JSONResponse:
+    # Normalize user-provided route params before touching persistence.
     normalized_run_id = str(run_id or "").strip()
     if not normalized_run_id:
         raise HTTPException(status_code=404, detail="History run not found.")
@@ -54,12 +58,14 @@ def attach_visual_complexity(
     run_id: str,
     body: dict[str, Any] = Body(...),
 ) -> JSONResponse:
+    # Visual complexity runs are stored after the main analysis so History can replay maps.
     if not has_history_run(run_id):
         raise HTTPException(status_code=404, detail="History run not found.")
 
     payload = body.get("result") if isinstance(body.get("result"), dict) else body
     source_label = body.get("source_label")
     source_type = body.get("source_type")
+    # Require the analyzer's page summary because History cards depend on it.
     if not isinstance(payload, dict) or not isinstance(payload.get("page"), dict):
         raise HTTPException(
             status_code=422,

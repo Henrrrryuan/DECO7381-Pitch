@@ -5,10 +5,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
+# Central paths used by routers and services to avoid hard-coded relative paths.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EYE_DIR = PROJECT_ROOT / "eye"
 FRONTEND_PUBLIC_DIR = PROJECT_ROOT / "frontend-react" / "public"
 EYE_TEMP_HTML_DIR = PROJECT_ROOT / "backend" / "data" / "eye_temp_html"
+
+# Upload limits keep local development storage and preview generation bounded.
 MAX_EYE_TEMP_HTML_BYTES = 2 * 1024 * 1024  # 2 MiB (UTF-8 encoded body)
 MAX_ZIP_UPLOAD_BYTES = 100 * 1024 * 1024  # 100MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parents[1] / "sample_input"
@@ -19,6 +22,7 @@ SAMPLE_FILE_MAP = {
 }
 
 
+# Main analysis request bodies.
 class AnalyzePayload(BaseModel):
     html: str
     source_name: str | None = None
@@ -32,6 +36,7 @@ class AnalyzeUrlPayload(BaseModel):
     baseline_run_id: str | None = None
 
 
+# Visual complexity analysis request bodies.
 class VicramUrlPayload(BaseModel):
     url: str
     rows: int = 20
@@ -49,6 +54,7 @@ class VicramAnalyzePayload(BaseModel):
     viewport_height: int = 768
 
 
+# Eye tracking data transfer bodies.
 class EyeTempHtmlUploadPayload(BaseModel):
     html: str
 
