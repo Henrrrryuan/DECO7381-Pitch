@@ -1,6 +1,6 @@
 # CogniLens Eye Tracking Tool
 
-This folder contains the Eye Tracking validation tool used by CogniLens. For the fuller submission-facing documentation, see [`../EYE_TRACKING_README.md`](../EYE_TRACKING_README.md).
+This folder contains the optional Eye Tracking support tool used by CogniLens. For the fuller submission-facing documentation, see [`../EYE_TRACKING_README.md`](../EYE_TRACKING_README.md).
 
 The tool tracks webcam gaze in real time and can show:
 
@@ -8,6 +8,8 @@ The tool tracks webcam gaze in real time and can show:
 - gaze heatmap
 - coverage map
 - element-level Eye Evidence summaries
+
+Eye Tracking is a supporting evidence workflow. It is not proof of accessibility and is not a full cognitive-load measurement.
 
 In the current project setup, the React app normally runs on `127.0.0.1:5173` and the FastAPI backend runs on `127.0.0.1:8001`. The backend serves this tool under `/eye/`, and Vite proxies `/eye` during frontend development.
 

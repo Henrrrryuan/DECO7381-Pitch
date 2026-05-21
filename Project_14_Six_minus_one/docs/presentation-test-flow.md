@@ -1,322 +1,284 @@
 # Presentation Test Flow
 
-This document is a practical demo and presentation test script for:
+This document is a practical demo and pre-submission smoke-test script for CogniLens.
 
-- CogniLens main project
-- Local Gaze Focus Tracker (`eye` project)
+CogniLens should be presented as a cognitive accessibility risk-signal detector. It demonstrates how static DOM/content analysis, a visual complexity map, issue-level findings, affected-element highlighting, and redesign guidance can support a designer/developer review. It is not a full WCAG/COGA compliance checker.
 
-It focuses on what to test, how to test it, and what result to show on screen.
+## 1. Demo Goal
 
-## 1. Test Goal
+The presentation should demonstrate that:
 
-The presentation should prove three things:
-
-1. CogniLens can accept a web page file and generate cognitive accessibility analysis results.
-2. CogniLens can keep history, compare runs, and provide explanation plus AI-style guidance.
-3. The `eye` project can load a target page, start webcam gaze tracking, and show visual feedback such as heatmap and coverage.
+1. CogniLens can analyze a URL, single HTML file, or ZIP website package.
+2. The dashboard can show Visual Complexity evidence before issue-level findings.
+3. Accessibility Findings can explain detected cognitive accessibility risk signals, highlight affected elements, and suggest first redesign moves.
+4. History and Print can preserve and share a report.
+5. Eye Tracking can be used as optional supporting evidence, not proof of accessibility or cognitive load.
 
 ## 2. Test Environment
 
-Use the following local services:
+Use these local services:
 
-- Main frontend (React dev): `http://127.0.0.1:5173`
-- Main backend API: `http://127.0.0.1:8001/health`
-- Eye tracking page (via same origin + Vite proxy): `http://127.0.0.1:5173/eye/`
+- React frontend: `http://127.0.0.1:5173`
+- Backend health check: `http://127.0.0.1:8001/health`
+- Eye Tracking page via Vite proxy: `http://127.0.0.1:5173/eye/`
+- Eye Tracking page directly from backend: `http://127.0.0.1:8001/eye/`
 
-Prepare these files before the demo:
+Start the backend:
+
+```bash
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
+```
+
+Start the frontend:
+
+```bash
+cd frontend-react
+npm run dev
+```
+
+Recommended demo files:
 
 - `backend/sample_input/simple-page.html`
-- `backend/sample_input/dense-page.html`
+- `backend/sample_input/sc-test.html`
+- `backend/sample_input/lcc-long-content-test.html`
+- `backend/sample_input/nc-navigation-complexity-test.html`
+- `backend/sample_input/phs-heading-structure-test.html`
+- `backend/sample_input/interaction-distraction-test.html`
+- `backend/sample_input/ei-excessive-interruptions-test.html`
 
-Optional:
+Keep one small, self-contained HTML file ready as the fallback demo input.
 
-- One ZIP package if you want to demonstrate ZIP upload support
+## 3. Pre-Demo Checklist
 
-## 3. Pre-demo Checklist
+- Confirm `GET /health` returns `{"status":"ok"}`.
+- Confirm `http://127.0.0.1:5173/` opens normally.
+- Confirm `History` opens.
+- Confirm `Eye Tracking` opens, but keep it optional.
+- Confirm at least one sample HTML file completes a full New Analysis flow.
+- Confirm a fresh report appears in History.
+- Clear or avoid old History reports if they were generated before recent detector fixes.
+- Keep a URL fallback ready, preferably a local/static URL.
+- Avoid large ZIP packages, large media files, or login-heavy sites during the live demo.
 
-Complete these checks before the audience arrives:
+## 4. Main Demo Flow
 
-- Confirm backend health page returns `{"status":"ok"}`.
-- Confirm the main frontend page (`/`) opens normally.
-- Confirm the eye tracking page (`/eye/`) opens normally.
-- Confirm your webcam works in the browser.
-- Register the eye tracking origin `http://127.0.0.1:5173` at [GazeCloud registration](https://api.gazerecorder.com/register/).
-- Keep one HTML file ready on the desktop for quick upload.
-- Use stable lighting and sit centered in front of the camera.
-
-## 4. Main Project Test Flow
-
-### A. Landing page and navigation
+### A. New Analysis Input
 
 What to test:
 
-- Navigation bar is visible
-- `Guide`, `History`, and `Eye Tracking` navigation works
-- Upload page accepts supported file types
+- URL, HTML, and ZIP input modes are visible.
+- File type and size checks behave professionally.
+- Analysis transitions to the loading page and then dashboard.
 
 How to test:
 
-1. Open `http://127.0.0.1:5173`.
-2. Point out the main navigation.
-3. Click `Guide` (`/docs`), then return to start.
-4. Click `History`, then return to `New Analysis`.
-5. Confirm the upload area says HTML or ZIP is supported.
+1. Open `http://127.0.0.1:5173/`.
+2. Choose Website URL, Upload HTML, or Upload ZIP.
+3. Use a stable local/static input.
+4. Click `Analyze`.
 
 Expected result:
 
-- All pages load without error
-- Navigation is consistent across pages
+- The loading page appears.
+- Analysis completes without getting stuck.
+- The Dashboard opens with a report id and webpage preview.
 
-### B. File upload and analysis
+### B. Visual Complexity
 
 What to test:
 
-- File selection works
-- Upload button is enabled only after valid file selection
-- Backend analysis runs successfully
-- Dashboard opens after analysis
+- Visual Complexity is the first dashboard section.
+- Visual Complexity Score appears.
+- Complexity Map Preview appears when evidence is available.
+- The complexity map can be toggled in the right preview.
 
 How to test:
 
-1. On the upload page, choose `simple-page.html`.
-2. Confirm the selected file name appears.
-3. Click `Analyze`.
-4. Wait for the dashboard to open.
+1. Stay on the Visual Complexity section.
+2. Point out the score and map legend.
+3. Click `View complexity map` or the `Complexity Map Preview`.
+4. Click again to return to the webpage preview.
+5. Open `Calculation details` if a formula/evidence explanation is needed.
 
 Expected result:
 
-- Status changes from ready to analyzing
-- Dashboard opens automatically
-- Overall score and dimension bars appear
+- The right preview toggles between webpage preview and complexity map view.
+- The map is framed as a complexity overview, not eye tracking or AI vision.
+- The explanation stays cautious: busier areas may increase cognitive load and should be reviewed with issue findings.
 
-### C. Dashboard result reading
+### C. Accessibility Findings
 
 What to test:
 
-- Overall score ring is shown
-- Dimension scores are shown
-- Explanation panel is populated
-- Overall comments are populated
+- The section switcher moves to issue-level findings.
+- Focus profiles work as review lenses.
+- Issue cards expand and collapse.
 
 How to test:
 
-1. On the dashboard, point to the score ring and source file name.
-2. Read the four dimension bars.
-3. Scroll the `Explanation` section and show issue descriptions.
-4. Point to `Overall comments`.
+1. Click `Accessibility Findings`.
+2. Select a focus profile such as `Mild Cognitive Impairment` or `ADHD-related Needs`.
+3. Open one or more detected issue cards.
 
 Expected result:
 
-- The result page is not empty
-- At least one meaningful explanation block is shown
+- Issue categories are visible.
+- Profile selection changes the review lens without claiming diagnosis.
+- Issue cards display COGA/ISO framing, concise affected elements, and rationale.
 
-### D. Second run comparison
+### D. Affected Elements and Highlighting
 
 What to test:
 
-- Previous session is stored
-- Second analysis uses the previous one as baseline
-- Comparison section updates
+- Affected element cards are concise.
+- Only the first few elements show by default when many locations exist.
+- `+X more` expands and `Show less` collapses.
+- Clicking an affected element highlights the corresponding preview region.
+- Clicking the same element again clears the active highlight.
 
 How to test:
 
-1. Start another analysis from the upload flow.
-2. Upload `dense-page.html`.
-3. Click `Analyze`.
-4. Return to the dashboard and open the `Comparison` section.
+1. Open an issue with multiple affected elements.
+2. Click one element card.
+3. Confirm the right preview highlights the page element.
+4. Click the same element again.
+5. Confirm the highlight clears.
+6. Click a different element.
 
 Expected result:
 
-- `Comparison` no longer says `No baseline`
-- Delta values are shown
-- Presenter can explain which dimension improved or worsened
+- Active state moves to the selected element.
+- Highlighting matches the affected element.
+- Element numbering remains stable.
 
-### E. AI Assistant area
+### E. Guidance Popover
 
 What to test:
 
-- Assistant input accepts a question
-- Assistant returns a response
-- `Clear` resets the conversation
+- Clicking an affected element opens concise guidance.
+- Guidance includes:
+  - Why This Matters
+  - First Redesign Move
+  - Suggested Action for This Element
+- Guidance is tied to the selected location where available.
 
 How to test:
 
-1. In the dashboard assistant area, ask:
-   `What should I fix first on this page?`
-2. Wait for the response.
-3. Ask one more follow-up question such as:
-   `How can I improve readability?`
-4. Click `Clear`.
+1. Click two different affected elements under the same issue.
+2. Compare the guidance text.
 
 Expected result:
 
-- Messages appear in conversation order
-- The assistant gives targeted advice based on the analysis result
-- Clear resets the thread to the default prompt
+- The rule-level explanation remains consistent.
+- The selected-element wording changes enough to explain why the current element matters.
+- The text avoids compliance claims and uses cautious wording such as `may increase cognitive load`.
 
-### F. Print report
-
-What to test:
-
-- Print flow can be triggered from the dashboard
-
-How to test:
-
-1. Click `Print`.
-2. Show that the browser print dialog opens.
-3. Cancel print if you do not need to actually print.
-
-Expected result:
-
-- Print dialog appears without breaking the page
-
-### G. History page
+### F. History
 
 What to test:
 
-- History list is populated
-- Search by file name works
-- Opening a past run restores a dashboard session
+- Fresh reports are saved.
+- Search and reopen work.
+- Visual Complexity and Eye Evidence summaries appear where available.
 
 How to test:
 
 1. Open `History`.
-2. Show that both uploaded files appear.
-3. Use the search box to search `simple`.
-4. Click `View` on one result.
+2. Search for the source name.
+3. Reopen a fresh report.
 
 Expected result:
 
-- History list updates
-- Search narrows the list
-- Clicking `View` goes back to dashboard with that report loaded
+- History restores the dashboard report.
+- Reopened reports still show issue findings and preview content.
 
-## 5. Eye Project Test Flow
-
-This part is based on the `eye/README.md` instructions and the current `eye` page UI.
-
-### A. Page load and target URL loading
+### G. Print Report
 
 What to test:
 
-- Eye tracking page opens
-- Target URL field works
-- Proxy-based page loading works
+- Print opens from the current report and from a History report.
+- Print report contains summary, profile framing, issue cards, guidance, standards mapping, and affected elements.
+- Print report does not show unnecessary category count badges.
+
+How to test:
+
+1. Click `Print` on a fresh dashboard report.
+2. Cancel the browser print dialog.
+3. Reopen the same report from History and click `Print` again.
+
+Expected result:
+
+- Print layout is readable.
+- No duplicate section count badge appears in issue category headers.
+
+## 5. Optional Eye Tracking Support Flow
+
+Eye Tracking is optional supporting evidence. It should not be described as proof of accessibility, a complete validation layer, or a full cognitive-load measurement.
+
+What to test:
+
+- Eye Tracking page opens.
+- Target URL / HTML / ZIP loading works for a simple page.
+- Start Tracking starts GazeCloudAPI calibration.
+- Camera preview and calibration card appear before active tracking.
+- Once tracking is active, the calibration preview hides so the user can focus on the webpage.
+- Heatmap, gaze dot, visited map, pause, clear, and save controls work where available.
 
 How to test:
 
 1. Open `http://127.0.0.1:5173/eye/`.
-2. Show the `Target URL` field.
-3. Keep the default `https://example.com` or paste another simple public site.
-4. Click `Load URL`.
+2. Load a simple static URL or HTML file.
+3. Click `Start Tracking`.
+4. Allow camera access.
+5. Complete calibration.
+6. Confirm status reaches active tracking.
+7. Pause and show the heatmap if needed.
+8. Save the session only when a valid `run_id` is linked.
 
 Expected result:
 
-- The page loads inside the iframe
-- Status changes to indicate the page is loaded
+- Eye Tracking works as optional behavioural evidence.
+- Main CogniLens analysis remains useful even if Eye Tracking is skipped.
 
-### B. Start tracking and calibration
+## 6. Suggested Live Demo Order
 
-What to test:
-
-- Tracking can start
-- Camera permission prompt appears
-- GazeCloud calibration overlay appears
-
-How to test:
-
-1. Click `Start Tracking`.
-2. Allow camera permission.
-3. Complete the GazeCloud calibration sequence.
-
-Expected result:
-
-- Status changes from idle to calibration, then to active tracking
-- No immediate GazeCloud error appears
-
-### C. Live gaze feedback
-
-What to test:
-
-- Moving gaze dot appears
-- Heatmap updates while looking around
-- Sample count increases
-- Coverage map changes
-
-How to test:
-
-1. After calibration, move your eyes across different parts of the loaded page.
-2. Pause briefly on headings, buttons, and body text.
-3. Watch the dot, heatmap, sample counter, and coverage map.
-
-Expected result:
-
-- Gaze dot follows eye movement with small delay
-- Heatmap becomes denser where you look longer
-- `Samples` increases steadily
-- `Coverage` percentage increases over time
-
-### D. Pause, preview, and clear
-
-What to test:
-
-- `Pause` stops local updates
-- `Show Camera Preview` toggles preview state
-- `Clear Heatmap` resets the visual overlays
-
-How to test:
-
-1. Click `Pause`.
-2. Confirm the dot and counters stop updating.
-3. Click `Resume`.
-4. Click `Show Camera Preview`, then click it again.
-5. Click `Clear Heatmap`.
-
-Expected result:
-
-- Pause and resume work
-- Preview toggles correctly
-- Heatmap and coverage can be reset without reloading the page
-
-## 6. Suggested Demo Order
-
-For a smooth presentation, use this order:
-
-1. Start on the CogniLens upload page (`/`).
-2. Upload `simple-page.html` and show the first dashboard.
-3. Run a second analysis with `dense-page.html` and show comparison.
-4. Show the AI assistant and ask one question.
-5. Open `History` and restore one previous run.
-6. Switch to the eye tracking page (`/eye/`).
-7. Load a simple URL and run calibration.
-8. Show live dot, heatmap, and coverage.
+1. Start on `New Analysis`.
+2. Upload or load one stable local/static page.
+3. Show Visual Complexity score and complexity map preview.
+4. Toggle the right preview between webpage and complexity map.
+5. Switch to `Accessibility Findings`.
+6. Choose a focus profile.
+7. Expand issue cards.
+8. Click affected elements and show highlight.
+9. Open guidance popover.
+10. Show Print.
+11. Open History and reopen the fresh report.
+12. If time and setup are stable, show Eye Tracking as optional supporting evidence.
 
 ## 7. Pass Criteria
 
-The presentation can be considered successful if:
+The demo is successful if:
 
-- Main project completes at least one full upload-to-dashboard cycle
-- Comparison is shown using a second run
-- History can reopen a saved report
-- AI assistant responds at least once
-- Eye tracking page completes calibration
-- Eye tracking page shows visible heatmap or coverage change
+- One full URL/HTML/ZIP analysis reaches Dashboard.
+- Visual Complexity and Accessibility Findings are both explainable.
+- At least one affected element can be highlighted.
+- Guidance explains why the risk signal may increase cognitive load.
+- History can reopen the report.
+- Print opens without layout-breaking artifacts.
+- Eye Tracking is clearly framed as optional support if shown.
 
 ## 8. Fallback Plan
 
-Use these fallback options if something fails during the demo:
-
-- If eye tracking calibration fails:
-  explain the setup requirement and show the already-running UI, controls, and proxy loading flow
-- If AI assistant is slow or unavailable:
-  describe the existing rule-based explanation panel instead
-- If ZIP upload is unstable:
-  switch to HTML upload and continue the main analysis demo
-- If history is empty:
-  upload two pages first, then reopen history
+- If ZIP upload is slow or unstable, switch to a small single HTML file.
+- If URL analysis fails on an external site, use a local/static URL.
+- If Visual Complexity rendering is slow, continue with Accessibility Findings.
+- If Eye Tracking calibration fails, explain the optional nature of the feature and continue with the main report.
+- If History contains old reports, run a fresh New Analysis and use that report for Print/History.
 
 ## 9. Presenter Notes
 
-- Speak in terms of user value, not only technical behavior.
-- When showing scores, explain what the score means for cognitive accessibility.
-- When showing eye tracking, explain that it is a lightweight validation tool rather than a lab-grade research setup.
+- Say `risk signal`, not `compliance failure`.
+- Say `may increase cognitive load`, not `proves cognitive load`.
+- Say `optional supporting evidence`, not `eye-tracking proof`.
+- Say `complexity map`, not `AI vision` or `visual salience analysis`.
+- Explain trade-offs: reducing cognitive load may require simplifying, grouping, delaying, or lowering the priority of some interactive/visual elements.

@@ -3,3 +3,19 @@ backend/data/
 node_modules/
 dist/
 .DS_Store
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# Local run logs, screenshots, probe databases, and generated previews.
+.run-logs/
+*.log
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-journal.bak-*
+backend/*.sqlite3
+backend/*.sqlite3-journal
+backend/*.sqlite3-journal.bak-*
+
+# Third-party reference archive duplicate; runtime uses the live GazeCloudAPI script.
+eye/GazeCloud-master.zip

@@ -1,12 +1,15 @@
 # API Contract
 
-This document reflects the current FastAPI contract used by the React frontend (`frontend-react`) and the eye-tracking UI.
+This document reflects the current FastAPI contract used by the React frontend (`frontend-react`) and the Eye Tracking UI.
+
+CogniLens is a cognitive accessibility risk-signal detector. API responses describe rule-based DOM/static heuristics and supporting evidence. They are not a full WCAG/COGA compliance assessment and should not be treated as proof that a page is accessible.
 
 ## 1. Service Health and Discovery
 
 - `GET /health` -> `{"status":"ok"}`
 - `GET /api` -> service metadata and endpoint list
-- `GET /samples/{sample_name}` -> returns named sample HTML (`simple`, `dense`, `consistency`)
+- `GET /samples/{sample_name}` -> named sample HTML where available
+- `GET /sample-input/{path}` -> static sample input files for local demos
 
 ## 2. Analyze HTML
 
@@ -17,7 +20,7 @@ Request body:
 ```json
 {
   "html": "<html>...</html>",
-  "source_name": "simple-page.html",
+  "source_name": "demo-page.html",
   "baseline_run_id": "optional-history-run-id",
   "persist_result": true
 }
@@ -25,10 +28,10 @@ Request body:
 
 Notes:
 
-- `source_name` is optional (defaults to `"Manual HTML"` when persisted).
+- `source_name` is optional and defaults to a manual/source label when persisted.
 - `baseline_run_id` is optional.
 - `persist_result` defaults to `true`.
-- If `persist_result=false`, the response omits `run` and does not write history.
+- If `persist_result=false`, the response omits the saved `run` object and does not write to History.
 
 ## 3. Analyze URL
 
@@ -38,7 +41,7 @@ Request body:
 
 ```json
 {
-  "url": "https://example.com",
+  "url": "http://127.0.0.1:5173/sample-page",
   "source_name": "optional-label",
   "baseline_run_id": "optional-history-run-id"
 }
@@ -46,8 +49,10 @@ Request body:
 
 Notes:
 
-- Backend fetches URL via proxy, validates HTML content type, and analyzes inlined bundle content.
-- Response includes `resource_bundle` metadata (`entry_name`, CSS/JS file counts, file lists).
+- The backend fetches/proxies the target page and analyzes the resulting HTML bundle.
+- Static or semi-static local/demo pages are the most reliable targets.
+- Dynamic, login-heavy, bot-protected, or script-dependent sites may not match a normal browser session.
+- The response includes `resource_bundle` metadata such as entry name, linked CSS/JS counts, and whether a rendered snapshot was used.
 
 ## 4. Analyze ZIP
 
@@ -60,72 +65,119 @@ Fields:
 
 Validation:
 
-- Non-zip uploads -> `400`
-- Empty zip -> `400`
-- File size limit is `20MB` -> `413`
+- Non-ZIP uploads -> `400`
+- Empty ZIP -> `400`
+- Compressed ZIP upload limit -> `100MB`, returned as `413`
+- ZIPs must contain at least one `.html` or `.htm` file
+
+Preview behaviour:
+
+- The backend extracts safe ZIP members into a local preview directory.
+- It prefers `index.html` / `index.htm` at the root, then nested folder indexes, then the first HTML file.
+- Relative CSS/JS/assets are resolved where possible.
+- The analysis HTML is aligned with the selected preview entry where possible, so dashboard highlight targets match the iframe preview more closely.
 
 ## 5. Analysis Response Shape
 
-`POST /analyze`, `POST /analyze-url`, and `POST /analyze-zip` return:
+`POST /analyze`, `POST /analyze-url`, and `POST /analyze-zip` return a saved analysis payload shaped like:
 
 ```json
 {
-  "overall_score": 74,
-  "weighted_average": 79,
-  "min_dimension_score": 68,
+  "overall_score": 76,
+  "weighted_average": 82,
+  "min_dimension_score": 70,
   "dimensions": [
     {
-      "dimension": "Readability",
-      "display_name": "Readability Issues",
-      "label": "Readability Issues",
-      "issue_category_key": "RD",
-      "issue_category_label": "Readability Issues",
-      "cognitive_dimension": "Reading Load / Comprehension",
-      "score": 82,
-      "issues": [],
-      "metadata": {}
+      "dimension": "Sentence Complexity",
+      "display_name": "Sentence Complexity",
+      "label": "Sentence Complexity",
+      "issue_category_key": "content",
+      "issue_category_label": "Content Issues",
+      "cognitive_dimension": "Comprehension Burden",
+      "score": 70,
+      "issues": [
+        {
+          "rule_id": "SC-1",
+          "title": "Sentence Complexity",
+          "description": "Long or clause-heavy sentences can increase comprehension burden.",
+          "suggestion": "Break long sentences into shorter steps or separate ideas.",
+          "locations": [
+            {
+              "tag": "p",
+              "selector": "main > p:nth-of-type(2)",
+              "label": "Paragraph",
+              "sentence_word_count": 34,
+              "comma_count": 2,
+              "conjunction_count": 4
+            }
+          ],
+          "interpretation": {
+            "confidence": "high",
+            "heuristicBasis": "Sentence length, commas, and conjunction density."
+          }
+        }
+      ],
+      "metadata": {
+        "detector": "Sentence Complexity",
+        "implemented_rules": ["SC-1"],
+        "total_penalty": 15
+      }
     }
   ],
-  "profile_scores": [
-    {
-      "name": "Reading Difficulties Lens",
-      "score": 80,
-      "summary": "..."
-    }
-  ],
+  "profile_scores": [],
   "run": {
     "run_id": "8a9d7c...",
-    "created_at": "2026-04-09T18:20:00+10:00",
-    "source_name": "simple-page.html",
-    "overall_score": 74,
-    "weighted_average": 79,
-    "min_dimension_score": 68
+    "created_at": "2026-05-21T13:00:00+10:00",
+    "source_name": "demo-page.html",
+    "overall_score": 76,
+    "weighted_average": 82,
+    "min_dimension_score": 70
   },
   "html_content": "<html>...</html>",
-  "baseline_run_id": "optional-history-run-id"
+  "baseline_run_id": null
 }
 ```
+
+The current detector set contains these ten rule-based cognitive accessibility risk signals:
+
+| Rule ID | Detector |
+| --- | --- |
+| `DT-1` | Dense Text Detection |
+| `LC-1` | Language Complexity |
+| `SC-1` | Sentence Complexity |
+| `LCC-1` | Long Content Without Chunking |
+| `PHS-1` | Poor Heading Structure |
+| `NC-1` | Navigation Complexity |
+| `WIP-1` | Weak Information Prominence |
+| `VO-1` | Visual Overload |
+| `AMC-1` | Auto-Moving Content |
+| `EI-1` | Excessive Interruptions |
 
 `/analyze-url` and `/analyze-zip` additionally return:
 
 ```json
 {
   "resource_bundle": {
-    "entry_name": "https://example.com",
+    "entry_name": "index.html",
     "css_file_count": 2,
-    "js_file_count": 3,
-    "css_files": ["a.css"],
-    "js_files": ["a.js"]
-  }
+    "js_file_count": 1,
+    "css_files": ["styles/main.css"],
+    "js_files": ["scripts/app.js"],
+    "rendered_snapshot_used": false
+  },
+  "preview_url": "/preview/<preview-id>/index.html"
 }
 ```
 
 ## 6. Visual Complexity Endpoints
 
-- `POST /visual-complexity` with `{ "html": "<html>...</html>" }`
-- `POST /visual-complexity-url` with `{ "url": "https://example.com" }`
+- `POST /api/vicram/analyze` with `{ "html": "<html>...</html>", "url": "optional-label" }`
+- `POST /api/vicram/analyze-url` with `{ "url": "http://127.0.0.1:5173/..." }`
+- `POST /vicram/analyze-url` is also exposed for compatibility with the current frontend integration.
 
-If Playwright/Chromium is unavailable for `/visual-complexity-url`, backend returns `503`.
+The Visual Complexity flow produces a page-level score, a screenshot-backed complexity map, grid/cell summaries, and explanatory report data. It is supporting evidence for visual density review, not AI vision or a rendered visual-salience analysis.
+
+If Playwright/Chromium is unavailable for URL rendering, visual-complexity URL analysis may return a service error and the main DOM/static analysis can still be reviewed.
 
 ## 7. History Endpoints
 
@@ -140,36 +192,27 @@ Response:
 
 ```json
 {
-  "items": [],
-  "total": 0,
+  "items": [
+    {
+      "run_id": "...",
+      "created_at": "...",
+      "source_name": "demo-page.html",
+      "overall_score": 76,
+      "weighted_average": 82,
+      "min_dimension_score": 70,
+      "visual_complexity_summary": {
+        "available": true,
+        "score": 5.4
+      },
+      "eye_tracking_summary": {
+        "available": false
+      }
+    }
+  ],
+  "total": 1,
   "limit": 25,
   "offset": 0
 }
-```
-
-Each item includes heuristic scores plus optional behavioral summary from the latest eye-tracking session linked by `eye_tracking_sessions.run_id` (no report schema change):
-
-```json
-{
-  "run_id": "...",
-  "created_at": "...",
-  "source_name": "...",
-  "overall_score": 74,
-  "weighted_average": 79,
-  "min_dimension_score": 68,
-  "eye_tracking_summary": {
-    "available": true,
-    "coverage_percent": 40.5,
-    "sample_count": 728,
-    "duration_ms": 174000
-  }
-}
-```
-
-When no linked session exists:
-
-```json
-"eye_tracking_summary": { "available": false }
 ```
 
 ### 7.2 Detail
@@ -183,9 +226,9 @@ Response:
   "run": {},
   "html_content": "<html>...</html>",
   "analysis": {
-    "overall_score": 74,
-    "weighted_average": 79,
-    "min_dimension_score": 68,
+    "overall_score": 76,
+    "weighted_average": 82,
+    "min_dimension_score": 70,
     "dimensions": [],
     "profile_scores": []
   }
@@ -194,11 +237,20 @@ Response:
 
 Not found -> `404` with `{"detail":"History run not found."}`.
 
+### 7.3 Save Visual Complexity Evidence
+
+`POST /history/{run_id}/visual-complexity`
+
+Stores visual complexity evidence against an existing analysis run so History and Print can reopen the complexity map.
+
 ## 8. Eye Tracking Endpoints
 
-- `GET /eye/proxy?url=...` -> proxied page response with `X-Proxy-Final-Url`
+- `GET /eye/` -> Eye Tracking page
+- `GET /eye/proxy?url=...` -> proxied target-page response
+- `POST /eye/temp-html` -> temporary HTML upload for Eye Tracking target preview
+- `GET /eye/temp-html/{token}` -> temporary HTML preview
 - `GET /eye/sessions?limit=25&offset=0&query=...&run_id=...`
-- `GET /eye/sessions/by-run/{run_id}` -> latest linked session detail (heatmap data) or `404`
+- `GET /eye/sessions/by-run/{run_id}` -> latest linked session detail or `404`
 - `GET /eye/sessions/{session_id}`
 - `POST /eye/sessions`
 
@@ -213,8 +265,8 @@ Not found -> `404` with `{"detail":"History run not found."}`.
   "sample_count": 120,
   "duration_ms": 45000,
   "coverage_percent": 62.5,
-  "grid_cols": 12,
-  "grid_rows": 8,
+  "grid_cols": 24,
+  "grid_rows": 14,
   "cell_counts": [0, 3, 1],
   "summary": {}
 }
@@ -222,11 +274,13 @@ Not found -> `404` with `{"detail":"History run not found."}`.
 
 Validation:
 
-- Missing or blank `run_id` -> `400` (session must link to a saved analysis)
+- Missing or blank `run_id` -> `400`
 - Unknown `run_id` -> `400`
 - Negative metrics -> `400`
 - Invalid grid size -> `400`
 - `len(cell_counts) != grid_cols * grid_rows` -> `400`
+
+Eye Tracking evidence is optional supporting evidence. It is not proof of accessibility, a clinical cognitive-load measurement, or a replacement for user testing.
 
 ## 9. Assistant Endpoint
 
@@ -236,8 +290,8 @@ Request body:
 
 ```json
 {
-  "message": "How can I improve readability?",
-  "source_name": "simple-page.html",
+  "message": "What should I review first?",
+  "source_name": "demo-page.html",
   "analysis_context": {}
 }
 ```
@@ -251,26 +305,16 @@ Response:
 }
 ```
 
-## 10. Scoring Rules (Current)
+The assistant endpoint is optional support around the saved analysis context. It is not part of detector scoring.
 
-Issue penalties are **fixed per detector** when an issue is raised (no severity tiers or multipliers).
+## 10. Scoring Notes
 
-Dimension score:
+Issue penalties are fixed per detector when a rule-based issue is raised. The score is an MVP prioritisation aid for the dashboard, not a compliance score.
 
 ```text
 dimension_score = max(0, round(100 * (1 - sum(issue.penalty) / dimension_penalty_cap)))
-```
-
-Weighted average (equal weights across the ten cognitive dimensions by default):
-
-```text
-weighted_average = sum(dimension.score * weight)  # weights from backend DIMENSION_WEIGHTS
-```
-
-Overall score:
-
-```text
+weighted_average = sum(dimension.score * weight)
 overall = 0.4 * min_dimension_score + 0.6 * weighted_average
 ```
 
-Issue payloads expose **`interpretation`** (`confidence`, `heuristicBasis`) instead of graded severity labels.
+Issue payloads expose `interpretation` metadata such as `confidence` and `heuristicBasis` so the frontend can explain that findings are static heuristics.
