@@ -144,7 +144,7 @@ export function printIssueCardMarkup(issue, dimensionName, issueNumber, deps) {
       <p>${escapeHtml(description)}</p>
       <p><strong>First fix:</strong> ${escapeHtml(firstFix)}</p>
       <div class="print-issue-card__standards">
-        <span class="print-issue-card__standards-label">WCAG Cognitive Accessibility Guidance</span>
+        <span class="print-issue-card__standards-label">W3C COGA guidance</span>
         ${pillListMarkup(cogaTags, 99, "coga")}
       </div>
       <div class="print-issue-card__tags">

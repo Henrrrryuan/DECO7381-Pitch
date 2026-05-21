@@ -506,7 +506,7 @@ function issueSummaryCardMarkup(ctx, issueContext) {
             <div class="issue-rationale-expand-wrap">
               <div class="issue-rationale-inner">
                 <div class="issue-summary-row issue-summary-row-standards">
-                  <span class="issue-highlight-label issue-highlight-label--wcag-guidance">WCAG Cognitive Accessibility Guidance</span>
+                  <span class="issue-highlight-label issue-highlight-label--wcag-guidance">W3C COGA guidance</span>
                   ${cogaMarkup}
                 </div>
                 <div class="issue-summary-row issue-summary-row-standards">
