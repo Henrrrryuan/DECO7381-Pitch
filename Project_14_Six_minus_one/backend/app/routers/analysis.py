@@ -33,6 +33,7 @@ ABSOLUTE_ASSET_ATTR_PATTERN = re.compile(
 
 
 def _is_safe_zip_member(member_name: str) -> bool:
+    # Reject absolute paths and traversal entries before extracting user ZIP content.
     path = PurePosixPath(member_name.replace("\\", "/"))
     if path.is_absolute():
         return False
@@ -94,6 +95,7 @@ def _preview_url(preview_id: str, rel_path: str) -> str:
 
 
 def _rewrite_html_for_preview(html: str, preview_id: str, rel_path: str) -> str:
+    # Inject a preview-local base path so uploaded static sites keep relative assets working.
     current_dir = PurePosixPath(rel_path).parent
     current_dir_text = "" if current_dir.as_posix() == "." else current_dir.as_posix().strip("/")
     asset_base = f"/preview/{preview_id}/"
@@ -153,6 +155,7 @@ def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
     analysis = analyze_html(payload.html)
     if not payload.persist_result:
+        # Some UI flows need a transient analysis without adding a history record.
         response_payload = analysis.to_dict()
         response_payload["html_content"] = payload.html
         response_payload["baseline_run_id"] = None

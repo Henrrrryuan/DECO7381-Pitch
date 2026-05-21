@@ -32,6 +32,7 @@ def analyze_vicram(payload: VicramUrlPayload) -> dict[str, Any]:
 @router.post("/api/vicram/analyze")
 def analyze_vicram_source(payload: VicramAnalyzePayload) -> dict[str, Any]:
     try:
+        # The dashboard can analyze either a live URL or a prepared HTML preview.
         if payload.url:
             return analyze_vicram_url(
                 payload.url,

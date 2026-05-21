@@ -33,6 +33,7 @@ def analyze_detector_rules(
     }
 
     dimensions: list[DimensionResult] = []
+    # Each selector returns at most one issue group for its detector dimension.
     for detector_name, rule_id, selector in SELECTORS:
         issue = selector(context)
         issues = [issue] if issue is not None else []

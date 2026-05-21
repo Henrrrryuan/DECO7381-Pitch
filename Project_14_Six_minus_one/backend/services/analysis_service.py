@@ -16,6 +16,7 @@ def analyze_html(
     js_sources: list[str] | None = None,
 ) -> AnalysisResult:
     merged_js_sources = list(js_sources or [])
+    # Inline scripts are merged with external JS so motion and interaction rules see both sources.
     merged_js_sources.extend(collect_inline_script_texts(html))
 
     dimensions = analyze_detector_rules(
@@ -36,6 +37,7 @@ def build_analysis_response(
 ) -> dict[str, Any]:
     saved_run = save_analysis_run(analysis, html_content, source_name)
     resolved_baseline_run_id = None
+    # Comparison links are only recorded when the requested baseline still exists.
     if baseline_run_id and has_history_run(baseline_run_id):
         record_compare_pair(baseline_run_id, saved_run.run_id)
         resolved_baseline_run_id = baseline_run_id

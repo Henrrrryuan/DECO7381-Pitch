@@ -167,6 +167,7 @@ def _resolve_member_name(
         joined = entry_dir / candidate_path
 
     normalized_parts: list[str] = []
+    # Resolve relative paths without allowing references to escape the ZIP root.
     for part in joined.parts:
         if part in {"", "."}:
             continue
@@ -216,6 +217,7 @@ def _inline_css_into_html(html: str, css_files: dict[str, str]) -> str:
         replaced = True
 
     if not replaced:
+        # If links cannot be matched exactly, append known CSS so detectors still see styling hints.
         container = soup.head or soup.body or soup
         for name, css_text in css_files.items():
             style_tag = soup.new_tag("style")

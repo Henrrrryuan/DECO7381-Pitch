@@ -38,7 +38,7 @@ def _ei_grounding_selector(soup: BeautifulSoup | None, tag: Tag | None) -> str:
 
 
 def _amc_src_match_candidates(raw_src: str) -> list[str]:
-    """Try several substrings so `iframe[src*="…"]`-style selectors can discriminate."""
+    """Try several substrings so `iframe[src*="..."]`-style selectors can discriminate."""
     s = (raw_src or "").strip()
     if not s:
         return []
@@ -796,7 +796,7 @@ def is_initially_visible(tag: Tag) -> bool:
     """Static visibility for EI: treat elements under hidden subtrees as non-visible.
 
     Walks the inclusive ancestor chain so `hidden`, aria-hidden, closing native
-    `<dialog>`, and basic inline hiding apply to descendants—not only the leaf.
+    `<dialog>`, and basic inline hiding apply to descendants, not only the leaf.
     Class/id heuristics (`sr-only`, etc.) stay on the candidate tag only.
     """
 

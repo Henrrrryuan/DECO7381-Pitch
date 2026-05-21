@@ -2,7 +2,6 @@ import {
   API_BASE,
   analyzeVicramSource,
   buildAnalysisView,
-  chatWithAssistant,
   escapeHtml,
   fetchJson,
   findDimension,
@@ -76,15 +75,11 @@ import { dashboardState as state } from "../dashboard/state/dashboardState.js";
 import { activePatientProfile as activePatientProfileSelector, selectedIssueRecord as selectedIssueRecordSelector } from "../dashboard/state/dashboardSelectors.js";
 import {
   clearActiveHighlight,
-  pushChatMessage,
-  resetChatMessages,
   resetSelectionToSummary,
   setActiveGuidancePopoverKey,
   setActiveHighlightDimension,
   setActiveHighlightIssueId,
   setActivePatientProfile as setActivePatientProfileTransition,
-  setAssistantFloatingOpen as setAssistantFloatingOpenTransition,
-  setChatPending,
   setCurrentPayloadAndSource,
   setCurrentResultAndHtml,
   setPreviousComparison,
@@ -100,14 +95,12 @@ import { PATIENT_PROFILES } from "../dashboard/shared/patientProfiles.js";
 // State container extracted to dashboard/state (behavior preserved).
 
 const SIDEBAR_STORAGE_KEY = "cognilens.sidebar.collapsed";
-const ASSISTANT_POSITION_STORAGE_KEY = "cognilens.assistant.position";
 const AUTO_PRINT_STORAGE_KEY = "cognilens.dashboard.autoPrint";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
 /** Shared with `eye/app.js`: latest dashboard report to attach behavioral evidence. */
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
-const ASSISTANT_MARGIN = 16;
 const VICRAM_GRID_ROWS = 20;
 const VICRAM_GRID_COLUMNS = 20;
 
@@ -4904,128 +4897,6 @@ function renderPrintableProfileReport(result) {
   renderPrintableProfileReportIntoSidebar(result, printMarkupDeps());
 }
 
-function buildAssistantContext() {
-  const result = state.currentResult;
-  if (!result) {
-    return null;
-  }
-
-  return {
-    source_name: state.sourceName || "Uploaded file",
-    dimensions: result.dimensions.map((dimension) => ({
-      dimension: dimension.dimension,
-      issue_category_label: displayIssueCategoryName(dimension.dimension),
-      cognitive_dimension: cognitiveDimensionLabel(dimension.dimension),
-      issues: dimension.issues.map((issue) => ({
-        rule_id: issue.rule_id,
-        issue_category_label: displayIssueCategoryNameForIssue(issue, dimension.dimension),
-        title: issue.title,
-        description: issue.description,
-        suggestion: issue.suggestion,
-        interpretation: issue.interpretation || issue.issue_object?.interpretation,
-      })),
-    })),
-  };
-}
-
-function ensureInitialAssistantMessage() {
-  if (state.chatMessages.length) {
-    return;
-  }
-  resetChatMessages(state, [
-    {
-      role: "assistant",
-      content: "Ask me how to reduce information overload, improve readability, or fix specific issues.",
-    },
-  ]);
-}
-
-function renderAssistantMessages() {
-  const messageContainer = document.getElementById("assistantMessages");
-  const sendButton = document.getElementById("assistantSendButton");
-  const input = document.getElementById("assistantInput");
-  if (!messageContainer) {
-    return;
-  }
-
-  ensureInitialAssistantMessage();
-
-  messageContainer.innerHTML = state.chatMessages.map((message) => `
-    <article class="assistant-message assistant-message-${escapeHtml(message.role)}">
-      <p>${escapeHtml(message.content)}</p>
-    </article>
-  `).join("");
-
-  if (state.chatPending) {
-    messageContainer.insertAdjacentHTML(
-      "beforeend",
-      `
-        <article class="assistant-message assistant-message-assistant assistant-message-pending">
-          <p>Thinking…</p>
-        </article>
-      `,
-    );
-  }
-
-  if (sendButton) {
-    sendButton.disabled = state.chatPending;
-    sendButton.textContent = state.chatPending ? "Sending..." : "Send";
-  }
-
-  if (input) {
-    input.disabled = state.chatPending;
-  }
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
-}
-
-async function handleAssistantSubmit(event) {
-  event.preventDefault();
-
-  const input = document.getElementById("assistantInput");
-  if (!input || state.chatPending) {
-    return;
-  }
-
-  const prompt = input.value.trim();
-  if (!prompt) {
-    return;
-  }
-
-  pushChatMessage(state, { role: "user", content: prompt });
-  input.value = "";
-  setChatPending(state, true);
-  renderAssistantMessages();
-
-  try {
-    const response = await chatWithAssistant({
-      message: prompt,
-      analysis_context: buildAssistantContext(),
-      source_name: state.sourceName || "Uploaded file",
-    });
-
-    pushChatMessage(state, {
-      role: "assistant",
-      content: response.reply || "No assistant response was returned.",
-    });
-  } catch (error) {
-    pushChatMessage(state, {
-      role: "assistant",
-      content: `I could not reach the AI assistant right now. ${error.message || String(error)}`,
-    });
-  } finally {
-    setChatPending(state, false);
-    renderAssistantMessages();
-    input.focus();
-  }
-}
-
-function handleAssistantClear() {
-  resetChatMessages(state);
-  ensureInitialAssistantMessage();
-  renderAssistantMessages();
-}
-
 function syncEyeTrackingNavAndStorage() {
   const payload = state.currentPayload;
   const run = payload?.run;
@@ -5086,7 +4957,6 @@ function renderResult(result, html, options = {}) {
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
   renderExplanation(result);
-  renderAssistantMessages();
   syncEyeTrackingNavAndStorage();
 }
 
@@ -5122,161 +4992,6 @@ function initSidebar() {
   setSidebarCollapsed(state, sessionStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
   applySidebarState();
   window.addEventListener("resize", applySidebarState);
-}
-
-function clampAssistantPosition(left, top) {
-  const assistantWindow = document.getElementById("assistantFloatingWindow");
-  const rect = assistantWindow?.getBoundingClientRect();
-  const width = rect?.width || 420;
-  const height = rect?.height || 540;
-  const minTop = 76;
-  const maxLeft = Math.max(ASSISTANT_MARGIN, window.innerWidth - width - ASSISTANT_MARGIN);
-  const maxTop = Math.max(minTop, window.innerHeight - height - ASSISTANT_MARGIN);
-
-  return {
-    left: Math.min(Math.max(ASSISTANT_MARGIN, left), maxLeft),
-    top: Math.min(Math.max(minTop, top), maxTop),
-  };
-}
-
-function setAssistantPosition(left, top, shouldPersist = true) {
-  const assistantWindow = document.getElementById("assistantFloatingWindow");
-  if (!assistantWindow) {
-    return;
-  }
-
-  const position = clampAssistantPosition(left, top);
-  assistantWindow.style.left = `${position.left}px`;
-  assistantWindow.style.top = `${position.top}px`;
-  assistantWindow.style.right = "auto";
-  assistantWindow.style.bottom = "auto";
-
-  if (shouldPersist) {
-    sessionStorage.setItem(ASSISTANT_POSITION_STORAGE_KEY, JSON.stringify(position));
-  }
-}
-
-function positionAssistantWindow() {
-  const assistantWindow = document.getElementById("assistantFloatingWindow");
-  if (!assistantWindow) {
-    return;
-  }
-
-  const storedPosition = sessionStorage.getItem(ASSISTANT_POSITION_STORAGE_KEY);
-  if (storedPosition) {
-    try {
-      const position = JSON.parse(storedPosition);
-      setAssistantPosition(Number(position.left), Number(position.top), false);
-      return;
-    } catch (error) {
-      sessionStorage.removeItem(ASSISTANT_POSITION_STORAGE_KEY);
-    }
-  }
-
-  assistantWindow.hidden = false;
-  const rect = assistantWindow.getBoundingClientRect();
-  const left = window.innerWidth - rect.width - 28;
-  const top = window.innerHeight - rect.height - 28;
-  assistantWindow.hidden = !state.assistantFloatingOpen;
-  setAssistantPosition(left, top, false);
-}
-
-function setAssistantFloatingOpen(isOpen) {
-  const assistantWindow = document.getElementById("assistantFloatingWindow");
-  const assistantButton = document.getElementById("assistantFloatingButton");
-  if (!assistantWindow || !assistantButton) {
-    return;
-  }
-
-  setAssistantFloatingOpenTransition(state, isOpen);
-  assistantWindow.hidden = !isOpen;
-  assistantButton.setAttribute("aria-expanded", String(isOpen));
-  document.body.classList.toggle("assistant-floating-open", isOpen);
-
-  if (isOpen) {
-    positionAssistantWindow();
-    document.getElementById("assistantInput")?.focus();
-  }
-}
-
-function initAssistantFloating() {
-  const assistantWindow = document.getElementById("assistantFloatingWindow");
-  const assistantButton = document.getElementById("assistantFloatingButton");
-  const minimizeButton = document.getElementById("assistantMinimizeButton");
-  const dragHandle = document.getElementById("assistantDragHandle");
-
-  if (!assistantWindow || !assistantButton || !dragHandle) {
-    return;
-  }
-
-  assistantButton.addEventListener("click", () => {
-    dispatchDashboardAction({
-      type: DASHBOARD_ACTIONS.TOGGLE_ASSISTANT,
-      payload: { open: true },
-      affected_systems: ["state", "render"],
-    });
-  });
-
-  if (minimizeButton) {
-    minimizeButton.addEventListener("click", () => {
-      dispatchDashboardAction({
-        type: DASHBOARD_ACTIONS.TOGGLE_ASSISTANT,
-        payload: { open: false },
-        affected_systems: ["state", "render"],
-      });
-    });
-  }
-
-  dragHandle.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) {
-      return;
-    }
-    if (event.target.closest("button, input, textarea, a, select, option, label")) {
-      return;
-    }
-
-    event.preventDefault();
-    const startRect = assistantWindow.getBoundingClientRect();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    document.body.classList.add("dragging-assistant");
-    dragHandle.setPointerCapture?.(event.pointerId);
-
-    const handleMove = (moveEvent) => {
-      const distanceX = moveEvent.clientX - startX;
-      const distanceY = moveEvent.clientY - startY;
-      moveEvent.preventDefault();
-      setAssistantPosition(
-        startRect.left + distanceX,
-        startRect.top + distanceY,
-      );
-    };
-
-    const handleUp = () => {
-      cleanup();
-    };
-
-    const cleanup = () => {
-      document.body.classList.remove("dragging-assistant");
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-      window.removeEventListener("pointercancel", handleUp);
-    };
-
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    window.addEventListener("pointercancel", handleUp);
-  });
-
-  window.addEventListener("resize", () => {
-    if (!state.assistantFloatingOpen) {
-      return;
-    }
-    const rect = assistantWindow.getBoundingClientRect();
-    setAssistantPosition(rect.left, rect.top, false);
-  });
-
-  positionAssistantWindow();
 }
 
 function getHistoryReportRunIdFromUrl() {
@@ -5392,7 +5107,6 @@ function bindEvents() {
     highlightDimension,
     focusIssueElement,
     printDashboardReport,
-    setAssistantFloatingOpen,
   });
 
   if (printButton) {

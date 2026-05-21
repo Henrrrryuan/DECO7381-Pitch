@@ -61,24 +61,6 @@ function setWorkspaceMode(state, mode) {
   });
 }
 
-function setChatPending(state, pending) {
-  transition(state, "setChatPending", () => {
-    state.chatPending = Boolean(pending);
-  });
-}
-
-function resetChatMessages(state, messages = null) {
-  transition(state, "resetChatMessages", () => {
-    state.chatMessages = Array.isArray(messages) ? messages : [];
-  });
-}
-
-function pushChatMessage(state, message) {
-  transition(state, "pushChatMessage", () => {
-    state.chatMessages.push(message);
-  });
-}
-
 function setCurrentResultAndHtml(state, result, html) {
   transition(state, "setCurrentResultAndHtml", () => {
     state.currentResult = result;
@@ -108,12 +90,6 @@ function toggleSidebarCollapsed(state) {
   });
 }
 
-function setAssistantFloatingOpen(state, isOpen) {
-  transition(state, "setAssistantFloatingOpen", () => {
-    state.assistantFloatingOpen = Boolean(isOpen);
-  });
-}
-
 function resetSelectionToSummary(state) {
   transition(state, "resetSelectionToSummary", () => {
     state.selectedIssueId = "";
@@ -134,15 +110,11 @@ function clearActiveHighlight(state) {
 
 export {
   clearActiveHighlight,
-  pushChatMessage,
-  resetChatMessages,
   resetSelectionToSummary,
   setActiveGuidancePopoverKey,
   setActiveHighlightDimension,
   setActiveHighlightIssueId,
   setActivePatientProfile,
-  setAssistantFloatingOpen,
-  setChatPending,
   setCurrentPayloadAndSource,
   setCurrentResultAndHtml,
   setPreviousComparison,
