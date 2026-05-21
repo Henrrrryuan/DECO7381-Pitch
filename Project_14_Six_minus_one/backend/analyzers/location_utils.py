@@ -435,7 +435,7 @@ def _phs_narrow_tags_by_exact_heading_text(sel_tags: list[Tag], location: dict[s
 
 
 def _find_by_text_phs_strict(soup: BeautifulSoup, text: str) -> list[Tag]:
-    """PHS-1: exact normalized match on h1–h6 only; no substring / fuzzy overlap."""
+    """PHS-1: exact normalized match on h1-h6 only; no substring / fuzzy overlap."""
     normalized = normalize_text(text).lower()
     if not normalized:
         return []
@@ -1026,7 +1026,7 @@ def _wip_try_lock_unique_selector_cta(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """WIP-1: unique selector resolves to one CTA-shaped node — lock identity (skip fuzzy sanitize path)."""
+    """WIP-1: unique selector resolves to one CTA-shaped node; lock identity (skip fuzzy sanitize path)."""
     if rule_id != "WIP-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1051,7 +1051,7 @@ def _nc_try_lock_unique_selector_nav(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """NC-1: unique selector resolves to exactly one <nav> — lock identity (skip fuzzy sanitize path)."""
+    """NC-1: unique selector resolves to exactly one <nav>; lock identity (skip fuzzy sanitize path)."""
     if rule_id != "NC-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1084,7 +1084,7 @@ def _lc_grounding_selector(
     tag: Tag,
     location: dict[str, Any] | None,
 ) -> str:
-    """LC-1 grounding: mirror PHS prioritization — unique id / extended ancestor path / stable, else incoming."""
+    """LC-1 grounding: mirror PHS prioritization; unique id / extended ancestor path / stable, else incoming."""
     if not isinstance(tag, Tag):
         return ""
 
@@ -1186,7 +1186,7 @@ def _sc_try_lock_unique_selector_text_block(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """SC-1: unique selector resolves to exactly one p/li/td/th — lock identity (skip fuzzy sanitize path)."""
+    """SC-1: unique selector resolves to exactly one p/li/td/th; lock identity (skip fuzzy sanitize path)."""
     if rule_id != "SC-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1211,7 +1211,7 @@ def _lc_try_lock_unique_selector_text_block(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """LC-1: lock highlighted node — single-match raw selector, or attrs/text disambiguation on multi-match."""
+    """LC-1: lock highlighted node; single-match raw selector, or attrs/text disambiguation on multi-match."""
     if rule_id != "LC-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1251,7 +1251,7 @@ def _dt_try_lock_unique_selector_text_block(
     dimension_name: str,
     rule_id: str,
 ) -> Tag | None:
-    """DT-1: unique selector resolves to exactly one p/li/td/th — lock identity (no fuzzy path)."""
+    """DT-1: unique selector resolves to exactly one p/li/td/th; lock identity (no fuzzy path)."""
     if rule_id != "DT-1":
         return None
     if location.get("highlightable") is False or location.get("documentStructuralFinding") is True:
@@ -1400,7 +1400,7 @@ def build_location_payload(tag: Tag, original: dict[str, Any], selector: str, ru
             preview_parts.append(f"{n_links} navigation links")
         if isinstance(n_depth, int):
             preview_parts.append(f"nesting depth {n_depth}")
-        preview = (" · ".join(preview_parts) if preview_parts else "Navigation region")[:160]
+        preview = (" | ".join(preview_parts) if preview_parts else "Navigation region")[:160]
     else:
         label = accessible_label(tag) or text_preview(tag) or human_tag_label(tag)
         preview = text_preview(tag)[:160]

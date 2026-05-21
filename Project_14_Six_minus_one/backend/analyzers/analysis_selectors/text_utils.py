@@ -7,7 +7,7 @@ LONG_WORD_LENGTH_THRESHOLD = 9
 
 LATIN_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?")
 ALPHA_WORD_PATTERN = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
-SENTENCE_SPLIT_PATTERN = re.compile(r"[.!?。！？]+")
+SENTENCE_SPLIT_PATTERN = re.compile(r"[.!?]+")
 DOTTED_NUMERIC_PATTERN = re.compile(r"\b\d+(?:\.\d+)+\b")
 VOWEL_GROUP_PATTERN = re.compile(r"[aeiouy]+", re.IGNORECASE)
 

@@ -147,7 +147,7 @@ INTERPRETATION_BY_RULE_ID: dict[str, dict[str, Any]] = {
     },
     "PHS-1": {
         "confidence": "medium-high",
-        "heuristicBasis": "Document semantic heading hierarchy (h1–h6 markup order); not visual prominence or viewport layout.",
+        "heuristicBasis": "Document semantic heading hierarchy (h1-h6 markup order); not visual prominence or viewport layout.",
     },
     "NC-1": {
         "confidence": "medium",

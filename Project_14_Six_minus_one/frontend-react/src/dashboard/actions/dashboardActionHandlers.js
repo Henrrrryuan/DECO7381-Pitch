@@ -47,10 +47,6 @@ function dashboardActionHandlersFactory() {
     SELECT_ELEMENT: ({ payload, ctx }) => {
       ctx.focusIssueElement(payload?.dimensionName, payload?.ruleId, Number(payload?.elementNumber || 1));
     },
-
-    TOGGLE_ASSISTANT: ({ payload, ctx }) => {
-      ctx.setAssistantFloatingOpen(payload?.open === undefined ? true : Boolean(payload.open));
-    },
   };
 }
 

@@ -8,7 +8,6 @@ from fastapi.staticfiles import StaticFiles
 from ..adapters.persistence.history_store import init_history_store
 from .core import EYE_DIR, FRONTEND_PUBLIC_DIR, SAMPLE_INPUT_DIR
 from .routers.analysis import router as analysis_router
-from .routers.assistant import router as assistant_router
 from .routers.eye import router as eye_router
 from .routers.history import router as history_router
 from .routers.system import router as system_router
@@ -16,6 +15,7 @@ from .routers.vicram import router as vicram_router
 
 init_history_store()
 
+# FastAPI owns the API surface; Vite serves the React app during development.
 app = FastAPI(title="Cognitive Accessibility Assistant API")
 app.add_middleware(
     CORSMiddleware,
@@ -29,7 +29,6 @@ app.include_router(system_router)
 app.include_router(history_router)
 app.include_router(eye_router)
 app.include_router(analysis_router)
-app.include_router(assistant_router)
 app.include_router(vicram_router)
 
 

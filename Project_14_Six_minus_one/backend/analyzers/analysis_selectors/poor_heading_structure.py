@@ -94,11 +94,11 @@ def detect_poor_heading_structure(soup: BeautifulSoup) -> Issue | None:
     violations_evidence: list[dict[str, Any]] = []
 
     phs_description = (
-        "Semantic h1–h6 heading-order issues can make page orientation harder from the HTML structure alone; "
+        "Semantic h1-h6 heading-order issues can make page orientation harder from the HTML structure alone; "
         "this check does not evaluate visual heading size, styling, or viewport prominence."
     )
     phs_suggestion = (
-        "Use a predictable semantic h1–h6 hierarchy: one primary h1 where appropriate, ordered lower-level "
+        "Use a predictable semantic h1-h6 hierarchy: one primary h1 where appropriate, ordered lower-level "
         "headings for real sections, and meaningful non-empty heading text."
     )
 

@@ -67,10 +67,4 @@ class SaveEyeTrackingSessionPayload(BaseModel):
     summary: dict[str, Any] | None = None
 
 
-class AssistantChatPayload(BaseModel):
-    message: str
-    source_name: str | None = None
-    analysis_context: dict[str, Any] | None = None
-
-
 # Keep only shared app-level constants and request payload schemas here.

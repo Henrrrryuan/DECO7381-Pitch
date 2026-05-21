@@ -14,7 +14,7 @@ INTERACTIVE_ELEMENT_THRESHOLD = 8
 
 _VO_MAX_LOCATIONS = 8
 
-# Lightweight keyword buckets (attrs id/class/role + tag context only — no layout).
+# Lightweight keyword buckets (attrs id/class/role + tag context only; no layout).
 _CTA_ATTR_HINTS = (
     "cta",
     "primary",
@@ -173,19 +173,19 @@ def _vo_contributor_score(tag: Tag, stream_index: int, stream: list[Tag]) -> int
     name = (tag.name or "").lower()
     blob = _attrs_blob(tag)
 
-    # +4 — interactive / form controls
+    # +4: interactive / form controls
     if is_interactive(tag):
         score += 4
     if name == "form":
         score += 4
 
-    # +4 — media / rich visuals
+    # +4: media / rich visuals
     if name in {"img", "video", "audio", "iframe", "canvas"}:
         score += 4
     if name == "svg":
         score += 4
 
-    # +3 — landmarks & component hints (avoid double-count with looks_like)
+    # +3: landmarks & component hints (avoid double-count with looks_like)
     if name in {"nav"}:
         score += 3
     if looks_like_visual_component(tag):
@@ -195,10 +195,10 @@ def _vo_contributor_score(tag: Tag, stream_index: int, stream: list[Tag]) -> int
     elif any(k in blob for k in _CTA_ATTR_HINTS):
         score += 2
 
-    # +3 — repeated sibling interactives (competing controls)
+    # +3: repeated sibling interactives (competing controls)
     score += _sibling_interactive_cluster_bonus(tag)
 
-    # +2 — subtree packs multiple controls / list grids
+    # +2: subtree packs multiple controls / list grids
     ic = _count_descendant_interactives(tag)
     if ic >= 4:
         score += 2
@@ -207,12 +207,12 @@ def _vo_contributor_score(tag: Tag, stream_index: int, stream: list[Tag]) -> int
 
     score += _list_cluster_bonus(tag)
 
-    # +1 — section/article with real density (competing regions)
+    # +1: section/article with real density (competing regions)
     if name in {"section", "article"}:
         if ic >= 1 or len(visible_text(tag).strip()) >= 72:
             score += 1
 
-    # Penalties — suppress arbitrary readable chrome
+    # Penalties: suppress arbitrary readable chrome
     if name == "p":
         score -= 6
         if tag.find(["a", "button", "input", "img"]):
@@ -269,7 +269,7 @@ def vo_contributor_category(tag: Tag) -> str:
     role = str(tag.get("role") or "").lower()
     ancestors = _ancestor_tag_names(tag)
 
-    # 1 — Navigation / wayfinding density
+    # 1: Navigation / wayfinding density
     if name == "nav":
         return "navigation_density"
     if name == "a" and tag.get("href") and "nav" in ancestors:
@@ -283,17 +283,17 @@ def vo_contributor_category(tag: Tag) -> str:
     if name in {"ul", "ol", "li"} and _is_navigation_list_context(tag):
         return "navigation_density"
 
-    # 2 — Media / motion-rich competition
+    # 2: Media / motion-rich competition
     if name in {"img", "video", "audio", "iframe", "canvas", "svg"}:
         return "media_competition"
     if any(k in blob for k in _VO_MEDIA_EXTRA_BLOB):
         return "media_competition"
 
-    # 3 — Interactive / control competition
+    # 3: Interactive / control competition
     if is_interactive(tag) or name == "form":
         return "interactive_competition"
 
-    # 4 — Cards, grids, repeated blocks
+    # 4: Cards, grids, repeated blocks
     items = [c for c in tag.find_all("li", recursive=False)] if name in {"ul", "ol"} else []
     if len(items) >= 2:
         return "card_grid_density"
@@ -302,7 +302,7 @@ def vo_contributor_category(tag: Tag) -> str:
     if any(k in blob for k in _VO_CARD_GRID_BLOB):
         return "card_grid_density"
 
-    # 5 — Structural / dense regions (fallback)
+    # 5: Structural / dense regions (fallback)
     if name in {"section", "article", "main", "aside", "header", "footer", "div"}:
         return "structural_density"
 

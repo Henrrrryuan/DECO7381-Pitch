@@ -17,9 +17,7 @@ function summarizeState(state) {
     selectedElementNumber: Number(state?.selectedElementNumber || 0),
     activeHighlightDimension: state?.activeHighlightDimension || "",
     activeHighlightIssueId: state?.activeHighlightIssueId || "",
-    chatPending: Boolean(state?.chatPending),
     sidebarCollapsed: Boolean(state?.sidebarCollapsed),
-    assistantFloatingOpen: Boolean(state?.assistantFloatingOpen),
     activeProfile: state?.activeProfile || "",
     dt_locations: Number(dtLocs || 0),
   };
