@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from ...adapters.persistence.history_store import (
+    delete_history_run,
     get_history_run,
     has_history_run,
     list_history_runs,
@@ -33,6 +34,19 @@ def history_detail(run_id: str) -> JSONResponse:
     if detail is None:
         raise HTTPException(status_code=404, detail="History run not found.")
     return JSONResponse(content=detail.to_dict(), headers=_HISTORY_NO_CACHE)
+
+
+@router.delete("/history/{run_id}")
+def delete_history(run_id: str) -> JSONResponse:
+    normalized_run_id = str(run_id or "").strip()
+    if not normalized_run_id:
+        raise HTTPException(status_code=404, detail="History run not found.")
+    if not delete_history_run(normalized_run_id):
+        raise HTTPException(status_code=404, detail="History run not found.")
+    return JSONResponse(
+        content={"deleted": True, "run_id": normalized_run_id},
+        headers=_HISTORY_NO_CACHE,
+    )
 
 
 @router.post("/history/{run_id}/visual-complexity")

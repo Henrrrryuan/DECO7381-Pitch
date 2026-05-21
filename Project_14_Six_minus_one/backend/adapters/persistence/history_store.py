@@ -663,6 +663,42 @@ def has_history_run(run_id: str, db_path: Path | None = None) -> bool:
     return row is not None
 
 
+def delete_history_run(run_id: str, db_path: Path | None = None) -> bool:
+    """Delete one analysis run and linked eye/visual evidence in a single transaction."""
+    normalized_run_id = str(run_id or "").strip()
+    if not normalized_run_id:
+        return False
+
+    with _connect(db_path) as connection:
+        exists = connection.execute(
+            "SELECT 1 FROM analysis_runs WHERE id = ? LIMIT 1",
+            (normalized_run_id,),
+        ).fetchone()
+        if not exists:
+            return False
+
+        try:
+            connection.execute("BEGIN")
+            connection.execute(
+                "DELETE FROM eye_tracking_sessions WHERE run_id = ?",
+                (normalized_run_id,),
+            )
+            connection.execute(
+                "DELETE FROM visual_complexity_results WHERE run_id = ?",
+                (normalized_run_id,),
+            )
+            connection.execute(
+                "DELETE FROM analysis_runs WHERE id = ?",
+                (normalized_run_id,),
+            )
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+
+    return True
+
+
 def record_compare_pair(
     previous_run_id: str,
     current_run_id: str,

@@ -456,6 +456,80 @@ function EyeEvidenceColumn({ summary, onViewHeatmap, heatmapBusy }) {
   );
 }
 
+function HistoryDeleteConfirmModal({ open, target, deleting, error, onCancel, onConfirm }) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const onKey = (event) => {
+      if (event.key === "Escape" && !deleting) {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, deleting, onCancel]);
+
+  if (!open || !target) {
+    return null;
+  }
+
+  const sourceLabel = String(target.source_name || "this analysis").trim() || "this analysis";
+
+  return (
+    <div
+      className="history-behavioral-modal-backdrop"
+      role="presentation"
+      onClick={deleting ? undefined : onCancel}
+    >
+      <div
+        className="history-behavioral-modal history-confirm-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="history-delete-modal-title"
+        aria-describedby="history-delete-modal-description"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="history-behavioral-modal-header">
+          <div className="history-modal-title-wrap">
+            <h2 id="history-delete-modal-title">Delete analysis record?</h2>
+            <p id="history-delete-modal-description" className="history-behavioral-modal-note">
+              Delete this analysis record? This will also remove linked eye evidence and visual complexity
+              data.
+            </p>
+            <p className="history-delete-target-label">
+              <strong>{sourceLabel}</strong>
+            </p>
+          </div>
+        </div>
+        <div className="history-behavioral-modal-body history-confirm-modal-body">
+          {error ? <p className="history-delete-error">{error}</p> : null}
+          <div className="history-confirm-actions">
+            <button
+              className="history-confirm-btn history-confirm-btn--secondary"
+              type="button"
+              disabled={deleting}
+              data-accessibility-tooltip="Cancel deletion and keep this history record."
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+            <button
+              className="history-confirm-btn history-confirm-btn--danger"
+              type="button"
+              disabled={deleting}
+              data-accessibility-tooltip="Permanently delete this saved analysis and linked evidence."
+              onClick={onConfirm}
+            >
+              {deleting ? "Deleting…" : "Delete record"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VisualComplexityMapModal({ open, onClose, detail, loading, error }) {
   useEffect(() => {
     if (!open) {
@@ -541,6 +615,8 @@ function ReportRows({
   onOpenHeatmap,
   onOpenComplexityMap,
   onPrintReport,
+  onRequestDelete,
+  deleteBusyRunId,
   heatmapLoading,
   complexityLoading,
 }) {
@@ -598,6 +674,15 @@ function ReportRows({
               ⬇
             </span>
           </button>
+          <button
+            className="history-action-btn history-action-btn--danger"
+            type="button"
+            disabled={deleteBusyRunId === item.run_id}
+            data-accessibility-tooltip="Delete this saved analysis and its linked evidence."
+            onClick={() => onRequestDelete(item)}
+          >
+            Delete
+          </button>
         </div>
       </span>
     </article>
@@ -616,6 +701,8 @@ function ReportHistoryPanel({
   onOpenHeatmap,
   onOpenComplexityMap,
   onPrintReport,
+  onRequestDelete,
+  deleteBusyRunId,
   heatmapLoading,
   complexityLoading,
 }) {
@@ -641,6 +728,8 @@ function ReportHistoryPanel({
           onOpenHeatmap={onOpenHeatmap}
           onOpenComplexityMap={onOpenComplexityMap}
           onPrintReport={onPrintReport}
+          onRequestDelete={onRequestDelete}
+          deleteBusyRunId={deleteBusyRunId}
           heatmapLoading={heatmapLoading}
           complexityLoading={complexityLoading}
         />
@@ -690,6 +779,11 @@ export function HistoryPage() {
   const [complexityDetail, setComplexityDetail] = useState(null);
   const [complexityLoading, setComplexityLoading] = useState(false);
   const [complexityError, setComplexityError] = useState("");
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [historyRefreshNonce, setHistoryRefreshNonce] = useState(0);
 
   useEffect(() => {
     const updatePageSize = () => {
@@ -749,7 +843,7 @@ export function HistoryPage() {
       });
 
     return () => controller.abort();
-  }, [query, reportPage, reportPageSize]);
+  }, [query, reportPage, reportPageSize, historyRefreshNonce]);
 
   const runSearch = useCallback(
     (event) => {
@@ -825,6 +919,50 @@ export function HistoryPage() {
         setComplexityError(error.message || "Could not load visual complexity map.");
       });
   }, []);
+
+  const closeDeleteModal = useCallback(() => {
+    if (deleteBusy) {
+      return;
+    }
+    setDeleteTarget(null);
+    setDeleteError("");
+  }, [deleteBusy]);
+
+  const openDeleteModal = useCallback((item) => {
+    setDeleteTarget({
+      run_id: item.run_id,
+      source_name: item.source_name,
+    });
+    setDeleteError("");
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    const runId = String(deleteTarget?.run_id || "").trim();
+    if (!runId || deleteBusy) {
+      return;
+    }
+
+    setDeleteBusy(true);
+    setDeleteError("");
+    try {
+      await fetchJson(`${API_BASE}/history/${encodeURIComponent(runId)}`, {
+        method: "DELETE",
+        cache: "no-store",
+      });
+      setDeleteTarget(null);
+      setDeleteError("");
+      const remainingOnPage = reports.items.length - 1;
+      if (remainingOnPage <= 0 && reportPage > 1) {
+        setReportPage((current) => Math.max(1, current - 1));
+      } else {
+        setHistoryRefreshNonce((value) => value + 1);
+      }
+    } catch (error) {
+      setDeleteError(error.message || "Could not delete this history record.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [deleteBusy, deleteTarget, reportPage, reports.items.length]);
 
   const printReport = useCallback((runId) => {
     if (!runId) {
@@ -983,12 +1121,22 @@ export function HistoryPage() {
             onOpenHeatmap={openHeatmap}
             onOpenComplexityMap={openComplexityMap}
             onPrintReport={printReport}
+            onRequestDelete={openDeleteModal}
+            deleteBusyRunId={deleteBusy ? deleteTarget?.run_id : ""}
             heatmapLoading={heatmapLoading}
             complexityLoading={complexityLoading}
           />
         </div>
       </main>
 
+      <HistoryDeleteConfirmModal
+        open={Boolean(deleteTarget)}
+        target={deleteTarget}
+        deleting={deleteBusy}
+        error={deleteError}
+        onCancel={closeDeleteModal}
+        onConfirm={confirmDelete}
+      />
       <BehavioralHeatmapModal
         open={heatmapOpen}
         onClose={closeHeatmap}

@@ -22,6 +22,7 @@ def api_root() -> dict[str, Any]:
             "/analyze-zip",
             "/history",
             "/history/{run_id}",
+            "DELETE /history/{run_id}",
             "/eye/",
             "/eye/proxy",
             "/eye/temp-html",

@@ -8175,7 +8175,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
     minmax(112px, 0.85fr)
     minmax(150px, 1.05fr)
     minmax(150px, 1.05fr)
-    minmax(120px, 136px);
+    minmax(148px, 172px);
   gap: 16px;
   align-items: center;
   padding: 10px 14px;
@@ -8264,7 +8264,7 @@ body.accessibility-reading-mask-active .accessibility-menu {
     minmax(94px, 0.8fr)
     minmax(132px, 0.95fr)
     minmax(132px, 0.95fr)
-    minmax(100px, 118px);
+    minmax(128px, 150px);
   gap: 9px;
   padding: 9px 12px;
 }
@@ -8417,6 +8417,90 @@ body.accessibility-reading-mask-active .accessibility-menu {
 .history-action-btn:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.4);
   outline-offset: 2px;
+}
+
+.history-action-btn--danger {
+  min-width: 52px;
+  border-color: rgba(220, 38, 38, 0.32);
+  background: #fff;
+  color: #b91c1c;
+}
+
+.history-action-btn--danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #991b1b;
+}
+
+.history-action-btn--danger:focus-visible {
+  outline-color: rgba(220, 38, 38, 0.45);
+}
+
+.history-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.history-confirm-modal {
+  max-width: 460px;
+}
+
+.history-confirm-modal-body {
+  padding-top: 0;
+}
+
+.history-delete-target-label {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #475569;
+  word-break: break-word;
+}
+
+.history-delete-error {
+  margin: 0 0 12px;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.history-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.history-confirm-btn {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-confirm-btn--secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.history-confirm-btn--danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #fff;
+  color: #b91c1c;
+}
+
+.history-confirm-btn--danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.history-confirm-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .history-empty {
