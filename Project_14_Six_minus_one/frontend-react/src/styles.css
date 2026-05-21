@@ -6777,6 +6777,23 @@ body.accessibility-reading-mask-active .accessibility-menu {
   user-select: text;
 }
 
+.issue-standard-pill--explained {
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.issue-standard-pill--explained strong {
+  color: #111827;
+  font-weight: 800;
+}
+
+.standards-pill--explained {
+  white-space: normal;
+  line-height: 1.35;
+}
+
 /* Single-line toggle: collapsed shows "Accessibility rationale ▼", expanded "… ▲" */
 .issue-summary-row-rationale {
   gap: 0;

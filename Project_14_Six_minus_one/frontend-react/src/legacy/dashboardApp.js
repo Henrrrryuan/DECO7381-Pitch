@@ -1454,9 +1454,36 @@ function splitStandardItems(summaryText, fallbackText) {
 function standardsPillsMarkup(summaryText, fallbackText) {
   const items = splitStandardItems(summaryText, fallbackText);
   return `
-    <div class="issue-standards-list">
-      ${items.map((item) => `<span class="issue-standard-pill">${escapeHtml(item)}</span>`).join("")}
+    <div class="issue-standards-list issue-standards-list--iso">
+      ${items.map((item) => isoStandardPillMarkup(item)).join("")}
     </div>
+  `;
+}
+
+function iso9241Description(item) {
+  const label = String(item || "").trim().toLowerCase();
+  if (label === "effectiveness") {
+    return "whether users can accurately and completely achieve the intended goal.";
+  }
+  if (label === "efficiency") {
+    return "how much time, effort, or cognitive work users need to complete the task.";
+  }
+  if (label === "satisfaction") {
+    return "whether the experience feels comfortable, acceptable, and confidence-building.";
+  }
+  return "";
+}
+
+function isoStandardPillMarkup(item) {
+  const description = iso9241Description(item);
+  if (!description) {
+    return `<span class="issue-standard-pill">${escapeHtml(item)}</span>`;
+  }
+  return `
+    <span class="issue-standard-pill issue-standard-pill--explained">
+      <strong>${escapeHtml(item)}:</strong>
+      <span>${escapeHtml(description)}</span>
+    </span>
   `;
 }
 
@@ -1562,7 +1589,13 @@ function pillListMarkup(items, limit = 2, className = "") {
   const safeItems = [...new Set(items.filter(Boolean))];
   return `
     <span class="standards-pill-list ${className}">
-      ${safeItems.map((item) => `<span class="standards-pill">${escapeHtml(item)}</span>`).join("")}
+      ${safeItems.map((item) => {
+        const description = className === "iso" ? iso9241Description(item) : "";
+        if (!description) {
+          return `<span class="standards-pill">${escapeHtml(item)}</span>`;
+        }
+        return `<span class="standards-pill standards-pill--explained"><strong>${escapeHtml(item)}:</strong> ${escapeHtml(description)}</span>`;
+      }).join("")}
     </span>
   `;
 }
