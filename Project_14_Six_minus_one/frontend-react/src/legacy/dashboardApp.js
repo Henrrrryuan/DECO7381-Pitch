@@ -283,20 +283,6 @@ function isDetectorEnabledForActiveProfile(name) {
   }
   const canonical = canonicalDimensionName(name);
   const enabled = enabledDetectors.includes(canonical);
-  try {
-    if ((typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_LINEAGE === "1"))
-      && canonical === "Dense Text Detection") {
-      console.log("[DT-1 location lineage]", {
-        stage: "render.filter.detector_enabled",
-        detector: canonical,
-        enabled,
-        activeProfile: state.activeProfile || "",
-        enabledDetectors: enabledDetectors.slice(0, 20),
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
   if (detectorEnablementAuditEnabled() && canonical === "Dense Text Detection") {
     auditDtEnablementDecision({
       stage: "detector.enablement.check",
@@ -599,7 +585,6 @@ function renderVicramDashboardPanelLegacy() {
       <div class="vicram-dashboard-detail-list">
         <p><span>Source</span><strong>${escapeHtml(targetLabel)}</strong></p>
         <p><span>Formula</span><strong>${escapeHtml(grid.formula || "Grid Visual Complexity Score = (1.743 + 0.097 * Top Left Corner Count + 0.053 * Word Count + 0.003 * Images) / 10")}</strong></p>
-        <p><span>Detected positions</span><strong>text ${escapeHtml(String(debug.text_rects ?? 0))}, images ${escapeHtml(String(debug.image_rects ?? 0))}, elements ${escapeHtml(String(debug.element_rects ?? 0))}</strong></p>
         ${topCell ? `<p><span>Highest cell</span><strong>${escapeHtml(`${topCell.row}-${topCell.column}`)} · ${Number(topCell.vcs || 0).toFixed(4)} Visual Complexity Score</strong></p>` : ""}
       </div>
     `
@@ -635,7 +620,7 @@ function renderVicramDashboardPanelLegacy() {
           id="vicramReportButton"
           type="button"
           ${canShowReport ? "" : "disabled"}
-          data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
+          data-accessibility-tooltip="Open the ViCRAM summary report, formula, and highest grid cells."
         >Show Report</button>
       </div>
     </div>
@@ -831,7 +816,7 @@ function renderVicramDashboardPanel() {
             class="vicram-dashboard-secondary-action"
             type="button"
             ${canShowReport ? "" : "disabled"}
-            data-accessibility-tooltip="Open the ViCRAM summary report, formula, debug counts, and highest grid cells."
+            data-accessibility-tooltip="Open the ViCRAM summary report, formula, and highest grid cells."
           >Calculation details</button>
         </div>
       </div>
@@ -1840,9 +1825,6 @@ function locationMetaText(location, elementNumber = null, issueRuleId = "") {
   }
   if (issueRuleId === "SC-1" || location?.rule_id === "SC-1") {
     const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-    if (metricsAbsent) {
-      console.warn("[SC-1 debug] Sentence metrics unavailable (meta) — raw location:", location);
-    }
     const metrics = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
     const primary = scPrimaryPattern(location);
     const secondary = scSecondaryPatterns(location);
@@ -2122,9 +2104,6 @@ function issueElementChipRowMarkup(issue, dimensionName, location, elementNumber
     ncTechnicalLine = ncTechnicalMetaLine(location);
   } else if (isSc) {
     const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-    if (metricsAbsent) {
-      console.warn("[SC-1 debug] Sentence metrics unavailable (chip) — raw location:", location);
-    }
     scMetricsLine = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
   } else if (isLc) {
     lcMetricsLine = lcLexicalEvidenceMetricsLine(location);
@@ -3031,18 +3010,6 @@ function renderExplanation(result) {
   if (!explanationContent) {
     return;
   }
-  try {
-    if (dtLineageEnabled()) {
-      const dtDim = (result?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection") || null;
-      const dtIssue = (dtDim?.issues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
-      console.log("[DT-1 location lineage]", {
-        stage: "renderExplanation.input.result",
-        ...summarizeDtLocationArray(dtIssue?.locations || []),
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
   if (detectorEnablementAuditEnabled()) {
     detectorEnablementAuditLog("dimension.pre_render.filter", {
       active_profile: state.activeProfile || "",
@@ -3055,19 +3022,6 @@ function renderExplanation(result) {
     ...result,
     dimensions: (result?.dimensions || []).filter((dimension) => isDetectorEnabledForActiveProfile(dimension?.dimension)),
   };
-  try {
-    if (dtLineageEnabled()) {
-      const dtDim = (filteredResult?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection") || null;
-      const dtIssue = (dtDim?.issues || []).find((i) => (i?.rule_id || "") === "DT-1") || null;
-      console.log("[DT-1 location lineage]", {
-        stage: "grouped.issue.records",
-        ...summarizeDtLocationArray(dtIssue?.locations || []),
-        enabled_dimensions_count: (filteredResult?.dimensions || []).length,
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
   if (detectorEnablementAuditEnabled()) {
     const hasDenseText = Boolean((filteredResult?.dimensions || []).find((d) => d?.dimension === "Dense Text Detection"));
     detectorEnablementAuditLog("dimension.post_filter.result", {
@@ -3134,37 +3088,6 @@ function renderExplanation(result) {
     },
   });
   setActiveDimensionBar("");
-  try {
-    if (dtLineageEnabled()) {
-      const dtCards = document.querySelectorAll('[data-highlight-issue="DT-1"]');
-      const chips = Array.from(document.querySelectorAll('[data-issue-element="DT-1"]'))
-        .map((node) => String(node?.textContent || "").trim())
-        .filter(Boolean);
-      console.log("[DT-1 location lineage]", {
-        stage: "final.dom.cards",
-        dt_location_count: dtCards.length,
-        dt_location_ids: [],
-        duplicate_selector_count: 0,
-        duplicate_text_count: 0,
-        grouped_keys: [],
-        collapsed_ids: [],
-        surviving_ids: [],
-      });
-      console.log("[DT-1 location lineage]", {
-        stage: "final.dom.elements",
-        dt_location_count: chips.length,
-        dt_location_ids: [],
-        duplicate_selector_count: 0,
-        duplicate_text_count: 0,
-        grouped_keys: [],
-        collapsed_ids: [],
-        surviving_ids: [],
-        rendered_labels: chips.slice(0, 12),
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
 }
 
 function toggleIssueElementExpansion(dimensionName, ruleId, expanded) {
@@ -4331,9 +4254,6 @@ function findByText(doc, tag, text) {
 }
 
 function debugHighlight(...args) {
-  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-    console.info("[CogniLens highlight]", ...args);
-  }
 }
 
 function elementHiddenReason(element) {
@@ -5144,11 +5064,6 @@ function syncEyeTrackingNavAndStorage() {
 function renderResult(result, html, options = {}) {
   const previousSelectedIssueId = state.selectedIssueId;
   setCurrentResultAndHtml(state, result, html || "");
-  console.log("[Dashboard render authoritative]", {
-    run_id: dtRunIdFromPayload(state.currentPayload),
-    dt_locations: dtLocationsCountFromResult(state.currentResult),
-    source_type: state.dashboardSource?.source_type || "",
-  });
   logDtLineage("renderResult.input.payload", state.currentPayload || null, {
     owner: "legacy/dashboardApp.renderResult",
     source_type: state.dashboardSource?.source_type || "",
@@ -5171,24 +5086,6 @@ function renderResult(result, html, options = {}) {
   renderPrintSummary(result);
   renderPrintableProfileReport(result);
   renderExplanation(result);
-  // DEV-only: audit rendered DOM chip rows for DT-1 after explanation render.
-  try {
-    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_LINEAGE === "1")) {
-      const dtCards = document.querySelectorAll('[data-highlight-issue="DT-1"]');
-      const chipCount = document.querySelectorAll('[data-issue-element="DT-1"]').length;
-      console.log("[DT-1 location lineage]", {
-        stage: "final.rendered.dom",
-        dt_location_count: chipCount,
-        dt_location_ids: [],
-        selectors: [],
-        duplicate_selector_count: 0,
-        duplicate_text_count: 0,
-        dt_card_count: dtCards.length,
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
   renderAssistantMessages();
   syncEyeTrackingNavAndStorage();
 }
@@ -5860,127 +5757,6 @@ export async function initDashboard(options = {}) {
       active_profile_enabled: matrix?.[state.activeProfile || ""]?.enabled || [],
       active_profile_disabled: matrix?.[state.activeProfile || ""]?.disabled || [],
     });
-  }
-
-  // DEV-only architecture audit for LWC/LCC-1 detector integration.
-  try {
-    runLwcArchitectureAuditSnapshot({
-      ruleId: "LCC-1",
-      dimensionName: "Long Content Without Chunking",
-      detectorRegistry: { hasDetectorSemanticModule },
-      highlightRuleRegistry: { hasHighlightRules },
-    });
-    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-      console.log("[LWC migration]", {
-        registry_integrated: hasDetectorSemanticModule("LCC-1"),
-        highlight_registry_integrated: hasHighlightRules("LCC-1"),
-        legacy_branches_removed: true,
-        semantics_module_active: hasDetectorSemanticModule("LCC-1"),
-        highlight_module_active: hasHighlightRules("LCC-1"),
-        remaining_legacy_references: [
-          "legacy/dashboardApp.js still owns some detector metadata tables (see metadata migration audit)",
-        ],
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
-
-  // DEV-only detector metadata migration audit (ownership only; no behavior change).
-  try {
-    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_METADATA_FORENSIC === "1")) {
-      const auditedRuleIds = ["DT-1", "LC-1", "SC-1", "NC-1", "LCC-1", "PHS-1", "VO-1", "WIP-1"];
-      const unresolved = auditedRuleIds.filter((rid) => !getDetectorMetadata(rid));
-      console.log("[Detector metadata migration]", {
-        detector: "audit",
-        metadata_registry_integrated: true,
-        legacy_metadata_removed: true,
-        remaining_legacy_tables: [],
-        metadata_keys: auditedRuleIds.reduce((acc, rid) => {
-          const meta = getDetectorMetadata(rid);
-          acc[rid] = meta ? Object.keys(meta) : [];
-          return acc;
-        }, {}),
-        unresolved_metadata_accesses: unresolved,
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
-
-  // DEV-only AMC platform + taxonomy audit (ownership only; no behavior change).
-  try {
-    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_AMC_AUDIT === "1")) {
-      const amcRuleId = "AMC-1";
-      const amcMeta = getDetectorMetadata(amcRuleId);
-      const semanticsIntegrated = hasDetectorSemanticModule(amcRuleId);
-      const highlightIntegrated = hasHighlightRules(amcRuleId);
-      const metadataIntegrated = Boolean(amcMeta);
-      const remainingLegacyBranches = [];
-      // Keep this list stable and explicit for audit-readability.
-      console.log("[AMC platform audit]", {
-        semantics_module_exists: semanticsIntegrated,
-        metadata_module_exists: metadataIntegrated,
-        highlight_module_exists: highlightIntegrated,
-        detector_registry_integrated: semanticsIntegrated,
-        metadata_registry_integrated: metadataIntegrated,
-        highlight_registry_integrated: highlightIntegrated,
-        remaining_legacy_branches: remainingLegacyBranches,
-        remaining_dashboardApp_dependencies: [
-          "legacy/dashboardApp.js: HIGHLIGHT_CONFIG['Auto-Moving Content'] selectors (dimension-level)",
-        ],
-        shared_fallback_usage: !highlightIntegrated,
-        architecture_status: highlightIntegrated && semanticsIntegrated && metadataIntegrated ? "platformized" : "partial_platformization",
-        ownership_completeness: {
-          semantics: semanticsIntegrated,
-          metadata: metadataIntegrated,
-          highlight_rules: highlightIntegrated,
-        },
-      });
-      console.log("[AMC taxonomy]", {
-        detector_category: "motion",
-        ui_structure_type: "flat_locations",
-        supports_subgroups: false,
-        subgroup_taxonomy_exists: false,
-        subgroup_types: [],
-        recommended_presentation_contract: "Flat list of detected motion/autoplay evidence locations; no grouping beyond the single issue.",
-      });
-
-      console.log("[AMC migration]", {
-        registry_integrated: semanticsIntegrated,
-        semantics_module_active: semanticsIntegrated,
-        highlight_registry_integrated: highlightIntegrated,
-        highlight_module_active: highlightIntegrated,
-        legacy_branches_removed: true,
-        selector_grounding_status: "fallback_selectors_owned_by_detector_highlight_rules; backend locations remain snippet-based (no selectors)",
-        remaining_legacy_dependencies: [
-          "legacy/dashboardApp.js: HIGHLIGHT_CONFIG['Auto-Moving Content'] selectors (dimension-level)",
-        ],
-        ownership_completeness: {
-          semantics: semanticsIntegrated,
-          metadata: metadataIntegrated,
-          highlight_rules: highlightIntegrated,
-        },
-      });
-    }
-  } catch (_) {
-    // ignore
-  }
-
-  // DEV-only EI migration audit (ownership only; no behavior change).
-  try {
-    if (typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_EI_AUDIT === "1")) {
-      console.log("[EI migration]", {
-        sanitize_pass_through_enabled: "backend/location_utils.py: sanitize_issue_locations(EI-1) returns list(locations)",
-        semantics_registry_integrated: hasDetectorSemanticModule("EI-1"),
-        highlight_registry_integrated: hasHighlightRules("EI-1"),
-        grouped_rendering_enabled: true,
-        legacy_branches_removed: true,
-        sanitize_location_preserved_count: null,
-      });
-    }
-  } catch (_) {
-    // ignore
   }
 
   const snapshot = getDashboardLifecycleSnapshot();

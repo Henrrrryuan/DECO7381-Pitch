@@ -1185,8 +1185,6 @@ async function saveCurrentSession() {
   updateSaveButtonState();
 
   try {
-    // eslint-disable-next-line no-console
-    console.log("Saving eye session for run:", runId);
     const response = await fetch("/eye/sessions", {
       method: "POST",
       headers: {

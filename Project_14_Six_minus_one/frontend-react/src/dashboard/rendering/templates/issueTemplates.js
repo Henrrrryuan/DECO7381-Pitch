@@ -110,9 +110,6 @@ function issueElementChipRowMarkup(ctx, issue, dimensionName, location, elementN
     ncTechnicalLine = ncTechnicalMetaLine(location);
   } else if (isSc) {
     const metricsAbsent = scAllThreeSentenceMetricsAbsent(location);
-    if (metricsAbsent) {
-      console.warn("[SC-1 debug] Sentence metrics unavailable (chip) — raw location:", location);
-    }
     scMetricsLine = metricsAbsent ? SC_CHIP_METRICS_FALLBACK : scSentenceEvidenceMetricsLine(location);
   } else if (isLc) {
     lcMetricsLine = lcLexicalEvidenceMetricsLine(location);

@@ -205,11 +205,6 @@ def _render_and_analyze(
             "overlay_svg_base64": base64.b64encode(overlay_svg.encode("utf-8")).decode("ascii"),
         },
         "summary_report": summary_report,
-        "debug": {
-            "text_rects": len(text_rects),
-            "image_rects": len(image_rects),
-            "element_rects": len(element_rects),
-        },
     }
 
 
@@ -401,7 +396,6 @@ def _build_summary_report(
         "The Visual Complexity Score ranges from 0 to 10, with 0 being very visually simple and 10 very visually complex.",
         "",
         "----- Complexity Visualization View -----",
-        f"Debug: textPositions={len(capture.get('textRects', []))}; imagePositions={len(capture.get('imageRects', []))}; elementPositions={len(capture.get('elementRects', []))};",
         "Colour range: Red - Orange - Yellow - YellowGreen - Green - DarkGreen",
         "",
         "The more to the red colour, the more visually complex the grid is. The colours depend on the overall visual complexity of the page.",

@@ -101,14 +101,6 @@ async function main() {
   await page.locator("#dashboardSummaryText").waitFor({ state: "attached", timeout: 60000 });
   await page.waitForTimeout(800);
 
-  const debug = {
-    url: page.url(),
-    issue_button_count: await page.locator(".issue-highlight-button, .issue-summary-card").count(),
-    summary_text_present: (await page.locator("#dashboardSummaryText").count()) > 0,
-    body_text_sample: ((await page.locator("body").innerText()).trim() || "").slice(0, 220),
-  };
-  console.log("[EI verification]", { dashboard_debug: debug });
-
   // PART 2: Frontend payload count via DOM (chips)
   const chipLocator = page.locator('[data-issue-element="EI-1"]');
   const renderedChipCount = await chipLocator.count();

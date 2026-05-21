@@ -151,25 +151,11 @@ def preview_uploaded_site(preview_id: str, asset_path: str) -> Response:
 
 @router.post("/analyze")
 def analyze(payload: AnalyzePayload) -> dict[str, Any]:
-    if os.environ.get("DT1_FORENSIC") == "1":
-        html = payload.html or ""
-        print("[DT runtime payload]")
-        print(f"source={payload.source_name}")
-        print(f"html_length={len(html)}")
-        print(f"contains_case_li={str('case-li' in html).lower()}")
-        print(f"contains_case_th={str('case-th' in html).lower()}")
-        print(f"contains_case_td={str('case-td' in html).lower()}")
     analysis = analyze_html(payload.html)
     if not payload.persist_result:
         response_payload = analysis.to_dict()
         response_payload["html_content"] = payload.html
         response_payload["baseline_run_id"] = None
-        if os.environ.get("DT1_LINEAGE") == "1":
-            print("[DT-1 locations] api.response", _dt1_locations_summary(response_payload))
-        if os.environ.get("LCC_AUDIT") == "1":
-            print("[LCC lineage] api.response", _lcc_locations_summary(response_payload))
-        if os.environ.get("AMC_AUDIT") == "1":
-            print("[AMC lineage] api.response", _amc_locations_summary(response_payload))
         return response_payload
     response_payload = build_analysis_response(
         analysis,
@@ -177,12 +163,6 @@ def analyze(payload: AnalyzePayload) -> dict[str, Any]:
         source_name=payload.source_name,
         baseline_run_id=payload.baseline_run_id,
     )
-    if os.environ.get("DT1_LINEAGE") == "1":
-        print("[DT-1 locations] api.response", _dt1_locations_summary(response_payload))
-    if os.environ.get("LCC_AUDIT") == "1":
-        print("[LCC lineage] api.response", _lcc_locations_summary(response_payload))
-    if os.environ.get("AMC_AUDIT") == "1":
-        print("[AMC lineage] api.response", _amc_locations_summary(response_payload))
     return response_payload
 
 
@@ -395,8 +375,6 @@ def analyze_url(payload: AnalyzeUrlPayload) -> dict[str, Any]:
         "js_files": sorted(bundle.js_files.keys()),
         "rendered_snapshot_used": rendered_snapshot_used,
     }
-    if os.environ.get("DT1_LINEAGE") == "1":
-        print("[DT-1 locations] api.response", _dt1_locations_summary(payload_dict))
     return payload_dict
 
 

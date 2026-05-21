@@ -38,7 +38,6 @@ def _sample_vicram_result(*, vcs: float = 5.8) -> dict:
         },
         "artifacts": {"overlay_svg_base64": "PHN2Zy8+"},
         "summary_report": "======= Web Page Visual Complexity =======",
-        "debug": {"text_rects": 10},
     }
 
 

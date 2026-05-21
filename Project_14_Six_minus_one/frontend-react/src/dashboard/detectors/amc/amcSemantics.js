@@ -25,7 +25,7 @@ function amcPrimaryMovementType(location) {
 }
 
 function amcLocationSelectorHint(location) {
-  // Non-breaking: purely a display/debug hint. Never used for DOM querying.
+  // Non-breaking: purely a display hint. Never used for DOM querying.
   const tag = String(location?.tag || "").toLowerCase();
   const src = String(location?.src || "").trim();
   const muted = location?.muted === true ? "muted" : "";

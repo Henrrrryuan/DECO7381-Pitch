@@ -214,7 +214,6 @@ export function VicramPage() {
               <article className="vicram-panel">
                 <div className="vicram-section-title">
                   <h2>Summary Report</h2>
-                  <span>{result.debug?.text_rects ?? 0} text rects</span>
                 </div>
                 <pre className="vicram-summary">{result.summary_report}</pre>
               </article>
