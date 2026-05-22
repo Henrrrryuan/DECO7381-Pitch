@@ -4,6 +4,8 @@ CogniLens is a working MVP for helping web content teams review cognitive access
 
 The prototype is designed for developers and designers who need clear, explainable feedback about where a webpage may create cognitive load for users.
 
+CogniLens is a rule-based cognitive accessibility risk-signal detector. It supports review and redesign discussion, but it is not a full compliance assessment, accessibility certification, or guarantee that a webpage is accessible.
+
 ## Current MVP Features
 
 - URL, single HTML, and ZIP website analysis.
@@ -32,8 +34,6 @@ Project_14_Six_minus_one/
   README.md
   EYE_TRACKING_README.md
   THIRD_PARTY_SOURCES.md
-  AI_Prompt.pdf
-  Team AI Declaration Cover Sheet.pdf
   requirements.txt
 
   backend/
@@ -84,7 +84,9 @@ Project_14_Six_minus_one/
     GazeCloud-master/               third-party reference/example files
 
   docs/
+    AI_Prompt.pdf
     AI_PROMPTS_USED.md
+    Team_AI_Declaration_Cover_Sheet.pdf
     api-contract.md
     database-schema.dbml
     presentation-test-flow.md
@@ -122,6 +124,26 @@ Eye Tracking:
 - permission to access the camera
 - network access to load GazeCloudAPI
 - registered local origin if required by GazeCloudAPI
+
+## Main Demo Workflow
+
+The intended product flow is:
+
+```text
+New Analysis
+-> URL / HTML / ZIP input
+-> Visual Complexity
+-> Complexity Map Preview / toggle
+-> Accessibility Findings
+-> focus profile as a review lens
+-> issue cards
+-> affected element highlight
+-> guidance popover
+-> optional Eye Tracking supporting evidence
+-> History / Print
+```
+
+The Visual Complexity map is an approximate heuristic overview of page density and structure. Eye Tracking is an optional supporting workflow, not proof of accessibility or a full cognitive-load measurement.
 
 ## Install
 
@@ -246,9 +268,9 @@ External libraries, APIs, and AI-assisted work must be disclosed for the final s
 - [THIRD_PARTY_SOURCES.md](./THIRD_PARTY_SOURCES.md) for external software/API/source attribution.
 - [EYE_TRACKING_README.md](./EYE_TRACKING_README.md) for the GazeCloudAPI integration details.
 - [LIMITATIONS.md](./LIMITATIONS.md) for prototype scope boundaries and known limitations.
-- [AI_Prompt.pdf](./AI_Prompt.pdf) for the submitted AI prompts appendix.
+- [docs/AI_Prompt.pdf](./docs/AI_Prompt.pdf) for the submitted AI prompts appendix.
 - [docs/AI_PROMPTS_USED.md](./docs/AI_PROMPTS_USED.md) for a searchable Markdown summary of representative AI-assisted implementation prompts.
-- [Team AI Declaration Cover Sheet.pdf](./Team%20AI%20Declaration%20Cover%20Sheet.pdf) for the team AI use declaration and signed cover sheet material.
+- [docs/Team_AI_Declaration_Cover_Sheet.pdf](./docs/Team_AI_Declaration_Cover_Sheet.pdf) for the team AI use declaration and signed cover sheet material.
 
 Before final submission, confirm whether any images, icons, logos, or generated visual assets are team-created or externally sourced, then list them in the third-party sources appendix.
 

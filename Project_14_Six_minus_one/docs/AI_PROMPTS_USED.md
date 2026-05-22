@@ -2,7 +2,7 @@
 
 This appendix summarises the AI-assisted programming prompts used during the CogniLens codebase development.
 
-The source evidence is the submitted PDF appendix `Project_14_Six_minus_one/AI_Prompt.pdf`, which was prepared from GitHub commit history and major development phases. These prompts are reconstructed representative implementation briefs based on the repository history and development work. They are not claimed to be every verbatim prompt submitted during development.
+The source evidence is the submitted PDF appendix `Project_14_Six_minus_one/docs/AI_Prompt.pdf`, which was prepared from GitHub commit history and major development phases. These prompts are reconstructed representative implementation briefs based on the repository history and development work. They are not claimed to be verbatim copies of every AI interaction.
 
 The prompts below preserve the core intent of the PDF appendix in a searchable Markdown form for markers reviewing the final codebase.
 
@@ -157,7 +157,7 @@ Representative implementation brief:
 
 These AI prompts supported code design, debugging, UI wording, documentation, and implementation planning. They do not replace the submitted source code, tests, README, source attribution, or team AI declaration. The final codebase should be reviewed together with:
 
-- `Project_14_Six_minus_one/AI_Prompt.pdf`
-- `Project_14_Six_minus_one/Team AI Declaration Cover Sheet.pdf`
+- `Project_14_Six_minus_one/docs/AI_Prompt.pdf`
+- `Project_14_Six_minus_one/docs/Team_AI_Declaration_Cover_Sheet.pdf`
 - `Project_14_Six_minus_one/THIRD_PARTY_SOURCES.md`
 - `Project_14_Six_minus_one/LIMITATIONS.md`

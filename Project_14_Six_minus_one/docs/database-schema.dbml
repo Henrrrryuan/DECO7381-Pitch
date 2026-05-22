@@ -14,7 +14,7 @@ Table analysis_runs {
 Table dimension_results {
   id varchar [pk, note: 'UUID or string id']
   run_id varchar [not null]
-  dimension varchar [not null, note: 'Readability | Information Overload (Visual Complexity alias) | Interaction & Distraction | Consistency']
+  dimension varchar [not null, note: 'Current rule/category label for cognitive accessibility risk signals']
   score int [not null]
   metadata_json text [note: 'JSON string from analyzer metadata']
 }
