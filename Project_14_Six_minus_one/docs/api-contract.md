@@ -175,7 +175,7 @@ The current detector set contains these ten rule-based cognitive accessibility r
 - `POST /api/vicram/analyze-url` with `{ "url": "http://127.0.0.1:5173/..." }`
 - `POST /vicram/analyze-url` is also exposed for compatibility with the current frontend integration.
 
-The Visual Complexity flow produces a page-level score, a screenshot-backed complexity map, grid/cell summaries, and explanatory report data. It is supporting evidence for visual density review, not AI vision or a rendered visual-salience analysis.
+The Visual Complexity flow produces a page-level score, a screenshot-backed complexity map, map-cell summaries, and explanatory report data. It is supporting evidence for visual density review, not AI vision or a rendered visual-salience analysis.
 
 If Playwright/Chromium is unavailable for URL rendering, visual-complexity URL analysis may return a service error and the main DOM/static analysis can still be reviewed.
 

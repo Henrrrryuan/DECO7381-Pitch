@@ -14,8 +14,8 @@ MAX_ZIP_UPLOAD_BYTES = 100 * 1024 * 1024  # 100MB
 SAMPLE_INPUT_DIR = Path(__file__).resolve().parents[1] / "sample_input"
 SAMPLE_FILE_MAP = {
     "simple": SAMPLE_INPUT_DIR / "simple-page.html",
-    "dense": SAMPLE_INPUT_DIR / "dense-page.html",
-    "consistency": SAMPLE_INPUT_DIR / "consistency-combined.html",
+    "dense": SAMPLE_INPUT_DIR / "dt1_grounding_fixture.html",
+    "interaction": SAMPLE_INPUT_DIR / "interaction-distraction-test.html",
 }
 
 
