@@ -7,6 +7,7 @@ import {
   findDimension,
   formatReportTimestamp,
   loadDashboardSession,
+  saveVisualComplexityForRun,
 } from "../lib/common.js";
 import { bumpDashboardLifecycle, getDashboardLifecycleSnapshot } from "../lib/dashboardLifecycle.js";
 import {
@@ -512,8 +513,59 @@ function tryHydrateVicramFromHistoryPayload(expectedLabel) {
   return true;
 }
 
+const HISTORY_VICRAM_MISSING_MESSAGE =
+  "Visual complexity was not saved for this report. Use Refresh to calculate and save it to history.";
+
+async function persistVicramResultForHistoryRun(result) {
+  const runId = getHistoryReportRunIdFromUrl();
+  if (!runId || !result?.page) {
+    return false;
+  }
+  try {
+    const response = await saveVisualComplexityForRun(runId, result, {
+      sourceLabel: getVicramSessionLabel(),
+      sourceType: result?.source_type,
+    });
+    const summary = response?.visual_complexity_summary;
+    if (state.currentPayload && summary?.available) {
+      state.currentPayload.visual_complexity_detail = {
+        available: true,
+        vcs: summary.vcs,
+        risk_level: summary.risk_level,
+        risk_label: summary.risk_label,
+        summary_text: summary.summary_text,
+        page: result.page,
+        grid: result.grid,
+        top_cells: result.top_cells || [],
+        summary_report: result.summary_report || "",
+        artifacts: result.artifacts || {},
+      };
+    }
+    return Boolean(summary?.available);
+  } catch (error) {
+    console.warn("ViCRAM visual complexity history save failed:", error);
+    return false;
+  }
+}
+
 function syncVicramAfterMainAnalysis() {
   const source = getVicramAnalysisSource();
+
+  if (isHistoryReportView()) {
+    if (tryHydrateVicramFromHistoryPayload(source.label)) {
+      renderVicramDashboardPanel();
+      return;
+    }
+    const vicram = vicramState();
+    vicram.loading = false;
+    vicram.result = null;
+    vicram.error = HISTORY_VICRAM_MISSING_MESSAGE;
+    vicram.gridVisible = false;
+    vicram.targetUrl = source.label;
+    renderVicramDashboardPanel();
+    return;
+  }
+
   if (tryHydratePendingVicramFromSession(source.label)) {
     renderVicramDashboardPanel();
     return;
@@ -994,6 +1046,13 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
     vicram.pendingShowGridAfterLoad = false;
     if (shouldShowGrid) {
       applyVicramGridOverlay(result);
+    }
+    if (isHistoryReportView()) {
+      const saved = await persistVicramResultForHistoryRun(result);
+      if (!saved) {
+        vicram.error =
+          "Visual complexity was calculated but could not be saved to this history report. Try Refresh again.";
+      }
     }
   } catch (error) {
     if (!vicramTargetLabelsMatch(requestTarget, getVicramSessionLabel()) || vicram.activeRequestTarget !== requestTarget) {

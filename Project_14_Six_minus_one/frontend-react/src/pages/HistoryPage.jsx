@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE, fetchJson, formatDate, formatReportTimestamp } from "../lib/common.js";
+import { clearPendingVicramResult } from "../lib/pendingVicramSession.js";
 import {
   EYE_EVIDENCE_DETAIL_FALLBACK,
   formatAttentionRiskLabel,
@@ -856,6 +857,7 @@ export function HistoryPage() {
 
   const openReport = useCallback(
     (runId) => {
+      clearPendingVicramResult();
       sessionStorage.setItem(DASHBOARD_HISTORY_CONTEXT_KEY, runId);
       sessionStorage.setItem(DASHBOARD_HISTORY_ONCE_KEY, "1");
       navigate(`/dashboard?from=history&run=${encodeURIComponent(runId)}`);

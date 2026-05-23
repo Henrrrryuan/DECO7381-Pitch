@@ -23,8 +23,11 @@ import { logLineageTimeline, summarizeRun } from "../dashboard/observability/lin
 import { logDtLineage } from "../dashboard/observability/dtLocationLineage.js";
 
 const MIN_LOADING_TIME_MS = 2600;
+const VICRAM_RETRY_DELAY_MS = 800;
 const DASHBOARD_HISTORY_CONTEXT_KEY = "cognilens.dashboard.history-context";
 const DASHBOARD_HISTORY_ONCE_KEY = "cognilens.dashboard.history-once";
+
+let loadingAnalysisGeneration = 0;
 
 function dt1FrontendForensicEnabled() {
   return typeof import.meta !== "undefined" && (import.meta.env?.DEV || import.meta.env?.VITE_DT1_FORENSIC === "1");
@@ -163,15 +166,35 @@ export function LoadingPage() {
         : buildVicramSourcePayloadFromPending(pending);
 
       if (!payload?.url && !payload?.html) {
+        console.warn("ViCRAM skipped: no URL or HTML source for visual complexity.");
         return null;
       }
 
+      const attempt = async () => analyzeVicramSource(payload, VICRAM_LOADING_OPTIONS);
+
       try {
-        const result = await analyzeVicramSource(payload, VICRAM_LOADING_OPTIONS);
+        const result = await attempt();
         return { result, targetUrl };
-      } catch {
-        return null;
+      } catch (firstError) {
+        console.warn("ViCRAM analysis failed, retrying once:", firstError);
+        await wait(VICRAM_RETRY_DELAY_MS);
+        ensureNotCancelled();
+        try {
+          const result = await attempt();
+          return { result, targetUrl };
+        } catch (retryError) {
+          console.warn("ViCRAM analysis failed after retry:", retryError);
+          return { error: retryError?.message || String(retryError) };
+        }
       }
+    }
+
+    function showVicramPersistWarning(message) {
+      if (!loadingError || !message) {
+        return;
+      }
+      loadingError.textContent = message;
+      loadingError.hidden = false;
     }
 
     async function analyzePendingWithVicram(pending) {
@@ -190,10 +213,12 @@ export function LoadingPage() {
 
       if (pending.sourceType === "zip") {
         setProgress(24);
-        setMessage("Reading the uploaded package");
-        const mainPromise = analyzePendingFile(pending);
-        const vicramPromise = mainPromise.then((main) => runVicramAnalysis(pending, main));
-        const [main, vicram] = await Promise.all([mainPromise, vicramPromise]);
+        setMessage("Reading the uploaded package and visual complexity");
+        const main = await analyzePendingFile(pending);
+        ensureNotCancelled();
+        setProgress(52);
+        setMessage("Calculating visual complexity");
+        const vicram = await runVicramAnalysis(pending, main);
         ensureNotCancelled();
         return { main, vicram };
       }
@@ -276,15 +301,17 @@ export function LoadingPage() {
     async function persistVisualComplexityToHistory(result, vicramCache) {
       const runId = String(result?.payload?.run?.run_id || "").trim();
       if (!runId || !vicramCache?.result) {
-        return;
+        return false;
       }
       try {
         await saveVisualComplexityForRun(runId, vicramCache.result, {
           sourceLabel: resolveVicramTargetLabel(result),
           sourceType: vicramCache.result?.source_type,
         });
+        return true;
       } catch (error) {
         console.warn("ViCRAM visual complexity history save failed:", error);
+        return false;
       }
     }
 
@@ -298,6 +325,8 @@ export function LoadingPage() {
     }
 
     async function runPendingAnalysis() {
+      const analysisGeneration = ++loadingAnalysisGeneration;
+      const isCurrentAnalysis = () => analysisGeneration === loadingAnalysisGeneration;
       const startedAt = Date.now();
       try {
         ensureNotCancelled();
@@ -316,16 +345,35 @@ export function LoadingPage() {
         setProgress(12);
         const { main: result, vicram: vicramCache } = await analyzePendingWithVicram(pending);
 
+        if (!isCurrentAnalysis()) {
+          return;
+        }
         ensureNotCancelled();
         setProgress(86);
         setMessage("Preparing the report");
         saveResult(result, vicramCache);
-        await persistVisualComplexityToHistory(result, vicramCache);
+        const vicramSaved = await persistVisualComplexityToHistory(result, vicramCache);
+        if (!isCurrentAnalysis()) {
+          return;
+        }
+        if (!vicramCache?.result) {
+          const vicramMessage = vicramCache?.error
+            ? `Analysis saved, but visual complexity failed: ${vicramCache.error} You can refresh it from the dashboard.`
+            : "Analysis saved, but visual complexity could not be calculated. You can refresh it from the dashboard.";
+          showVicramPersistWarning(vicramMessage);
+        } else if (!vicramSaved) {
+          showVicramPersistWarning(
+            "Analysis saved, but visual complexity could not be stored in history. Try Refresh on the dashboard.",
+          );
+        }
         ensureNotCancelled();
         clearPendingAnalysis();
         const elapsed = Date.now() - startedAt;
         if (elapsed < MIN_LOADING_TIME_MS) {
           await wait(MIN_LOADING_TIME_MS - elapsed);
+        }
+        if (!isCurrentAnalysis()) {
+          return;
         }
         ensureNotCancelled();
         setProgress(100);
@@ -355,6 +403,7 @@ export function LoadingPage() {
         return;
       }
       cancelRequestedRef.current = true;
+      loadingAnalysisGeneration += 1;
       clearPendingAnalysis();
       clearPendingVicramResult();
       if (loadingError) {
