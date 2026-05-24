@@ -9,6 +9,9 @@ const toggleHeatmapBtn = document.getElementById("toggleHeatmapBtn");
 const loadHtmlBtn = document.getElementById("loadHtmlBtn");
 const loadHtmlInput = document.getElementById("loadHtmlInput");
 const saveBtn = document.getElementById("saveBtn");
+const aboutEyeTrackingBtn = document.getElementById("aboutEyeTrackingBtn");
+const eyeIntroModal = document.getElementById("eyeIntroModal");
+const eyeIntroContinueBtn = document.getElementById("eyeIntroContinueBtn");
 const urlInput = document.getElementById("urlInput");
 const loadUrlBtn = document.getElementById("loadUrlBtn");
 const targetFrame = document.getElementById("targetFrame");
@@ -27,6 +30,7 @@ const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 /** Same key as `dashboardApp.js` — latest analysis run to attach behavioral evidence. */
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
+const EYE_INTRO_SEEN_STORAGE_KEY = "cognilens.eye.intro-seen";
 
 const state = {
   started: false,
@@ -396,6 +400,7 @@ const HEAT_SAMPLE_INTERVAL_MS = 45;
 const HEAT_MIN_DISTANCE_PX = 4;
 const TRACKING_START_DELAY_MS = 2000;
 const GAZE_CLOUD_CALIBRATION_TYPE = 0;
+const INTRO_PUPIL_MAX_OFFSET = 5.5;
 
 function distance(a, b) {
   const dx = a.x - b.x;
@@ -405,6 +410,78 @@ function distance(a, b) {
 
 function setStatus(text) {
   statusText.textContent = text;
+}
+
+function hasSeenEyeIntro() {
+  try {
+    return localStorage.getItem(EYE_INTRO_SEEN_STORAGE_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function markEyeIntroSeen() {
+  try {
+    localStorage.setItem(EYE_INTRO_SEEN_STORAGE_KEY, "1");
+  } catch (_) {
+    // Ignore private browsing / storage errors.
+  }
+}
+
+function getIntroPupils() {
+  return Array.from(document.querySelectorAll(".eye-intro-pupil"));
+}
+
+function resetIntroPupils() {
+  getIntroPupils().forEach((pupil) => {
+    pupil.style.transform = "translate3d(0, 0, 0)";
+  });
+}
+
+function updateIntroPupils(clientX, clientY) {
+  if (!eyeIntroModal || eyeIntroModal.hidden) {
+    return;
+  }
+  getIntroPupils().forEach((pupil) => {
+    const eye = pupil.parentElement;
+    if (!eye) {
+      return;
+    }
+    const rect = eye.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const angle = Math.atan2(dy, dx);
+    const distancePx = Math.min(INTRO_PUPIL_MAX_OFFSET, Math.hypot(dx, dy) * 0.09);
+    const x = Math.cos(angle) * distancePx;
+    const y = Math.sin(angle) * distancePx;
+    pupil.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  });
+}
+
+function showEyeIntroModal() {
+  if (!eyeIntroModal) {
+    return;
+  }
+  eyeIntroModal.hidden = false;
+  resetIntroPupils();
+}
+
+function hideEyeIntroModal() {
+  if (!eyeIntroModal) {
+    return;
+  }
+  eyeIntroModal.hidden = true;
+  resetIntroPupils();
+  markEyeIntroSeen();
+}
+
+function showEyeIntroOnFirstVisit() {
+  if (hasSeenEyeIntro()) {
+    return;
+  }
+  showEyeIntroModal();
 }
 
 function setTrackingControlsEnabled(enabled) {
@@ -1893,6 +1970,34 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
+aboutEyeTrackingBtn?.addEventListener("click", () => {
+  showEyeIntroModal();
+});
+
+eyeIntroContinueBtn?.addEventListener("click", () => {
+  hideEyeIntroModal();
+});
+
+eyeIntroModal?.addEventListener("click", (event) => {
+  if (event.target === eyeIntroModal) {
+    hideEyeIntroModal();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && eyeIntroModal && !eyeIntroModal.hidden) {
+    hideEyeIntroModal();
+  }
+});
+
+window.addEventListener("pointermove", (event) => {
+  updateIntroPupils(event.clientX, event.clientY);
+});
+
+window.addEventListener("pointerleave", () => {
+  resetIntroPupils();
+});
+
 resizeHeatmapCanvas();
 ensureCoverageCanvasFixedSize();
 drawCoverageMap();
@@ -1909,3 +2014,5 @@ if (urlInput && preferredTargetUrl) {
 if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
 }
+
+showEyeIntroOnFirstVisit();
