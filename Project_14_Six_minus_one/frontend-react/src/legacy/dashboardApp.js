@@ -14,6 +14,7 @@ import {
   clearPendingVicramResult,
   readPendingVicramResult,
   resolveVicramTargetLabel,
+  VICRAM_LOADING_OPTIONS,
   vicramTargetLabelsMatch,
 } from "../lib/pendingVicramSession.js";
 import {
@@ -1028,12 +1029,11 @@ async function refreshVicramAnalysis({ showGridAfter = false, force = false } = 
   vicram.activeRequestTarget = requestTarget;
   renderVicramDashboardPanel();
   try {
-    const viewport = getVicramPreviewViewport();
     const result = await analyzeVicramSource(source.payload, {
       rows: VICRAM_GRID_ROWS,
       columns: VICRAM_GRID_COLUMNS,
-      viewportWidth: viewport.viewportWidth,
-      viewportHeight: viewport.viewportHeight,
+      viewportWidth: VICRAM_LOADING_OPTIONS.viewportWidth,
+      viewportHeight: VICRAM_LOADING_OPTIONS.viewportHeight,
     });
     const currentLabel = getVicramSessionLabel();
     if (!vicramTargetLabelsMatch(requestTarget, currentLabel) || vicram.activeRequestTarget !== requestTarget) {
@@ -3259,29 +3259,10 @@ function getPreviewUrl() {
   return isProbablyUrl(payloadPreviewUrl) || isPreviewRouteUrl(payloadPreviewUrl) ? payloadPreviewUrl : "";
 }
 
-function getVicramPreviewViewport() {
-  const frame = document.getElementById("websitePreviewFrame");
-  const rect = frame?.getBoundingClientRect?.();
-  const width = Math.round(rect?.width || 0);
-  const height = Math.round(rect?.height || 0);
-
-  return {
-    viewportWidth: Math.max(320, width || Number(vicramState().result?.page?.width) || 1366),
-    viewportHeight: Math.max(240, height || 768),
-  };
-}
-
-function vicramResultNeedsRenderedPreviewRefresh(result) {
-  const targetUrl = getVicramTargetUrl();
-  if (result?.source_type === "html" && targetUrl && targetUrl.includes("/preview/")) {
-    return true;
-  }
-
-  const frame = document.getElementById("websitePreviewFrame");
-  const rect = frame?.getBoundingClientRect?.();
-  const frameWidth = Math.round(rect?.width || 0);
-  const resultWidth = Number(result?.page?.width || 0);
-  return Boolean(frameWidth && resultWidth && Math.abs(frameWidth - resultWidth) > 80);
+function vicramHasUsableGridArtifacts(result) {
+  const overlay = String(result?.artifacts?.overlay_svg_base64 || "").trim();
+  const cells = result?.grid?.cells;
+  return Boolean(overlay) || (Array.isArray(cells) && cells.length > 0);
 }
 
 function buildPreviewHtml(html) {
@@ -3464,8 +3445,12 @@ function buildVicramGridHtml(result) {
 </head>
 <body>
   <div class="vicram-stage">
-    <img src="data:image/png;base64,${screenshot}" alt="Rendered webpage screenshot">
-    <img src="data:image/svg+xml;base64,${overlay}" alt="ViCRAM grid overlay">
+    ${screenshot
+      ? `<img src="data:image/png;base64,${screenshot}" alt="Rendered webpage screenshot">`
+      : ""}
+    ${overlay
+      ? `<img src="data:image/svg+xml;base64,${overlay}" alt="ViCRAM grid overlay">`
+      : ""}
     ${hotspots}
   </div>
 </body>
@@ -3478,8 +3463,7 @@ function applyVicramGridOverlay(result) {
     return;
   }
 
-  const screenshot = String(result?.artifacts?.screenshot_png_base64 || "").trim();
-  if (!screenshot) {
+  if (!vicramHasUsableGridArtifacts(result)) {
     const vicram = vicramState();
     vicram.gridViewIntent = "grid";
     vicram.pendingShowGridAfterLoad = true;
@@ -3529,11 +3513,6 @@ function showVicramGridOverlay() {
   if (!vicramHasResultForSource(vicram, source.label)) {
     vicram.pendingShowGridAfterLoad = true;
     void refreshVicramAnalysis({ showGridAfter: true });
-    return;
-  }
-  if (vicramResultNeedsRenderedPreviewRefresh(vicram.result)) {
-    vicram.pendingShowGridAfterLoad = true;
-    void refreshVicramAnalysis({ showGridAfter: true, force: true });
     return;
   }
   applyVicramGridOverlay(vicram.result);
