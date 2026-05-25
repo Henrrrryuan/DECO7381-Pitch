@@ -30,7 +30,6 @@ const EYE_TARGET_URL_STORAGE_KEY = "cognilens.eye.target-url";
 const ANALYSIS_RETURN_URL_STORAGE_KEY = "cognilens.return.analysis-url";
 /** Same key as `dashboardApp.js` — latest analysis run to attach behavioral evidence. */
 const EYE_RELATED_CONTEXT_STORAGE_KEY = "cognilens.eye.related-context";
-const EYE_INTRO_SEEN_STORAGE_KEY = "cognilens.eye.intro-seen";
 
 const state = {
   started: false,
@@ -412,22 +411,6 @@ function setStatus(text) {
   statusText.textContent = text;
 }
 
-function hasSeenEyeIntro() {
-  try {
-    return localStorage.getItem(EYE_INTRO_SEEN_STORAGE_KEY) === "1";
-  } catch (_) {
-    return false;
-  }
-}
-
-function markEyeIntroSeen() {
-  try {
-    localStorage.setItem(EYE_INTRO_SEEN_STORAGE_KEY, "1");
-  } catch (_) {
-    // Ignore private browsing / storage errors.
-  }
-}
-
 function getIntroPupils() {
   return Array.from(document.querySelectorAll(".eye-intro-pupil"));
 }
@@ -474,13 +457,9 @@ function hideEyeIntroModal() {
   }
   eyeIntroModal.hidden = true;
   resetIntroPupils();
-  markEyeIntroSeen();
 }
 
-function showEyeIntroOnFirstVisit() {
-  if (hasSeenEyeIntro()) {
-    return;
-  }
+function showEyeIntroOnPageLoad() {
   showEyeIntroModal();
 }
 
@@ -2015,4 +1994,4 @@ if (urlInput && urlInput.value) {
   loadTargetUrl(urlInput.value);
 }
 
-showEyeIntroOnFirstVisit();
+showEyeIntroOnPageLoad();
