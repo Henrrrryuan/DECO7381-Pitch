@@ -282,32 +282,7 @@ Validation:
 
 Eye Tracking evidence is optional supporting evidence. It is not proof of accessibility, a clinical cognitive-load measurement, or a replacement for user testing.
 
-## 9. Assistant Endpoint
-
-`POST /assistant/chat`
-
-Request body:
-
-```json
-{
-  "message": "What should I review first?",
-  "source_name": "demo-page.html",
-  "analysis_context": {}
-}
-```
-
-Response:
-
-```json
-{
-  "reply": "...",
-  "provider": "claude | openai | fallback | scope-guard"
-}
-```
-
-The assistant endpoint is optional support around the saved analysis context. It is not part of detector scoring.
-
-## 10. Scoring Notes
+## 9. Scoring Notes
 
 Issue penalties are fixed per detector when a rule-based issue is raised. The score is an MVP prioritisation aid for the dashboard, not a compliance score.
 

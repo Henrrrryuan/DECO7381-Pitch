@@ -28,7 +28,6 @@ Project_14_Six_minus_one/
     styles.css                    Eye Tracking page styles
     README.md                     short module-level running notes
     proxy_server.py               standalone fallback proxy for debugging
-    GazeCloud-master/             reference/example material from GazeCloud
   backend/
     app/routers/eye.py            backend routes for eye sessions and temporary HTML
     app/routers/history.py        history routes that expose saved evidence
@@ -52,13 +51,7 @@ CogniLens uses GazeCloudAPI for browser-based webcam gaze estimation.
 
 The external API provides gaze callback data, including document-coordinate gaze positions and timestamps. CogniLens then adds its own processing layer on top of those coordinates: heatmap rendering, DOM element hit detection, weighted attention summaries, risk labels, and History/Heatmap display.
 
-The prototype also includes a local copy of GazeCloud reference/example files under:
-
-```text
-eye/GazeCloud-master/
-```
-
-These files are reference material for integration and should be treated as third-party source material in the final submission.
+GazeCloud reference/example files were used as third-party integration reference material during development, but the final codebase runtime uses `eye/index.html`, `eye/app.js`, and the provider CDN script rather than bundling those reference examples.
 
 ## Runtime Requirements
 

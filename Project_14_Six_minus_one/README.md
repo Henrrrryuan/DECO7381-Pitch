@@ -43,14 +43,12 @@ Project_14_Six_minus_one/
       core.py                       shared paths and app constants
       routers/
         analysis.py                 HTML, URL, ZIP analysis endpoints
-        assistant.py                AI-assistant style follow-up endpoint
         eye.py                      eye session and temporary HTML endpoints
         history.py                  analysis history endpoints
         system.py                   health/sample/API endpoints
         vicram.py                   visual complexity endpoints
     services/
       analysis_service.py
-      assistant_service.py
       eye_evidence_service.py       Eye Evidence scoring and interpretation
     adapters/
       http/eye_proxy.py
@@ -81,7 +79,6 @@ Project_14_Six_minus_one/
     styles.css
     README.md
     proxy_server.py                 standalone fallback/debug server
-    GazeCloud-master/               third-party reference/example files
 
   docs/
     AI_Prompt.pdf
@@ -101,7 +98,6 @@ Project_14_Six_minus_one/
 - [Eye module README](./eye/README.md): short run notes for the Eye Tracking page.
 - [API Contract](./docs/api-contract.md): endpoint definitions and integration expectations.
 - [Database Schema](./docs/database-schema.dbml): local persistence model.
-- [Presentation Test Flow](./docs/presentation-test-flow.md): demo and testing checklist.
 - [Visual Complexity README](./VICRAM_README.md): ViCRAM-inspired source attribution, scoring workflow, and prototype limitations.
 - [Limitations](./LIMITATIONS.md): known prototype limitations.
 - [Final Changelog](./FINAL_CHANGELOG.md): summary of larger product changes.
@@ -236,7 +232,6 @@ npm run build
 - `GET /history`
 - `GET /history/{run_id}`
 - `POST /history/{run_id}/visual-complexity`
-- `POST /assistant/chat`
 - `POST /vicram/analyze-url`
 - `POST /api/vicram/analyze-url`
 - `POST /api/vicram/analyze`
@@ -286,5 +281,5 @@ The final codebase ZIP should include this project folder and the submission sup
 - `__pycache__/`
 - `.DS_Store`
 - `*.sqlite3`, `*.sqlite3-journal`, and `*.sqlite3-journal.bak-*`
-- `eye/GazeCloud-master.zip`
+- `eye/GazeCloud-master.zip` and `eye/GazeCloud-master/`
 - generated local ZIP files such as `Project_14_Six_minus_one.zip`

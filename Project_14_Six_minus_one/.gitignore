@@ -17,5 +17,6 @@ backend/*.sqlite3
 backend/*.sqlite3-journal
 backend/*.sqlite3-journal.bak-*
 
-# Third-party reference archive duplicate; runtime uses the live GazeCloudAPI script.
+# Third-party reference archive/folder duplicate; runtime uses the live GazeCloudAPI script.
 eye/GazeCloud-master.zip
+eye/GazeCloud-master/
