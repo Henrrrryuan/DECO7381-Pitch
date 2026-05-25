@@ -3372,9 +3372,17 @@ function buildVicramGridHtml(result) {
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html, body {
+    html {
       margin: 0;
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+    body {
+      margin: 0;
+      width: 100%;
       min-height: 100%;
       background: #e5e7eb;
       font-family: "Segoe UI", Arial, sans-serif;
@@ -3382,10 +3390,13 @@ function buildVicramGridHtml(result) {
     }
     .vicram-stage {
       position: relative;
-      width: ${width}px;
-      height: ${height}px;
-      max-width: none;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: ${width} / ${height};
       background: #fff;
+      box-sizing: border-box;
+      overflow: visible;
     }
     .vicram-stage img {
       position: absolute;
@@ -3393,6 +3404,7 @@ function buildVicramGridHtml(result) {
       width: 100%;
       height: 100%;
       display: block;
+      object-fit: fill;
     }
     .vicram-stage img:first-child {
       z-index: 1;
@@ -3486,6 +3498,28 @@ function applyVicramGridOverlay(result) {
   vicram.gridVisible = true;
   setWebsiteStatus("Showing ViCRAM grid overlay. Use the ViCRAM button to return to the webpage preview.");
   renderVicramDashboardPanel();
+}
+
+function refreshVisibleVicramGridSrcdocAfterLayoutChange() {
+  const vicram = vicramState();
+  if (!vicram.gridVisible || !vicram.result) {
+    return;
+  }
+
+  const frame = document.getElementById("websitePreviewFrame");
+  if (frame?.dataset.vicramGrid !== "1") {
+    return;
+  }
+
+  window.clearTimeout(vicram.layoutRefreshTimer);
+  vicram.layoutRefreshTimer = window.setTimeout(() => {
+    const latestVicram = vicramState();
+    const latestFrame = document.getElementById("websitePreviewFrame");
+    if (!latestVicram.gridVisible || !latestVicram.result || latestFrame?.dataset.vicramGrid !== "1") {
+      return;
+    }
+    latestFrame.srcdoc = buildVicramGridHtml(latestVicram.result);
+  }, 460);
 }
 
 function showVicramGridOverlay() {
@@ -5038,6 +5072,7 @@ function applySidebarState() {
   if (icon) {
     icon.textContent = collapsed ? "▶" : "◀";
   }
+  refreshVisibleVicramGridSrcdocAfterLayoutChange();
 }
 
 function handleSidebarToggle() {
